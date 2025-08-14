@@ -1,6 +1,6 @@
 # NetX Template
 
-**NetX Template** adalah template website modern berbasis PHP CodeIgniter 4 yang siap digunakan untuk berbagai kebutuhan web development. Template ini dilengkapi dengan fitur manajemen konten, sistem konfigurasi profil, dan interface admin yang user-friendly.
+**NetX Template** adalah template website modern berbasis PHP CodeIgniter 4 yang siap digunakan untuk berbagai kebutuhan web development. Template ini dilengkapi dengan fitur manajemen konten, sistem konfigurasi profil, dan interface admin yang user-friendly dan keren.
 
 ## ✨ Fitur Utama
 
