@@ -1,5 +1,5 @@
 <style>
-    <style>.card-hover-link {
+.card-hover-link {
         display: block;
         transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
@@ -15,19 +15,13 @@
         color: #fff;
         border-color: var(--bs-primary);
     }
-</style>
 
 </style>
 
 <div class="container py-5">
     <div class="text-center mb-5">
-<<<<<<< HEAD
         <h1 class="fw-bold">Berita & Informasi Terkini</h1>
         <p class="text-muted">Temukan artikel, info layanan, dan solusi kesehatan terpercaya dari Klinik Medikidz untuk hidup yang lebih sehat.</p>
-=======
-        <h1 class="fw-bold">Welcome to Berita</h1>
-        <p class="text-muted">Explore insights, tips, and stories about elevating customer experience<br> with seamless in-app help solutions</p>
->>>>>>> df8c327176c0d2352c9b643155da517b0816f615
     </div>
 
     <!-- Search & Filter -->
@@ -64,7 +58,6 @@
             <div class="col">
                 <a href="<?= base_url('berita/' . $post->post_slug) ?>" class="text-decoration-none text-dark card-hover-link">
                     <div class="card h-100 border-0 shadow-sm transition-hover">
-<<<<<<< HEAD
                         <img
                             src="<?= !empty($post->thumbnail)
                                         ? base_url('uploads/' . $post->thumbnail)
@@ -72,9 +65,6 @@
                             class="card-img-top"
                             style="height: 180px; object-fit: cover;"
                             alt="<?= esc($post->title) ?>">
-=======
-                        <img src="<?= base_url('uploads/' . $post->thumbnail) ?>" class="card-img-top" style="height: 180px; object-fit: cover;">
->>>>>>> df8c327176c0d2352c9b643155da517b0816f615
                         <div class="card-body">
                             <!-- Username -->
                             <small class="text-muted d-block mb-2">

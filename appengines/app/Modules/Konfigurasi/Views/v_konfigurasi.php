@@ -83,10 +83,6 @@
                 </div>
                 <?php echo form_close() ?>
             </div>
-<<<<<<< HEAD
-=======
-
->>>>>>> df8c327176c0d2352c9b643155da517b0816f615
         </div>
     </div>
 </div>

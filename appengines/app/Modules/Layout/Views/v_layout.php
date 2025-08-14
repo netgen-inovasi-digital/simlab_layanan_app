@@ -23,12 +23,6 @@
 <div class="row">
     <div class="col-md-12">
         <div class="card">
-<<<<<<< HEAD
-=======
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <label class="card-title mb-0"><?php echo $title ?></label>
-            </div>
->>>>>>> df8c327176c0d2352c9b643155da517b0816f615
             <div class="card-body ps-4 pe-4">
                 <div id="layout">
                     <?php

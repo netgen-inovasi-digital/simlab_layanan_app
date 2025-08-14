@@ -1,10 +1,6 @@
 <style>
     .mitra-item {
         padding: 5px 15px;
-<<<<<<< HEAD
-=======
-        border: 1px solid #ccc;
->>>>>>> df8c327176c0d2352c9b643155da517b0816f615
         /* background-color: #f8f9fa; */
         margin-bottom: 5px;
         cursor: grab;
@@ -59,11 +55,7 @@
                             data-code="<?= $row->urutan ?>"
                             data-parent="0">
 
-<<<<<<< HEAD
                             <div class="border p-3 h-100 d-flex flex-column justify-content-between align-items-center text-center bg-light rounded shadow-sm">
-=======
-                            <div class="p-3 h-100 d-flex flex-column justify-content-between align-items-center text-center bg-light rounded shadow-sm">
->>>>>>> df8c327176c0d2352c9b643155da517b0816f615
                                 <!-- Gambar -->
                                 <div class="mb-3">
                                     <img src="<?= base_url('uploads/' . $row->foto) ?>"

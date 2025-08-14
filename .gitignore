@@ -1,3 +1,26 @@
+# Environment files
+appengines/.env
+.env
+.env.local
+.env.production
+.env.staging
+
+# CodeIgniter 4 writable folder - keep structure but ignore content
+appengines/writable/cache/*
+!appengines/writable/cache/index.html
+appengines/writable/logs/*
+!appengines/writable/logs/index.html
+appengines/writable/session/*
+!appengines/writable/session/index.html
+appengines/writable/debugbar/*
+!appengines/writable/debugbar/index.html
+appengines/writable/uploads/*
+!appengines/writable/uploads/index.html
+
+# Upload directories
+uploads/*
+!uploads/.gitkeep
+
 # Cache files
 **/cache/*
 !**/cache/index.html
@@ -5,12 +28,6 @@
 # Log files
 **/logs/*
 !**/logs/index.html
-
-# Environment files
-.env
-.env.local
-.env.production
-.env.staging
 
 # User-specific files
 **/.htaccess
@@ -48,16 +65,6 @@ yarn-error.log
 /dist/
 /build/
 
-# Upload directories
-/public/uploads/*
-/uploads/*
-!uploads/.gitkeep
-!public/uploads/.gitkeep
-
-# Session files
-/writable/session/*
-!writable/session/index.html
-
 # Backup files
 *.backup
 *.bak
@@ -74,15 +81,6 @@ yarn-error.log
 # Configuration files that might contain sensitive data
 app/Config/Database.php.bak
 app/Config/App.php.bak
-
-# CodeIgniter specific
-/writable/logs/*
-!writable/logs/index.html
-/writable/cache/*
-!writable/cache/index.html
-/writable/debugbar/*
-/writable/uploads/*
-!writable/uploads/index.html
 
 # PHP specific
 *.log

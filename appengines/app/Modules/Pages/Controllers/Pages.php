@@ -42,11 +42,7 @@ class Pages extends BaseController
 		$data['status'] = $get->status;
 		$data['user_id'] = $get->user_id;
 		$data['nama'] = $user->nama;
-<<<<<<< HEAD
 		$data['tanggal'] = date('Y-m-d', strtotime($get->updated_at));
-=======
-		$data['tanggal'] = date('Y-m-d', strtotime($get->published_at));
->>>>>>> df8c327176c0d2352c9b643155da517b0816f615
 
 		// 'userId' => session()->get('idUser'),
 		return $this->response->setJSON($data);
@@ -64,43 +60,27 @@ class Pages extends BaseController
 	{
 		$konten = $this->request->getPost('konten');
 		$idenc = $this->request->getPost('id');
-<<<<<<< HEAD
 		// $tanggalInput = $this->request->getPost('tanggal') ?? date('Y-m-d');
 		// $tanggalFormatted = date('Y-m-d H:i:s', strtotime($tanggalInput));
 		$now = date('Y-m-d H:i:s');
 
-=======
-		$tanggalInput = $this->request->getPost('tanggal') ?? date('Y-m-d');
-		$tanggalFormatted = date('Y-m-d H:i:s', strtotime($tanggalInput));
->>>>>>> df8c327176c0d2352c9b643155da517b0816f615
 
 		$data = array(
 			'title'       => $this->request->getPost('title'),
 			'konten'      => $konten,
 			'status'      => $this->request->getPost('status'),
 			'user_id'     => $this->request->getPost('user_id'),
-<<<<<<< HEAD
 			'updated_at'  => $now,
-=======
-			'updated_at'  => $tanggalFormatted,
->>>>>>> df8c327176c0d2352c9b643155da517b0816f615
 		);
 
 		$model = new MyModel($this->table);
 
 		if (empty($idenc)) {
 			// INSERT
-<<<<<<< HEAD
 			$data['created_at'] = $now;
 
 			if ($data['status'] === 'publish') {
 				// $data['published_at'] = $tanggalFormatted;
-=======
-			$data['created_at'] = $tanggalFormatted;
-
-			if ($data['status'] === 'publish') {
-				$data['published_at'] = $tanggalFormatted;
->>>>>>> df8c327176c0d2352c9b643155da517b0816f615
 			}
 
 			$data['slug'] = $this->request->getPost('slug');
@@ -109,11 +89,7 @@ class Pages extends BaseController
 		} else {
 			// UPDATE
 			if ($data['status'] === 'publish') {
-<<<<<<< HEAD
 				// $data['published_at'] = $tanggalFormatted;
-=======
-				$data['published_at'] = $tanggalFormatted;
->>>>>>> df8c327176c0d2352c9b643155da517b0816f615
 			}
 
 			$id = $this->encrypter->decrypt(hex2bin($idenc));
@@ -205,11 +181,7 @@ class Pages extends BaseController
 
 		$where = [];
 
-<<<<<<< HEAD
 		$orderBy = ['created_at' => 'desc'];
-=======
-		$orderBy = ['published_at' => 'desc'];
->>>>>>> df8c327176c0d2352c9b643155da517b0816f615
 
 		$list = $model->getAllDataByJoinWithOrder($join, $where, $orderBy);
 		foreach ($list as $row) {
@@ -221,15 +193,9 @@ class Pages extends BaseController
 					' . $this->generateExcerpt($row->konten) . '
 					<div class="d-flex flex-wrap justify-content-start small text-muted gap-2 mt-2">
 						<div>👤 ' . esc($row->nama) . '</div>
-<<<<<<< HEAD
 						<div>🗓️ ' . ($row->status == 'draft'
 							? '(Masih draft)'
 							: formatTanggalIndo($row->updated_at)) . '</div>
-=======
-						<div>🗓️ ' . ($row->published_at == NULL
-							? formatTanggalIndo($row->created_at)
-							: formatTanggalIndo($row->published_at)) . '</div>
->>>>>>> df8c327176c0d2352c9b643155da517b0816f615
 					</div>
 				</div>
 			';

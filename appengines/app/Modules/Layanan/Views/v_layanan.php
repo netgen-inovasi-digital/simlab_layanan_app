@@ -1,10 +1,6 @@
 <style>
     .layanan-item {
         padding: 5px 15px;
-<<<<<<< HEAD
-=======
-        border: 1px solid #ccc;
->>>>>>> df8c327176c0d2352c9b643155da517b0816f615
         /* background-color: #f8f9fa; */
         margin-bottom: 5px;
         cursor: grab;
@@ -38,7 +34,6 @@
 </style>
 
 <div class="row">
-<<<<<<< HEAD
   <div class="col-md-12">
     <div class="card">
       <div class="card-header d-flex justify-content-between align-items-center">
@@ -98,63 +93,6 @@
   </div>
 </div>
 
-=======
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <label class="card-title mb-0"><?php echo $title ?></label>
-                <button id="add" class="btn btn-primary">
-                    <i class="bi bi-plus-circle-dotted"></i> Tambah
-                </button>
-            </div>
-            <div class="card-body ps-4 pe-4">
-                <div id="layanan" class="row g-3">
-                    <?php
-                    $encrypter = \Config\Services::encrypter();
-                    foreach ($getLayanan as $row) {
-                        $id = bin2hex($encrypter->encrypt($row->id_layanan));
-                    ?>
-                        <div id="<?= $id ?>"
-                            class="layanan-item col-12 col-sm-6 col-md-4 mb-1"
-                            draggable="true"
-                            data-code="<?= $row->urutan ?>" data-parent="0">
-
-                            <div class="p-3 h-100 d-flex flex-column justify-content-between">
-                                <!-- Gambar -->
-                                <div class="text-center mb-3">
-                                    <img src="<?= base_url('uploads/' . $row->foto) ?>"
-                                        alt="<?= esc($row->judul) ?>"
-                                        class="img-fluid" style="max-height: 80px; object-fit: contain;">
-                                </div>
-
-                                <!-- Judul & Deskripsi -->
-                                <div class="text-center">
-                                    <h6 class="fw-bold"><?= esc($row->judul) ?></h6>
-                                    <p class="text-muted small mb-0"><?= esc($row->deskripsi) ?></p>
-                                </div>
-
-                                <!-- Aksi & Toggle -->
-                                <div class="d-flex justify-content-between align-items-center mt-3">
-                                    <?= aksi($id) ?>
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input status-toggle"
-                                            type="checkbox"
-                                            data-id="<?= $id ?>"
-                                            data-bs-toggle="tooltip"
-                                            title="Aktif/Nonaktif"
-                                            <?= ($row->status == 'Y') ? 'checked' : '' ?>>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    <?php } ?>
-                </div>
-
-            </div>
-        </div>
-    </div>
-</div>
->>>>>>> df8c327176c0d2352c9b643155da517b0816f615
 
 <?php
 function aksi($id)

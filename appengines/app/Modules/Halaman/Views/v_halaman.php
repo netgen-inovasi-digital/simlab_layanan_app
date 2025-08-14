@@ -1,5 +1,5 @@
 <style>
-    <style>.card-hover-link {
+    .card-hover-link {
         display: block;
         transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
@@ -15,7 +15,6 @@
         color: #fff;
         border-color: var(--bs-primary);
     }
-</style>
 
 </style>
 

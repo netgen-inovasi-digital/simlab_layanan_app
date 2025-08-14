@@ -161,10 +161,7 @@ function saveAll() {
     formData.append(`items[${i}][id]`, el.id);
     formData.append(`items[${i}][code]`, el.dataset.code);
     formData.append(`items[${i}][parent]`, el.dataset.parent);
-<<<<<<< HEAD
     formData.append(`items[${i}][sort_order]`, i + 1); // urutan disini
-=======
->>>>>>> df8c327176c0d2352c9b643155da517b0816f615
   });
   formData.append(tokenName, tokenValue);
 

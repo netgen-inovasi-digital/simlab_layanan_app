@@ -47,11 +47,7 @@ class Posts extends BaseController
 		$data['status'] = $get->status;
 		$data['user_id'] = $get->user_id;
 		$data['nama'] = $user->nama;
-<<<<<<< HEAD
 		$data['tanggal'] = $get->published_at != null ? date('Y-m-d', strtotime($get->published_at)) : date('Y-m-d', strtotime($get->created_at));
-=======
-		$data['tanggal'] = date('Y-m-d', strtotime($get->published_at));
->>>>>>> df8c327176c0d2352c9b643155da517b0816f615
 
 		// 'userId' => session()->get('idUser'),
 		return $this->response->setJSON($data);
@@ -70,13 +66,8 @@ class Posts extends BaseController
 		$konten = $this->request->getPost('konten');
 		$excerpt = $this->generateExcerpt($konten);
 		$idenc = $this->request->getPost('id');
-<<<<<<< HEAD
 		$tanggalPublish = $this->request->getPost('tanggal') ?? date('Y-m-d');
 		$now = date('Y-m-d H:i:s');
-=======
-		$tanggalInput = $this->request->getPost('tanggal') ?? date('Y-m-d');
-		$tanggalFormatted = date('Y-m-d H:i:s', strtotime($tanggalInput));
->>>>>>> df8c327176c0d2352c9b643155da517b0816f615
 
 		$data = [
 			'title' => $this->request->getPost('title'),
@@ -85,11 +76,10 @@ class Posts extends BaseController
 			'status' => $this->request->getPost('status'),
 			'categories_id' => $this->request->getPost('kategori_id'),
 			'user_id' => $this->request->getPost('user_id'),
-<<<<<<< HEAD
 			'updated_at' => $now, // waktu sekarang
 		];
 		$thumbnail = $this->request->getFile('thumbnail');
-		if ($thumbnail) {
+		if ($thumbnail && $thumbnail->getName() !== '') {
 			$uploadResult = $this->doUpload($thumbnail);
 
 			if (!$uploadResult['status']) {
@@ -102,21 +92,11 @@ class Posts extends BaseController
 			}
 
 			$data['thumbnail'] = $uploadResult['filename'];
-=======
-			'updated_at' => $tanggalFormatted,
-		];
-
-		$thumbnail = $this->request->getFile('thumbnail');
-		if ($thumbnail && $thumbnail->isValid() && !$thumbnail->hasMoved()) {
-			$filename = $this->doUpload($thumbnail);
-			if ($filename != "") $data['thumbnail'] = $filename;
->>>>>>> df8c327176c0d2352c9b643155da517b0816f615
 		}
 
 		$model = new MyModel($this->table);
 
 		if (empty($idenc)) {
-<<<<<<< HEAD
 			$data['created_at'] = $now; // waktu sekarang saat dibuat
 
 			if ($data['status'] === 'publish') {
@@ -128,19 +108,6 @@ class Posts extends BaseController
 		} else {
 			if ($data['status'] === 'publish') {
 				$data['published_at'] = $tanggalPublish;
-=======
-			$data['created_at'] = $tanggalFormatted;
-
-			if ($data['status'] === 'publish') {
-				$data['published_at'] = $tanggalFormatted;
-			}
-			$data['slug'] = $this->request->getPost('slug');
-
-			$res = $model->insertData($data);
-		} else {
-			if ($data['status'] === 'publish') {
-				$data['published_at'] = $tanggalFormatted;
->>>>>>> df8c327176c0d2352c9b643155da517b0816f615
 			}
 
 			$id = $this->encrypter->decrypt(hex2bin($idenc));
@@ -155,10 +122,6 @@ class Posts extends BaseController
 	}
 
 
-<<<<<<< HEAD
-
-=======
->>>>>>> df8c327176c0d2352c9b643155da517b0816f615
 	// fungsi untuk memotong konten
 	function generateExcerpt($content, $limit = 55)
 	{
@@ -168,7 +131,6 @@ class Posts extends BaseController
 
 	function doUpload($file)
 	{
-<<<<<<< HEAD
 		// Pastikan file valid dan belum dipindahkan
 		if (!($file && $file->isValid() && !$file->hasMoved())) {
 			return ['status' => false, 'msg' => 'File tidak valid atau sudah dipindahkan'];
@@ -205,36 +167,14 @@ class Posts extends BaseController
 
 
 
-=======
-		$filename = "";
-		if ($file) {
-			if ($file->isValid() && ! $file->hasMoved()) {
-				$ext = $file->getClientExtension();
-				$filename = time() . bin2hex(random_bytes(5)) . '.' . $ext;
-				$path = FCPATH . 'uploads';
-				$file->move($path, $filename, true);
-			}
-		}
-		return $filename;
-	}
-
->>>>>>> df8c327176c0d2352c9b643155da517b0816f615
 	public function upload()
 	{
 		$file = $this->request->getFile('upload');
 		$filename = $this->doUpload($file);
-<<<<<<< HEAD
 		if ($filename !== "") {
 			return $this->response->setJSON([
 				'uploaded' => true,
 				'url'      => base_url('uploads/' . $filename['filename']),
-=======
-
-		if ($filename !== "") {
-			return $this->response->setJSON([
-				'uploaded' => true,
-				'url'      => base_url('uploads/' . $filename),
->>>>>>> df8c327176c0d2352c9b643155da517b0816f615
 				'xname'    => csrf_token(),
 				'xhash'    => csrf_hash()
 			]);
@@ -273,29 +213,19 @@ class Posts extends BaseController
 					<div class="d-flex flex-wrap justify-content-start small text-muted gap-2 mt-2">
 						<div>📂 <span class="fw-semibold">' . esc($row->nama) . '</span></div>
 						<div>👤 ' . esc($row->nama_user) . '</div>
-<<<<<<< HEAD
 						<div>🗓️ ' . ($row->status == 'draft'
 				? '(Masih draft)'
 				: formatTanggalIndo($row->published_at)) . '</div>
-=======
-						<div>🗓️ ' . ($row->published_at == NULL
-							? formatTanggalIndo($row->created_at)
-							: formatTanggalIndo($row->published_at)) . '</div>
->>>>>>> df8c327176c0d2352c9b643155da517b0816f615
 					</div>
 				</div>
 			';
 
 			$id = bin2hex($this->encrypter->encrypt($row->id_posts));
 			$response = array();
-<<<<<<< HEAD
 			$response[] = ($row->thumbnail != NULL && $row->thumbnail !== '')
 				? '<img class="img-thumbnail" width="80" src="' . esc(base_url('uploads/' . $row->thumbnail)) . '">'
 				: '<img class="img-thumbnail" width="80" src="https://placehold.co/80x80?text=No+Image">';
 
-=======
-			$response[] = ($row->thumbnail != NULL) ? '<img class="img-thumbnail" width="80" src="' . esc(base_url('uploads/' . $row->thumbnail)) . '">' : '';
->>>>>>> df8c327176c0d2352c9b643155da517b0816f615
 			if ($row->status == 'draft')
 				$status = '<div class="d-block text-center badge bg-light text-dark">Draft</div>';
 			else if ($row->status == 'publish')
