@@ -16,7 +16,11 @@ class App extends BaseConfig
      *
      * E.g., http://example.com/
      */
+<<<<<<< HEAD
     public string $baseURL = 'https://dev.netgen.id/ecomel/catalog';
+=======
+    public string $baseURL = 'https://dev.netgen.id/website';
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
 
     /**
      * Allowed Hostnames in the Site URL other than the hostname in the baseURL.
@@ -133,7 +137,11 @@ class App extends BaseConfig
      * @see https://www.php.net/manual/en/timezones.php for list of timezones
      *      supported by PHP.
      */
+<<<<<<< HEAD
     public string $appTimezone = 'Asia/Makassar';
+=======
+    public string $appTimezone = 'UTC';
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
 
     /**
      * --------------------------------------------------------------------------

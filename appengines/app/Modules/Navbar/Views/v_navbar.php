@@ -27,19 +27,29 @@
   <div class="col-md-12">
     <div class="card">
       <div class="card-header d-flex justify-content-between align-items-center">
+<<<<<<< HEAD
         <label class="card-title mb-0"><?= $title ?></label>
+=======
+        <label class="card-title mb-0"><?php echo $title ?></label>
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
         <button id="add" class="btn btn-primary">
           <i class="bi bi-plus-circle-dotted"></i> Tambah
         </button>
       </div>
+<<<<<<< HEAD
 
       <div class="card-body">
         <div id="navbar" class="d-flex flex-column">
+=======
+      <div class="card-body ps-4 pe-4">
+        <div id="navbar">
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
           <?php
           $encrypter = \Config\Services::encrypter();
           foreach ($getNavbar as $row) {
             $id = bin2hex($encrypter->encrypt($row->id_navbar));
           ?>
+<<<<<<< HEAD
             <div
               id="<?= $id ?>"
               class="border rounded px-3 py-2 d-flex justify-content-between align-items-center bg-light navbar-item <?= ($row->kode_induk != 0) ? 'child' : '' ?>"
@@ -70,6 +80,37 @@
                   : '<span class="text-muted">---</span>'; ?>
               </div>
             </div>
+=======
+            <div id="<?= $id ?>"
+              class="navbar-item <?= ($row->kode_induk != 0) ? 'child' : '' ?>"
+              draggable="true"
+              data-status="<?= $row->status ?>">
+
+              <div class="d-flex justify-content-between align-items-center">
+                <div><?= esc($row->nama) ?></div>
+
+                <div class="d-flex align-items-center gap-2">
+                  <!-- Toggle Status -->
+                  <div class="form-check form-switch m-0">
+                    <input
+                      class="form-check-input toggle-status"
+                      type="checkbox"
+                      role="switch"
+                      data-id="<?= $id ?>"
+                      <?= $row->status === 'Y' ? 'checked' : '' ?>
+                      data-bs-toggle="tooltip"
+                      title="Aktif/Nonaktif">
+                  </div>
+
+                  <!-- Aksi -->
+                  <?= (!in_array($row->id_navbar, [11, 38, 33, 34, 35, 36]))
+                    ? aksi($id)
+                    : '<span class="float-end">---</span>'; ?>
+                </div>
+              </div>
+            </div>
+
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
           <?php } ?>
         </div>
       </div>
@@ -204,7 +245,10 @@ function aksi($id)
       formData.append(`items[${i}][id]`, el.id);
       formData.append(`items[${i}][code]`, el.dataset.code);
       formData.append(`items[${i}][parent]`, el.dataset.parent);
+<<<<<<< HEAD
       formData.append(`items[${i}][sort_order]`, i + 1); // urutan disini
+=======
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
     });
     formData.append(tokenName, tokenValue);
 

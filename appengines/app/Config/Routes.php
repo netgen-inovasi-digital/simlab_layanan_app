@@ -1,11 +1,16 @@
 <?php
+<<<<<<< HEAD
 
+=======
+// cek ini seharusnya diedit
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
 use CodeIgniter\Router\RouteCollection;
 
 /**
  * @var RouteCollection $routes
  */
 $routes->get('/', 'Website::index');
+<<<<<<< HEAD
 // login route
 $routes->get('login', 'Auth::index');
 $routes->post('login/auth', 'Auth::act');
@@ -22,6 +27,16 @@ $routes->get('reset/(:any)', 'Auth::resetPassword/$1');
 $routes->post('reset/auth', 'Auth::sendPassword');
 
 $routes->get('logout', 'Auth::logout');
+=======
+
+$routes->get('login', 'Auth::index');
+$routes->post('login/auth', 'Auth::act');
+$routes->get('logout', 'Auth::logout');
+$routes->get('forgot', 'Auth::forgot');
+$routes->post('forgot/auth', 'Auth::sendReset');
+$routes->get('reset/(:any)', 'Auth::resetPassword/$1');
+$routes->post('reset/auth', 'Auth::sendPassword');
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
 $routes->get('password', 'Password::index');
 $routes->post('password/submit', 'Password::submit');
 
@@ -34,7 +49,11 @@ foreach(glob(APPPATH . 'Modules/*', GLOB_ONLYDIR) as $item_dir) {
     $moduleName = basename($item_dir);
 
     if (file_exists($item_dir . '/Routes.php')) {
+<<<<<<< HEAD
         if (in_array($moduleName, [ 'Dashboard', 'Hero', 'Konfigurasi', 'Layanan', 'Menu', 'Mitra', 'Navbar', 'Team', 'Landing',  'Otoritas', 'Pages', 'Pengumuman', 'Role', 'Sosmed', 'User', 'Order', 'Produk', 'Rekening', 'Motif', 'Ukuran', 'Warna' ])) {
+=======
+        if (in_array($moduleName, ['Categories', 'Dashboard', 'Hero', 'Konfigurasi', 'Layanan', 'Menu', 'Mitra', 'Navbar', 'Team', 'Landing',  'Otoritas', 'Pages', 'Pengumuman', 'Posts', 'Role', 'Sosmed', 'User'])) {
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
             // Beri filter auth hanya untuk module admin
             $routes->group('', ['filter' => 'auth'], static function($routes) use ($item_dir) {
                 require_once $item_dir . '/Routes.php';
@@ -44,4 +63,9 @@ foreach(glob(APPPATH . 'Modules/*', GLOB_ONLYDIR) as $item_dir) {
             require_once $item_dir . '/Routes.php';
         }
     }
+<<<<<<< HEAD
 }
+=======
+}
+
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615

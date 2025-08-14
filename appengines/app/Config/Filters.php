@@ -71,7 +71,11 @@ class Filters extends BaseFilters
     public array $globals = [
         'before' => [
             // 'honeypot',
+<<<<<<< HEAD
             'csrf' => ['except' => ['api/*', 'order-status/search', 'checkout/calculateRajaOngkirShipping', 'checkout/getCartWeight']],
+=======
+            'csrf',
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
             // 'invalidchars',
         ],
         'after' => [

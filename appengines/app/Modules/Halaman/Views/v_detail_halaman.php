@@ -1,5 +1,10 @@
+<<<<<<< HEAD
 <div class="container py-5 mt-4">
     <div class="mx-auto mt-3" style="max-width: 800px;">
+=======
+<div class="container py-5">
+    <div class="mx-auto" style="max-width: 800px;">
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
 
         <!-- Judul Post -->
         <h1 class="fw-bold display-5 mb-3"><?= esc($halaman->title) ?></h1>
@@ -10,7 +15,11 @@
                 <i class="bi bi-person-circle me-2"></i> <?= esc($halaman->nama) ?>
             </div>
             <div class="me-4 d-flex align-items-center">
+<<<<<<< HEAD
                 <i class="bi bi-calendar-event me-2"></i> Diperbarui pada  <?= formatTanggalIndo($halaman->created_at) ?>
+=======
+                <i class="bi bi-calendar-event me-2"></i> <?= date('d M Y', strtotime($halaman->published_at)) ?>
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
             </div>
             <div class="d-flex align-items-center"><i class="bi bi-eye me-1"></i> Dilihat <?= esc($halaman->views) ?? 0 ?> kali</div>
         </div>
@@ -30,7 +39,11 @@
             </div>
             <div class="d-flex gap-2">
                 <?php foreach ($getSosmed as $sosmed) : ?>
+<<<<<<< HEAD
                     <a href="<?= $sosmed->link ?>" class="btn btn-outline-primary btn-sm"><i class="bi bi-<?= $sosmed->icon ?>"></i></a>
+=======
+                    <a href="<?= $sosmed->link ?>" class="btn btn-outline-primary btn-sm"><i class="bi <?= $sosmed->icon ?>"></i></a>
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
                 <?php endforeach; ?>
             </div>
         </div>

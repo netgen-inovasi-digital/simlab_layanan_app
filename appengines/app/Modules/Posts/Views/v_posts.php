@@ -3,7 +3,10 @@
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <label class="card-title mb-0"><?php echo $title ?></label>
+<<<<<<< HEAD
 
+=======
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
                 <button id="add" class="btn btn-primary">
                     <i class="bi bi-plus-circle-dotted"></i> Tambah
                 </button>
@@ -160,6 +163,7 @@
         input.onchange = async () => {
             var file = input.files[0];
             if (file) {
+<<<<<<< HEAD
                 const maxSizeMB = 2;
                 const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
 
@@ -218,10 +222,40 @@
                         }
                     });
                 };
+=======
+                var formData = new FormData();
+                formData.append('upload', file);
+
+                saveData({
+                    url: '<?= base_url('posts/upload') ?>',
+                    formData: formData,
+                    onSuccess: (json) => {
+                        if (json && json.url) {
+                            // Sisipkan gambar
+                            const range = quill.getSelection();
+                            quill.insertEmbed(range.index, 'image', json.url);
+
+                            // Update token CSRF untuk upload berikutnya
+                            if (json.xname && json.xhash) {
+                                document.querySelectorAll('[name="' + json.xname + '"]').forEach(input => {
+                                    input.value = json.xhash;
+                                });
+                            }
+                        } else {
+                            alert('Upload gagal');
+                        }
+                    },
+                    onError: (err) => {
+                        console.error('Upload error:', err);
+                        alert('Upload error.');
+                    }
+                });
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
             }
         };
     });
 
+<<<<<<< HEAD
     // ===== validasi gambar ===== //
     document.querySelector('#thumbnail').addEventListener('change', function() {
         var file = this.files[0];
@@ -248,6 +282,8 @@
         }
     });
 
+=======
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
     // ===== nama dan slug ===== //
     var namaInput = document.querySelector('input[name="title"]');
     var slugInput = document.querySelector('input[name="slug"]');
@@ -536,6 +572,10 @@
         onError,
     }) {
         showLoading();
+<<<<<<< HEAD
+=======
+
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
         const csrfInput = document.querySelector('[name="<?= csrf_token() ?>"]');
         const csrfToken = csrfInput ? csrfInput.value : '';
 
@@ -562,6 +602,10 @@
 
                 if ($('#modalForm').hasClass('show')) $('#modalForm').modal('hide');
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
                 if (data.res === true) {
                     if (typeof table !== 'undefined') table.fetchData({
                         reload: true
@@ -618,9 +662,13 @@
                 <div class="row mb-2">
                     <div class="col">
                         <label class="col-md-3 col-form-label">Gambar</label>
+<<<<<<< HEAD
                         <input id="thumbnail" name="thumbnail" type="file" class="form-control" accept="image/*">
                         <small class="text-muted" id="ketThumbnail" style="font-size: 11px;">Upload maks. 2MB. JPG, JPEG, atau PNG</small>
                         <small class="text-danger d-none" id="errorMsg">Hanya file gambar yang diperbolehkan!</small>
+=======
+                        <input name="thumbnail" type="file" class="form-control">
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
                     </div>
                     <div class="col">
                         <label class="col-md-3 col-form-label">Tanggal</label>
@@ -637,10 +685,15 @@
                     <div class="col">
                         <label for="konten" class="col-md-3 col-form-label">Konten Post</label>
                         <div id="toolbar"></div>
+<<<<<<< HEAD
                         <div id="quill-editor" spellcheck="false" autocorrect="off" autocomplete="off" autocapitalize="off" style="height: 250px;"></div>
                         <textarea name="konten" id="konten" hidden></textarea>
                         <small>Upload gambar maks. 2MB. Hanya file JPG, JPEG, atau PNG.</small>
 
+=======
+                        <div id="quill-editor" style="height: 250px;"></div>
+                        <textarea name="konten" id="konten" hidden></textarea>
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
                     </div>
                 </div>
                 <div class="row mb-2">

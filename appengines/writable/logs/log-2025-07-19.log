@@ -1,179 +1,292 @@
+<<<<<<< HEAD
 WARNING - 2025-07-19 06:36:52 --> [DEPRECATED] Creation of dynamic property App\Controllers\Website::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+WARNING - 2025-07-19 13:15:26 --> [DEPRECATED] Creation of dynamic property App\Controllers\Website::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 DEBUG - 2025-07-19 06:36:52 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 WARNING - 2025-07-19 06:36:54 --> [DEPRECATED] Creation of dynamic property Modules\Katalog\Controllers\Katalog::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+DEBUG - 2025-07-19 13:15:26 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-07-19 13:15:30 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+INFO - 2025-07-19 13:15:47 --> CSRF token verified.
+DEBUG - 2025-07-19 13:15:47 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-07-19 13:15:47 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-07-19 13:15:47 --> [DEPRECATED] Creation of dynamic property Modules\Dashboard\Controllers\Dashboard::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 DEBUG - 2025-07-19 06:36:55 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 WARNING - 2025-07-19 09:02:10 --> [DEPRECATED] Creation of dynamic property Modules\Katalog\Controllers\Katalog::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+DEBUG - 2025-07-19 13:15:52 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-07-19 13:15:52 --> [DEPRECATED] Creation of dynamic property Modules\Posts\Controllers\Posts::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 DEBUG - 2025-07-19 09:02:10 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 DEBUG - 2025-07-19 13:08:57 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 DEBUG - 2025-07-19 13:08:58 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 DEBUG - 2025-07-19 13:11:08 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 DEBUG - 2025-07-19 13:11:08 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 WARNING - 2025-07-19 13:11:13 --> [DEPRECATED] Creation of dynamic property App\Controllers\Website::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+DEBUG - 2025-07-19 13:15:52 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-07-19 13:15:52 --> [DEPRECATED] Creation of dynamic property Modules\Posts\Controllers\Posts::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 DEBUG - 2025-07-19 13:11:13 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 DEBUG - 2025-07-19 13:11:32 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 INFO - 2025-07-19 13:11:35 --> CSRF token verified.
 DEBUG - 2025-07-19 13:11:35 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 DEBUG - 2025-07-19 13:11:35 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 WARNING - 2025-07-19 13:11:35 --> [DEPRECATED] Creation of dynamic property Modules\Dashboard\Controllers\Dashboard::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+INFO - 2025-07-19 13:16:28 --> CSRF token verified.
+DEBUG - 2025-07-19 13:16:28 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-07-19 13:16:28 --> [DEPRECATED] Creation of dynamic property Modules\Posts\Controllers\Posts::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 DEBUG - 2025-07-19 13:11:38 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 WARNING - 2025-07-19 13:11:38 --> [DEPRECATED] Creation of dynamic property Modules\Posts\Controllers\Posts::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+DEBUG - 2025-07-19 13:16:28 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-07-19 13:16:28 --> [DEPRECATED] Creation of dynamic property Modules\Posts\Controllers\Posts::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 DEBUG - 2025-07-19 13:11:38 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 WARNING - 2025-07-19 13:11:38 --> [DEPRECATED] Creation of dynamic property Modules\Posts\Controllers\Posts::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+WARNING - 2025-07-19 13:16:37 --> [DEPRECATED] Creation of dynamic property App\Controllers\Website::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 DEBUG - 2025-07-19 13:11:40 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 WARNING - 2025-07-19 13:11:40 --> [DEPRECATED] Creation of dynamic property Modules\Posts\Controllers\Posts::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+DEBUG - 2025-07-19 13:16:37 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-07-19 13:17:36 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-07-19 13:17:36 --> [DEPRECATED] Creation of dynamic property Modules\Posts\Controllers\Posts::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 INFO - 2025-07-19 13:11:47 --> CSRF token verified.
 DEBUG - 2025-07-19 13:11:47 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 WARNING - 2025-07-19 13:11:47 --> [DEPRECATED] Creation of dynamic property Modules\Posts\Controllers\Posts::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+INFO - 2025-07-19 13:17:46 --> CSRF token verified.
+DEBUG - 2025-07-19 13:17:46 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-07-19 13:17:46 --> [DEPRECATED] Creation of dynamic property Modules\Posts\Controllers\Posts::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 DEBUG - 2025-07-19 13:11:47 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 WARNING - 2025-07-19 13:11:47 --> [DEPRECATED] Creation of dynamic property Modules\Posts\Controllers\Posts::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+DEBUG - 2025-07-19 13:17:46 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-07-19 13:17:46 --> [DEPRECATED] Creation of dynamic property Modules\Posts\Controllers\Posts::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 DEBUG - 2025-07-19 13:11:50 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 WARNING - 2025-07-19 13:11:50 --> [DEPRECATED] Creation of dynamic property Modules\Dashboard\Controllers\Dashboard::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+WARNING - 2025-07-19 13:18:03 --> [DEPRECATED] Creation of dynamic property App\Controllers\Website::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 WARNING - 2025-07-19 13:11:53 --> [DEPRECATED] Creation of dynamic property App\Controllers\Website::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+DEBUG - 2025-07-19 13:18:03 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-07-19 13:21:59 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-07-19 13:21:59 --> [DEPRECATED] Creation of dynamic property Modules\Posts\Controllers\Posts::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 DEBUG - 2025-07-19 13:11:53 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 WARNING - 2025-07-19 13:11:56 --> [DEPRECATED] Creation of dynamic property App\Controllers\Website::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+DEBUG - 2025-07-19 13:21:59 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-07-19 13:21:59 --> [DEPRECATED] Creation of dynamic property Modules\Posts\Controllers\Posts::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 DEBUG - 2025-07-19 13:11:56 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 DEBUG - 2025-07-19 13:12:04 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 WARNING - 2025-07-19 13:12:04 --> [DEPRECATED] Creation of dynamic property Modules\Posts\Controllers\Posts::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+DEBUG - 2025-07-19 13:22:01 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-07-19 13:22:01 --> [DEPRECATED] Creation of dynamic property Modules\Posts\Controllers\Posts::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 DEBUG - 2025-07-19 13:12:18 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 WARNING - 2025-07-19 13:12:18 --> [DEPRECATED] Creation of dynamic property Modules\Posts\Controllers\Posts::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+INFO - 2025-07-19 13:22:07 --> CSRF token verified.
+DEBUG - 2025-07-19 13:22:07 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-07-19 13:22:07 --> [DEPRECATED] Creation of dynamic property Modules\Posts\Controllers\Posts::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 DEBUG - 2025-07-19 13:12:19 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 WARNING - 2025-07-19 13:12:19 --> [DEPRECATED] Creation of dynamic property Modules\Posts\Controllers\Posts::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+DEBUG - 2025-07-19 13:22:07 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-07-19 13:22:07 --> [DEPRECATED] Creation of dynamic property Modules\Posts\Controllers\Posts::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 DEBUG - 2025-07-19 13:12:22 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 WARNING - 2025-07-19 13:12:22 --> [DEPRECATED] Creation of dynamic property Modules\Posts\Controllers\Posts::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+WARNING - 2025-07-19 13:22:12 --> [DEPRECATED] Creation of dynamic property App\Controllers\Website::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 DEBUG - 2025-07-19 13:12:22 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 WARNING - 2025-07-19 13:12:22 --> [DEPRECATED] Creation of dynamic property Modules\Posts\Controllers\Posts::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+DEBUG - 2025-07-19 13:22:12 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-07-19 13:22:25 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-07-19 13:22:25 --> [DEPRECATED] Creation of dynamic property Modules\Posts\Controllers\Posts::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 INFO - 2025-07-19 13:14:36 --> CSRF token verified.
 DEBUG - 2025-07-19 13:14:36 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 WARNING - 2025-07-19 13:14:36 --> [DEPRECATED] Creation of dynamic property Modules\Posts\Controllers\Posts::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+DEBUG - 2025-07-19 13:22:25 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-07-19 13:22:25 --> [DEPRECATED] Creation of dynamic property Modules\Posts\Controllers\Posts::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 DEBUG - 2025-07-19 13:14:36 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 WARNING - 2025-07-19 13:14:36 --> [DEPRECATED] Creation of dynamic property Modules\Posts\Controllers\Posts::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+INFO - 2025-07-19 13:22:47 --> CSRF token verified.
+DEBUG - 2025-07-19 13:22:47 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-07-19 13:22:47 --> [DEPRECATED] Creation of dynamic property Modules\Posts\Controllers\Posts::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 WARNING - 2025-07-19 13:14:41 --> [DEPRECATED] Creation of dynamic property App\Controllers\Website::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+DEBUG - 2025-07-19 13:22:47 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-07-19 13:22:47 --> [DEPRECATED] Creation of dynamic property Modules\Posts\Controllers\Posts::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 DEBUG - 2025-07-19 13:14:41 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 DEBUG - 2025-07-19 13:24:24 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 DEBUG - 2025-07-19 13:24:24 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
@@ -183,51 +296,82 @@ INFO - 2025-07-19 13:24:45 --> CSRF token verified.
 DEBUG - 2025-07-19 13:24:45 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 DEBUG - 2025-07-19 13:24:45 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 WARNING - 2025-07-19 13:24:45 --> [DEPRECATED] Creation of dynamic property Modules\Dashboard\Controllers\Dashboard::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+WARNING - 2025-07-19 13:22:53 --> [DEPRECATED] Creation of dynamic property App\Controllers\Website::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 DEBUG - 2025-07-19 13:24:47 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 WARNING - 2025-07-19 13:24:47 --> [DEPRECATED] Creation of dynamic property Modules\Posts\Controllers\Posts::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+DEBUG - 2025-07-19 13:22:53 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-07-19 13:22:56 --> [DEPRECATED] Creation of dynamic property Modules\Berita\Controllers\Berita::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 DEBUG - 2025-07-19 13:24:47 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 WARNING - 2025-07-19 13:24:47 --> [DEPRECATED] Creation of dynamic property Modules\Posts\Controllers\Posts::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+DEBUG - 2025-07-19 13:22:56 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-07-19 13:23:10 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-07-19 13:23:10 --> [DEPRECATED] Creation of dynamic property Modules\Posts\Controllers\Posts::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 DEBUG - 2025-07-19 13:24:49 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 WARNING - 2025-07-19 13:24:49 --> [DEPRECATED] Creation of dynamic property Modules\Posts\Controllers\Posts::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+DEBUG - 2025-07-19 13:23:10 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-07-19 13:23:10 --> [DEPRECATED] Creation of dynamic property Modules\Posts\Controllers\Posts::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 DEBUG - 2025-07-19 13:24:49 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 WARNING - 2025-07-19 13:24:49 --> [DEPRECATED] Creation of dynamic property Modules\Posts\Controllers\Posts::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+WARNING - 2025-07-19 13:30:38 --> [DEPRECATED] Creation of dynamic property App\Controllers\Website::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 WARNING - 2025-07-19 13:24:56 --> [DEPRECATED] Creation of dynamic property App\Controllers\Website::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+DEBUG - 2025-07-19 13:30:38 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+INFO - 2025-07-19 13:31:23 --> CSRF token verified.
+DEBUG - 2025-07-19 13:31:23 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-07-19 13:31:23 --> [DEPRECATED] Creation of dynamic property Modules\Posts\Controllers\Posts::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 DEBUG - 2025-07-19 13:24:56 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 DEBUG - 2025-07-19 13:36:34 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 DEBUG - 2025-07-19 13:36:34 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
@@ -239,288 +383,484 @@ INFO - 2025-07-19 13:36:51 --> CSRF token verified.
 DEBUG - 2025-07-19 13:36:51 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 DEBUG - 2025-07-19 13:36:51 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 WARNING - 2025-07-19 13:36:51 --> [DEPRECATED] Creation of dynamic property Modules\Dashboard\Controllers\Dashboard::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+DEBUG - 2025-07-19 13:31:23 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-07-19 13:31:23 --> [DEPRECATED] Creation of dynamic property Modules\Posts\Controllers\Posts::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 DEBUG - 2025-07-19 13:37:01 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 WARNING - 2025-07-19 13:37:01 --> [DEPRECATED] Creation of dynamic property Modules\Posts\Controllers\Posts::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+WARNING - 2025-07-19 13:31:29 --> [DEPRECATED] Creation of dynamic property App\Controllers\Website::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 DEBUG - 2025-07-19 13:37:01 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 WARNING - 2025-07-19 13:37:01 --> [DEPRECATED] Creation of dynamic property Modules\Posts\Controllers\Posts::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+DEBUG - 2025-07-19 13:31:29 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-07-19 13:33:59 --> [DEPRECATED] Creation of dynamic property App\Controllers\Website::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 WARNING - 2025-07-19 13:38:50 --> [DEPRECATED] Creation of dynamic property App\Controllers\Website::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+DEBUG - 2025-07-19 13:33:59 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-07-19 13:34:09 --> [DEPRECATED] Creation of dynamic property App\Controllers\Website::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 DEBUG - 2025-07-19 13:38:50 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 DEBUG - 2025-07-19 13:39:04 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 WARNING - 2025-07-19 13:39:04 --> [DEPRECATED] Creation of dynamic property Modules\Navbar\Controllers\Navbar::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+DEBUG - 2025-07-19 13:34:09 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-07-19 13:34:15 --> [DEPRECATED] Creation of dynamic property App\Controllers\Website::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 DEBUG - 2025-07-19 13:39:07 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 WARNING - 2025-07-19 13:39:07 --> [DEPRECATED] Creation of dynamic property Modules\Hero\Controllers\Hero::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+DEBUG - 2025-07-19 13:34:15 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-07-19 13:35:14 --> [DEPRECATED] Creation of dynamic property App\Controllers\Website::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 DEBUG - 2025-07-19 13:39:08 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 WARNING - 2025-07-19 13:39:08 --> [DEPRECATED] Creation of dynamic property Modules\Layanan\Controllers\Layanan::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+DEBUG - 2025-07-19 13:35:14 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-07-19 13:36:03 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-07-19 13:36:03 --> [DEPRECATED] Creation of dynamic property Modules\Posts\Controllers\Posts::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 DEBUG - 2025-07-19 13:39:09 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 WARNING - 2025-07-19 13:39:09 --> [DEPRECATED] Creation of dynamic property Modules\Layanan\Controllers\Layanan::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+DEBUG - 2025-07-19 13:36:03 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-07-19 13:36:03 --> [DEPRECATED] Creation of dynamic property Modules\Posts\Controllers\Posts::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 DEBUG - 2025-07-19 13:41:36 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 WARNING - 2025-07-19 13:41:36 --> [DEPRECATED] Creation of dynamic property Modules\Dashboard\Controllers\Dashboard::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+DEBUG - 2025-07-19 13:36:06 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-07-19 13:36:06 --> [DEPRECATED] Creation of dynamic property Modules\Pengumuman\Controllers\Pengumuman::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 DEBUG - 2025-07-19 13:41:44 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 WARNING - 2025-07-19 13:41:44 --> [DEPRECATED] Creation of dynamic property Modules\Layanan\Controllers\Layanan::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+DEBUG - 2025-07-19 13:36:06 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-07-19 13:36:06 --> [DEPRECATED] Creation of dynamic property Modules\Pengumuman\Controllers\Pengumuman::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 DEBUG - 2025-07-19 13:41:45 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 WARNING - 2025-07-19 13:41:45 --> [DEPRECATED] Creation of dynamic property Modules\Layanan\Controllers\Layanan::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+DEBUG - 2025-07-19 13:36:11 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-07-19 13:36:11 --> [DEPRECATED] Creation of dynamic property Modules\Pages\Controllers\Pages::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 INFO - 2025-07-19 13:41:50 --> CSRF token verified.
 DEBUG - 2025-07-19 13:41:50 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 WARNING - 2025-07-19 13:41:50 --> [DEPRECATED] Creation of dynamic property Modules\Layanan\Controllers\Layanan::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+DEBUG - 2025-07-19 13:36:11 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-07-19 13:36:11 --> [DEPRECATED] Creation of dynamic property Modules\Pages\Controllers\Pages::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 DEBUG - 2025-07-19 13:41:50 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 WARNING - 2025-07-19 13:41:50 --> [DEPRECATED] Creation of dynamic property Modules\Layanan\Controllers\Layanan::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+DEBUG - 2025-07-19 13:36:12 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-07-19 13:36:12 --> [DEPRECATED] Creation of dynamic property Modules\Pengumuman\Controllers\Pengumuman::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 WARNING - 2025-07-19 13:41:55 --> [DEPRECATED] Creation of dynamic property Modules\Layout\Controllers\Layout::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+DEBUG - 2025-07-19 13:36:12 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-07-19 13:36:12 --> [DEPRECATED] Creation of dynamic property Modules\Pengumuman\Controllers\Pengumuman::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 INFO - 2025-07-19 13:41:57 --> CSRF token verified.
 WARNING - 2025-07-19 13:41:57 --> [DEPRECATED] Creation of dynamic property Modules\Layout\Controllers\Layout::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+DEBUG - 2025-07-19 13:36:14 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-07-19 13:36:14 --> [DEPRECATED] Creation of dynamic property Modules\Pages\Controllers\Pages::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 WARNING - 2025-07-19 13:42:00 --> [DEPRECATED] Creation of dynamic property App\Controllers\Website::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+DEBUG - 2025-07-19 13:36:14 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-07-19 13:36:14 --> [DEPRECATED] Creation of dynamic property Modules\Pages\Controllers\Pages::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 DEBUG - 2025-07-19 13:42:00 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 WARNING - 2025-07-19 13:42:04 --> [DEPRECATED] Creation of dynamic property Modules\Halaman\Controllers\Halaman::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+DEBUG - 2025-07-19 13:36:16 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-07-19 13:36:16 --> [DEPRECATED] Creation of dynamic property Modules\Navbar\Controllers\Navbar::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 DEBUG - 2025-07-19 13:42:04 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 DEBUG - 2025-07-19 13:42:07 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 WARNING - 2025-07-19 13:42:07 --> [DEPRECATED] Creation of dynamic property Modules\Dashboard\Controllers\Dashboard::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+DEBUG - 2025-07-19 13:36:17 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-07-19 13:36:17 --> [DEPRECATED] Creation of dynamic property Modules\Hero\Controllers\Hero::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 WARNING - 2025-07-19 13:42:14 --> [DEPRECATED] Creation of dynamic property App\Controllers\Website::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+DEBUG - 2025-07-19 13:36:19 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-07-19 13:36:19 --> [DEPRECATED] Creation of dynamic property Modules\Layanan\Controllers\Layanan::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 DEBUG - 2025-07-19 13:42:14 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 INFO - 2025-07-19 13:42:32 --> CSRF token verified.
 WARNING - 2025-07-19 13:42:32 --> [DEPRECATED] Creation of dynamic property Modules\Layout\Controllers\Layout::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+DEBUG - 2025-07-19 14:01:02 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-07-19 14:01:02 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-07-19 14:01:02 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+INFO - 2025-07-19 14:01:06 --> CSRF token verified.
+DEBUG - 2025-07-19 14:01:06 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-07-19 14:01:06 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-07-19 14:01:06 --> [DEPRECATED] Creation of dynamic property Modules\Dashboard\Controllers\Dashboard::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 DEBUG - 2025-07-19 13:42:35 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 WARNING - 2025-07-19 13:42:35 --> [DEPRECATED] Creation of dynamic property Modules\Posts\Controllers\Posts::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+WARNING - 2025-07-19 14:01:07 --> [DEPRECATED] Creation of dynamic property Modules\Layout\Controllers\Layout::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 DEBUG - 2025-07-19 13:42:35 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 WARNING - 2025-07-19 13:42:35 --> [DEPRECATED] Creation of dynamic property Modules\Posts\Controllers\Posts::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+DEBUG - 2025-07-19 14:01:09 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-07-19 14:01:09 --> [DEPRECATED] Creation of dynamic property Modules\Team\Controllers\Team::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 WARNING - 2025-07-19 13:43:20 --> [DEPRECATED] Creation of dynamic property Modules\Layout\Controllers\Layout::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+DEBUG - 2025-07-19 14:07:39 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-07-19 14:07:39 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-07-19 14:07:39 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+INFO - 2025-07-19 14:07:41 --> CSRF token verified.
+DEBUG - 2025-07-19 14:07:41 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-07-19 14:07:41 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-07-19 14:07:41 --> [DEPRECATED] Creation of dynamic property Modules\Dashboard\Controllers\Dashboard::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 INFO - 2025-07-19 13:43:24 --> CSRF token verified.
 WARNING - 2025-07-19 13:43:24 --> [DEPRECATED] Creation of dynamic property Modules\Layout\Controllers\Layout::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+WARNING - 2025-07-19 14:07:42 --> [DEPRECATED] Creation of dynamic property Modules\Layout\Controllers\Layout::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 WARNING - 2025-07-19 13:43:28 --> [DEPRECATED] Creation of dynamic property Modules\Layout\Controllers\Layout::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+INFO - 2025-07-19 14:07:44 --> CSRF token verified.
+WARNING - 2025-07-19 14:07:44 --> [DEPRECATED] Creation of dynamic property Modules\Layout\Controllers\Layout::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 WARNING - 2025-07-19 13:43:32 --> [DEPRECATED] Creation of dynamic property Modules\Layout\Controllers\Layout::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+WARNING - 2025-07-19 14:07:46 --> [DEPRECATED] Creation of dynamic property App\Controllers\Website::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 INFO - 2025-07-19 13:43:44 --> CSRF token verified.
 WARNING - 2025-07-19 13:43:44 --> [DEPRECATED] Creation of dynamic property Modules\Layout\Controllers\Layout::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+DEBUG - 2025-07-19 14:07:46 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+INFO - 2025-07-19 14:08:06 --> CSRF token verified.
+WARNING - 2025-07-19 14:08:06 --> [DEPRECATED] Creation of dynamic property Modules\Layout\Controllers\Layout::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 WARNING - 2025-07-19 13:43:44 --> [DEPRECATED] Creation of dynamic property Modules\Layout\Controllers\Layout::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+WARNING - 2025-07-19 14:08:12 --> [DEPRECATED] Creation of dynamic property Modules\Layout\Controllers\Layout::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 WARNING - 2025-07-19 13:43:57 --> [DEPRECATED] Creation of dynamic property App\Controllers\Website::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+DEBUG - 2025-07-19 14:08:14 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-07-19 14:08:14 --> [DEPRECATED] Creation of dynamic property Modules\Mitra\Controllers\Mitra::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 DEBUG - 2025-07-19 13:43:57 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 DEBUG - 2025-07-19 13:44:22 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 WARNING - 2025-07-19 13:44:22 --> [DEPRECATED] Creation of dynamic property Modules\Mitra\Controllers\Mitra::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+WARNING - 2025-07-19 14:32:29 --> [DEPRECATED] Creation of dynamic property App\Controllers\Website::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 DEBUG - 2025-07-19 13:47:20 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 WARNING - 2025-07-19 13:47:20 --> [DEPRECATED] Creation of dynamic property Modules\Mitra\Controllers\Mitra::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+DEBUG - 2025-07-19 14:32:29 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-07-19 16:24:45 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-07-19 16:24:45 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-07-19 16:24:45 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+INFO - 2025-07-19 16:24:50 --> CSRF token verified.
+DEBUG - 2025-07-19 16:24:50 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-07-19 16:24:50 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-07-19 16:24:50 --> [DEPRECATED] Creation of dynamic property Modules\Dashboard\Controllers\Dashboard::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 DEBUG - 2025-07-19 13:47:20 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 WARNING - 2025-07-19 13:47:20 --> [DEPRECATED] Creation of dynamic property Modules\Mitra\Controllers\Mitra::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+DEBUG - 2025-07-19 17:28:01 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-07-19 17:28:01 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+INFO - 2025-07-19 17:28:05 --> CSRF token verified.
+DEBUG - 2025-07-19 17:28:05 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-07-19 17:28:05 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-07-19 17:28:05 --> [DEPRECATED] Creation of dynamic property Modules\Dashboard\Controllers\Dashboard::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 DEBUG - 2025-07-19 13:47:24 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 WARNING - 2025-07-19 13:47:24 --> [DEPRECATED] Creation of dynamic property Modules\Mitra\Controllers\Mitra::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+DEBUG - 2025-07-19 17:28:09 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-07-19 17:28:09 --> [DEPRECATED] Creation of dynamic property Modules\Menu\Controllers\Menu::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 DEBUG - 2025-07-19 13:47:24 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 WARNING - 2025-07-19 13:47:24 --> [DEPRECATED] Creation of dynamic property Modules\Mitra\Controllers\Mitra::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+DEBUG - 2025-07-19 17:28:11 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-07-19 17:28:11 --> [DEPRECATED] Creation of dynamic property Modules\Otoritas\Controllers\Otoritas::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 DEBUG - 2025-07-19 13:47:35 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 WARNING - 2025-07-19 13:47:35 --> [DEPRECATED] Creation of dynamic property Modules\Mitra\Controllers\Mitra::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+DEBUG - 2025-07-19 17:28:12 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-07-19 17:28:12 --> [DEPRECATED] Creation of dynamic property Modules\Otoritas\Controllers\Otoritas::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 DEBUG - 2025-07-19 13:47:35 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 WARNING - 2025-07-19 13:47:35 --> [DEPRECATED] Creation of dynamic property Modules\Mitra\Controllers\Mitra::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+DEBUG - 2025-07-19 17:28:15 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-07-19 17:28:15 --> [DEPRECATED] Creation of dynamic property Modules\Otoritas\Controllers\Otoritas::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
  4 SYSTEMPATH/Boot.php(334): CodeIgniter\CodeIgniter->run()
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+<<<<<<< HEAD
 DEBUG - 2025-07-19 13:47:38 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 WARNING - 2025-07-19 13:47:38 --> [DEPRECATED] Creation of dynamic property Modules\Mitra\Controllers\Mitra::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
@@ -1443,6 +1783,10 @@ WARNING - 2025-07-19 15:47:01 --> [DEPRECATED] Creation of dynamic property Modu
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
 DEBUG - 2025-07-19 15:47:04 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 WARNING - 2025-07-19 15:47:04 --> [DEPRECATED] Creation of dynamic property Modules\Dashboard\Controllers\Dashboard::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+=======
+DEBUG - 2025-07-19 17:28:22 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-07-19 17:28:22 --> [DEPRECATED] Creation of dynamic property Modules\Otoritas\Controllers\Otoritas::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
  3 SYSTEMPATH/CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)

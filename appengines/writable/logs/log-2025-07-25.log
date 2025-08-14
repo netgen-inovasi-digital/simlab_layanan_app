@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 WARNING - 2025-07-25 02:45:20 --> [DEPRECATED] Creation of dynamic property App\Controllers\Website::$encrypter is deprecated in APPPATH/Controllers/BaseController.php on line 56.
  1 SYSTEMPATH/CodeIgniter.php(904): App\Controllers\BaseController->initController(Object(CodeIgniter\HTTP\IncomingRequest), Object(CodeIgniter\HTTP\Response), Object(CodeIgniter\Log\Logger))
  2 SYSTEMPATH/CodeIgniter.php(498): CodeIgniter\CodeIgniter->createController()
@@ -170,3 +171,7 @@ WARNING - 2025-07-25 10:55:17 --> [DEPRECATED] Creation of dynamic property Modu
  5 SYSTEMPATH/Boot.php(67): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  6 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
 DEBUG - 2025-07-25 10:55:17 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+=======
+DEBUG - 2025-07-25 00:43:07 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-07-25 00:43:07 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615

@@ -71,12 +71,38 @@ class Pengumuman extends BaseController
 		);
 
 		$model = new MyModel($this->table);
+<<<<<<< HEAD
 		if ($idenc == "") {
 			$res = $model->insertData($data);
 		} else {
 			// Edit data
 			$id = $this->encrypter->decrypt(hex2bin($idenc));
 			$res = $model->updateData($data, $this->id, $id);
+=======
+
+		// Hitung total data yang sedang tampil
+		$countTampil = $model->getCountAll('status', 'tampil');
+
+		if ($idenc == "") {
+			if ($statusBaru == 'tampil' && $countTampil >= 3) {
+				$res = 'limit';
+			} else {
+				$res = $model->insertData($data);
+			}
+		} else {
+			// Edit data
+			$id = $this->encrypter->decrypt(hex2bin($idenc));
+			$dataLama = $model->getDataById($this->id, $id); // ambil data lama
+
+			$statusLama = $dataLama->status ?? null;
+
+			// Kalau status lama ≠ tampil dan status baru = tampil, artinya ingin mengubah jadi tampil
+			if ($statusLama != 'tampil' && $statusBaru == 'tampil' && $countTampil >= 3) {
+				$res = 'limit';
+			} else {
+				$res = $model->updateData($data, $this->id, $id);
+			}
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
 		}
 
 		return $this->response->setJSON([
@@ -149,7 +175,11 @@ class Pengumuman extends BaseController
 			$isChecked = $row->status === 'tampil' ? 'checked' : '';
 			$status = '
 			<div class="form-check form-switch d-flex justify-content-center">
+<<<<<<< HEAD
 				<input class="form-check-input status-toggle-pengumuman" type="checkbox" 
+=======
+				<input class="form-check-input status-toggle" type="checkbox" 
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
 					data-id="' . $id . '" ' . $isChecked . ' data-bs-toggle="tooltip"
         	title="Aktif/Nonaktif">
 			</div>';
@@ -205,7 +235,21 @@ class Pengumuman extends BaseController
 		];
 
 		$model = new MyModel('pengumuman');
+<<<<<<< HEAD
 		$res = $model->updateData($data, $this->id, $id);
+=======
+		$countTampil = $model->getCountAll('status', 'tampil');
+		$dataLama = $model->getDataById($this->id, $id); // ambil data lama
+
+		$statusLama = $dataLama->status ?? null;
+
+		// Kalau status lama ≠ tampil dan status baru = tampil, artinya ingin mengubah jadi tampil
+		if ($statusLama != 'tampil' && $status == 'tampil' && $countTampil >= 3) {
+			$res = 'limit';
+		} else {
+			$res = $model->updateData($data, $this->id, $id);
+		}
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
 		return $this->response->setJSON(array('res' => $res, 'xhash' => csrf_hash()));
 	}
 }

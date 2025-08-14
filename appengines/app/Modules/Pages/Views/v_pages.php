@@ -166,6 +166,7 @@
         input.onchange = async () => {
             var file = input.files[0];
             if (file) {
+<<<<<<< HEAD
                 const maxSizeMB = 2;
                 const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
 
@@ -224,10 +225,40 @@
                         }
                     });
                 };
+=======
+                var formData = new FormData();
+                formData.append('upload', file);
+
+                saveData({
+                    url: '<?= base_url('pages/upload') ?>',
+                    formData: formData,
+                    onSuccess: (json) => {
+                        if (json && json.url) {
+                            // Sisipkan gambar
+                            const range = quill.getSelection();
+                            quill.insertEmbed(range.index, 'image', json.url);
+
+                            // Update token CSRF untuk upload berikutnya
+                            if (json.xname && json.xhash) {
+                                document.querySelectorAll('[name="' + json.xname + '"]').forEach(input => {
+                                    input.value = json.xhash;
+                                });
+                            }
+                        } else {
+                            alert('Upload gagal');
+                        }
+                    },
+                    onError: (err) => {
+                        console.error('Upload error:', err);
+                        alert('Upload error.');
+                    }
+                });
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
             }
         };
     });
 
+<<<<<<< HEAD
     function saveData({
         url,
         formData,
@@ -298,6 +329,10 @@
 
     // ===== nama dan slug ===== //
     var namaInput = document.querySelector('input[name="title"]');
+=======
+    // ===== nama dan slug ===== //
+    var namaInput = document.querySelector('input[name="nama"]');
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
     var slugInput = document.querySelector('input[name="slug"]');
 
     if (namaInput && slugInput) {
@@ -355,6 +390,7 @@
                     <div class="col">
                         <label for="konten" class="col-md-3 col-form-label">Konten</label>
                         <div id="toolbar"></div>
+<<<<<<< HEAD
                         <div id="quill-editor" spellcheck="false" autocorrect="off" autocomplete="off" autocapitalize="off" style="height: 400px;"></div>
                         <textarea name="konten" id="konten" hidden placeholder="Masukkan konten halaman"></textarea>
                         <small>Upload gambar maks. 2MB. Hanya file JPG, JPEG, atau PNG.</small>
@@ -369,6 +405,21 @@
                     <div class="col">
                         <label class="col-md-3 col-form-label">Author</label>
                         <input name="nama" style="max-width: 200px;" type="text" value="<?= $user->nama ?>" class="form-control bg-light" required readonly>
+=======
+                        <div id="quill-editor" style="height: 400px;"></div>
+                        <textarea name="konten" id="konten" hidden placeholder="Masukkan konten halaman"></textarea>
+                    </div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col">
+                        <label class="col-md-3 col-form-label">Tanggal</label>
+                        <input name="tanggal" id="tanggal-input" type="date" class="form-control"
+                            value="<?= esc(date('Y-m-d')) ?>" required>
+                    </div>
+                    <div class="col">
+                        <label class="col-md-3 col-form-label">Author</label>
+                        <input name="nama" type="text" value="<?= $user->nama ?>" class="form-control bg-light" required readonly>
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
                         <input name="user_id" type="text" value="<?= $user->id_user ?>" class="form-control" required hidden>
                     </div>
                     <div class="col">

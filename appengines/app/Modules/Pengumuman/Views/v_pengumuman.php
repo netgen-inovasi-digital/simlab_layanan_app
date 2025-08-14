@@ -45,7 +45,11 @@
         const formData = new FormData(form);
         const actionUrl = form.getAttribute('action');
 
+<<<<<<< HEAD
         saveDataPengumuman({
+=======
+        saveData({
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
             url: actionUrl,
             formData: formData,
             onSuccess: function(data) {
@@ -65,7 +69,11 @@
         });
     });
 
+<<<<<<< HEAD
     function saveDataPengumuman({
+=======
+    function saveData({
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
         url,
         formData,
         onSuccess,
@@ -137,7 +145,11 @@
     if (!window.statusToggleBound) {
         document.addEventListener('change', function(e) {
             const target = e.target;
+<<<<<<< HEAD
             if (target.classList.contains('status-toggle-pengumuman')) {
+=======
+            if (target.classList.contains('status-toggle')) {
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
                 const id = target.dataset.id;
                 const status = target.checked ? 'tampil' : 'tersembunyi';
                 const tokenName = "<?= csrf_token() ?>";

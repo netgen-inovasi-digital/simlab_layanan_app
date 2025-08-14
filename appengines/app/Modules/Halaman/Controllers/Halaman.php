@@ -23,7 +23,11 @@ class Halaman extends BaseController
 		// Ambil detail posting berdasarkan slug
 		$modelHalaman = new HalamanModel('pages p');
 
+<<<<<<< HEAD
 		$select = 'p.title, p.id_pages, p.slug, p.konten, u.nama, p.published_at, p.created_at, p.views';
+=======
+		$select = 'p.title, p.id_pages, p.slug, p.konten, u.nama, p.published_at, p.views';
+>>>>>>> df8c327176c0d2352c9b643155da517b0816f615
 
 		$join = [
 			'users u' => 'u.id_user = p.user_id',
