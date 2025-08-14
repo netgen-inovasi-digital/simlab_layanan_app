@@ -20,10 +20,9 @@
 </style>
 
 <div class="container py-5">
-    <div class="text-center mb-5 mt-5">
-        <h1 class="fw-bold">Berita & Acara Terbaru</h1>
-        <p class="text-muted">Dapatkan update terkini, wawasan menarik, dan informasi seputar kegiatan, event, serta perkembangan terbaru dari Ecomel</p>
-
+    <div class="text-center mb-5">
+        <h1 class="fw-bold">Berita & Informasi Terkini</h1>
+        <p class="text-muted">Temukan artikel, info layanan, dan solusi kesehatan terpercaya dari Klinik Medikidz untuk hidup yang lebih sehat.</p>
     </div>
 
     <!-- Search & Filter -->
@@ -60,7 +59,13 @@
             <div class="col">
                 <a href="<?= base_url('berita/' . $post->post_slug) ?>" class="text-decoration-none text-dark card-hover-link">
                     <div class="card h-100 border-0 shadow-sm transition-hover">
-                        <img src="<?= base_url('uploads/' . $post->thumbnail) ?>" class="card-img-top" style="height: 180px; object-fit: cover;">
+                        <img
+                            src="<?= !empty($post->thumbnail)
+                                        ? base_url('uploads/' . $post->thumbnail)
+                                        : 'https://placehold.co/300x180?text=No+Image&font=roboto' ?>"
+                            class="card-img-top"
+                            style="height: 180px; object-fit: cover;"
+                            alt="<?= esc($post->title) ?>">
                         <div class="card-body">
                             <!-- Username -->
                             <small class="text-muted d-block mb-2">
