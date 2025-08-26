@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title><?= $this->renderSection('title') ?> | Ecomel Sasirangan</title>
+  <title><?= $this->renderSection('title') ?> | Simlab</title>
   <link rel="icon" type="image/x-icon" href="<?= base_url('assets/img/favicon.ico?v=0.2') ?>">
   <link rel="stylesheet" href="<?= base_url('assets/css/bootstrap.min.css') ?>">
   <link rel="stylesheet" href="<?= base_url('assets/css/bootstrap-icons.min.css') ?>">
@@ -26,11 +26,10 @@
         <!-- Footer -->
         <footer class="mt-3 small footer">
           <div class="d-flex flex-column flex-md-row justify-content-between align-items-center">
-            <div>&copy; 2025. Netx Template.</div>
+            <div>&copy; 2025. Simlab.</div>
             <div class="mt-2 mt-md-0">
               <a href="<?= base_url() ?>" class=" mx-2">Ke Beranda</a>
               <a href="#" class="mx-2">Tentang Aplikasi</a>
-              <a href="#" class="mx-2">Tim Pengembang</a>
               <a href="#" class="mx-2">Kontak</a>
             </div>
           </div>

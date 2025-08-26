@@ -1,6 +1,6 @@
 :root {
-    --primary: #218A70;
-    --primary-hover: #1C6B64;
+    --primary: #0d6efd;
+    --primary-hover: #185cc2;
     --secondary: #707070;
     --secondary-hover: #5a5a5a;
     --info: #39A5D6;
@@ -90,7 +90,7 @@
 }
 
 body.bg-custom-green {
-    background: linear-gradient(120deg, #218A70 0%, #218A70 100%);
+    background: linear-gradient(120deg, #0d6efd 0%, #0d6efd      100%);
     min-height: 100vh;
     font-family: 'Quicksand', sans-serif;
 }

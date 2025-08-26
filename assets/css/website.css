@@ -1,6 +1,6 @@
 :root {
-    --primary: #218A70;
-    --primary-hover: #1C6B64;
+    --primary: #0d6efd;
+    --primary-hover: #185cc2;
     --secondary: #707070;
     --secondary-hover: #5a5a5a;
     --info: #39A5D6;
@@ -54,6 +54,87 @@
 .text-danger {
   color: var(--danger) !important;
 }
+.rounded-pill{
+    border: none !important;
+    height: 45px;
+    width: 80%;
+}
+
+.textarea-pill {
+  border: none !important;
+  width: 80%;
+  height: 100px; /* lebih tinggi dari input biasa */
+  padding: 10px 20px;
+  border-radius: 1rem !important;
+  resize: none;
+}
+
+
+input::placeholder {
+    color:#a1a1a1 !important;
+}
+
+.card {
+    border: none;
+    border-radius: 20px;
+}
+
+.bg-light-gray {
+    background-color: #F8F8F8;
+}
+
+    .register-form-container .form-control {
+        /* Pindahkan style ke sini agar tidak bentrok dengan form lain */
+        background-color: #f8f9fa; /* Ini warna bg-light-gray Bootstrap */
+        border: 1px solid #dee2e6;
+    }
+    .register-form-container .form-control:focus {
+        background-color: #fff;
+    }
+    .hero-section-container {
+  position: relative; /* Wajib ada, sebagai acuan untuk elemen 'absolute' di dalamnya */
+  width: 100%;
+  height: 90vh; /* Atur tinggi hero section sesuai keinginan */
+  min-height: 600px;
+}
+
+.hero-section-container .hero-slider,
+.hero-section-container .hero-slide {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.hero-section-container .hero-overlay h2 {
+    /* Sedikit modifikasi agar teks asli slider tidak terlalu dominan */
+    font-size: 2.5rem;
+    text-shadow: 2px 2px 8px rgba(0,0,0,0.8);
+}
+
+.form-overlay-container {
+  position: absolute; /* Kunci utama agar form mengambang */
+  top: 50%; /* Posisi vertikal di tengah */
+  left: 15%; /* Posisi horizontal, atur sesuai selera (misal: 15% dari kiri) */
+  transform: translate(0, -50%); /* Penyesuaian agar pas di tengah secara vertikal */
+  width: 450px; /* Lebar form */
+  max-width: 90%;
+  z-index: 10; /* Pastikan form ada di lapisan paling atas */
+}
+
+/* Penyesuaian untuk layar kecil (HP) */
+@media (max-width: 992px) {
+  .hero-section-container .hero-overlay {
+    /* Sembunyikan teks asli slider di HP agar tidak menumpuk dengan form */
+    display: none;
+  }
+
+  .form-overlay-container {
+    left: 50%; /* Posisikan di tengah layar */
+    transform: translate(-50%, -50%); /* Atur ulang agar pas di tengah */
+  }
+}
 
 .btn {
   border-radius: 50px !important;
@@ -68,8 +149,8 @@
   background-color: var(--primary-hover) !important;
 }
 .btn-outline-primary {
-  border: solid #218A70 1px;
-  color: #1C6B64;
+  border: solid #0d6efd 1px;
+  color: #185cc2;
 }
 .btn-outline-primary:hover {
   background-color: var(--secondary-hover) !important;
@@ -159,7 +240,7 @@ body {
   bottom: 0;
   width: 100%;
   height: 7px;
-  background: linear-gradient(to left, #218A70 40%, #FFC667 100%);
+  background: linear-gradient(to left, #185cc2 40%, #0d6efd 100%);
   z-index: -1;
 }
 
@@ -192,7 +273,7 @@ section {
 }
 
 .section-title {
-  color: #218A70;
+  color: #185cc2;
 }
 
 .section-desc {
@@ -217,7 +298,7 @@ section {
   position: absolute;
   bottom: 15%;
   right: 10%;
-  background: linear-gradient(40deg, #218A70 0%, #FFC667 100%);
+  background: linear-gradient(40deg, #0d6efd 0%, #FFC667 100%);
   color: #fff;
   padding: 20px 30px;
   border-radius: 20px;
@@ -280,7 +361,7 @@ section {
 .service-card h5 {
   font-weight: 600;
   margin-bottom: 10px;
-  color: #218A70;
+  color: #0d6efd;
 }
 
 .service-card p {
@@ -353,7 +434,7 @@ section {
   bottom: 0;
   left: 0;
   right: 0;
-  background: linear-gradient(to top, #218A70, rgba(0, 100, 0, 0.1));
+  background: linear-gradient(to top, #0d6efd, rgba(0, 100, 0, 0.1));
   color: white;
 }
 
@@ -396,7 +477,7 @@ section {
 
 /* footer */
 .footer {
-  background-color: #218A70;
+  background-color: #185cc2;
   color: #ffffff;
   padding: 40px 20px 0;
   position: relative;

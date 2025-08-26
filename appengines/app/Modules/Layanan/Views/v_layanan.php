@@ -34,65 +34,47 @@
 </style>
 
 <div class="row">
-  <div class="col-md-12">
-    <div class="card">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0"><?= esc($title) ?></h5>
-        <button id="add" class="btn btn-primary">
-          <i class="bi bi-plus-circle-dotted"></i> Tambah
-        </button>
-      </div>
-
-      <div class="card-body">
-        <div id="layanan" class="row g-2">
-          <?php
-          $encrypter = \Config\Services::encrypter();
-          foreach ($getLayanan as $row) {
-            $id = bin2hex($encrypter->encrypt($row->id_layanan));
-          ?>
-            <div id="<?= $id ?>" class="layanan-item col-12 col-sm-6 col-md-4 px-2" draggable="true" data-code="<?= $row->urutan ?>" data-parent="0">
-              <div class="border rounded shadow-sm p-3 h-100 d-flex flex-column justify-content-between bg-light position-relative">
-                
-                <!-- Drag Indicator -->
-                <div class="position-absolute top-0 start-50 translate-middle-x mt-1" style="z-index: 2;">
-                  
-                </div>
-
-                <!-- Gambar -->
-                <div class="text-center my-3">
-                  <img src="<?= base_url('uploads/' . $row->foto) ?>"
-                      alt="<?= esc($row->judul) ?>"
-                      class="img-fluid" style="max-height: 80px; object-fit: contain;">
-                </div>
-
-                <!-- Judul & Deskripsi -->
-                <div class="text-center px-2">
-                  <h6 class="fw-bold mb-1"><?= esc($row->judul) ?></h6>
-                  <p class="text-muted small"><?= esc($row->deskripsi) ?></p>
-                </div>
-
-                <!-- Aksi & Toggle -->
-                <div class="d-flex justify-content-between align-items-center mt-3">
-                  <?= aksi($id) ?>
-                  <div class="form-check form-switch">
-                    <input class="form-check-input status-toggle"
-                          type="checkbox"
-                          data-id="<?= $id ?>"
-                          data-bs-toggle="tooltip"
-                          title="Aktif/Nonaktif"
-                          <?= ($row->status == 'Y') ? 'checked' : '' ?>>
-                  </div>
-                </div>
-
-              </div>
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><?= esc($title) ?></h5>
+                <button id="add" class="btn btn-primary">
+                    <i class="bi bi-plus-circle-dotted"></i> Tambah
+                </button>
             </div>
-          <?php } ?>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
 
+            <div class="card-body">
+                <div id="layanan" class="row g-2">
+                    <?php
+                    $encrypter = \Config\Services::encrypter();
+                    foreach ($getLayanan as $row) {
+                        $id = bin2hex($encrypter->encrypt($row->id_layanan));
+                    ?>
+                        <div id="<?= $id ?>" class="layanan-item col-12 col-sm-6 col-md-4 px-2" draggable="true" data-code="<?= $row->urutan ?>" data-parent="0">
+                            <div class="border rounded shadow-sm p-3 h-100 d-flex flex-column justify-content-between bg-light position-relative">
+                                <div class="text-center my-3">
+                                    <img src="<?= base_url('uploads/' . $row->foto) ?>" alt="<?= esc($row->judul) ?>" class="img-fluid" style="max-height: 80px; object-fit: contain;">
+                                </div>
+
+                                <div class="text-center px-2">
+                                    <h6 class="fw-bold mb-1"><?= esc($row->judul) ?></h6>
+                                    <p class="text-muted small"><?= esc($row->deskripsi) ?></p>
+                                </div>
+
+                                <div class="d-flex justify-content-between align-items-center mt-3">
+                                    <?= aksi($id) ?>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input status-toggle" type="checkbox" data-id="<?= $id ?>" data-bs-toggle="tooltip" title="Aktif/Nonaktif" <?= ($row->status == 'Y') ? 'checked' : '' ?>>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    <?php } ?>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <?php
 function aksi($id)
@@ -150,23 +132,15 @@ function aksi($id)
             const box = child.getBoundingClientRect();
             const offsetY = y - box.top - box.height / 2;
             const offsetX = x - box.left - box.width / 2;
-
-            const distance = Math.sqrt(offsetX ** 2 + offsetY ** 2); // gabungan jarak X dan Y
+            const distance = Math.sqrt(offsetX ** 2 + offsetY ** 2);
 
             if (offsetY < 0 && distance < closest.distance) {
-                return {
-                    distance,
-                    element: child
-                };
+                return { distance, element: child };
             } else {
                 return closest;
             }
-        }, {
-            distance: Number.POSITIVE_INFINITY
-        }).element;
+        }, { distance: Number.POSITIVE_INFINITY }).element;
     }
-
-
 
     function updateLayananKode() {
         var items = document.querySelectorAll(".layanan-item:not(.drag-placeholder)");
@@ -175,25 +149,22 @@ function aksi($id)
         });
     }
 
-
     document.querySelectorAll(".layanan-item").forEach(addLayananDragEvents);
 
     function saveAllLayanan() {
         var tokenName = "<?= csrf_token() ?>";
         var elName = document.querySelector(`[name="${tokenName}"]`);
         var tokenValue = elName.value;
-
         var formData = new FormData();
+
         document.querySelectorAll(".layanan-item:not(.drag-placeholder)").forEach((el, i) => {
             formData.append(`items[${i}][id]`, el.id);
             formData.append(`items[${i}][code]`, el.dataset.code);
         });
         formData.append(tokenName, tokenValue);
 
-        fetch('./layanan/updated', {
-                method: 'POST',
-                body: formData
-            }).then(res => res.json())
+        fetch('./layanan/updated', { method: 'POST', body: formData })
+            .then(res => res.json())
             .then(data => elName.value = data.xhash)
             .catch(err => console.error(err));
     }
@@ -210,37 +181,30 @@ function aksi($id)
             formData.append('status', status);
             formData.append(tokenName, tokenValue);
 
-            fetch('./layanan/toggle', {
-                    method: 'POST',
-                    body: formData,
-                })
+            fetch('./layanan/toggle', { method: 'POST', body: formData, })
                 .then(res => res.json())
                 .then(data => {
                     document.querySelector(`[name="${tokenName}"]`).value = data.xhash;
-                    // Optional: tampilkan notifikasi berhasil
                 })
                 .catch(error => {
                     console.error('Gagal toggle status:', error);
-                    // Optional: kembalikan checkbox jika gagal
                     this.checked = !this.checked;
                 });
         });
     });
 
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-        tooltipTriggerList.forEach(function (tooltipTriggerEl) {
-            new bootstrap.Tooltip(tooltipTriggerEl)
-        })
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+        new bootstrap.Tooltip(tooltipTriggerEl);
+    });
 </script>
-
 
 <div class="modal fade" id="modalForm" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
     <div class="modal-dialog" role="document" style="margin: 2% auto">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Modal title</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
-                </button>
+                <h5 class="modal-title">Form Layanan</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <?php echo form_open('layanan/submit', array('id' => 'myform', 'novalidate' => '')) ?>
             <div class="modal-body">
@@ -248,21 +212,27 @@ function aksi($id)
                 <input type="hidden" name="code" value="<?= count($getLayanan) ?>">
                 <div class="row mb-2">
                     <label class="col-md-3 col-form-label">Judul</label>
-                    <div class="col">
-                        <input name="judul" type="text" class="form-control" required>
-                    </div>
+                    <div class="col"><input name="judul" type="text" class="form-control" required></div>
+                </div>
+                <div class="row mb-2">
+                    <label class="col-md-3 col-form-label">Instrumen</label>
+                    <div class="col"><input name="instrumen" type="text" class="form-control"></div>
+                </div>
+                <div class="row mb-2">
+                    <label class="col-md-3 col-form-label">Biaya</label>
+                    <div class="col"><input name="biaya" type="number" class="form-control" placeholder="Contoh: 100000"></div>
+                </div>
+                <div class="row mb-2">
+                    <label class="col-md-3 col-form-label">Satuan</label>
+                    <div class="col"><input name="satuan" type="text" class="form-control" placeholder="Contoh: sampel, jam"></div>
                 </div>
                 <div class="row mb-2">
                     <label class="col-md-3 col-form-label">Deskripsi</label>
-                    <div class="col">
-                        <textarea name="deskripsi" class="form-control" rows="4" required></textarea>
-                    </div>
+                    <div class="col"><textarea name="deskripsi" class="form-control" rows="4" required></textarea></div>
                 </div>
                 <div class="row mb-2">
                     <label class="col-md-3 col-form-label">Foto/Icon</label>
-                    <div class="col">
-                        <input name="foto" type="file" class="form-control">
-                    </div>
+                    <div class="col"><input name="foto" type="file" class="form-control"></div>
                 </div>
                 <div class="row mb-2">
                     <label class="col-md-3 col-form-label">Halaman</label>
@@ -270,7 +240,7 @@ function aksi($id)
                         <select name="link" class="form-select">
                             <option value="">-- pilih halaman --</option>
                             <?php foreach ($getHalaman as $halaman): ?>
-                                <option value="<?= $halaman->slug ?>" data-nama="<?= htmlspecialchars($halaman->title) ?>"><?= $halaman->title ?> </option>
+                                <option value="<?= $halaman->slug ?>"><?= $halaman->title ?></option>
                             <?php endforeach ?>
                         </select>
                     </div>

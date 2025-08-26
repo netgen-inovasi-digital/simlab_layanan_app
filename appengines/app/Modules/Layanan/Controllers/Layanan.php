@@ -39,6 +39,9 @@ class Layanan extends BaseController
 		$data['judul'] = $get->judul;
 		$data['deskripsi'] = $get->deskripsi;
 		$data['link'] = $get->link;
+		$data['instrumen'] = $get->instrumen;
+    $data['biaya'] = $get->biaya;
+    $data['satuan'] = $get->satuan;
 		return $this->response->setJSON($data);
 	}
 
@@ -62,6 +65,9 @@ class Layanan extends BaseController
 			'judul' => $this->request->getPost('judul'),
 			'deskripsi' => $this->request->getPost('deskripsi'),
 			'link' => $this->request->getPost('link'),
+			'instrumen' => $this->request->getPost('instrumen'),
+        'biaya' => $this->request->getPost('biaya'),
+        'satuan' => $this->request->getPost('satuan'),
 		);
 		$foto = $this->request->getFile('foto');
 		if($foto!="") {
