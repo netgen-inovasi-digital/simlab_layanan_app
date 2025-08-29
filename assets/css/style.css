@@ -1,5 +1,5 @@
 :root {
-    --primary: #0d6efd;
+    --primary: #337ab7;
     --primary-hover: #185cc2;
     --secondary: #707070;
     --secondary-hover: #5a5a5a;
@@ -11,7 +11,7 @@
     --warning-hover: #F3AB32;
     --danger: #DC3A3A;
     --danger-hover: #B32A2A;
-    --text-light: #ffffff;
+    --text-light: white;
     --text-dark: #4A4A4A;
     --yellow-light: #D8E8EE;
 }
@@ -146,7 +146,7 @@ a {text-decoration: none;}
     bottom: 0;
     left: 0;
     z-index: 1040;
-    background-color: #1f60c2;
+    background-color: white;
 	height: 100vh;              
 	display: flex;              
 	flex-direction: column;     
@@ -245,18 +245,18 @@ a {text-decoration: none;}
 }
 
 .sidebar .nav-link {
-    color: white;
+    color: black;
     font-weight: 500;
     margin-bottom: 10px;
 }.sidebar .nav-link.active {
-    background-color: #CFA871;
+    background-color: #435ebe;
     color: white;
     border-radius: 5px;
 }.sidebar .nav-link:hover {
-    background-color: #2270e6;
+    background-color: rgb(222, 222, 222);
     border-radius: 5px;
 }.sidebar .nav-link.active:hover {
-    background-color: #0f4eae;
+    background-color: rgb(176, 176, 176);
     cursor: default;
 }
 /* submenu */
@@ -276,7 +276,7 @@ a {text-decoration: none;}
     box-shadow: 0px 4px 30px 10px rgba(0, 0, 0, 0.02);
     padding-top: 0.8rem;
     padding-bottom: 0.4rem;
-    background-color: #1f60c2;
+    background-color: white;
     text-align: center !important;
 }
 .sidebar-header img {

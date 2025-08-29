@@ -56,8 +56,8 @@
     <nav class="navbar navbar-expand-lg navbar-light bg-white fixed-top">
         <div class="container">
             <a class="navbar-brand fw-bold" href="<?php echo base_url('') ?>">
-                <img src="https://placehold.co/150" alt="Logo Ecomel"
-                    style="width: 100px; height:90px; object-fit: cover;" class="img-fluid" />
+                <img src="assets/img/logosimlab.png" alt="Logo SimLab"
+                    style="width: 180px; object-fit: contain;" class="img-fluid" />
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavAltMarkup"
                 aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
