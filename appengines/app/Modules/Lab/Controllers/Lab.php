@@ -17,7 +17,6 @@ class Lab extends BaseController
 
 		$modelUser = new MyModel('users');
 
-		// === ambil diskon ULM dari tabel ===
 		$modelDiskon  = new MyModel('simlab_t_diskon');
 
 		$data = [
@@ -36,7 +35,6 @@ class Lab extends BaseController
 		$model = new MyModel($this->table);
 		$get = $model->getDataById($this->id, $id);
 
-		// ambil juga data dropdown
 		$jenisModel = new MyModel('simlab_r_jenis');
 		$alatModel  = new MyModel('simlab_r_alat');
 		$paraModel  = new MyModel('simlab_r_parameter');
@@ -50,7 +48,6 @@ class Lab extends BaseController
 		$data['ujiSatuan']   = $get->ujiSatuan;
 		$data['ujiBiaya']    = $get->ujiBiaya;
 
-		// tambahkan opsi dropdown agar langsung muncul di form edit
 		$data['options'] = [
 			'jenis'     => $jenisModel->getAllData(),
 			'alat'      => $alatModel->getAllData(),
@@ -102,7 +99,6 @@ class Lab extends BaseController
 			'simlab_r_parameter p' => 'p.paraKode = ' . $this->table . '.ujiParaKode',
 		];
 
-		// ✅ gunakan fungsi yang support $select
 		$select = $this->table . '.*, j.jenKode, j.jenNama, a.alatNama, p.paraNama';
 		$list = $model->getAllDataByJoinWithOrder($join, [], [], $select);
 
@@ -147,7 +143,6 @@ class Lab extends BaseController
 		</div>';
 	}
 
-	// === update diskon civitas ULM versi AJAX ===
 	public function update_diskon()
 	{
 		$diskon = $this->request->getPost('diskon');
@@ -158,7 +153,6 @@ class Lab extends BaseController
 			$res = $model->updateData(['diskon' => $diskon], 'kolom', 'ulm');
 		}
 
-		// kembalikan JSON, bukan redirect
 		return $this->response->setJSON([
 			'res' => $res,
 			'xname' => csrf_token(),

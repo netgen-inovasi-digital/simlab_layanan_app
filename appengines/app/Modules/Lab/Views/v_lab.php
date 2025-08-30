@@ -9,7 +9,6 @@
             </div>
             <div class="card-body">
 
-                <!-- === Tambahan: Dropdown kode layanan + form diskon civitas ULM === -->
                 <div class="row mb-3">
                     <div class="col-md-6">
                         <label for="kode_layanan" class="form-label">Kode Layanan</label>
@@ -36,7 +35,6 @@
                         </form>
                     </div>
                 </div>
-                <!-- === End tambahan === -->
 
                 <table id="data-table" class="saytable border-top-bottom">
                     <thead>
@@ -62,7 +60,6 @@
     });
     addAction();
 
-    // === AJAX submit untuk form diskon ULM ===
     document.querySelector('#formDiskonULM').addEventListener('submit', function(e) {
         e.preventDefault();
         const form = e.target;
@@ -97,7 +94,6 @@
         .finally(() => hideLoading());
     });
 
-    // event btnSimpan untuk modal layanan lab (tetap sama)
     document.querySelector('#btnSimpan').addEventListener('click', function(e) {
         e.preventDefault();
         const form = document.querySelector('#myform');
@@ -168,7 +164,6 @@
             .finally(() => hideLoading());
     }
 
-    // ====== Tambahan untuk isi dropdown dari getOptions ======
     function loadOptions(selected = {}) {
         fetch('<?php echo site_url("lab/getoptions") ?>')
             .then(res => res.json())
@@ -193,7 +188,6 @@
             });
     }
 
-    // buka modal tambah
     document.querySelector('#add').addEventListener('click', function() {
         document.querySelector('#myform').reset();
         document.querySelector('[name="id"]').value = "";
@@ -201,7 +195,6 @@
         $('#modalForm').modal('show');
     });
 
-    // ====== Tambahan fungsi editItem ======
     function editItem(e) {
         const id = e.target.closest('div').id;
 
