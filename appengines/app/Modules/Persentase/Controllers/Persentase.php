@@ -84,18 +84,9 @@ class Persentase extends BaseController
     {
         $model = new MyModel($this->table . ' d');
 
-        // ambil parameter GET
         $jenKode = $this->request->getGet('kdJenKode');
         $page    = $this->request->getGet('page');
         $limit   = $this->request->getGet('limit');
-
-        // debug: untuk memastikan param terbaca
-        // hapus/comment kalau sudah tidak dipakai
-        // return $this->response->setJSON([
-        //     'kdJenKode' => $jenKode,
-        //     'page'      => $page,
-        //     'limit'     => $limit
-        // ]);
 
         $joins = ['simlab_r_jenis j' => 'j.jenKode = d.kdJenKode'];
         $where = [];

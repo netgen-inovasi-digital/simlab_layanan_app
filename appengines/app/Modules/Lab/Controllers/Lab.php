@@ -100,7 +100,14 @@ class Lab extends BaseController
 		];
 
 		$select = $this->table . '.*, j.jenKode, j.jenNama, a.alatNama, p.paraNama';
-		$list = $model->getAllDataByJoinWithOrder($join, [], [], $select);
+
+		$where = [];
+		$ujiJenKode = $this->request->getGet('ujiJenKode');
+		if (!empty($ujiJenKode)) {
+			$where[$this->table . '.ujiJenKode'] = $ujiJenKode;
+		}
+
+		$list = $model->getAllDataByJoinWithOrder($join, $where, [], $select);
 
 		foreach ($list as $row) {
 			$id = bin2hex($this->encrypter->encrypt($row->ujiKode));
