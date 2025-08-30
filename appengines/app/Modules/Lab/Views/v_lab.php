@@ -40,8 +40,8 @@
                     <thead>
                         <tr>
                             <th show width="5%">No.</th>
-                            <th show width="8%">Kategori Layanan</th>
-                            <th show>Nama Layanan</th>
+                            <th show width="10%">Kategori Layanan</th>
+                            <th show width="55%">Nama Layanan</th>
                             <th show>Biaya</th>
                             <th show class="action text-end">Aksi<i class="bi bi-code sort-icon"></i></th>
                         </tr>

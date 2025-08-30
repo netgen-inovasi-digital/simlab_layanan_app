@@ -8,8 +8,7 @@ $routes->group('persentase', ['namespace' => 'Modules\Persentase\Controllers'], 
 
     $subroutes->get('/', 'Persentase::index');
     $subroutes->get('datalist', 'Persentase::dataList'); 
-    $subroutes->get('(:any)', 'Persentase::$1');
     $subroutes->post('submit', 'Persentase::submit');
-    $subroutes->post('edit', 'Persentase::edit');
-    $subroutes->post('delete', 'Persentase::delete');
+    $subroutes->get('edit/(:any)', 'Persentase::edit/$1');
+    $subroutes->get('delete/(:any)', 'Persentase::delete/$1');
 });

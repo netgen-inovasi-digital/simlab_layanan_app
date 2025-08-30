@@ -11,9 +11,9 @@
                 <table id="data-table" class="saytable border-top-bottom">
                     <thead>
                         <tr>
-                            <th show width="8%">No.</th>
-                            <th show>Kode Parameter</th>
-                            <th show>Nama Parameter</th>
+                            <th show width="6%">No.</th>
+                            <th show width="20%">Kode Parameter</th>
+                            <th show width="50%">Nama Parameter</th>
                             <th show class="action text-end">Aksi<i class="bi bi-code sort-icon"></i></th>
                         </tr>
                     </thead>
