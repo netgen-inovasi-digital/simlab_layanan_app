@@ -40,6 +40,10 @@
 <script>
     var apiUrl = '<?php echo site_url("persentase/datalist") ?>';
 
+    // default page & limit
+    var currentPage = 1;
+    var currentLimit = 10;
+
     function loadTable(url) {
         return createTable({
             tableId: 'data-table',   
@@ -60,19 +64,22 @@
         });
     }
 
-    table = loadTable(apiUrl);
+    // load awal
+    table = loadTable(apiUrl + "?page=" + currentPage + "&limit=" + currentLimit);
     addAction();
 
+    // filter jenis layanan
     document.querySelector('#filterJenis').addEventListener('change', function() {
         let kode = this.value;
-        let newUrl = apiUrl;
+        let newUrl = apiUrl + "?page=" + currentPage + "&limit=" + currentLimit;
         if (kode !== "") {
-            newUrl = apiUrl + "?kdJenKode=" + encodeURIComponent(kode);
+            newUrl = apiUrl + "?kdJenKode=" + encodeURIComponent(kode) + "&page=" + currentPage + "&limit=" + currentLimit;
         }
         table = loadTable(newUrl);
         addAction();
     });
 
+    // simpan data
     document.querySelector('#btnSimpan').addEventListener('click', function(e) {
         e.preventDefault();
 
