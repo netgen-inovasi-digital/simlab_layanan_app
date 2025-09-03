@@ -30,20 +30,21 @@ class Auth extends Controller
 
 		$username = $this->request->getPost('usr');
 		$password = $this->request->getPost('pwd');
-		$data = $model->where('username', $username)->first();
+		$data = $model->where('user_name', $username)->first();
+
 		if ($data) {
-			$hash = $data['password'];
+			$hash = $data['user_password'];
 			$verify_pass = password_verify($password, $hash);
 			if ($verify_pass) {
 				if ($data['status_user'] == 1) {
 					date_default_timezone_set('Asia/Singapore');
 					$datenow = date('Y-m-d H:i:s');
-					$model->update(array('id_user' => $data['id_user']), array('last_login' => $datenow));
+					// $model->update(array('id_user' => $data['user_id']), array('last_login' => $datenow));
 
 					$ses_data = [
-						'id_user'        => $data['id_user'],
-						'username'      => $data['username'],
-						'nama'			=> $data['nama'],
+						'id_user'        => $data['user_id'],
+						'username'      => $data['user_name'],
+						'email'			=> $data['user_email'],
 						'role_id'        => $data['role_id'],
 						'logged_in'     => TRUE
 					];
@@ -53,13 +54,13 @@ class Auth extends Controller
 						'menus' => array(),
 						'parent_menus' => array(),
 					);
+
 					foreach ($getMenu as $row) {
 						$menu['menus'][$row->kode_menu] = $row;
 						$menu['parent_menus'][$row->kode_induk][] = $row->kode_menu;
 					}
 
 					$ses_data['menu'] = $menu;
-
 					$session->set($ses_data);
 
 					// ambil parameter redirect dari POST
@@ -87,6 +88,8 @@ class Auth extends Controller
 			return redirect()->route('login');
 		}
 	}
+
+	
 
 	public function register()
 	{
