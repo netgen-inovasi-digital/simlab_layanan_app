@@ -145,7 +145,6 @@ class Auth extends Controller
         'user_name'             => $username,
         'user_email'            => $email,
         'user_password'         => $hash,
-        'user_password_default' => 0,
         'user_identity'         => $identity,
         'status_user'           => 1, // aktifkan user
         'role_id'               => 2, // default role user biasa

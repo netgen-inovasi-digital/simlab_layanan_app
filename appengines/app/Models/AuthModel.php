@@ -10,7 +10,6 @@ class AuthModel extends Model
         'user_name',
         'user_email',
         'user_password',
-        'user_password_default',
         'user_identity',
         'role_id',
         'status_user',
