@@ -15,7 +15,7 @@ Login
 
   <!-- Form Section -->
   <div class="col-md-6 bg-white p-5">
-    <h5 class="fw-bold mb-4 text-center">Silakan Masuk</h5>
+    <h5 class="fw-bold mb-4 text-center">Silakan Maskuk</h5>
     <?php foreach (['success', 'error', 'msg'] as $type): ?>
       <?php if (session()->getFlashdata($type)): ?>
         <blockquote class="blockquote custom-blockquote bg-light mb-3 text-center text-<?= $type == 'error' || $type == 'msg' ? 'danger' : 'success' ?> small rounded">
