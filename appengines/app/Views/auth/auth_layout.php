@@ -4,11 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<<<<<<< HEAD
   <title><?= $this->renderSection('title') ?> | Simlab</title>
-=======
-  <title><?= $this->renderSection('title') ?> | Netx Template</title>
->>>>>>> 8d1b9db1b83d6499aa3f004b06a0e13eb69d8dc5
   <link rel="icon" type="image/x-icon" href="<?= base_url('assets/img/favicon.ico?v=0.2') ?>">
   <link rel="stylesheet" href="<?= base_url('assets/css/bootstrap.min.css') ?>">
   <link rel="stylesheet" href="<?= base_url('assets/css/bootstrap-icons.min.css') ?>">

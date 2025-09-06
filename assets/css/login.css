@@ -1,9 +1,5 @@
 body.bg-custom-green {
-<<<<<<< HEAD
     background: linear-gradient(120deg, #a3a5c9 0%, #4543be 100%);
-=======
-    background: linear-gradient(120deg, #a5c3a3 0%, #6e9f6e 100%);
->>>>>>> 8d1b9db1b83d6499aa3f004b06a0e13eb69d8dc5
     min-height: 100vh;
     font-family: 'Quicksand', sans-serif;
 }

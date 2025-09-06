@@ -100,12 +100,8 @@
                                 <ul class="dropdown-menu">
                                     <?php foreach ($menu['children'] as $child): ?>
                                         <li>
-<<<<<<< HEAD
                                             <a class="dropdown-item <?= current_url() == rtrim($child['link'], '/') ? 'active fw-semibold text-primary' : '' ?>"
                                                 href="<?= $child['link'] ?>">
-=======
-                                            <a class="dropdown-item <?= current_url() == rtrim($child['link'], '/') ? 'active fw-semibold text-primary' : '' ?>" href="<?= $child['link'] ?>">
->>>>>>> 8d1b9db1b83d6499aa3f004b06a0e13eb69d8dc5
                                                 <?= esc($child['nama']) ?>
                                             </a>
                                         </li>
