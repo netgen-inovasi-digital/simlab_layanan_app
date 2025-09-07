@@ -85,7 +85,7 @@ class Alat extends BaseController
         foreach ($list as $row) {
             $id = bin2hex($this->encrypter->encrypt($row->alatKode));
             $response   = [];
-            $response[] = '<span class="badge bg-secondary">' . esc($row->alatKode) . '</span>';
+            $response[] = '<span class="badge bg-info">' . esc($row->alatKode) . '</span>';
             $response[] = esc($row->alatNama);
             $response[] = $this->aksi($id);
             $data[]     = $response;

@@ -105,7 +105,7 @@ class Persentase extends BaseController
         foreach ($list as $row) {
             $id = bin2hex($this->encrypter->encrypt($row->kdKode));
             $response = [
-                'kodeLayanan' => '<span class="badge bg-secondary">' . esc($row->kdJenKode) . ' - ' . esc($row->jenNama) . '</span>',
+                'kodeLayanan' => '<span class="badge bg-info">' . esc($row->kdJenKode) . ' - ' . esc($row->jenNama) . '</span>',
                 'jenisBiaya'  => $row->kdKolomLabel,
                 'persentase'  => $row->kdPersenNONULM . ' %',
                 'aksi'        => $this->aksi($id),

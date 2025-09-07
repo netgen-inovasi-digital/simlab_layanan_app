@@ -112,7 +112,7 @@ class Lab extends BaseController
 		foreach ($list as $row) {
 			$id = bin2hex($this->encrypter->encrypt($row->ujiKode));
 			$response = [];
-			$response[] = '<span class="badge bg-secondary">' . esc($row->jenKode) . '</span>';
+			$response[] = '<span class="badge bg-info">' . esc($row->jenKode) . '</span>';
 			$response[] = $row->ujiLayanan . '<br>'
 				. '<strong> Alat : </strong>' . $row->alatNama . '<br>'
 				. '<strong> Parameter : </strong> ' . $row->paraNama;

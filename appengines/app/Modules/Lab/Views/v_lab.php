@@ -1,38 +1,36 @@
-
+<div class="row">
     <div class="col-md-12">
         <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <label class="card-title mb-0"><?php echo $title ?></label>
-                <button id="add" class="btn btn-primary">
-                    <i class="bi bi-plus-circle-dotted"></i> Tambah
-                </button>
-            </div>
-            <div class="card-body">
-
-                <div class="row mb-3">
+            <div class="card-header border-bottom pb-3">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <label class="card-title mb-0 fs-5 fw-bold"><?php echo $title ?></label>
+                    <button id="add" class="btn btn-primary">
+                        <i class="bi bi-plus-circle-dotted"></i> Tambah
+                    </button>
+                </div>
+                <div class="row g-3 align-items-end">
                     <div class="col-md-6">
                         <label for="filter_jenKode" class="form-label">Filter Kategori Layanan</label>
-                        <select id="filter_jenKode" name="filter_jenKode" class="form-control">
+                        <select id="filter_jenKode" name="filter_jenKode" class="form-select">
                             <option value="">-- Semua Kategori --</option>
-                        </select>
+                            </select>
                     </div>
                     <div class="col-md-6">
-                        <form id="formDiskonULM" action="<?= base_url('lab/update_diskon') ?>" method="post" class="d-flex">
+                        <form id="formDiskonULM" action="<?= base_url('lab/update_diskon') ?>" method="post" class="d-flex align-items-end">
                             <?= csrf_field() ?>
                             <div class="flex-grow-1">
                                 <label for="diskon_ulm" class="form-label">Diskon Civitas ULM (%)</label>
-                                <input type="number" name="diskon" id="diskon_ulm"
-                                    class="form-control"
-                                    value="<?= isset($diskon_ulm) ? $diskon_ulm : '' ?>"
-                                    min="0" max="100">
+                                <input type="number" name="diskon" id="diskon_ulm" class="form-control" value="<?= isset($diskon_ulm) ? $diskon_ulm : '' ?>" min="0" max="100">
                             </div>
-                            <div class="ms-2 align-self-end">
-                                <button type="submit" class="btn btn-primary">Update</button>
+                            <div class="ms-2">
+                                <button type="submit" class="btn btn-outline-primary">Update</button>
                             </div>
                         </form>
                     </div>
                 </div>
+            </div>
 
+            <div class="card-body">
                 <table id="data-table" class="saytable border-top-bottom">
                     <thead>
                         <tr>
@@ -46,62 +44,6 @@
                     <tbody id="table-body"></tbody>
                 </table>
             </div>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="modalForm" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document" style="margin: 2% auto">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Form Layanan Lab</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <?php echo form_open('lab/submit', array('id' => 'myform', 'novalidate' => '')) ?>
-            <div class="modal-body">
-                <input type="hidden" value="" name="id" />
-                <div class="row mb-2">
-                    <div class="col">
-                        <label class="col-form-label">Jenis Layanan</label>
-                        <select name="ujiJenKode" class="form-control" required>
-                            <option value="">-- Pilih Jenis --</option>
-                        </select>
-                    </div>
-                    <div class="col">
-                        <label class="col-form-label">Alat</label>
-                        <select name="ujiAlatKode" class="form-control" required>
-                            <option value="">-- Pilih Alat --</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="row mb-2">
-                    <div class="col">
-                        <label class="col-form-label">Parameter</label>
-                        <select name="ujiParaKode" class="form-control" required>
-                            <option value="">-- Pilih Parameter --</option>
-                        </select>
-                    </div>
-                    <div class="col">
-                        <label class="col-form-label">Nama Layanan</label>
-                        <input name="ujiLayanan" type="text" class="form-control" required placeholder="Masukkan nama layanan">
-                    </div>
-                </div>
-                <div class="row mb-2">
-                    <div class="col">
-                        <label class="col-form-label">Satuan</label>
-                        <input name="ujiSatuan" type="text" class="form-control" required placeholder="Masukkan satuan (contoh: Sampel)">
-                    </div>
-                    <div class="col">
-                        <label class="col-form-label">Biaya</label>
-                        <input name="ujiBiaya" type="text" class="form-control" required placeholder="Masukkan biaya (angka)">
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-light" type="button" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i> Batal</button>
-                <button class="btn btn-success" id="btnSimpan" type="submit"><i class="bi bi-check2-circle"></i> Simpan</button>
-            </div>
-            </form>
         </div>
     </div>
 </div>
@@ -286,55 +228,66 @@
 
 
 <div class="modal fade" id="modalForm" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document" style="margin: 2% auto">
+    <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Form Layanan Lab</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <?php echo form_open('lab/submit', array('id' => 'myform', 'novalidate' => '')) ?>
-            <div class="modal-body">
+            <div class="modal-body p-4">
                 <input type="hidden" value="" name="id" />
-                <div class="row mb-2">
-                    <div class="col">
-                        <label class="col-form-label">Jenis Layanan</label>
-                        <select name="ujiJenKode" class="form-control" required>
-                            <option value="">-- Pilih Jenis --</option>
-                        </select>
+                <div class="row">
+                    <div class="col-md-6 border-end">
+                        <p class="text-muted small fw-bold">KLASIFIKASI LAYANAN</p>
+                        <div class="mb-3">
+                            <label class="form-label">Jenis Layanan</label>
+                            <select name="ujiJenKode" class="form-select" required>
+                                <option value="">-- Pilih Jenis --</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Alat</label>
+                            <select name="ujiAlatKode" class="form-select" required>
+                                <option value="">-- Pilih Alat --</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Parameter</label>
+                            <select name="ujiParaKode" class="form-select" required>
+                                <option value="">-- Pilih Parameter --</option>
+                            </select>
+                        </div>
                     </div>
-                    <div class="col">
-                        <label class="col-form-label">Alat</label>
-                        <select name="ujiAlatKode" class="form-control" required>
-                            <option value="">-- Pilih Alat --</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="row mb-2">
-                    <div class="col">
-                        <label class="col-form-label">Parameter</label>
-                        <select name="ujiParaKode" class="form-control" required>
-                            <option value="">-- Pilih Parameter --</option>
-                        </select>
-                    </div>
-                    <div class="col">
-                        <label class="col-form-label">Nama Layanan</label>
-                        <input name="ujiLayanan" type="text" class="form-control" required placeholder="Masukkan nama layanan">
-                    </div>
-                </div>
-                <div class="row mb-2">
-                    <div class="col">
-                        <label class="col-form-label">Satuan</label>
-                        <input name="ujiSatuan" type="text" class="form-control" required placeholder="Masukkan satuan (contoh: Sampel)">
-                    </div>
-                    <div class="col">
-                        <label class="col-form-label">Biaya</label>
-                        <input name="ujiBiaya" type="text" class="form-control" required placeholder="Masukkan biaya (angka)">
+                    <div class="col-md-6">
+                        <p class="text-muted small fw-bold">DETAIL LAYANAN</p>
+                        <div class="mb-3">
+                            <label class="form-label">Nama Layanan</label>
+                            <input name="ujiLayanan" type="text" class="form-control" required placeholder="Masukkan nama layanan">
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-7">
+                                <div class="mb-3">
+                                    <label class="form-label">Biaya</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">Rp</span>
+                                        <input name="ujiBiaya" type="number" class="form-control" required placeholder="Masukkan biaya">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-sm-5">
+                                <div class="mb-3">
+                                    <label class="form-label">Satuan</label>
+                                    <input name="ujiSatuan" type="text" class="form-control" required placeholder="Sampel/Jam/Ruangan">
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-light" type="button" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i> Batal</button>
-                <button class="btn btn-success" id="btnSimpan" type="submit"><i class="bi bi-check2-circle"></i> Simpan</button>
+                <button class="btn btn-primary" id="btnSimpan" type="submit"><i class="bi bi-check2-circle"></i> Simpan</button>
             </div>
             </form>
         </div>

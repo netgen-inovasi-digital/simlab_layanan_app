@@ -61,7 +61,7 @@
                         <img src="<?= base_url('uploads/' . $post->thumbnail) ?>" class="card-img-top" style="height: 180px; object-fit: cover;">
                         <div class="card-body">
                             <small class="text-muted d-block mb-2"><?= $post->username ?> • <?= date('d M Y', strtotime($post->published_at)) ?></small>
-                            <small class="badge bg-secondary mb-2"><?= $post->nama ?></small>
+                            <small class="badge bg-info mb-2"><?= $post->nama ?></small>
                             <h6 class="fw-bold"><?= $post->title ?></h6>
                             <p class="text-muted small"><?= substr(strip_tags($post->konten), 0, 100) . '...' ?></p>
                         </div>

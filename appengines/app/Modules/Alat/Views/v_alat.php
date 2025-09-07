@@ -32,7 +32,7 @@
     });
     addAction();
 
-    document.querySelector('#btnSimpan').addEventListener('click', function(e) {
+    document.querySelector('#btnSimpan').addEventListener('click', function (e) {
         e.preventDefault();
 
         const form = document.querySelector('#myform');
@@ -42,7 +42,7 @@
         saveData({
             url: actionUrl,
             formData: formData,
-            onSuccess: function(data) {
+            onSuccess: function (data) {
                 if (data.res === true) {
                     if (typeof table !== 'undefined') table.fetchData({
                         reload: true
@@ -66,12 +66,12 @@
         const csrfToken = csrfInput ? csrfInput.value : '';
 
         fetch(url, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken
-                }
-            })
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRF-TOKEN': csrfToken
+            }
+        })
             .then(response => response.json())
             .then(data => {
                 if (data.xname && data.xhash) {
@@ -122,7 +122,8 @@
 </script>
 
 
-<div class="modal fade" id="modalForm" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="modalForm" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+    aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document" style="margin: 2% auto">
         <div class="modal-content">
             <div class="modal-header">
@@ -131,22 +132,28 @@
                 </button>
             </div>
             <?php echo form_open('alat/submit', array('id' => 'myform', 'novalidate' => '')) ?>
-            <div class="modal-body">
+            <div class="modal-body p-4">
                 <input type="hidden" value="" name="id" />
-                <div class="row mb-2">
-                    <div class="col-md-4">
-                        <label class="form-label">Kode Alat</label>
-                        <input name="alatKode" type="text" class="form-control" required placeholder="Masukkan kode alat">
-                    </div>
-                    <div class="col-md-8">
-                        <label class="form-label">Nama Alat</label>
-                        <input name="alatNama" type="text" class="form-control" required placeholder="Masukkan nama alat">
-                    </div>
+
+                <div class="mb-3">
+                    <label for="alatKodeInput" class="form-label fw-bold">Kode Alat</label>
+                    <input name="alatKode" type="text" class="form-control" id="alatKodeInput" required
+                        placeholder="Contoh : DISTILASI">
+                    <div class="form-text"></div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="alatNamaInput" class="form-label fw-bold">Nama Alat</label>
+                    <input name="alatNama" type="text" class="form-control" id="alatNamaInput" required
+                        placeholder="Contoh : Parameter Distalasi">
+                    <div class="form-text"></div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-light" type="button" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i> Batal</button>
-                <button class="btn btn-success" id="btnSimpan" type="submit"><i class="bi bi-check2-circle"></i> Simpan</button>
+                <button class="btn btn-light" type="button" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i>
+                    Batal</button>
+                <button class="btn btn-success" id="btnSimpan" type="submit"><i class="bi bi-check2-circle"></i>
+                    Simpan</button>
             </div>
             </form>
         </div>

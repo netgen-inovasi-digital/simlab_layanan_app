@@ -86,7 +86,7 @@ class Parameter extends BaseController
 		foreach ($list as $row) {
 			$id = bin2hex($this->encrypter->encrypt($row->paraKode));
 			$response = array();
-			$response[] = '<span class="badge bg-secondary">' . esc($row->paraKode) . '</span>';
+			$response[] = '<span class="badge bg-info">' . esc($row->paraKode) . '</span>';
 			$response[] = esc($row->paraNama);
 			$response[] = $this->aksi($id);
 			$data[] = $response;

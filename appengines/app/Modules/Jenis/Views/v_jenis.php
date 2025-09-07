@@ -107,29 +107,33 @@
 </script>
 
 <div class="modal fade" id="modalForm" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
-    <div class="modal-dialog modal-lg" role="document" style="margin: 2% auto">
+    <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Form Jenis</h5>
+                <h5 class="modal-title">Tambah Kategori Layanan</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
+            
             <?php echo form_open('jenis/submit', array('id' => 'myform', 'novalidate' => '')) ?>
-            <div class="modal-body">
+            <div class="modal-body p-4">
                 <input type="hidden" value="" name="id" />
-                <div class="row mb-2">
-                    <div class="col-md-4">
-                        <label class="form-label">Kode Jenis</label>
-                        <input name="jenKode" type="text" maxlength="2" class="form-control" required placeholder="Masukkan kode (misal A)">
-                    </div>
-                    <div class="col-md-8">
-                        <label class="form-label">Nama Jenis</label>
-                        <input name="jenNama" type="text" class="form-control" required placeholder="Masukkan nama jenis layanan">
-                    </div>
+
+                <div class="mb-3">
+                    <label for="jenKodeInput" class="form-label fw-bold">Kode Jenis</label>
+                    <input name="jenKode" type="text" maxlength="2" class="form-control" id="jenKodeInput" required placeholder="Contoh : A">
+                    <div class="form-text"></div>
                 </div>
+
+                <div class="mb-3">
+                    <label for="jenNamaInput" class="form-label fw-bold">Nama Jenis</label>
+                    <input name="jenNama" type="text" class="form-control" id="jenNamaInput" required placeholder="Contoh : Layanan Sewa Ruangan">
+                    <div class="form-text"></div>
+                </div>
+
             </div>
             <div class="modal-footer">
                 <button class="btn btn-light" type="button" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i> Batal</button>
-                <button class="btn btn-success" id="btnSimpan" type="submit"><i class="bi bi-check2-circle"></i> Simpan</button>
+                <button class="btn btn-primary" id="btnSimpan" type="submit"><i class="bi bi-check2-circle"></i> Simpan</button>
             </div>
             </form>
         </div>
