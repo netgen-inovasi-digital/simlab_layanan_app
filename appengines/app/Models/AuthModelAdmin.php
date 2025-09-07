@@ -16,13 +16,21 @@ class AuthModelAdmin extends Model
         'lab_kode'
     ];
 
-    // Ambil data admin berdasarkan username
     public function getAdminByUsername($username)
     {
         return $this->where('admin_username', $username)->first();
     }
 
-    // === Tambahkan ini untuk ambil menu berdasarkan role admin ===
+    public function getLaboranById($idLaboran)
+    {
+        $db = \Config\Database::connect();
+        $builder = $db->table('simlab_laboran l');
+        $builder->select('l.id_laboran, l.admin_username, l.lab_kode, a.admin_password, a.id_role');
+        $builder->join('simlab_account_admin a', 'l.admin_username = a.admin_username');
+        $builder->where('l.id_laboran', $idLaboran);
+        return $builder->get()->getRowArray();
+    }
+
     public function getMenu($role)
 	{
 		$db = \Config\Database::connect();
