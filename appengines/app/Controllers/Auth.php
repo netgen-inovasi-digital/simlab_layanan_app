@@ -28,9 +28,9 @@ class Auth extends Controller
 		$session = session();
 		$model = new AuthModel();
 
-		$username = $this->request->getPost('usr');
+		$email = $this->request->getPost('email');
 		$password = $this->request->getPost('pwd');
-		$data = $model->where('user_name', $username)->first();
+		$data = $model->where('user_email', $email)->first();
 
 		if ($data) {
 			$hash = $data['user_password'];
@@ -43,7 +43,7 @@ class Auth extends Controller
 
 					$ses_data = [
 						'id_user'        => $data['user_id'],
-						'username'      => $data['user_name'],
+						// 'username'      => $data['user_name'],
 						'email'			=> $data['user_email'],
 						'role_id'        => $data['role_id'],
 						'logged_in'     => TRUE
@@ -74,18 +74,19 @@ class Auth extends Controller
 
 					return redirect()->route('home');
 				} else {
-					$session->setFlashdata('userx', $username);
-					$session->setFlashdata('error', '* Akun anda belum aktif!');
-					return redirect()->route('login');
+				$session->setFlashdata('login_error', '* Akun anda belum aktif!');
+                $session->setFlashdata('login_email', $email); 
+                return redirect()->back();
 				}
 			} else {
-				$session->setFlashdata('userx', $username);
-				$session->setFlashdata('error', '* Password Salah!');
-				return redirect()->route('login');
+				$session->setFlashdata('login_error', '* Password Salah!');
+				$session->setFlashdata('login_email', $email); 
+				return redirect()->back();
 			}
 		} else {
-			$session->setFlashdata('error', '* Username Salah!');
-			return redirect()->route('login');
+			  $session->setFlashdata('login_error', '* Email salah atau belum terdaftar!');
+			  $session->setFlashdata('login_email', $email); 
+		    	return redirect()->back();
 		}
 	}
 
@@ -106,7 +107,7 @@ class Auth extends Controller
 	{
 		$session = session();
 		$session->destroy();
-		return redirect()->route('login');
+		return redirect()->to(base_url('/'));
 	}
 
 	public function actRegister()
