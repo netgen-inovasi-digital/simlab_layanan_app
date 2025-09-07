@@ -27,30 +27,26 @@ Login
       <?php endif; ?>
     <?php endforeach; ?>
 
-    <!-- Flash message -->
-    <?php if(session()->getFlashdata('error')): ?>
-        <div class="alert alert-danger">
-            <?= session()->getFlashdata('error') ?>
-        </div>
-    <?php endif; ?>
-
-    <?php if(session()->getFlashdata('success')): ?>
-        <div class="alert alert-success">
-            <?= session()->getFlashdata('success') ?>
-        </div>
-    <?php endif; ?>`
+    <!-- Pesan Error -->
+           <?php if (session()->getFlashdata('login_error')): ?>
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <?= session()->getFlashdata('login_error'); ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            <?php endif; ?>
 
     <!--LOGIN_PAGE_MARKER-->
-    <?php echo form_open('login/auth', array('id' => 'login-form')) ?>
+    <?php echo form_open('login/admin', array('id' => 'login-form')) ?>
     <?php if (isset($redirect) && !empty($redirect)): ?>
       <input type="hidden" name="redirect" value="<?= esc($redirect) ?>" />
     <?php endif; ?>
-    <div class="mb-3">
-      <input name="usr" type="text" class="form-control rounded-pill mx-auto bg-light-gray" placeholder="Username" />
-    </div>
-    <div class="mb-3">
-      <input name="pwd" type="password" class="form-control rounded-pill mx-auto bg-light-gray" placeholder="Password" />
-    </div>
+   <div class="mb-3">
+    <input name="username" type="text" class="form-control rounded-pill mx-auto bg-light-gray" placeholder="Username" required />
+   </div>
+   <div class="mb-3">
+    <input name="password" type="password" class="form-control rounded-pill mx-auto bg-light-gray" placeholder="Password" required />
+   </div>
+
     <div class="d-grid">
       <button type="submit" class="btn btn-primary rounded-pill mx-auto">MASUK</button>
     </div>

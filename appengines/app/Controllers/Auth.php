@@ -5,6 +5,7 @@ namespace App\Controllers;
 use CodeIgniter\Controller;
 use App\Models\MyModel;
 use App\Models\AuthModel;
+use App\Models\AuthModelAdmin;
 use App\Services\EmailServices;
 
 class Auth extends Controller
@@ -89,6 +90,59 @@ class Auth extends Controller
 		    	return redirect()->back();
 		}
 	}
+
+	public function actAdmin()
+		{
+			helper('form');
+			$session = session();
+			$adminModel = new AuthModelAdmin();
+
+			$username = $this->request->getPost('username');
+			$password = $this->request->getPost('password');
+
+			$admin = $adminModel->getAdminByUsername($username);
+
+			if ($admin) {
+				// Jika password BELUM di-hash (plain text)
+				if ($password === $admin['admin_password']) {
+
+					// 1. Ambil menu berdasarkan id_role
+					$getMenu = $adminModel->getMenu($admin['id_role']);
+
+					// 2. Siapkan struktur menu seperti di act()
+					$menu = [
+						'menus' => [],
+						'parent_menus' => [],
+					];
+
+					foreach ($getMenu as $row) {
+						$menu['menus'][$row->kode_menu] = $row;
+						$menu['parent_menus'][$row->kode_induk][] = $row->kode_menu;
+					}
+
+					// 3. Simpan ke session
+					$sessionData = [
+						'id_user'        => $admin['admin_username'], // disamakan key-nya
+						'email'          => $admin['admin_username'], // jika tidak ada email
+						'role_id'        => $admin['id_role'],        // disamakan jadi role_id
+						'lab_kode'       => $admin['lab_kode'],
+						'menu'           => $menu,
+						'logged_in'      => TRUE
+					];
+
+					$session->set($sessionData);
+
+					return redirect()->to('/dashboard');
+				} else {
+					$session->setFlashdata('login_error', 'Password salah!');
+					return redirect()->back()->withInput();
+				}
+			} else {
+				$session->setFlashdata('login_error', 'Username tidak ditemukan!');
+				return redirect()->back()->withInput();
+			}
+		}
+
 
 	
 
