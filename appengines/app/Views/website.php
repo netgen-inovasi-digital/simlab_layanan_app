@@ -120,6 +120,7 @@
                     <button type="button" class="btn btn-outline-primary me-2" data-bs-toggle="modal"
                         data-bs-target="#authModal">
                         MASUK
+                    
                     </button>
                 <?php endif; ?>
             </div>
@@ -236,6 +237,8 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
+
+      <!--login form masuk-->
         <div id="login-view">
             <h5 class="fw-bold mb-4 text-center">Silakan Masuk</h5>
             <?php if (session()->getFlashdata('login_error')): ?>
@@ -246,7 +249,7 @@
 
             <?= form_open('login/auth', ['id' => 'modal-login-form']) ?>
             <div class="mb-3">
-                <input name="usr" type="text" class="form-control rounded-pill mx-auto bg-light-gray" placeholder="Username" value="<?= old('usr') ?>" required />
+                <input name="usr" type="text" class="form-control rounded-pill mx-auto bg-light-gray" placeholder="email" value="<?= old('email') ?>" required />
             </div>
             <div class="mb-3">
                 <input name="pwd" type="password" class="form-control rounded-pill mx-auto bg-light-gray" placeholder="Password" required />

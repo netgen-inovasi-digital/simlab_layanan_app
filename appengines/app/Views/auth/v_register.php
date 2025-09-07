@@ -12,26 +12,37 @@
             </ul>
         </div>
     <?php endif ?>
-    
-      <?= form_open_multipart('register/auth', [
-        'id' => 'register-form',
-        'method' => 'post' 
-    ]) ?>
 
-    <?= csrf_field() ?>
+     <!-- Flash message -->
+    <?php if(session()->getFlashdata('error')): ?>
+        <div class="alert alert-danger">
+            <?= session()->getFlashdata('error') ?>
+        </div>
+    <?php endif; ?>
+
+    <?php if(session()->getFlashdata('success')): ?>
+        <div class="alert alert-success">
+            <?= session()->getFlashdata('success') ?>
+        </div>
+    <?php endif; ?>
     
-    <div class="mb-3">
-        <input name="nama" type="text" class="form-control rounded-pill mx-auto" placeholder="Nama Lengkap" value="<?= old('nama') ?>" required />
-    </div>
-    <div class="mb-3">
-        <input name="usr" type="text" class="form-control rounded-pill mx-auto" placeholder="Username" value="<?= old('usr') ?>" required />
-    </div>
-    <div class="mb-3">
-        <input name="email" type="email" class="form-control rounded-pill mx-auto" placeholder="Email" value="<?= old('email') ?>" required />
-    </div>
-    <div class="mb-3">
-        <input name="pwd" type="password" class="form-control rounded-pill mx-auto" placeholder="Password" required />
-    </div>
+      <?= form_open_multipart('register/auth', ['id' => 'register-form', 'method' => 'post'   ]) ?>
+      
+      <?= csrf_field() ?>
+    
+        <div class="mb-3">
+            <input name="nama" type="text" class="form-control rounded-pill mx-auto" placeholder="Nama Lengkapp" value="<?= old('nama') ?>" required />
+        </div>
+        <div class="mb-3">
+            <input name="email" type="email" class="form-control rounded-pill mx-auto" placeholder="Email" value="<?= old('email') ?>" required />
+        </div>
+        <div class="mb-3">
+            <input name="pwd" type="password" class="form-control rounded-pill mx-auto" placeholder="Password" required />
+        </div>
+        <div class="mb-3">
+            <input  name="repwd" type="password"  class="form-control rounded-pill mx-auto"   placeholder="Ulangi Password" required 
+            />
+        </div>
 
     
     <!-- <div class="mb-3 text-center">
@@ -53,6 +64,6 @@
     <div class="d-grid">
         <button type="submit" class="btn btn-primary rounded-pill mx-auto">DAFTAR</button>
     </div>
-    </form>
+    <?= form_close(); ?>
 
 </div>

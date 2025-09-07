@@ -110,31 +110,38 @@ class Auth extends Controller
 	}
 
 	public function actRegister()
-{
+	{
     $session = session();
     $model = new AuthModel();
 
     // Ambil data dari form
-    $username = $this->request->getPost('usr');
-    $email    = $this->request->getPost('email');
-    $password = $this->request->getPost('pwd');
+    $username   = $this->request->getPost('nama');
+    $email      = $this->request->getPost('email');
+    $password   = $this->request->getPost('pwd');
+    $repassword = $this->request->getPost('repwd');
 
-    // Validasi sederhana
-    if (empty($username) || empty($email) || empty($password)) {
-        $session->setFlashdata('msg', 'Semua field wajib diisi!');
-        return redirect()->route('/');
+    // Validasi field kosong
+    if (empty($username) || empty($email) || empty($password) || empty($repassword)) {
+        $session->setFlashdata('error', 'Semua field wajib diisi!');
+        return redirect()->back()->withInput();
     }
 
     // Cek username sudah ada
-    if ($model->checkUsername($username) > 0) {
-        $session->setFlashdata('msg', 'Username sudah terdaftar!');
-        return redirect()->route('/');
-    }
+    // if ($model->checkUsername($username) > 0) {
+    //     $session->setFlashdata('error', 'Username sudah terdaftar!');
+    //     return redirect()->back()->withInput();
+    // }
 
     // Cek email sudah ada
     if ($model->checkEmail($email) > 0) {
-        $session->setFlashdata('msg', 'Email sudah terdaftar!');
-        return redirect()->route('/');
+        $session->setFlashdata('error', 'Email sudah terdaftar!');
+        return redirect()->back()->withInput();
+    }
+
+    // Cek password 2 kali
+    if ($password !== $repassword) {
+        $session->setFlashdata('error', 'Password dan Ulangi Password tidak sama!');
+        return redirect()->back()->withInput();
     }
 
     // Hash password
@@ -143,26 +150,26 @@ class Auth extends Controller
     // Tentukan identitas otomatis
     $identity = (strpos($email, '@ulm.ac.id') !== false) ? 'ULM' : 'NON ULM';
 
-    // Siapkan data user baru sesuai tabel simlab_account_users
     $data = [
-        'user_name'             => $username,
-        'user_email'            => $email,
-        'user_password'         => $hash,
-        'user_identity'         => $identity,
-        'status_user'           => 1, // aktifkan user
-        'role_id'               => 2, // default role user biasa
+        'user_name'     => $username,
+        'user_email'    => $email,
+        'user_password' => $hash,
+        'user_identity' => $identity,
+        'status_user'   => 1,
+        'role_id'       => 2,
     ];
 
-    // Insert ke database
+    // Simpan ke database
     try {
         $model->registerUser($data);
         $session->setFlashdata('success', 'Registrasi berhasil! Silakan login.');
         return redirect()->to('/');
     } catch (\Exception $e) {
         $session->setFlashdata('error', 'Registrasi gagal: ' . $e->getMessage());
-        return redirect()->route('/');
+        return redirect()->back()->withInput();
     }
-}
+
+	}
 
 
 	// untuk fitur lupa password
@@ -276,4 +283,6 @@ class Auth extends Controller
 
 		return redirect()->to('login')->with('success', 'Password berhasil diubah');
 	}
+
+	
 }
