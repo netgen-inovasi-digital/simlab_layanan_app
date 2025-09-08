@@ -249,7 +249,7 @@
 
             <?= form_open('login/auth', ['id' => 'modal-login-form']) ?>
             <div class="mb-3">
-                <input name="email" type="text" class="form-control rounded-pill mx-auto bg-light-gray" placeholder="email" value="<?= old('email') ?>" required />
+                <input name="email" type="text" class="form-control rounded-pill mx-auto bg-light-gray" placeholder="Email" value="<?= old('email') ?>" required />
             </div>
             <div class="mb-3">
                 <input name="pwd" type="password" class="form-control rounded-pill mx-auto bg-light-gray" placeholder="Password" required />

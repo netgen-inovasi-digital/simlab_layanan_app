@@ -31,7 +31,7 @@
       <?= csrf_field() ?>
     
         <div class="mb-3">
-            <input name="nama" type="text" class="form-control rounded-pill mx-auto" placeholder="Nama Lengkapp" value="<?= old('nama') ?>" required />
+            <input name="nama" type="text" class="form-control rounded-pill mx-auto" placeholder="Nama Lengkap" value="<?= old('nama') ?>" required />
         </div>
         <div class="mb-3">
             <input name="email" type="email" class="form-control rounded-pill mx-auto" placeholder="Email" value="<?= old('email') ?>" required />
