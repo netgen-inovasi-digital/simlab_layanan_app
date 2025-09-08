@@ -189,7 +189,7 @@ class Auth extends Controller
 
     // Cek password 2 kali
     if ($password !== $repassword) {
-        $session->setFlashdata('error', 'Password dan Ulangi Password tidak sama!');
+        $session->setFlashdata('error', 'Password tidak sama!');
         return redirect()->back()->withInput();
     }
 
