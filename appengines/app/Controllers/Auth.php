@@ -5,6 +5,7 @@ namespace App\Controllers;
 use CodeIgniter\Controller;
 use App\Models\MyModel;
 use App\Models\AuthModel;
+use App\Models\AuthModelAdmin;
 use App\Services\EmailServices;
 
 class Auth extends Controller
@@ -28,22 +29,23 @@ class Auth extends Controller
 		$session = session();
 		$model = new AuthModel();
 
-		$username = $this->request->getPost('usr');
+		$email = $this->request->getPost('email');
 		$password = $this->request->getPost('pwd');
-		$data = $model->where('username', $username)->first();
+		$data = $model->where('user_email', $email)->first();
+
 		if ($data) {
-			$hash = $data['password'];
+			$hash = $data['user_password'];
 			$verify_pass = password_verify($password, $hash);
 			if ($verify_pass) {
 				if ($data['status_user'] == 1) {
 					date_default_timezone_set('Asia/Singapore');
 					$datenow = date('Y-m-d H:i:s');
-					$model->update(array('id_user' => $data['id_user']), array('last_login' => $datenow));
+					// $model->update(array('id_user' => $data['user_id']), array('last_login' => $datenow));
 
 					$ses_data = [
-						'id_user'        => $data['id_user'],
-						'username'      => $data['username'],
-						'nama'			=> $data['nama'],
+						'id_user'        => $data['user_id'],
+						// 'username'      => $data['user_name'],
+						'email'			=> $data['user_email'],
 						'role_id'        => $data['role_id'],
 						'logged_in'     => TRUE
 					];
@@ -53,13 +55,13 @@ class Auth extends Controller
 						'menus' => array(),
 						'parent_menus' => array(),
 					);
+
 					foreach ($getMenu as $row) {
 						$menu['menus'][$row->kode_menu] = $row;
 						$menu['parent_menus'][$row->kode_induk][] = $row->kode_menu;
 					}
 
 					$ses_data['menu'] = $menu;
-
 					$session->set($ses_data);
 
 					// ambil parameter redirect dari POST
@@ -73,20 +75,105 @@ class Auth extends Controller
 
 					return redirect()->route('home');
 				} else {
-					$session->setFlashdata('userx', $username);
-					$session->setFlashdata('error', '* Akun anda belum aktif!');
-					return redirect()->route('login');
+				$session->setFlashdata('login_error', '* Akun anda belum aktif!');
+                $session->setFlashdata('login_email', $email); 
+                return redirect()->back();
 				}
 			} else {
-				$session->setFlashdata('userx', $username);
-				$session->setFlashdata('error', '* Password Salah!');
-				return redirect()->route('login');
+				$session->setFlashdata('login_error', '* Password Salah!');
+				$session->setFlashdata('login_email', $email); 
+				return redirect()->back();
 			}
 		} else {
-			$session->setFlashdata('error', '* Username Salah!');
-			return redirect()->route('login');
+			  $session->setFlashdata('login_error', '* Email salah atau belum terdaftar!');
+			  $session->setFlashdata('login_email', $email); 
+		    	return redirect()->back();
 		}
 	}
+
+	public function actAdmin()
+	{
+    helper('form');
+    $session = session();
+    $adminModel = new AuthModelAdmin();
+
+    $username = $this->request->getPost('username');
+    $password = $this->request->getPost('password');
+
+    // Cek apakah login sebagai laboran 
+    $laboran = $adminModel->getLaboranById($username);
+
+    if ($laboran) {
+        if ($password === $laboran['admin_password']) {
+            $getMenu = $adminModel->getMenu($laboran['id_role']);
+
+            $menu = [
+                'menus' => [],
+                'parent_menus' => [],
+            ];
+
+            foreach ($getMenu as $row) {
+                $menu['menus'][$row->kode_menu] = $row;
+                $menu['parent_menus'][$row->kode_induk][] = $row->kode_menu;
+            }
+
+            // Data session khusus laboran
+            $sessionData = [
+                'id_user'      => $laboran['id_laboran'], 
+                'email'        => $laboran['admin_username'],
+                'role_id'      => $laboran['id_role'],
+                'lab_kode'     => $laboran['lab_kode'],
+                'menu'         => $menu,
+                'logged_in'    => TRUE
+            ];
+
+            $session->set($sessionData);
+            return redirect()->to('/dashboard');
+        } else {
+            $session->setFlashdata('login_error', 'Password salah untuk Laboran!');
+            return redirect()->back()->withInput();
+        }
+    }
+
+    // Jika bukan laboran
+    $admin = $adminModel->getAdminByUsername($username);
+
+    if ($admin) {
+        if ($password === $admin['admin_password']) {
+            $getMenu = $adminModel->getMenu($admin['id_role']);
+
+            $menu = [
+                'menus' => [],
+                'parent_menus' => [],
+            ];
+
+            foreach ($getMenu as $row) {
+                $menu['menus'][$row->kode_menu] = $row;
+                $menu['parent_menus'][$row->kode_induk][] = $row->kode_menu;
+            }
+
+            $sessionData = [
+                'id_user'      => $admin['admin_username'],
+                'email'        => $admin['admin_username'],
+                'role_id'      => $admin['id_role'],
+                'lab_kode'     => $admin['lab_kode'],
+                'menu'         => $menu,
+                'logged_in'    => TRUE
+            ];
+
+            $session->set($sessionData);
+            return redirect()->to('/dashboard');
+        } else {
+            $session->setFlashdata('login_error', 'Password salah!');
+            return redirect()->back()->withInput();
+        }
+    } else {
+        $session->setFlashdata('login_error', 'Username Laboran atau Admin tidak ditemukan!');
+        return redirect()->back()->withInput();
+    }
+}
+
+	
 
 	public function register()
 	{
@@ -103,64 +190,71 @@ class Auth extends Controller
 	{
 		$session = session();
 		$session->destroy();
-		return redirect()->route('login');
+		return redirect()->to(base_url('/'));
 	}
 
 	public function actRegister()
 	{
-		$session = session();
-		$model = new AuthModel();
+    $session = session();
+    $model = new AuthModel();
 
-		// Ambil data dari form
-		$name = $this->request->getPost('nama');
-		$username = $this->request->getPost('usr');
-		$email = $this->request->getPost('email');
-		$password = $this->request->getPost('pwd');
-		$address = $this->request->getPost('address');
+    // Ambil data dari form
+    $username   = $this->request->getPost('nama');
+    $email      = $this->request->getPost('email');
+    $password   = $this->request->getPost('pwd');
+    $repassword = $this->request->getPost('repwd');
 
-		// Validasi sederhana
-		if (empty($name) || empty($username) || empty($email) || empty($password) || empty($address)) {
-			$session->setFlashdata('msg', 'Semua field wajib diisi!');
-			return redirect()->route('register');
-		}
+    // Validasi field kosong
+    if (empty($username) || empty($email) || empty($password) || empty($repassword)) {
+        $session->setFlashdata('error', 'Semua field wajib diisi!');
+        return redirect()->back()->withInput();
+    }
 
-		// Cek username sudah ada
-		if ($model->checkUsername($username) > 0) {
-			$session->setFlashdata('msg', 'Username sudah terdaftar!');
-			return redirect()->route('register');
-		}
+    // Cek username sudah ada
+    // if ($model->checkUsername($username) > 0) {
+    //     $session->setFlashdata('error', 'Username sudah terdaftar!');
+    //     return redirect()->back()->withInput();
+    // }
 
-		// Cek email sudah ada
-		if ($model->checkEmail($email) > 0) {
-			$session->setFlashdata('msg', 'Email sudah terdaftar!');
-			return redirect()->route('register');
-		}
+    // Cek email sudah ada
+    if ($model->checkEmail($email) > 0) {
+        $session->setFlashdata('error', 'Email sudah terdaftar!');
+        return redirect()->back()->withInput();
+    }
 
-		// Hash password
-		$hash = password_hash($password, PASSWORD_DEFAULT);
+    // Cek password 2 kali
+    if ($password !== $repassword) {
+        $session->setFlashdata('error', 'Password dan Ulangi Password tidak sama!');
+        return redirect()->back()->withInput();
+    }
 
-		// Siapkan data user baru
-		$data = [
-			'username' => $username,
-			'password' => $hash,
-			'nama' => $name,
-			'email' => $email,
-			'alamat' => $address,
-			'status_user' => 1, // default belum aktif, bisa diubah sesuai kebutuhan
-			'role_id' => 2, // default role user biasa, sesuaikan jika perlu
-			'last_login' => null
-		];
+    // Hash password
+    $hash = password_hash($password, PASSWORD_DEFAULT);
 
-		// Insert ke database
-		try {
-			$model->registerUser($data);
-			$session->setFlashdata('success', 'Registrasi berhasil! Silakan login.');
-			return redirect()->route('login');
-		} catch (\Exception $e) {
-			$session->setFlashdata('error', 'Registrasi gagal: ' . $e->getMessage());
-			return redirect()->route('register');
-		}
+    // Tentukan identitas otomatis
+    $identity = (strpos($email, '@ulm.ac.id') !== false) ? 'ULM' : 'NON ULM';
+
+    $data = [
+        'user_name'     => $username,
+        'user_email'    => $email,
+        'user_password' => $hash,
+        'user_identity' => $identity,
+        'status_user'   => 1,
+        'role_id'       => 2,
+    ];
+
+    // Simpan ke database
+    try {
+        $model->registerUser($data);
+        $session->setFlashdata('success', 'Registrasi berhasil! Silakan login.');
+        return redirect()->to('/');
+    } catch (\Exception $e) {
+        $session->setFlashdata('error', 'Registrasi gagal: ' . $e->getMessage());
+        return redirect()->back()->withInput();
+    }
+
 	}
+
 
 	// untuk fitur lupa password
 	public function forgot()
@@ -273,4 +367,6 @@ class Auth extends Controller
 
 		return redirect()->to('login')->with('success', 'Password berhasil diubah');
 	}
+
+	
 }
