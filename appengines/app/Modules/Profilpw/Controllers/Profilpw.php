@@ -72,7 +72,6 @@ class Profilpw extends BaseController
 
 			// Update password baru
 			$data['user_password'] = password_hash($passwordBaru, PASSWORD_DEFAULT);
-			$data['user_password_default'] = 0;
 		}
 
 		$res = $model->updateData($data, $this->id, session()->get('id_user'));
@@ -81,6 +80,7 @@ class Profilpw extends BaseController
 			$res = 'refresh';
 			$link = 'profilpw';
 		}
+		
 		return $this->response->setJSON([
 			'res'=> $res, 
 			'link'=>$link ?? '', 
@@ -89,23 +89,4 @@ class Profilpw extends BaseController
 		]);
     }
 
-	function doUpload($file)
-	{
-		$filename = "";
-		if($file) {
-			if ($file->isValid() && ! $file->hasMoved())
-			{
-				$ext = $file->getClientExtension();
-				$filename = 'logo.' . $ext;
-				$path = FCPATH . 'uploads';
-				$file->move($path, $filename, true);
-			}
-		} 
-		return $filename;
-	}
-
-	// $file = $this->request->getFile('image');
-	// if ($file->isValid() && in_array($file->getMimeType(), ['image/jpeg', 'image/png', 'application/pdf'])) {
-	// 	// simpan
-	// }
 }
