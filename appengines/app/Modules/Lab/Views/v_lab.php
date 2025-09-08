@@ -1,0 +1,295 @@
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header border-bottom pb-3">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <label class="card-title mb-0 fs-5 fw-bold"><?php echo $title ?></label>
+                    <button id="add" class="btn btn-primary">
+                        <i class="bi bi-plus-circle-dotted"></i> Tambah
+                    </button>
+                </div>
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-6">
+                        <label for="filter_jenKode" class="form-label">Filter Kategori Layanan</label>
+                        <select id="filter_jenKode" name="filter_jenKode" class="form-select">
+                            <option value="">-- Semua Kategori --</option>
+                            </select>
+                    </div>
+                    <div class="col-md-6">
+                        <form id="formDiskonULM" action="<?= base_url('lab/update_diskon') ?>" method="post" class="d-flex align-items-end">
+                            <?= csrf_field() ?>
+                            <div class="flex-grow-1">
+                                <label for="diskon_ulm" class="form-label">Diskon Civitas ULM (%)</label>
+                                <input type="number" name="diskon" id="diskon_ulm" class="form-control" value="<?= isset($diskon_ulm) ? $diskon_ulm : '' ?>" min="0" max="100">
+                            </div>
+                            <div class="ms-2">
+                                <button type="submit" class="btn btn-outline-primary">Update</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body">
+                <table id="data-table" class="saytable border-top-bottom">
+                    <thead>
+                        <tr>
+                            <th show width="5%">No.</th>
+                            <th show width="10%">Kategori Layanan</th>
+                            <th show width="55%">Nama Layanan</th>
+                            <th show>Biaya</th>
+                            <th show class="action text-end">Aksi<i class="bi bi-code sort-icon"></i></th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    var apiUrl = '<?php echo site_url("lab/datalist") ?>';
+    var currentPage = 1;
+    var currentLimit = 10;
+
+    function loadTable(url) {
+        return createTable({
+            tableId: 'data-table',
+            apiUrl: url
+        });
+    }
+
+    table = loadTable(apiUrl + "?page=" + currentPage + "&limit=" + currentLimit);
+    addAction();
+
+    fetch('<?php echo site_url("lab/getoptions") ?>')
+        .then(res => res.json())
+        .then(data => {
+            let filterSelect = document.getElementById('filter_jenKode');
+            data.jenis.forEach(j => {
+                filterSelect.innerHTML += `<option value="${j.jenKode}">${j.jenKode} - ${j.jenNama}</option>`;
+            });
+        });
+
+    document.getElementById('filter_jenKode').addEventListener('change', function() {
+        let val = this.value;
+        let newUrl = apiUrl + "?page=" + currentPage + "&limit=" + currentLimit;
+        if (val !== "") {
+            newUrl = apiUrl + "?ujiJenKode=" + encodeURIComponent(val) + "&page=" + currentPage + "&limit=" + currentLimit;
+        }
+        table = loadTable(newUrl);
+        addAction();
+    });
+
+    document.querySelector('#formDiskonULM').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const form = e.target;
+        const formData = new FormData(form);
+        const actionUrl = form.getAttribute('action');
+        showLoading();
+        const csrfInput = form.querySelector('[name="<?= csrf_token() ?>"]');
+        const csrfToken = csrfInput ? csrfInput.value : '';
+        fetch(actionUrl, {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-CSRF-TOKEN': csrfToken }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.xname && data.xhash) {
+                document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => {
+                    input.value = data.xhash;
+                });
+            }
+            if (data.res === true) {
+                sayAlert('successModal', 'Berhasil', 'Diskon berhasil diupdate.', 'success');
+            } else {
+                sayAlert('errorModal', 'Gagal', 'Diskon gagal diupdate.', 'warning');
+            }
+        })
+        .catch(err => {
+            sayAlert('errorModal', 'Error', 'Terjadi kesalahan sistem.', 'warning');
+        })
+        .finally(() => hideLoading());
+    });
+
+    document.querySelector('#btnSimpan').addEventListener('click', function(e) {
+        e.preventDefault();
+        const form = document.querySelector('#myform');
+        const formData = new FormData(form);
+        const actionUrl = form.getAttribute('action');
+        saveData({ url: actionUrl, formData: formData, onSuccess: function(data) {
+            if (data.res === true) {
+                if (typeof table !== 'undefined') table.fetchData({ reload: true });
+                sayAlert('successModal', 'Berhasil', 'Data berhasil disimpan.', 'success');
+                if ($('#modalForm').hasClass('show')) $('#modalForm').modal('hide');
+            }
+        }});
+    });
+
+    function saveData({ url, formData, onSuccess, onError }) {
+        showLoading();
+        const csrfInput = document.querySelector('[name="<?= csrf_token() ?>"]');
+        const csrfToken = csrfInput ? csrfInput.value : '';
+        fetch(url, {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-CSRF-TOKEN': csrfToken }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.xname && data.xhash) {
+                    document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => {
+                        input.value = data.xhash;
+                    });
+                }
+                if (typeof onSuccess === 'function') {
+                    onSuccess(data);
+                    return;
+                }
+                if ($('#modalForm').hasClass('show')) $('#modalForm').modal('hide');
+                if (data.res === true) {
+                    if (typeof table !== 'undefined') table.fetchData({ reload: true });
+                    sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
+                } else if (data.res === 'reload') {
+                    sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
+                } else if (data.res === 'refresh') {
+                    loadContent(data.link);
+                    sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
+                } else if (data.res === 'redirect') {
+                    window.location.href = data.link;
+                } else if (data.res === 'check') {
+                    sayAlert('errorModal', 'Error', data.link, 'warning');
+                } else if (data.res === 'refresh-print') {
+                    loadContent(data.link);
+                    window.open(data.print, "_blank");
+                } else {
+                    sayAlert('errorModal', 'Error', 'Data gagal disimpan.', 'warning');
+                }
+            })
+            .catch(error => {
+                if (typeof onError === 'function') {
+                    onError(error);
+                } else {
+                    sayAlert('errorModal', 'Error', 'Terjadi kesalahan pada sistem.', 'warning');
+                }
+            })
+            .finally(() => hideLoading());
+    }
+
+    function loadOptions(selected = {}) {
+        fetch('<?php echo site_url("lab/getoptions") ?>')
+            .then(res => res.json())
+            .then(data => {
+                let jenis = document.querySelector('[name="ujiJenKode"]');
+                let alat  = document.querySelector('[name="ujiAlatKode"]');
+                let para  = document.querySelector('[name="ujiParaKode"]');
+                jenis.innerHTML = '<option value="">-- Pilih Jenis --</option>';
+                alat.innerHTML  = '<option value="">-- Pilih Alat --</option>';
+                para.innerHTML  = '<option value="">-- Pilih Parameter --</option>';
+                data.jenis.forEach(j => {
+                    jenis.innerHTML += `<option value="${j.jenKode}" ${selected.jenis==j.jenKode?"selected":""}>${j.jenNama}</option>`;
+                });
+                data.alat.forEach(a => {
+                    alat.innerHTML += `<option value="${a.alatKode}" ${selected.alat==a.alatKode?"selected":""}>${a.alatNama}</option>`;
+                });
+                data.parameter.forEach(p => {
+                    para.innerHTML += `<option value="${p.paraKode}" ${selected.para==p.paraKode?"selected":""}>${p.paraNama}</option>`;
+                });
+            });
+    }
+
+    document.querySelector('#add').addEventListener('click', function() {
+        document.querySelector('#myform').reset();
+        document.querySelector('[name="id"]').value = "";
+        loadOptions();
+        $('#modalForm').modal('show');
+    });
+
+    function editItem(e) {
+        const id = e.target.closest('div').id;
+        fetch('<?php echo site_url("lab/edit/") ?>' + id)
+            .then(res => res.json())
+            .then(data => {
+                document.querySelector('[name="id"]').value = data.id;
+                document.querySelector('[name="ujiLayanan"]').value = data.ujiLayanan;
+                document.querySelector('[name="ujiSatuan"]').value = data.ujiSatuan;
+                document.querySelector('[name="ujiBiaya"]').value = data.ujiBiaya;
+                loadOptions({
+                    jenis: data.ujiJenKode,
+                    alat: data.ujiAlatKode,
+                    para: data.ujiParaKode
+                });
+                $('#modalForm').modal('show');
+            });
+    }
+</script>
+
+
+<div class="modal fade" id="modalForm" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Form Layanan Lab</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <?php echo form_open('lab/submit', array('id' => 'myform', 'novalidate' => '')) ?>
+            <div class="modal-body p-4">
+                <input type="hidden" value="" name="id" />
+                <div class="row">
+                    <div class="col-md-6 border-end">
+                        <p class="text-muted small fw-bold">KLASIFIKASI LAYANAN</p>
+                        <div class="mb-3">
+                            <label class="form-label">Jenis Layanan</label>
+                            <select name="ujiJenKode" class="form-select" required>
+                                <option value="">-- Pilih Jenis --</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Alat</label>
+                            <select name="ujiAlatKode" class="form-select" required>
+                                <option value="">-- Pilih Alat --</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Parameter</label>
+                            <select name="ujiParaKode" class="form-select" required>
+                                <option value="">-- Pilih Parameter --</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="text-muted small fw-bold">DETAIL LAYANAN</p>
+                        <div class="mb-3">
+                            <label class="form-label">Nama Layanan</label>
+                            <input name="ujiLayanan" type="text" class="form-control" required placeholder="Masukkan nama layanan">
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-7">
+                                <div class="mb-3">
+                                    <label class="form-label">Biaya</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">Rp</span>
+                                        <input name="ujiBiaya" type="number" class="form-control" required placeholder="Masukkan biaya">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-sm-5">
+                                <div class="mb-3">
+                                    <label class="form-label">Satuan</label>
+                                    <input name="ujiSatuan" type="text" class="form-control" required placeholder="Sampel/Jam/Ruangan">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-light" type="button" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i> Batal</button>
+                <button class="btn btn-primary" id="btnSimpan" type="submit"><i class="bi bi-check2-circle"></i> Simpan</button>
+            </div>
+            </form>
+        </div>
+    </div>
+</div>

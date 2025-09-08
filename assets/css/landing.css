@@ -1,12 +1,12 @@
 :root {
-    --primary: #2F9E86;
-    --primary-hover: #27836f;
+    --primary: #0d6efd;
+    --primary-hover: #185cc2;
     --secondary: #707070;
     --secondary-hover: #5a5a5a;
     --info: #39A5D6;
     --info-hover: #2585B0;
-    --success: #4F9355;
-    --success-hover: #407845;
+    --success: #2e60eb;
+    --success-hover: #2953c7;
     --warning: #FFC667;
     --warning-hover: #F3AB32;
     --danger: #DC3A3A;
@@ -55,8 +55,8 @@
     background-color: var(--primary-hover) !important;
 }
 .btn-outline-primary{
-    border: solid #2F9E86 1px;
-    color: #2F9E86;
+    border: solid #0d6efd 1px;
+    color: #0d6efd;
 }
 .btn-outline-primary:hover {
     background-color: var(--primary-hover) !important;
@@ -130,7 +130,7 @@ body {
     bottom: 0;
     width: 100%;
     height: 7px;
-    background: linear-gradient(to left, #e6d3b8 40%, #3fa78d 100%);
+    background: linear-gradient(to left, #e6d3b8 40%, #0d6efd 100%);
     z-index: -1;
 }
 
@@ -189,7 +189,7 @@ section {
     position: absolute;
     bottom: 15%;
     right: 10%;
-    background: linear-gradient(40deg, rgba(47, 158, 134, 0.7) 0%, rgba(110, 159, 110, 0.7) 100%);
+    background: linear-gradient(40deg, rgba(12, 126, 255, 0.7) 0%, rgba(110, 125, 159, 0.7) 100%);
     color: #fff;
     padding: 20px 30px;
     border-radius: 20px;
@@ -253,7 +253,7 @@ section {
 .service-card h5 {
     font-weight: 600;
     margin-bottom: 10px;
-    color: #2F9E86;
+    color: #0d6efd;
 }
 
 .service-card p {
@@ -312,7 +312,7 @@ section {
     bottom: 0;
     left: 0;
     right: 0;
-    background: linear-gradient(to top, rgba(24, 133, 89, 0.8), rgba(0, 100, 0, 0.1));
+    background: linear-gradient(to top, rgba(24, 60, 133, 0.8), rgba(0, 100, 0, 0.1));
     color: white;
 }
 
@@ -355,7 +355,7 @@ section {
 
 /* footer */
 .footer {
-    background-color: #207563;
+    background-color: #185cc2;
     color: #ffffff;
     padding: 40px 20px 0;
     position: relative;

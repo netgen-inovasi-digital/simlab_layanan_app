@@ -152,7 +152,10 @@
             } else if(data.res == 'refresh') {
                 loadContent(data.link);
                 sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
-            } else if(data.res == 'redirect') {
+            } else if(data.res == 'error') {
+                sayAlert('errorModal', 'Error', data.msg, 'warning'); //faisal nambahkan, untuk data.msg error
+            }
+            else if(data.res == 'redirect') {
                 window.location.href = data.link;
             } else if(data.res == 'check') {
                 sayAlert('errorModal', 'Error', data.link, 'warning');
