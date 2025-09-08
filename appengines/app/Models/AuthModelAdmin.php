@@ -6,11 +6,11 @@ use CodeIgniter\Model;
 
 class AuthModelAdmin extends Model
 {
-    protected $table = 'simlab_account_admin';
-    protected $primaryKey = 'admin_username';
+    protected $table = 'simlab_account';
+    protected $primaryKey = 'username';
 
     protected $allowedFields = [
-        'admin_username',
+        'username',
         'id_role',
         'admin_password',
         'lab_kode'
@@ -18,15 +18,15 @@ class AuthModelAdmin extends Model
 
     public function getAdminByUsername($username)
     {
-        return $this->where('admin_username', $username)->first();
+        return $this->where('username', $username)->first();
     }
 
     public function getLaboranById($idLaboran)
     {
         $db = \Config\Database::connect();
         $builder = $db->table('simlab_laboran l');
-        $builder->select('l.id_laboran, l.admin_username, l.lab_kode, a.admin_password, a.id_role');
-        $builder->join('simlab_account_admin a', 'l.admin_username = a.admin_username');
+        $builder->select('l.id_laboran, l.username, l.lab_kode, a.admin_password, a.id_role');
+        $builder->join('simlab_account a', 'l.username = a.username');
         $builder->where('l.id_laboran', $idLaboran);
         return $builder->get()->getRowArray();
     }
