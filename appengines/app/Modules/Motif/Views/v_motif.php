@@ -12,7 +12,7 @@
                     <thead>
                         <tr>
                             <th show width="8%">No.</th>
-                            <th show>Nama Motif</th>
+                            <th show>Nama Motiff</th>
                             <th show>Deskripsi</th>
                             <th show>Icon/Foto</th>
                             <th show class="action text-end">Aksi<i class="bi bi-code sort-icon"></i></th>
