@@ -100,47 +100,12 @@ class Auth extends Controller
     $username = $this->request->getPost('username');
     $password = $this->request->getPost('password');
 
-    // Cek apakah login sebagai laboran 
-    $laboran = $adminModel->getLaboranById($username);
 
-    if ($laboran) {
-        if ($password === $laboran['admin_password']) {
-            $getMenu = $adminModel->getMenu($laboran['id_role']);
-
-            $menu = [
-                'menus' => [],
-                'parent_menus' => [],
-            ];
-
-            foreach ($getMenu as $row) {
-                $menu['menus'][$row->kode_menu] = $row;
-                $menu['parent_menus'][$row->kode_induk][] = $row->kode_menu;
-            }
-
-            // Data session khusus laboran
-            $sessionData = [
-                'id_user'      => $laboran['id_laboran'], 
-                'email'        => $laboran['admin_username'],
-                'role_id'      => $laboran['id_role'],
-                'lab_kode'     => $laboran['lab_kode'],
-                'menu'         => $menu,
-                'logged_in'    => TRUE
-            ];
-
-            $session->set($sessionData);
-            return redirect()->to('/dashboard');
-        } else {
-            $session->setFlashdata('login_error', 'Password salah untuk Laboran!');
-            return redirect()->back()->withInput();
-        }
-    }
-
-    // Jika bukan laboran
     $admin = $adminModel->getAdminByUsername($username);
 
     if ($admin) {
-        if ($password === $admin['admin_password']) {
-            $getMenu = $adminModel->getMenu($admin['id_role']);
+        if ($password === $admin['password']) {
+            $getMenu = $adminModel->getMenu($admin['role_id']);
 
             $menu = [
                 'menus' => [],
@@ -153,9 +118,9 @@ class Auth extends Controller
             }
 
             $sessionData = [
-                'id_user'      => $admin['admin_username'],
-                'email'        => $admin['admin_username'],
-                'role_id'      => $admin['id_role'],
+                'id_user'      => $admin['username'],
+                'email'        => $admin['username'],
+                'role_id'      => $admin['role_id'],
                 'lab_kode'     => $admin['lab_kode'],
                 'menu'         => $menu,
                 'logged_in'    => TRUE
@@ -168,7 +133,7 @@ class Auth extends Controller
             return redirect()->back()->withInput();
         }
     } else {
-        $session->setFlashdata('login_error', 'Username Laboran atau Admin tidak ditemukan!');
+        $session->setFlashdata('login_error', 'Username tidak ditemukan!');
         return redirect()->back()->withInput();
     }
 }
