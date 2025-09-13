@@ -4,23 +4,30 @@ use CodeIgniter\Model;
 
 class AuthModel extends Model
 {
-	protected $table = 'users';
-    protected $primaryKey = 'id_user';
-	protected $allowedFields = ['id_user', 'nama', 'email', 'username','password', 'role_id', 'status_user',  'alamat', 'last_login'];
+	protected $table = 'simlab_account_users';
+    protected $primaryKey = 'user_id';
+     protected $allowedFields = [
+        'user_name',
+        'user_email',
+        'user_password',
+        'user_identity',
+        'role_id',
+        'status_user',
+    ];
 
 	public function checkUsername($username)
 	{
 		$db = \Config\Database::connect();
-        $builder = $db->table('users');
-        $builder->where('username', $username);
+        $builder = $db->table('simlab_account_users');
+        $builder->where('user_name', $username);
 		return $builder->get()->getNumRows();
 	}
 
     public function checkEmail($email)
 	{
 		$db = \Config\Database::connect();
-        $builder = $db->table('users');
-        $builder->where('email', $email);
+        $builder = $db->table('simlab_account_users');
+        $builder->where('user_email', $email);
 		return $builder->get()->getNumRows();
 	}
 	

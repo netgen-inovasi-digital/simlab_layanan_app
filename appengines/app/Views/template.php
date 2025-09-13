@@ -77,8 +77,8 @@
     <div id="sidebar" class="sidebar pe-0">
         <div class="sidebar-header">
             <a href="<?php echo base_url('/') ?>">
-                <img src="https://placehold.co/500x180?text=Logo+Template"
-                    alt="Logo Ecomel"
+                <img src="assets/img/logosimlab.png"
+                    alt="Logo Simlab"
                     class="img-fluid rounded"
                     style="width: 180px; object-fit: contain;" />
 

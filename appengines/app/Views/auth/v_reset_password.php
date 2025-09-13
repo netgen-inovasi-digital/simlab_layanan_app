@@ -13,7 +13,8 @@ Reset Password
     <h5 class="fw-bold mb-4 text-center">Reset Password</h5>
     <?php foreach (['success', 'error', 'msg'] as $type): ?>
       <?php if (session()->getFlashdata($type)): ?>
-        <blockquote class="blockquote custom-blockquote bg-light mb-3 text-center text-<?= $type == 'error' ? 'danger' : 'success' ?> small rounded">
+        <blockquote
+          class="blockquote custom-blockquote bg-light mb-3 text-center text-<?= $type == 'error' ? 'danger' : 'success' ?> small rounded">
           <span><?= session()->getFlashdata($type) ?></span>
           <span class="ms-3">
             <i class="bi <?= $type == 'error' ? 'bi-x-circle' : 'bi-check-circle' ?>"></i>
@@ -38,10 +39,12 @@ Reset Password
       <?= form_open('reset/auth', ['id' => 'reset-form']) ?>
       <input type="hidden" name="token" value="<?= esc($token) ?>">
       <div class="mb-3">
-        <input type="password" class="form-control rounded-pill mx-auto bg-light-gray" name="pass" placeholder="password baru" required>
+        <input type="password" class="form-control rounded-pill mx-auto bg-light-gray" name="pass"
+          placeholder="password baru" required>
       </div>
       <div class="mb-3">
-        <input type="password" class="form-control rounded-pill mx-auto bg-light-gray" name="reppass" placeholder="ulangi password baru" required>
+        <input type="password" class="form-control rounded-pill mx-auto bg-light-gray" name="reppass"
+          placeholder="ulangi password baru" required>
       </div>
       <div class="d-grid">
         <button type="submit" class="btn btn-primary rounded-pill mx-auto">SUBMIT</button>
@@ -53,7 +56,8 @@ Reset Password
 
   <!-- Logo Section -->
   <div class="col-md-6 bg-light-gray d-flex flex-column justify-content-center align-items-center p-5">
-    <img src="https://placehold.co/250x100?text=Logo+Template" alt="Logo Template" style="width: 250px;" class="img-fluid" />
+    <img src="https://placehold.co/250x100?text=Logo+Template" alt="Logo Template" style="width: 250px;"
+      class="img-fluid" />
 
 
   </div>
