@@ -16,6 +16,7 @@ class CreateSimlabAccount extends Migration
             'role_id' => [
                 'type'       => 'INT',
                 'constraint' => 11,
+                'unsigned'   => true, 
                 'null'       => false,
             ],
             'password' => [

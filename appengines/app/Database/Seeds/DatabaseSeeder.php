@@ -12,6 +12,15 @@ class DatabaseSeeder extends Seeder
         $this->call('RolesSeeder');
         $this->call('SimlabAccountSeeder');
         $this->call('SimlabAccountUsersSeeder');
+        $this->call('AlatSeeder');
+        $this->call('DiskonSeeder');
+        $this->call('JenisSeeder');
+        $this->call('KolomKeuanganDetailSeeder');
+        $this->call('LayananPengujianSeeder');
+        $this->call('ParameterSeeder');
+        $this->call('SimlabTLayananDetilSeeder');
+        $this->call('SimlabTLayananSeeder');
+        $this->call('SimlabTPembayaranSeeder');
 
         // Kalau punya seeder lain, panggil di sini juga:
         // $this->call('UsersSeeder');
