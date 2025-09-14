@@ -8,7 +8,10 @@ class DatabaseSeeder extends Seeder
 {
     public function run()
     {
-        // Urutan penting: roles dulu, baru account & users
+        // Seeder untuk template lengkap
+        $this->call('SimlabSeeder');
+
+        // Seeder khusus aplikasi SIMLAB
         $this->call('RolesSeeder');
         $this->call('SimlabAccountSeeder');
         $this->call('SimlabAccountUsersSeeder');
@@ -18,15 +21,14 @@ class DatabaseSeeder extends Seeder
         $this->call('KolomKeuanganDetailSeeder');
         $this->call('LayananPengujianSeeder');
         $this->call('ParameterSeeder');
-        $this->call('SimlabTLayananDetilSeeder');
-        $this->call('SimlabTLayananSeeder');
+        $this->call('SimlabTLayananSeeder');       // panggil layanan utama dulu
+        $this->call('SimlabTLayananDetilSeeder');  // baru detilnya
         $this->call('SimlabTPembayaranSeeder');
 
-        // Kalau punya seeder lain, panggil di sini juga:
+        // Seeder tambahan jika ada:
         // $this->call('UsersSeeder');
         // $this->call('MenusSeeder');
         // $this->call('OtoritasSeeder');
-        // $this->call('CategoriesSeeder');
         // dst...
     }
 }
