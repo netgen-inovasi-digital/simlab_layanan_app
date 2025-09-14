@@ -11,16 +11,12 @@ class AuthModelAdmin extends Model
 
     protected $allowedFields = [
         'username',
-        'id_role',
-        'admin_password',
-        'lab_kode'
+        'role_id',
+        'password',
+        'lab_kode',
+        'status_user'
     ];
-
-    public function getAdminByUsername($username)
-    {
-        return $this->where('username', $username)->first();
-    }
-
+    
     public function getLaboranById($idLaboran)
     {
         $db = \Config\Database::connect();
@@ -30,17 +26,22 @@ class AuthModelAdmin extends Model
         $builder->where('l.id_laboran', $idLaboran);
         return $builder->get()->getRowArray();
     }
+    
+    public function getAdminByUsername($username)
+    {
+        return $this->where('username', $username)->first();
+    }
 
     public function getMenu($role)
-	{
-		$db = \Config\Database::connect();
+    {
+        $db = \Config\Database::connect();
         $builder = $db->table('menus a');
         $builder->select('a.*, b.role_id, b.status_otoritas');
         $builder->join('otoritas b', 'a.kode_menu=b.kode_menu');
         $builder->where('role_id', $role);
         $builder->where('status_otoritas', 1);
         $builder->orderBy('a.sort_order', 'asc');
-		return $builder->get()->getResult();
-	}
-
+        return $builder->get()->getResult();
+    }
 }
+

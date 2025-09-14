@@ -91,52 +91,62 @@ class Auth extends Controller
 		}
 	}
 
-	public function actAdmin()
-	{
-    helper('form');
-    $session = session();
-    $adminModel = new AuthModelAdmin();
+		public function actAdmin()
+		{
+		helper('form');
+		$session = session();
+		$adminModel = new AuthModelAdmin();
 
-    $username = $this->request->getPost('username');
-    $password = $this->request->getPost('password');
+		$username = $this->request->getPost('username');
+		$password = $this->request->getPost('password');
 
+		// Ambil data admin dari tabel
+		$admin = $adminModel->getAdminByUsername($username);
 
-    $admin = $adminModel->getAdminByUsername($username);
+		if ($admin) {
+			$hash = $admin['password']; // cocokkan dengan field database
 
-    if ($admin) {
-        if ($password === $admin['password']) {
-            $getMenu = $adminModel->getMenu($admin['role_id']);
+			if (password_verify($password, $hash)) {
+				if ($admin['status_user'] == 1) {
+					// Data login admin
+					$ses_data = [
+						'id_user'   => $admin['username'],
+						'role_id'   => $admin['role_id'],
+						'lab_kode'  => $admin['lab_kode'],
+						'logged_in' => TRUE
+					];
 
-            $menu = [
-                'menus' => [],
-                'parent_menus' => [],
-            ];
+					// Ambil menu sesuai role
+					$getMenu = $adminModel->getMenu($admin['role_id']);
+					$menu = [
+						'menus' => [],
+						'parent_menus' => [],
+					];
 
-            foreach ($getMenu as $row) {
-                $menu['menus'][$row->kode_menu] = $row;
-                $menu['parent_menus'][$row->kode_induk][] = $row->kode_menu;
-            }
+					foreach ($getMenu as $row) {
+						$menu['menus'][$row->kode_menu] = $row;
+						$menu['parent_menus'][$row->kode_induk][] = $row->kode_menu;
+					}
 
-            $sessionData = [
-                'id_user'      => $admin['username'],
-                'email'        => $admin['username'],
-                'role_id'      => $admin['role_id'],
-                'lab_kode'     => $admin['lab_kode'],
-                'menu'         => $menu,
-                'logged_in'    => TRUE
-            ];
+					$ses_data['menu'] = $menu;
+					$session->set($ses_data);
 
-            $session->set($sessionData);
-            return redirect()->to('/dashboard');
-        } else {
-            $session->setFlashdata('login_error', 'Password salah!');
-            return redirect()->back()->withInput();
-        }
-    } else {
-        $session->setFlashdata('login_error', 'Username tidak ditemukan!');
-        return redirect()->back()->withInput();
-    }
-}
+					return redirect()->to('/dashboard');
+				} else {
+					$session->setFlashdata('login_error', '* Akun anda belum aktif!');
+					$session->setFlashdata('login_username', $username);
+				}
+			} else {
+				$session->setFlashdata('login_error', '* Password salah!');
+				$session->setFlashdata('login_username', $username);
+			}
+		} else {
+			$session->setFlashdata('login_error', '* Username tidak ditemukan!');
+			$session->setFlashdata('login_username', $username);
+		}
+
+		return redirect()->back();
+	}
 
 	
 
