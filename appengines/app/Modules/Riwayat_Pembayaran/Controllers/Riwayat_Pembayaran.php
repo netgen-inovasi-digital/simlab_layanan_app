@@ -73,61 +73,21 @@ class Riwayat_Pembayaran extends BaseController
 
     public function dataList()
     {
-        $db = \Config\Database::connect();
+        $model = new MyModel($this->table);
         $data = array();
 
-        // JOIN query untuk mendapatkan data yang diperlukan
-        $builder = $db->table($this->table . ' a');
-        $builder->select('a.bayarKode, a.bayarInvoiceNo, b.accNama, a.bayarJumlah, a.bayarFile, a.bayarBukti, a.bayarStatus');
-        $builder->join('accounts b', 'b.accKode = a.bayarAcc', 'left');
-        $list = $builder->get()->getResult();
-        
-        $no = 1;
+        $list = $model->getAllData();
         foreach ($list as $row) {
-            $id = bin2hex(service('encrypter')->encrypt($row->bayarKode));
+            $id = bin2hex(service('encrypter')->encrypt($row->{$this->id}));
             $response = array();
-            
-            // Nomor urut
-            $response[] = $no++;
-            
-            // No. Invoice
-            $response[] = '<span class="badge bg-info">' . esc($row->bayarInvoiceNo ?? '-') . '</span>';
-            
-            // Pemesan (Nama Account)
-            $response[] = esc($row->accNama ?? '-');
-            
-            // Tagihan
+            $response[] = '<span class="badge bg-info">' . esc($row->bayarKode ?? '') . '</span>';
+            $response[] = esc($row->bayarLnKode ?? '');
             $response[] = 'Rp ' . number_format($row->bayarJumlah ?? 0, 0, ',', '.');
-            
-            // Invoice file button
-            $invoiceFile = $row->bayarFile ?? '';
-            if (!empty($invoiceFile)) {
-                $response[] = '<a href="' . base_url('uploads/' . $invoiceFile) . '" target="_blank" class="btn btn-sm btn-outline-primary">
-                    <i class="bi bi-file-earmark-pdf"></i> Lihat Invoice
-                </a>';
-            } else {
-                $response[] = '<span class="text-muted">-</span>';
-            }
-            
-            // Bukti bayar file button
-            $buktiFile = $row->bayarBukti ?? '';
-            if (!empty($buktiFile)) {
-                $response[] = '<a href="' . base_url('uploads/' . $buktiFile) . '" target="_blank" class="btn btn-sm btn-outline-success">
-                    <i class="bi bi-file-earmark-image"></i> Lihat Bukti
-                </a>';
-            } else {
-                $response[] = '<span class="text-muted">-</span>';
-            }
-            
-            // Status
+            $response[] = esc($row->bayarTgl ?? '');
             $response[] = '<span class="badge bg-' . ($row->bayarStatus == 'lunas' ? 'success' : ($row->bayarStatus == 'pending' ? 'warning' : 'danger')) . '">' . esc($row->bayarStatus ?? '') . '</span>';
-            
-            // Aksi
             $response[] = $this->aksi($id);
-            
             $data[] = $response;
         }
-
         $output = array("items" => $data);
         return $this->response->setJSON($output);
     }
