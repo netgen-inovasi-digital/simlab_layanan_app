@@ -13,6 +13,5 @@ $routes->group('lab', ['namespace' => 'Modules\Lab\Controllers'], function ($sub
     $subroutes->get('edit/(:any)', 'Lab::edit/$1');
     $subroutes->get('delete/(:any)', 'Lab::delete/$1');
     $subroutes->get('getoptions', 'Lab::getoptions'); 
-
     $subroutes->post('update_diskon', 'Lab::update_diskon');
 });

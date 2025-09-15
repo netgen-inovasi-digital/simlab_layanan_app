@@ -13,7 +13,7 @@
                         <label for="filter_jenKode" class="form-label">Filter Kategori Layanan</label>
                         <select id="filter_jenKode" name="filter_jenKode" class="form-select">
                             <option value="">-- Semua Kategori --</option>
-                            </select>
+                        </select>
                     </div>
                     <div class="col-md-6">
                         <form id="formDiskonULM" action="<?= base_url('lab/update_diskon') ?>" method="post" class="d-flex align-items-end">
@@ -33,13 +33,14 @@
             <div class="card-body">
                 <table id="data-table" class="saytable border-top-bottom">
                     <thead>
-                        <tr>
-                            <th show width="5%">No.</th>
-                            <th show width="10%">Kategori Layanan</th>
-                            <th show width="55%">Nama Layanan</th>
-                            <th show>Biaya</th>
-                            <th show class="action text-end">Aksi<i class="bi bi-code sort-icon"></i></th>
-                        </tr>
+                     <tr>
+                        <th show width="5%">No.</th>
+                        <th show width="15%">Kategori Layanan</th>
+                        <th show width="45%">Nama Layanan</th>
+                        <th show width="15%">Biaya</th>
+                        <th show width="10%">Diskon</th>
+                        <th show width="10%" class="action text-end">Aksi<i class="bi bi-code sort-icon"></i></th>
+                    </tr>
                     </thead>
                     <tbody id="table-body"></tbody>
                 </table>
@@ -124,6 +125,8 @@
                 if (typeof table !== 'undefined') table.fetchData({ reload: true });
                 sayAlert('successModal', 'Berhasil', 'Data berhasil disimpan.', 'success');
                 if ($('#modalForm').hasClass('show')) $('#modalForm').modal('hide');
+            } else if (data.res === false && data.msg) {
+                        sayAlert('errorModal', 'Gagal', data.msg, 'warning');
             }
         }});
     });
@@ -133,49 +136,39 @@
         const csrfInput = document.querySelector('[name="<?= csrf_token() ?>"]');
         const csrfToken = csrfInput ? csrfInput.value : '';
         fetch(url, {
-                method: 'POST',
-                body: formData,
-                headers: { 'X-CSRF-TOKEN': csrfToken }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.xname && data.xhash) {
-                    document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => {
-                        input.value = data.xhash;
-                    });
-                }
-                if (typeof onSuccess === 'function') {
-                    onSuccess(data);
-                    return;
-                }
-                if ($('#modalForm').hasClass('show')) $('#modalForm').modal('hide');
-                if (data.res === true) {
-                    if (typeof table !== 'undefined') table.fetchData({ reload: true });
-                    sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
-                } else if (data.res === 'reload') {
-                    sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
-                } else if (data.res === 'refresh') {
-                    loadContent(data.link);
-                    sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
-                } else if (data.res === 'redirect') {
-                    window.location.href = data.link;
-                } else if (data.res === 'check') {
-                    sayAlert('errorModal', 'Error', data.link, 'warning');
-                } else if (data.res === 'refresh-print') {
-                    loadContent(data.link);
-                    window.open(data.print, "_blank");
-                } else {
-                    sayAlert('errorModal', 'Error', 'Data gagal disimpan.', 'warning');
-                }
-            })
-            .catch(error => {
-                if (typeof onError === 'function') {
-                    onError(error);
-                } else {
-                    sayAlert('errorModal', 'Error', 'Terjadi kesalahan pada sistem.', 'warning');
-                }
-            })
-            .finally(() => hideLoading());
+            method: 'POST',
+            body: formData,
+            headers: { 'X-CSRF-TOKEN': csrfToken }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.xname && data.xhash) {
+                document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => {
+                    input.value = data.xhash;
+                });
+            }
+            if (typeof onSuccess === 'function') {
+                onSuccess(data);
+                return;
+            }
+            if ($('#modalForm').hasClass('show')) $('#modalForm').modal('hide');
+            if (data.res === true) {
+                if (typeof table !== 'undefined') table.fetchData({ reload: true });
+                sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
+            } else if (data.res === false && data.msg) {
+                sayAlert('errorModal', 'Error', data.msg, 'warning');
+            } else {
+                sayAlert('errorModal', 'Error', 'Data gagal disimpan.', 'warning');
+            }
+        })
+        .catch(error => {
+            if (typeof onError === 'function') {
+                onError(error);
+            } else {
+                sayAlert('errorModal', 'Error', 'Terjadi kesalahan pada sistem.', 'warning');
+            }
+        })
+        .finally(() => hideLoading());
     }
 
     function loadOptions(selected = {}) {
@@ -197,6 +190,18 @@
                 data.parameter.forEach(p => {
                     para.innerHTML += `<option value="${p.paraKode}" ${selected.para==p.paraKode?"selected":""}>${p.paraNama}</option>`;
                 });
+
+                // >>> Tambahan Auto-fill Nama Layanan <<<
+                let namaLayananInput = document.querySelector('[name="ujiLayanan"]');
+                function autoFillNamaLayanan() {
+                    let alatText = alat.options[alat.selectedIndex]?.text || "";
+                    let paraText = para.options[para.selectedIndex]?.text || "";
+                    if (alatText && paraText) {
+                        namaLayananInput.value = alatText + " - " + paraText;
+                    }
+                }
+                alat.addEventListener('change', autoFillNamaLayanan);
+                para.addEventListener('change', autoFillNamaLayanan);
             });
     }
 
@@ -216,6 +221,7 @@
                 document.querySelector('[name="ujiLayanan"]').value = data.ujiLayanan;
                 document.querySelector('[name="ujiSatuan"]').value = data.ujiSatuan;
                 document.querySelector('[name="ujiBiaya"]').value = data.ujiBiaya;
+                document.querySelector('[name="ujiDiskon"]').value = data.ujiDiskon;
                 loadOptions({
                     jenis: data.ujiJenKode,
                     alat: data.ujiAlatKode,
@@ -225,7 +231,6 @@
             });
     }
 </script>
-
 
 <div class="modal fade" id="modalForm" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
@@ -281,6 +286,10 @@
                                     <input name="ujiSatuan" type="text" class="form-control" required placeholder="Sampel/Jam/Ruangan">
                                 </div>
                             </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Diskon (%)</label>
+                            <input name="ujiDiskon" type="number" class="form-control" min="0" max="100" placeholder="Masukkan diskon">
                         </div>
                     </div>
                 </div>

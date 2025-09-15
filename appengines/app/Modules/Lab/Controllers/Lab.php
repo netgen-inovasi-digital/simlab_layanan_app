@@ -16,7 +16,6 @@ class Lab extends BaseController
 		$user_id = $session->get('id_user');
 
 		$modelUser = new MyModel('users');
-
 		$modelDiskon  = new MyModel('simlab_t_diskon');
 
 		$data = [
@@ -40,13 +39,14 @@ class Lab extends BaseController
 		$paraModel  = new MyModel('simlab_r_parameter');
 
 		$data[csrf_token()] = csrf_hash();
-		$data['id']          = $idenc;
-		$data['ujiJenKode']  = $get->ujiJenKode;
-		$data['ujiAlatKode'] = $get->ujiAlatKode;
-		$data['ujiParaKode'] = $get->ujiParaKode;
-		$data['ujiLayanan']  = $get->ujiLayanan;
-		$data['ujiSatuan']   = $get->ujiSatuan;
-		$data['ujiBiaya']    = $get->ujiBiaya;
+		$data['id']           = $idenc;
+		$data['ujiJenKode']   = $get->ujiJenKode;
+		$data['ujiAlatKode']  = $get->ujiAlatKode;
+		$data['ujiParaKode']  = $get->ujiParaKode;
+		$data['ujiLayanan']   = $get->ujiLayanan;
+		$data['ujiSatuan']    = $get->ujiSatuan;
+		$data['ujiBiaya']     = $get->ujiBiaya;
+		$data['ujiDiskon']    = $get->ujiDiskon;     // tetap ada
 
 		$data['options'] = [
 			'jenis'     => $jenisModel->getAllData(),
@@ -66,27 +66,69 @@ class Lab extends BaseController
 	}
 
 	public function submit()
-	{
-		$idenc = $this->request->getPost('id');
-		$data = [
-			'ujiJenKode'   => $this->request->getPost('ujiJenKode'),
-			'ujiAlatKode'  => $this->request->getPost('ujiAlatKode'),
-			'ujiParaKode'  => $this->request->getPost('ujiParaKode'),
-			'ujiLayanan'   => $this->request->getPost('ujiLayanan'),
-			'ujiSatuan'    => $this->request->getPost('ujiSatuan'),
-			'ujiBiaya'     => $this->request->getPost('ujiBiaya'),
-		];
+{
+    $idenc = $this->request->getPost('id');
+    $ujiJenKode  = $this->request->getPost('ujiJenKode');
+    $ujiAlatKode = $this->request->getPost('ujiAlatKode');
+    $ujiParaKode = $this->request->getPost('ujiParaKode');
 
-		$model = new MyModel($this->table);
+    $data = [
+        'ujiJenKode'   => $ujiJenKode,
+        'ujiAlatKode'  => $ujiAlatKode,
+        'ujiParaKode'  => $ujiParaKode,
+        'ujiLayanan'   => $this->request->getPost('ujiLayanan'),
+        'ujiSatuan'    => $this->request->getPost('ujiSatuan'),
+        'ujiBiaya'     => $this->request->getPost('ujiBiaya'),
+        'ujiDiskon'    => $this->request->getPost('ujiDiskon'),   // tetap ada
+    ];
 
-		if ($idenc == "") {
-			$res = $model->insertData($data);
-		} else {
-			$id = $this->encrypter->decrypt(hex2bin($idenc));
-			$res = $model->updateData($data, $this->id, $id);
-		}
-		return $this->response->setJSON(['res' => $res, 'xname' => csrf_token(), 'xhash' => csrf_hash()]);
-	}
+    $model = new MyModel($this->table);
+
+    if ($idenc == "") {
+        $cek = $model->getWhere([
+            'ujiAlatKode' => $ujiAlatKode,
+            'ujiParaKode' => $ujiParaKode
+        ])->getRow();
+
+        if ($cek) {
+            return $this->response->setJSON([
+                'res' => false,
+                'msg' => 'Data kombinasi alat & parameter ini sudah ada',
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        }
+
+        $res = $model->insertData($data);
+    } else {
+        $id = $this->encrypter->decrypt(hex2bin($idenc));
+
+        $cek = $model->getWhere([
+            'ujiAlatKode' => $ujiAlatKode,
+            'ujiParaKode' => $ujiParaKode,
+            $this->id.' !=' => $id
+        ])->getRow();
+
+        if ($cek) {
+            return $this->response->setJSON([
+                'res' => false,
+                'msg' => 'Data dengan kombinasi alat & parameter ini sudah ada.',
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        }
+
+        $res = $model->updateData($data, $this->id, $id);
+    }
+
+    return $this->response->setJSON([
+        'res' => $res,
+        'xname' => csrf_token(),
+        'xhash' => csrf_hash()
+    ]);
+}
+
+
 
 	public function dataList()
 	{
@@ -112,11 +154,21 @@ class Lab extends BaseController
 		foreach ($list as $row) {
 			$id = bin2hex($this->encrypter->encrypt($row->ujiKode));
 			$response = [];
+
 			$response[] = '<span class="badge bg-info">' . esc($row->jenKode) . '</span>';
+
+			// Layanan, Alat, Parameter 
 			$response[] = $row->ujiLayanan . '<br>'
-				. '<strong> Alat : </strong>' . $row->alatNama . '<br>'
-				. '<strong> Parameter : </strong> ' . $row->paraNama;
+				. '<strong>Alat : </strong>' . $row->alatNama . '<br>'
+				. '<strong>Parameter : </strong>' . $row->paraNama;
+
+			// Biaya
 			$response[] = $row->ujiBiaya . ' / ' . $row->ujiSatuan;
+
+			// Diskon
+			$response[] = ($row->ujiDiskon ?? 0) . '%';
+
+
 			$response[] = $this->aksi($id);
 			$data[] = $response;
 		}
@@ -166,5 +218,4 @@ class Lab extends BaseController
 			'xhash' => csrf_hash()
 		]);
 	}
-
 }
