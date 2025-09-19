@@ -448,6 +448,18 @@ class SimlabTLayananDetilSeeder extends Seeder
                 'detFileHasil'  => null,
                 'detJenKode'    => 'E',
                 'detLayanan'    => null
+            ],
+
+            [
+                'detKode'       => 4000,
+                'detUjiKode'    => 55,
+                'detBiaya'      => 550000,
+                'detKeterangan' => 'komposit organik/biodegradble',
+                'detStatus'     => 1,
+                'detLnKode'     => 438,
+                'detFileHasil'  => null,
+                'detJenKode'    => 'A',
+                'detLayanan'    => null
             ]
         ];
 
