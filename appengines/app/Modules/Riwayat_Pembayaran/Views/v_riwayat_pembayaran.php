@@ -38,12 +38,12 @@
 
                 <div class="row">
                     <div class="col-12">
-                        <table id="data-table" class="saytable border-top-bottom">
+                        <table id="data-table" class="table table-hover">
                             <thead>
                                 <tr>
-                                    <th show width="8%">No.</th>
+                                    <th show width="4%">No.</th>
                                     <th show width="15%">No. Invoice</th>
-                                    <th show width="20%">Pemesan</th>
+                                    <th show width="25%">Pemesan</th>
                                     <th show width="12%">Tagihan</th>
                                     <th show width="12%">Invoice</th>
                                     <th show width="12%">Bukti Bayar</th>

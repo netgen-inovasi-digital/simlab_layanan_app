@@ -77,25 +77,21 @@ class Riwayat_Pembayaran extends BaseController
         $data = array();
 
         // Query pembayaran dengan LEFT JOIN ke tabel layanan
-        // Ini akan menampilkan semua data pembayaran, baik yang ada maupun tidak ada di tabel layanan
         $builder = $db->table($this->table . ' a');
         $builder->select('a.bayarKode, a.bayarInvoiceNo, a.bayarLnKode, a.bayarTotalBiaya, a.bayarInvoiceFile, a.bayarBuktiFile, a.bayarStatus, 
                          l.lnOrangNama as pemesanNama, l.lnTgl as tanggalLayanan, l.lnNoTransaksi as noTransaksi, l.lnKode as layananKode');
         $builder->join('simlab_t_layanan l', 'l.lnKode = a.bayarLnKode', 'left');
-        $builder->orderBy('a.bayarKode', 'DESC'); // Urutkan dari terbaru
+        $builder->orderBy('a.bayarKode', 'DESC');
         $list = $builder->get()->getResult();
-        
+
         $no = 1;
         foreach ($list as $row) {
             $id = bin2hex(service('encrypter')->encrypt($row->bayarKode));
             $response = array();
-            
-            // Nomor urut
-            $response[] = $no++;
-            
+
             // No. Invoice
             $response[] = '<span class="badge bg-info">' . esc($row->bayarInvoiceNo ?? '-') . '</span>';
-            
+
             // Pemesan - tampilkan nama jika ada JOIN, atau status data tidak sinkron
             $pemesanInfo = '';
             if (!empty($row->pemesanNama) && $row->layananKode) {
@@ -118,10 +114,10 @@ class Riwayat_Pembayaran extends BaseController
                 $pemesanInfo .= '</div>';
             }
             $response[] = $pemesanInfo;
-            
+
             // Tagihan
             $response[] = 'Rp ' . number_format($row->bayarTotalBiaya ?? 0, 0, ',', '.');
-            
+
             // Invoice file button
             $invoiceFile = $row->bayarInvoiceFile ?? '';
             if (!empty($invoiceFile) && $invoiceFile !== null) {
@@ -131,7 +127,7 @@ class Riwayat_Pembayaran extends BaseController
             } else {
                 $response[] = '<span class="text-muted">-</span>';
             }
-            
+
             // Bukti bayar file button
             $buktiFile = $row->bayarBuktiFile ?? '';
             if (!empty($buktiFile) && $buktiFile !== 'by_admin' && $buktiFile !== null) {
@@ -141,13 +137,13 @@ class Riwayat_Pembayaran extends BaseController
             } else {
                 $response[] = '<span class="text-muted">-</span>';
             }
-            
+
             // Status
             $status = $row->bayarStatus ?? '0';
             $statusText = '';
             $statusClass = '';
-            
-            switch($status) {
+
+            switch ($status) {
                 case '1':
                     $statusText = 'Lunas';
                     $statusClass = 'success';
@@ -161,12 +157,12 @@ class Riwayat_Pembayaran extends BaseController
                     $statusClass = 'danger';
                     break;
             }
-            
+
             $response[] = '<span class="badge bg-' . $statusClass . '">' . $statusText . '</span>';
-            
+
             // Aksi
             $response[] = $this->aksi($id);
-            
+
             $data[] = $response;
         }
 
