@@ -6,13 +6,14 @@ if (!isset($routes)) {
 
 $routes->group('formuliradmin', ['namespace' => 'Modules\FormulirAdmin\Controllers'], function ($subroutes) {
 
-    $subroutes->get('/', 'FormulirAdmin::index');
-    $subroutes->get('datalist', 'FormulirAdmin::dataList');   // ✅ route eksplisit untuk datalist
-    $subroutes->post('submit', 'FormulirAdmin::submit');
-    $subroutes->post('edit', 'FormulirAdmin::edit');
-    $subroutes->post('delete', 'FormulirAdmin::delete');
-    $subroutes->post('upload', 'FormulirAdmin::upload');
+$subroutes->get('/', 'FormulirAdmin::index');
+$subroutes->get('datalist', 'FormulirAdmin::dataList');
+$subroutes->get('detaillist/(:any)', 'FormulirAdmin::detailList/$1');
 
-    // approve status (ubah 1 -> 2)
-    $subroutes->post('approve/(:any)', 'FormulirAdmin::approve/$1');
+$subroutes->post('submit', 'FormulirAdmin::submit');
+$subroutes->post('edit', 'FormulirAdmin::edit');
+$subroutes->post('delete/(:any)', 'FormulirAdmin::delete/$1');
+$subroutes->post('upload', 'FormulirAdmin::upload');
+$subroutes->post('approve/(:any)', 'FormulirAdmin::approve/$1');
+
 });

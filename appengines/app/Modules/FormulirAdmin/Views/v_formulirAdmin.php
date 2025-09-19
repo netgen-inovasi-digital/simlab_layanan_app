@@ -37,7 +37,7 @@
 
     // simpan data
     document.querySelector('#btnSimpan').addEventListener('click', function(e) {
-        e.preventDefault(); // Hindari submit default
+        e.preventDefault();
 
         const form = document.querySelector('#myform');
         const formData = new FormData(form);
@@ -63,57 +63,56 @@
         const csrfToken = csrfInput ? csrfInput.value : '';
 
         fetch(url, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                // Update token
-                if (data.xname && data.xhash) {
-                    document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => {
-                        input.value = data.xhash;
-                    });
-                }
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRF-TOKEN': csrfToken
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.xname && data.xhash) {
+                document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => {
+                    input.value = data.xhash;
+                });
+            }
 
-                if (typeof onSuccess === 'function') {
-                    onSuccess(data);
-                    return;
-                }
+            if (typeof onSuccess === 'function') {
+                onSuccess(data);
+                return;
+            }
 
-                if ($('#modalForm').hasClass('show')) $('#modalForm').modal('hide');
+            if ($('#modalForm').hasClass('show')) $('#modalForm').modal('hide');
 
-                if (data.res === true) {
-                    if (typeof table !== 'undefined') table.fetchData({ reload: true });
-                    sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
-                } else if (data.res === 'reload') {
-                    sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
-                } else if (data.res === 'refresh') {
-                    loadContent(data.link);
-                    sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
-                } else if (data.res === 'redirect') {
-                    window.location.href = data.link;
-                } else if (data.res === 'check') {
-                    sayAlert('errorModal', 'Error', data.link, 'warning');
-                } else if (data.res === 'refresh-print') {
-                    loadContent(data.link);
-                    window.open(data.print, "_blank");
-                } else {
-                    sayAlert('errorModal', 'Error', 'Data gagal disimpan.', 'warning');
-                }
-            })
-            .catch(error => {
-                if (typeof onError === 'function') {
-                    onError(error);
-                } else {
-                    sayAlert('errorModal', 'Error', 'Terjadi kesalahan pada sistem.', 'warning');
-                }
-            })
-            .finally(() => {
-                hideLoading();
-            });
+            if (data.res === true) {
+                if (typeof table !== 'undefined') table.fetchData({ reload: true });
+                sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
+            } else if (data.res === 'reload') {
+                sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
+            } else if (data.res === 'refresh') {
+                loadContent(data.link);
+                sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
+            } else if (data.res === 'redirect') {
+                window.location.href = data.link;
+            } else if (data.res === 'check') {
+                sayAlert('errorModal', 'Error', data.link, 'warning');
+            } else if (data.res === 'refresh-print') {
+                loadContent(data.link);
+                window.open(data.print, "_blank");
+            } else {
+                sayAlert('errorModal', 'Error', 'Data gagal disimpan.', 'warning');
+            }
+        })
+        .catch(error => {
+            if (typeof onError === 'function') {
+                onError(error);
+            } else {
+                sayAlert('errorModal', 'Error', 'Terjadi kesalahan pada sistem.', 'warning');
+            }
+        })
+        .finally(() => {
+            hideLoading();
+        });
     }
 
     // Tombol Approve
@@ -142,7 +141,6 @@
                     sayAlert('errorModal', 'Gagal', data.msg || 'Approve gagal dilakukan', 'warning');
                 }
 
-                // Update CSRF token
                 if (data.xname && data.xhash) {
                     document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => input.value = data.xhash);
                 }
@@ -177,7 +175,6 @@
                     sayAlert('errorModal', 'Gagal', data.msg || 'Hapus gagal dilakukan', 'warning');
                 }
 
-                // Update CSRF token
                 if (data.xname && data.xhash) {
                     document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => input.value = data.xhash);
                 }

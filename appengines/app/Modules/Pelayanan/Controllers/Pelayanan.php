@@ -71,28 +71,37 @@ class Pelayanan extends BaseController
     }
 
     private function statusBadge($status)
-    {
-        $labels = [
-            0 => 'Draft',
-            1 => 'On Review',
-            2 => 'Sudah Review',
-            3 => 'Pelaksanaan',
-            4 => 'Selesai',
-            5 => 'Posting',
-        ];
-        $class = [
-            0 => 'secondary',
-            1 => 'warning',
-            2 => 'primary',
-            3 => 'info',
-            4 => 'success',
-            5 => 'dark',
-        ];
+{
+    $labels = [
+        0 => 'Draft',
+        1 => 'In Review Manajer',
+        2 => 'Ditolak',
+        3 => 'In Review Admin',
+        4 => 'Pengujian Sedang Dilakukan',
+        5 => 'Memproses LHUS',
+        6 => 'LHUS Disetujui',
+        7 => 'Memproses LHU',
+        8 => 'LHU Disetujui',
+        9 => 'Pengujian Selesai',
+    ];
+    $class = [
+        0 => 'secondary',
+        1 => 'warning',
+        2 => 'danger',
+        3 => 'info',
+        4 => 'primary',
+        5 => 'dark',
+        6 => 'success',
+        7 => 'warning',
+        8 => 'success',
+        9 => 'secondary',
+    ];
 
-        return isset($labels[$status])
-            ? '<span class="badge bg-' . $class[$status] . '">' . $labels[$status] . '</span>'
-            : '<span class="badge bg-secondary">Unknown</span>';
-    }
+    return isset($labels[$status])
+        ? '<span class="badge bg-' . $class[$status] . '">' . $labels[$status] . '</span>'
+        : '<span class="badge bg-secondary">Unknown</span>';
+}
+
 
     public function detail($id)
     {

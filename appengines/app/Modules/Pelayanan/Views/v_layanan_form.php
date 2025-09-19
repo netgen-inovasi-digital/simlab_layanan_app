@@ -6,9 +6,11 @@
                 <div class="d-flex gap-2">
                     <select id="filterKategori" class="form-select">
                         <option value="">-- Semua Kategori --</option>
-                        <?php foreach ($kategori as $row): ?>
-                            <option value="<?= $row->jenisKode ?>"><?= $row->jenisNama ?></option>
-                        <?php endforeach; ?>
+                        <?php if (!empty($kategori)): ?>
+                            <?php foreach ($kategori as $row): ?>
+                                <option value="<?= $row->jenisKode ?>"><?= $row->jenisNama ?></option>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
                     </select>
                     <input type="text" id="searchParam" class="form-control" placeholder="Cari parameter / instrumen...">
                 </div>
@@ -18,6 +20,7 @@
                     <thead>
                         <tr>
                             <th show width="5%">No.</th>
+                            <th show>Kode Uji</th>
                             <th show>Parameter</th>
                             <th show>Instrumen / Alat</th>
                             <th show width="15%">Biaya</th>
@@ -38,7 +41,7 @@
 <script>
     // === init datatable ===
     table = createTable({
-        apiUrl: '<?php echo site_url("pelayanan/list") ?>',
+        apiUrl: '<?php echo site_url("pelayanan/detailList/" . ($id ?? "")) ?>',
     });
     addAction();
 
