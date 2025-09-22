@@ -70,37 +70,52 @@
         // Handle filter tanggal
         document.querySelector('.tampil').addEventListener('click', function(e) {
             e.preventDefault();
-            
+
             const tanggalAwal = document.getElementById('awal').value;
             const tanggalAkhir = document.getElementById('akhir').value;
-            
+
             if (!tanggalAwal || !tanggalAkhir) {
                 sayAlert('errorModal', 'Error', 'Mohon pilih tanggal awal dan akhir', 'warning');
                 return;
             }
-            
+
             if (tanggalAwal > tanggalAkhir) {
                 sayAlert('errorModal', 'Error', 'Tanggal awal tidak boleh lebih besar dari tanggal akhir', 'warning');
                 return;
             }
-            
-            // Update table dengan filter
-            if (typeof table !== 'undefined') {
-                table.ajax.url('<?php echo site_url("riwayat_pembayaran/datalist") ?>?tanggal_awal=' + tanggalAwal + '&tanggal_akhir=' + tanggalAkhir).load();
+
+
+            if (typeof table !== 'undefined' && table.fetchData) {
+                const newUrl = '<?php echo site_url("riwayat_pembayaran/datalist") ?>?tanggal_awal=' + tanggalAwal + '&tanggal_akhir=' + tanggalAkhir;
+
+                // Update config URL dan reload data
+                const currentConfig = table.getConfig();
+                currentConfig.apiUrl = newUrl;
+
+                // Gunakan fetchData untuk reload dengan URL baru
+                table.fetchData({
+                    reload: true
+                });
+            } else {
+                console.error('Table object not found or invalid - table:', typeof table, 'fetchData:', table ? table.fetchData : 'undefined');
             }
         });
 
         // Handle reset filter
         document.querySelector('.tampilSemua').addEventListener('click', function(e) {
             e.preventDefault();
-            
+
             // Clear input fields
             document.getElementById('awal').value = '';
             document.getElementById('akhir').value = '';
-            
-            // Reset table to original data
-            if (typeof table !== 'undefined') {
-                table.ajax.url('<?php echo site_url("riwayat_pembayaran/datalist") ?>').load();
+
+            // Reset table to original data - menggunakan API dari sayTable.js
+            if (typeof table !== 'undefined' && table.fetchData) {
+                const currentConfig = table.getConfig();
+                currentConfig.apiUrl = '<?php echo site_url("riwayat_pembayaran/datalist") ?>';
+                table.fetchData({
+                    reload: true
+                });
             }
         });
 

@@ -76,11 +76,28 @@ class Riwayat_Pembayaran extends BaseController
         $db = \Config\Database::connect();
         $data = array();
 
-        // Query pembayaran dengan LEFT JOIN ke tabel layanan
+        // Ambil parameter filter tanggal dari request
+        $tanggalAwal = $this->request->getGet('tanggal_awal');
+        $tanggalAkhir = $this->request->getGet('tanggal_akhir');
+
+        // Hanya tampilkan data yang sinkron (ada di kedua tabel)
         $builder = $db->table($this->table . ' a');
         $builder->select('a.bayarKode, a.bayarInvoiceNo, a.bayarLnKode, a.bayarTotalBiaya, a.bayarInvoiceFile, a.bayarBuktiFile, a.bayarStatus, 
                          l.lnOrangNama as pemesanNama, l.lnTgl as tanggalLayanan, l.lnNoTransaksi as noTransaksi, l.lnKode as layananKode');
-        $builder->join('simlab_t_layanan l', 'l.lnKode = a.bayarLnKode', 'left');
+        $builder->join('simlab_t_layanan l', 'l.lnKode = a.bayarLnKode', 'inner');
+
+        // Aplikasikan filter tanggal jika ada
+        if (!empty($tanggalAwal) && !empty($tanggalAkhir)) {
+            $builder->where('l.lnTgl >=', $tanggalAwal);
+            $builder->where('l.lnTgl <=', $tanggalAkhir);
+        } elseif (!empty($tanggalAwal)) {
+            // Jika hanya tanggal awal yang diisi
+            $builder->where('l.lnTgl >=', $tanggalAwal);
+        } elseif (!empty($tanggalAkhir)) {
+            // Jika hanya tanggal akhir yang diisi
+            $builder->where('l.lnTgl <=', $tanggalAkhir);
+        }
+
         $builder->orderBy('a.bayarKode', 'DESC');
         $list = $builder->get()->getResult();
 
@@ -92,26 +109,13 @@ class Riwayat_Pembayaran extends BaseController
             // No. Invoice
             $response[] = '<span class="badge bg-info">' . esc($row->bayarInvoiceNo ?? '-') . '</span>';
 
-            // Pemesan - tampilkan nama jika ada JOIN, atau status data tidak sinkron
-            $pemesanInfo = '';
-            if (!empty($row->pemesanNama) && $row->layananKode) {
-                // Data sinkron - tampilkan nama customer
-                $pemesanInfo = '<strong class="text-success">' . esc($row->pemesanNama) . '</strong>';
-                if (!empty($row->noTransaksi)) {
-                    $pemesanInfo .= '<br><small class="text-muted">Trans: ' . esc($row->noTransaksi) . '</small>';
-                }
-                if (!empty($row->tanggalLayanan)) {
-                    $pemesanInfo .= '<br><small class="text-muted">Tgl: ' . date('d-m-Y', strtotime($row->tanggalLayanan)) . '</small>';
-                }
-            } else {
-                // Data tidak sinkron - tampilkan status dengan styling khusus
-                $pemesanInfo = '<div class="d-flex align-items-center">';
-                $pemesanInfo .= '<span class="badge bg-warning me-2">⚠️</span>';
-                $pemesanInfo .= '<div>';
-                $pemesanInfo .= '<span class="text-warning fw-bold">Data Belum Sinkron</span><br>';
-                $pemesanInfo .= '<small class="text-muted">Layanan ID: ' . $row->bayarLnKode . '</small>';
-                $pemesanInfo .= '</div>';
-                $pemesanInfo .= '</div>';
+            // Pemesan - semua data pasti sinkron karena menggunakan INNER JOIN
+            $pemesanInfo = '<strong class="text-success">' . esc($row->pemesanNama) . '</strong>';
+            if (!empty($row->noTransaksi)) {
+                $pemesanInfo .= '<br><small class="text-muted">Trans: ' . esc($row->noTransaksi) . '</small>';
+            }
+            if (!empty($row->tanggalLayanan)) {
+                $pemesanInfo .= '<br><small class="text-muted">Tgl: ' . date('d-m-Y', strtotime($row->tanggalLayanan)) . '</small>';
             }
             $response[] = $pemesanInfo;
 
