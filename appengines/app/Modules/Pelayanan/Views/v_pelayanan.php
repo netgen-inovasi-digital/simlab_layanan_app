@@ -13,8 +13,8 @@
                         <tr>
                             <th show width="8%">No.</th>
                             <th show>No. Transaksi</th>
-                            <th show>Tanggal</th>
-                            <th show>Pengujian Untuk</th>
+                            <!-- <th show>Tanggal</th> -->
+                            <!-- <th show>Pengujian Untuk</th> -->
                             <th show>Status</th>
                             <th show class="action text-center">Layanan Anda</th>
                         </tr>

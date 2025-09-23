@@ -32,51 +32,66 @@ class Pelayanan extends BaseController
         return view('Modules\Pelayanan\Views\v_pelayanan', $data);
     }
 
+ 
     public function dataList()
-    {
-        $session   = session();
-        $user_id   = $session->get('id_user');
+{
+    $session   = session();
+    $user_id   = $session->get('id_user');
 
-        // ambil user dari tabel simlab_account_users
-        $modelUser = new MyModel('simlab_account_users');
-        $user      = $modelUser->getDataById('user_id', $user_id);
+    // Ambil user dari tabel simlab_account_users
+    $modelUser = new MyModel('simlab_account_users');
+    $user      = $modelUser->getDataById('user_id', $user_id);
 
-        if (!$user) {
-            return $this->response->setJSON(["items" => []]);
-        }
-
-        $model = new MyModel($this->table);
-        $data  = [];
-
-        // filter data pelayanan berdasarkan email login
-        $where = ['lnAccEmail' => $user->user_email];
-        $list  = $model->getAllDataById($where, ['lnTgl' => 'DESC']);
-
-        foreach ($list as $index => $row) {
-            $id = bin2hex($this->encrypter->encrypt($row->lnKode));
-
-            $response   = [];
-            $response[] = $row->lnNoTransaksi ?? '-'; // No. Transaksi
-            $response[] = !empty($row->lnTgl) ? date('d-m-Y', strtotime($row->lnTgl)) : '-'; // Tanggal
-            $response[] = $row->lnTipe ?? '-'; // Pengujian Untuk
-            $response[] = $this->statusBadge($row->lnStatus); // Status
-            $response[] = '<a href="javascript:void(0)" 
-                            onclick="loadDetail(\'' . $id . '\')" 
-                            class="btn btn-sm btn-info">Lihat lebih detail</a>';
-
-            $data[] = $response;
-        }
-
-        return $this->response->setJSON(["items" => $data]);
+    // Jika user tidak ditemukan, kembalikan data kosong
+    if (!$user) {
+        return $this->response->setJSON(["items" => []]);
     }
+
+    $model = new MyModel($this->table);
+    $data  = [];
+
+    // Filter data pelayanan berdasarkan email login
+    $where = ['lnAccEmail' => $user->user_email];
+    $list  = $model->getAllDataById($where, ['lnTgl' => 'DESC']);
+
+    foreach ($list as $index => $row) {
+        // Encrypt ID untuk keamanan
+        $id = bin2hex($this->encrypter->encrypt($row->lnKode));
+
+        $response   = [];
+
+        // Format No. Transaksi dan Tanggal ke dalam dua baris
+        $noTransaksi = $row->lnNoTransaksi ?? '-';
+        $tanggal     = !empty($row->lnTgl) ? date('d-m-Y', strtotime($row->lnTgl)) : '-';
+        $response[]  = '<div>' . $noTransaksi . '<br><small>' . $tanggal . '</small></div>';
+
+        // Kolom "Pengujian Untuk" dihapus, tapi tetap disimpan sebagai komentar
+        // $response[] = $row->lnTipe ?? '-'; // Pengujian Untuk (Dihilangkan sesuai permintaan)
+
+        // Status
+        $response[] = $this->statusBadge($row->lnStatus);
+
+        // Tombol lihat detail
+        $response[] = '<a href="javascript:void(0)" 
+                        onclick="loadDetail(\'' . $id . '\')" 
+                        class="btn btn-sm btn-info">Lihat detail</a>';
+
+        $data[] = $response;
+    }
+
+    // Kembalikan hasil dalam format JSON
+    return $this->response->setJSON(["items" => $data]);
+}
+
+     
 
     private function statusBadge($status)
 {
     $labels = [
         0 => 'Draft',
-        1 => 'In Review Manajer',
+        1 => 'Sedang diverifikasi',
         2 => 'Ditolak',
-        3 => 'In Review Admin',
+        3 => 'Sedang diverifikasi',
         4 => 'Pengujian Sedang Dilakukan',
         5 => 'Memproses LHUS',
         6 => 'LHUS Disetujui',
