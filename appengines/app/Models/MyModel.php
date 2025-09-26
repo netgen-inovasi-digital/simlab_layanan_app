@@ -468,4 +468,22 @@ class MyModel extends Model
 			return true;
 		}
 	}
+
+	public function getMax($field, $table = null)
+	{
+		$tableName = $table ?? $this->table;
+
+		if (empty($tableName)) {
+			throw new \Exception("Table name is required for getMax()");
+		}
+
+		$row = $this->db->table($tableName)
+			->selectMax($field)
+			->get()
+			->getRow();
+
+		return $row ? $row->$field : null;
+	}
+
+
 }
