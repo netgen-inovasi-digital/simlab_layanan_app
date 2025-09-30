@@ -10,6 +10,8 @@ const defaultConfig = {
     itemsPerPage: 10,showFilter: true, treeview: true, numbering: true,
 };
 
+
+
 function createTable(customConfig = {}) {
     config = { ...defaultConfig, ...customConfig };
     tables[config.tableId] = { config };
