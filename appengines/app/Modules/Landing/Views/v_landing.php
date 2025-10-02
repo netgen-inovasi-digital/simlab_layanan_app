@@ -8,7 +8,28 @@
         height: auto;
     }
 </style>
-
+<section class="register-section" style="background-image:url('<?= base_url('assets/img/labterpadu.jpg') ?>');
+                background-size:cover;
+                background-position:center;
+                min-height:100vh;">
+    <div class="overlay d-flex align-items-center" style="background:rgba(0,0,0,0.4);min-height:100vh;">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 text-white ps-lg-5 pe-lg-4">
+                    <h1 class="fw-bold mb-3">Selamat Datang Di Lab Terpadu Universitas Lambung Mangkurat</h1>
+                    <p>Kami Go Online untuk memberikan layanan maksimal. Anda dapat secara online memesan layanan kami
+                        secara mudah dan praktis</p>
+                </div>
+                <div class="col-lg-4 ps-lg-4 pe-lg-5">
+                    <div class="card shadow-lg p-4">
+                        <?= view('auth/v_register'); ?>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+</section>
 <?php foreach ($getLayout as $layout): ?>
     <?php
     $kode = $layout->kode;
@@ -16,7 +37,7 @@
     ?>
 
     <?php if ($kode == 'hero'): ?>
-        <section id="hero" class="hero-section">
+        <!-- <section id="hero" class="hero-section">
             <div class="swiper hero-slider">
                 <div class="swiper-wrapper">
                     <?php foreach ($getHero as $hero): ?>
@@ -34,11 +55,11 @@
 
             <div class="form-overlay-container">
                 <div class="card shadow-lg border-0 p-4">
-                    <?= $this->include('auth/v_register') ?>
+                    
                 </div>
             </div>
 
-        </section>
+        </section> -->
 
     <?php elseif ($kode == 'layanan'): ?>
         <section id="services" class="services-section py-5 bg-light">
@@ -63,32 +84,32 @@
                             </tr>
                         </thead>
                         <tbody>
-    <?php foreach ($getLayanan as $layanan): ?>
-        <?php if ($layanan->status == 'Y'): ?>
-            <tr>
-                <td>
-                    <?php // Coba tampilkan properti 'judul'. Jika tidak ada, tampilkan 'Data Tidak Tersedia'. ?>
-                    <?= esc($layanan->judul ?? 'Data Tidak Tersedia') ?>
-                </td>
-                <td>
-                    <?php // Coba format properti 'biaya'. Jika tidak ada, gunakan angka 0. ?>
-                    <?= 'Rp ' . number_format($layanan->biaya ?? 0, 0, ',', '.') ?>
-                </td>
-                <td>
-                    <?php // Coba tampilkan properti 'satuan'. Jika tidak ada, tampilkan '-'. ?>
-                    <?= esc($layanan->satuan ?? '-') ?>
-                </td>
-            </tr>
-        <?php endif; ?>
-    <?php endforeach; ?>
-</tbody>
+                            <?php foreach ($getLayanan as $layanan): ?>
+                                <?php if ($layanan->status == 'Y'): ?>
+                                    <tr>
+                                        <td>
+                                            <?php // Coba tampilkan properti 'judul'. Jika tidak ada, tampilkan 'Data Tidak Tersedia'. ?>
+                                            <?= esc($layanan->judul ?? 'Data Tidak Tersedia') ?>
+                                        </td>
+                                        <td>
+                                            <?php // Coba format properti 'biaya'. Jika tidak ada, gunakan angka 0. ?>
+                                            <?= 'Rp ' . number_format($layanan->biaya ?? 0, 0, ',', '.') ?>
+                                        </td>
+                                        <td>
+                                            <?php // Coba tampilkan properti 'satuan'. Jika tidak ada, tampilkan '-'. ?>
+                                            <?= esc($layanan->satuan ?? '-') ?>
+                                        </td>
+                                    </tr>
+                                <?php endif; ?>
+                            <?php endforeach; ?>
+                        </tbody>
                     </table>
                 </div>
             </div>
         </section>
     <?php elseif ($kode == 'team'): ?>
         <!-- TEAM SECTION -->
-        <section id="team" class="team-section py-5">
+        <!-- <section id="team" class="team-section py-5">
             <div class="container text-center">
                 <h2 class="section-title fw-bold mb-4"><?= esc($konten->judul ?? 'Dokter dan Tenaga Kesehatan') ?></h2>
                 <h6 class="section-desc mb-4"><?= esc($konten->deskripsi ?? 'Tim medis kami yang profesional') ?></h6>
@@ -111,11 +132,11 @@
                     <div class="swiper-button-prev"></div>
                 </div>
             </div>
-        </section>
+        </section> -->
 
     <?php elseif ($kode == 'berita'): ?>
         <!-- BERITA SECTION -->
-        <section id="news" class="news-section py-5">
+        <!-- <section id="news" class="news-section py-5">
             <div class="container">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <div class="col">
@@ -124,9 +145,9 @@
                     </div>
                     <a href="<?= base_url('berita') ?>" class="btn btn-outline-primary">SELENGKAPNYA</a>
                 </div>
-                <div class="row g-4">
-                    <!-- Berita Utama -->
-                    <div class="col-lg-7">
+                <div class="row g-4"> -->
+        <!-- Berita Utama -->
+        <!-- <div class="col-lg-7">
                         <?php $utama = $getBerita[0]; ?>
                         <div class="main-news position-relative rounded overflow-hidden shadow-sm">
                             <img src="<?= $utama->thumbnail ? base_url('uploads/' . $utama->thumbnail) : 'https://placehold.co/500?text=No\nImage' ?>"
@@ -147,9 +168,9 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    <!-- Berita Lainnya -->
-                    <div class="col-lg-5 d-flex flex-column gap-3">
+                    </div> -->
+        <!-- Berita Lainnya -->
+        <!-- <div class="col-lg-5 d-flex flex-column gap-3">
                         <?php foreach (array_slice($getBerita, 1) as $berita): ?>
                             <div class="news-card d-flex shadow-sm rounded overflow-hidden">
                                 <img src="<?= base_url('uploads/' . $berita->thumbnail) ?>" class="thumb"
@@ -172,14 +193,14 @@
                                 </div>
                             </div>
                         <?php endforeach; ?>
-                    </div>
-                </div>
+                    </div> -->
+        <!-- </div>
             </div>
-        </section>
+        </section> -->
 
     <?php elseif ($kode == 'pengumuman'): ?>
         <!-- PENGUMUMAN SECTION -->
-        <section id="notice">
+        <!-- <section id="notice">
             <div class="container">
                 <h2 class="section-title fw-bold mb-4 text-center"><?= esc($konten->judul ?? 'Pengumuman') ?></h2>
                 <div class="swiper notice-swiper">
@@ -197,16 +218,16 @@
                         <?php endforeach; ?>
                     </div>
                     <!-- Optional: Pagination & Nav -->
-                    <div class="swiper-button-prev"></div>
-                    <div class="swiper-button-next"></div>
-                </div>
-            </div>
-        </section>
+        <div class="swiper-button-prev"></div>
+        <div class="swiper-button-next"></div>
+        </div>
+        </div>
+        </section> -->
 
 
     <?php elseif ($kode == 'mitra'): ?>
         <!-- MITRA SECTION -->
-        <section id="partner" class="py-5 bg-light">
+        <!-- <section id="partner" class="py-5 bg-light">
             <div class="container text-center">
                 <h2 class="fw-bold section-title mb-4"><?= esc($konten->judul ?? 'Mitra dan Partner Kami') ?></h2>
                 <h6 class="mb-4 section-desc">
@@ -222,7 +243,7 @@
                     </div>
                 </div>
             </div>
-        </section>
+        </section> -->
     <?php endif; ?>
 <?php endforeach; ?>
 
