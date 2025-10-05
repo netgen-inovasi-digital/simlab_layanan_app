@@ -48,7 +48,6 @@ modal.addEventListener('shown.bs.modal', function (e) {
     const instansiField = modal.querySelector('#instansiField');
     const instansiInput = instansiField.querySelector('input');
 
-
     function toggleInstansi() {
         if (identitySelect.value === "NON ULM") {
             instansiField.style.display = "flex"; 
@@ -95,16 +94,25 @@ function editItem(event) {
             }
 
             // === Tambahan: bukti file ===
-            const buktiWrapper = document.getElementById("buktiWrapper");
             const buktiInfo = document.getElementById("buktiInfo");
-            if (data.bukti_file) {
-                buktiInfo.innerHTML = `<a href="<?= base_url('uploads/bukti/') ?>${data.bukti_file}" target="_blank" class="btn btn-info btn-sm">Lihat Bukti</a>`;
+            if (data.bukti_url) {
+                buktiInfo.innerHTML = `
+                    <a href="${data.bukti_url}" target="_blank" class="btn btn-info btn-sm">
+                        <i class="bi bi-eye"></i> Lihat Bukti
+                    </a>
+                    <p class="text-muted small mt-1">Anda bisa unggah file baru untuk mengganti.</p>
+                `;
             } else {
-                buktiInfo.innerHTML = `<span class="text-danger">Silakan upload file</span>`;
+                buktiInfo.innerHTML = `<span class="text-danger">Belum ada bukti, silakan upload file.</span>`;
             }
 
-            // === Tambahan: verifikasi ===
-            document.querySelector('[name="verifikasi"]').checked = (data.verifikasi == 1);
+        // === Tambahan: verifikasi ===
+        if (data.verifikasi == 1) {
+            document.getElementById("verifikasi1").checked = true;
+        } else {
+            document.getElementById("verifikasi0").checked = true;
+        }
+
 
             // tampilkan modal
             var myModal = new bootstrap.Modal(document.getElementById('modalForm'));
@@ -165,101 +173,113 @@ document.addEventListener("click", function(e) {
             <?php echo form_open_multipart('akun/submit', array('id'=>'myform', 'novalidate'=>'')) ?>
                 <div class="modal-body">
                     <input type="hidden" value="" name="id"/>
-
-                    <!-- Username -->
-                    <div class="row mb-2">
-                        <label class="col-md-4 col-form-label">Username</label>
-                        <div class="col">
-                            <input name="user_name" type="text" class="form-control" required>
-                        </div>
+                    
+                <!-- Username -->
+                <div class="row mb-2">
+                    <label class="col-md-4 col-form-label">Username</label>
+                    <div class="col">
+                        <input name="user_name" type="text" class="form-control" required>
                     </div>
+                </div>
 
-                    <!-- Email -->
-                    <div class="row mb-2">
-                        <label class="col-md-4 col-form-label">Email</label>
-                        <div class="col">
-                            <input name="user_email" type="email" class="form-control" required>
-                        </div>
+                <!-- Email -->
+                <div class="row mb-2">
+                    <label class="col-md-4 col-form-label">Email</label>
+                    <div class="col">
+                        <input name="user_email" type="email" class="form-control" required>
                     </div>
+                </div>
 
-                    <!-- Nomor Telepon -->
-                    <div class="row mb-2">
-                        <label class="col-md-4 col-form-label">Nomor Telepon</label>
-                        <div class="col">
-                            <input name="user_telpon" type="text" class="form-control">
-                        </div>
+                <!-- Nomor Telepon -->
+                <div class="row mb-2">
+                    <label class="col-md-4 col-form-label">Nomor Telepon</label>
+                    <div class="col">
+                        <input name="user_telpon" type="text" class="form-control">
                     </div>
+                </div>
 
-                    <!-- Password -->
-                    <div class="row mb-2">
-                        <label class="col-md-4 col-form-label">Ubah Password</label>
-                        <div class="col">
-                            <input name="user_password" type="password" class="form-control">
-                        </div>
+                <!-- Password -->
+                <div class="row mb-2">
+                    <label class="col-md-4 col-form-label">Ubah Password</label>
+                    <div class="col">
+                        <input name="user_password" type="password" class="form-control">
                     </div>
+                </div>
 
-                    <!-- Status Identitas -->
-                    <div class="row mb-2">
-                        <label class="col-md-4 col-form-label">Status Identitas</label>
-                        <div class="col">
-                            <select name="user_identity" class="form-select" required>
-                                <option value="">-- pilih identitas --</option>
-                                <option value="ULM">ULM</option>
-                                <option value="NON ULM">NON ULM</option>
-                            </select>
-                        </div>
+                <!-- Status Identitas -->
+                <div class="row mb-2">
+                    <label class="col-md-4 col-form-label">Status Identitas</label>
+                    <div class="col">
+                        <select name="user_identity" class="form-select" required>
+                            <option value="">-- pilih identitas --</option>
+                            <option value="ULM">ULM</option>
+                            <option value="NON ULM">NON ULM</option>
+                        </select>
                     </div>
+                </div>
 
-                    <!-- Asal Instansi -->
-                    <div class="row mb-2" id="instansiField" style="display: none;">
-                        <label class="col-md-4 col-form-label">Asal Instansi</label>
-                        <div class="col">
-                            <input name="user_instansi" type="text" class="form-control">
-                        </div>
+                <!-- Asal Instansi -->
+                <div class="row mb-2" id="instansiField" style="display: none;">
+                    <label class="col-md-4 col-form-label">Asal Instansi</label>
+                    <div class="col">
+                        <input name="user_instansi" type="text" class="form-control">
                     </div>
+                </div>
 
-                    <!-- Upload Bukti -->
-                    <div class="row mb-2" id="buktiWrapper">
-                        <label class="col-md-4 col-form-label">Bukti</label>
-                        <div class="col">
-                            <input type="file" name="bukti_file" class="form-control">
-                            <div id="buktiInfo" class="mt-2"></div>
-                        </div>
-                    </div>
-
-                    <!-- Verifikasi -->
-                    <div class="row mb-2">
-                        <label class="col-md-4 col-form-label">Terverifikasi</label>
-                        <div class="col mt-2">
-                            <input type="checkbox" name="verifikasi" value="1"> Sudah Diverifikasi
-                        </div>
-                    </div>
-
-                    <!-- Status User -->
-                    <div class="row mb-2">
-                        <label class="col-4 col-form-label">Status</label>
-                        <div class="col">
-                            <div class="form-check mt-2 form-check-inline">
-                                <input class="form-check-input" type="radio" name="status_user" id="status1" value="1" checked>
-                                <label class="form-check-label" for="status1">Aktif</label>
-                            </div>
-                            <div class="form-check mt-2 form-check-inline">
-                                <input class="form-check-input" type="radio" name="status_user" id="status0" value="0">
-                                <label class="form-check-label text-danger" for="status0">Tidak Aktif</label>
-                            </div>
+                <!-- Upload Bukti -->
+                <div class="row mb-2" id="buktiWrapper">
+                    <label class="col-md-4 col-form-label">Bukti</label>
+                    <div class="col">
+                        <input type="file" name="bukti_file" class="form-control">
+                        <div id="buktiInfo" class="mt-2">
+                            <span class="text-muted small">Belum ada bukti, silakan upload.</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="modal-footer">
-                    <button class="btn btn-light" type="button" data-bs-dismiss="modal">
-                        <i class="bi bi-x-circle"></i> Batal
-                    </button>
-                    <button class="btn btn-success" type="submit">
-                        <i class="bi bi-check2-circle"></i> Simpan
-                    </button>
+                <!-- Verifikasi -->
+                <div class="row mb-2">
+                    <label class="col-md-4 col-form-label">Verifikasi</label>
+                    <div class="col">
+                        <div class="form-check mt-2 form-check-inline">
+                            <input class="form-check-input" type="radio" name="verifikasi" id="verifikasi1" value="1">
+                            <label class="form-check-label text-success" for="verifikasi1">Terverifikasi</label>
+                        </div>
+                        <div class="form-check mt-2 form-check-inline">
+                            <input class="form-check-input" type="radio" name="verifikasi" id="verifikasi0" value="0">
+                            <label class="form-check-label text-danger" for="verifikasi0">Belum Terverifikasi</label>
+                        </div>
+                    </div>
                 </div>
-            </form>
-        </div>
+
+
+                <!-- Status User -->
+                <div class="row mb-2">
+                    <label class="col-4 col-form-label">Status</label>
+                    <div class="col">
+                        <div class="form-check mt-2 form-check-inline">
+                            <input class="form-check-input" type="radio" name="status_user" id="status1" value="1" checked>
+                            <label class="form-check-label" for="status1">Aktif</label>
+                        </div>
+                        <div class="form-check mt-2 form-check-inline">
+                            <input class="form-check-input" type="radio" name="status_user" id="status0" value="0">
+                            <label class="form-check-label text-danger" for="status0">Tidak Aktif</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-light" type="button" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> Batal
+                </button>
+                <button class="btn btn-success" type="submit">
+                    <i class="bi bi-check2-circle"></i> Simpan
+                </button>
+            </div>
+        </form>
     </div>
 </div>
+
+</div>
+

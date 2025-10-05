@@ -17,15 +17,15 @@ class AuthModelAdmin extends Model
         'status_user'
     ];
     
-    public function getLaboranById($idLaboran)
-    {
-        $db = \Config\Database::connect();
-        $builder = $db->table('simlab_laboran l');
-        $builder->select('l.id_laboran, l.username, l.lab_kode, a.admin_password, a.id_role');
-        $builder->join('simlab_account a', 'l.username = a.username');
-        $builder->where('l.id_laboran', $idLaboran);
-        return $builder->get()->getRowArray();
-    }
+    // public function getLaboranById($idLaboran)
+    // {
+    //     $db = \Config\Database::connect();
+    //     $builder = $db->table('simlab_laboran l');
+    //     $builder->select('l.id_laboran, l.username, l.lab_kode, a.admin_password, a.id_role');
+    //     $builder->join('simlab_account a', 'l.username = a.username');
+    //     $builder->where('l.id_laboran', $idLaboran);
+    //     return $builder->get()->getRowArray();
+    // }
     
     public function getAdminByUsername($username)
     {
