@@ -2,216 +2,194 @@
     <div class="col-md-12">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <label class="card-title mb-0"><?php echo $title ?></label>
+                <label class="card-title mb-0"><?= $title ?></label>
                 <button id="add" class="btn btn-primary">
                     <i class="bi bi-plus-circle-dotted"></i> Tambah
                 </button>
             </div>
             <div class="card-body">
-                <table id="data-table" class="saytable border-top-bottom">
-                    <thead>
-                        <tr>
-                            <th show width="8%">No.</th>
-                            <th show>Username</th>
-                            <th show>Layanan yang dikelola</th>
-                            <th show>Nama</th>
-                            <th>Status</th>
-                            <th show class="action text-end">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody id="table-body"></tbody>
-                </table>
+                <div class="table-wrapper">
+                    <table id="data-table" class="saytable border-top-bottom">
+                        <thead>
+                            <tr>
+                                <th width="8%">No.</th>
+                                <th>Username</th>
+                                <th>Layanan yang Dikelola</th>
+                                <th>Nama</th>
+                                <th>Status</th>
+                                <th class="action text-end">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-   table = createTable({
-        apiUrl: '<?php echo site_url("penyelia/datalist") ?>',
-    });
-    addAction();
+let csrfHash = '<?= csrf_hash() ?>';
 
-    var modal = document.getElementById('modalForm');
-    modal.addEventListener('shown.bs.modal', function (e) {
-        const pwd = document.querySelector('[name="password"]');
-        pwd.value = "";
-        const id = document.querySelector('[name="id"]').value;
-        if (id == "") pwd.setAttribute('required', true);
-        else pwd.removeAttribute('required');
-    });
+// Inisialisasi tabel utama
+table = createTable({
+    apiUrl: '<?= site_url("penyelia/datalist") ?>',
+    showFilter: true
+});
+addAction();
 
-    // === Menampilkan layanan yang dikelola Penyelia + Pagination ===
-    let modalLayananInstance = null;
+const modal = document.getElementById('modalForm');
+modal.addEventListener('shown.bs.modal', function () {
+    const pwd = document.querySelector('[name="password"]');
+    pwd.value = "";
+    const id = document.querySelector('[name="id"]').value;
+    if (id === "") pwd.setAttribute('required', true);
+    else pwd.removeAttribute('required');
+});
 
-    function lihatLayanan(id, page = 1) {
-        fetch("<?php echo site_url('penyelia/layanan') ?>/" + id + "?page=" + page)
-            .then(res => res.json())
-            .then(data => {
-                let body = document.getElementById('layanan-body');
-                let paginationContainer = document.getElementById('layanan-pagination');
-                body.innerHTML = "";
-                paginationContainer.innerHTML = "";
+let modalLayananInstance = null;
+let layananTable = null;
 
-                if (data.res === 'ok' && data.items.length > 0) {
-                    data.items.forEach(item => {
-                        let idLayanan = item.aksi.match(/hapusLayanan\('(.+?)'\)/)[1];
-                        body.innerHTML += `
-                            <tr>
-                                <td>${item.no}</td>
-                                <td>${item.nama}</td>
-                                <td>
-                                    <div class="float-end">
-                                        <span class="text-danger btn-action" title="Hapus" onclick="hapusLayanan('${idLayanan}')">
-                                            <i class="bi bi-trash"></i> Hapus
-                                        </span>
-                                    </div>
-                                </td>
-                            </tr>`;
-                    });
+function lihatLayanan(id) {
+    const modalEl = document.getElementById('modallayanan');
+    modalEl.setAttribute('data-penyelia', id);
 
-                    let currentPage = data.pagination.page;
-                    let totalPages = data.pagination.total_pages;
+    // Reset isi modal
+    const modalBody = modalEl.querySelector('.modal-body');
+    modalBody.innerHTML = `
+        <div class="table-wrapper">
+            <table id="layanan-table-modal" class="saytable border-top-bottom">
+                <thead>
+                    <tr>
+                        <th width="8%">No.</th>
+                        <th>Nama Layanan</th>
+                        <th>Status</th>
+                        <th class="action text-end">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    `;
 
-                    paginationContainer.innerHTML += `
-                        <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
-                            <a class="page-link" href="javascript:void(0)" onclick="lihatLayanan('${id}', ${currentPage - 1})">
-                                <i class="bi bi-chevron-left"></i>
-                            </a>
-                        </li>`;
-
-                    for (let i = 1; i <= totalPages; i++) {
-                        paginationContainer.innerHTML += `
-                            <li class="page-item ${i === currentPage ? 'active' : ''}">
-                                <a class="page-link" href="javascript:void(0)" onclick="lihatLayanan('${id}', ${i})">${i}</a>
-                            </li>`;
-                    }
-
-                    paginationContainer.innerHTML += `
-                        <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
-                            <a class="page-link" href="javascript:void(0)" onclick="lihatLayanan('${id}', ${currentPage + 1})">
-                                <i class="bi bi-chevron-right"></i>
-                            </a>
-                        </li>`;
-                } else {
-                    body.innerHTML = `<tr><td colspan="3" class="text-center"><i>Tidak ada layanan</i></td></tr>`;
-                }
-
-                if (!modalLayananInstance) {
-                    modalLayananInstance = new bootstrap.Modal(document.getElementById('modalLayanan'));
-                }
-                document.getElementById('modalLayanan').setAttribute('data-penyelia', id);
-                modalLayananInstance.show();
-            })
-            .catch(error => console.error('Error fetch layanan:', error));
-    }
-
-    function hapusLayanan(id) {
-        if (!id) return;
-        if (!confirm("Yakin ingin menghapus layanan ini?")) return;
-
-        fetch("<?php echo site_url('penyelia/deleteLayanan') ?>/" + id)
-            .then(res => res.json())
-            .then(data => {
-                if (data.res === 'ok') {
-                    alert("Layanan berhasil dihapus!");
-                    document.querySelector('.modal.show .btn-close').click();
-                    table.refresh();
-                } else {
-                    alert("Gagal menghapus layanan.");
-                }
-            })
-            .catch(error => console.error('Error hapus layanan:', error));
-    }
-
-    // === Modal Tambah Layanan dengan Search ===
-    let modalTambahLayananInstance = new bootstrap.Modal(document.getElementById('modalTambahLayanan'));
-    let searchLayananTerm = "";
-
-    function tambahLayanan(page = 1) {
-        fetch("<?= site_url('penyelia/layananKosong') ?>?page=" + page + "&limit=10&search=" + encodeURIComponent(searchLayananTerm))
-            .then(res => res.json())
-            .then(data => {
-                let body = document.getElementById('layanan-kosong-body');
-                let paginationContainer = document.getElementById('layanan-kosong-pagination');
-                body.innerHTML = "";
-                paginationContainer.innerHTML = "";
-
-                if (data.res === 'ok' && data.items.length > 0) {
-                    data.items.forEach(item => {
-                        body.innerHTML += `
-                            <tr>
-                                <td>${item.no}</td>
-                                <td>${item.nama}</td>
-                                <td>${item.aksi}</td>
-                            </tr>`;
-                    });
-
-                    let currentPage = data.pagination.page;
-                    let totalPages = data.pagination.total_pages;
-
-                    paginationContainer.innerHTML += `
-                        <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
-                            <a class="page-link" href="javascript:void(0)" onclick="tambahLayanan(${currentPage - 1})">
-                                <i class="bi bi-chevron-left"></i>
-                            </a>
-                        </li>`;
-
-                    for (let i = 1; i <= totalPages; i++) {
-                        paginationContainer.innerHTML += `
-                            <li class="page-item ${i === currentPage ? 'active' : ''}">
-                                <a class="page-link" href="javascript:void(0)" onclick="tambahLayanan(${i})">${i}</a>
-                            </li>`;
-                    }
-
-                    paginationContainer.innerHTML += `
-                        <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
-                            <a class="page-link" href="javascript:void(0)" onclick="tambahLayanan(${currentPage + 1})">
-                                <i class="bi bi-chevron-right"></i>
-                            </a>
-                        </li>`;
-                } else {
-                    body.innerHTML = `<tr><td colspan="3" class="text-center"><i>Tidak ada layanan kosong</i></td></tr>`;
-                }
-
-                modalTambahLayananInstance.show();
-            })
-            .catch(err => console.error(err));
-    }
-
-    // === Event Search Tambah Layanan ===
-    document.addEventListener('DOMContentLoaded', function() {
-        const searchInput = document.getElementById('search-layanan-input');
-        if (searchInput) {
-            searchInput.addEventListener('input', function(e) {
-                searchLayananTerm = e.target.value; // langsung passing ke backend
-                tambahLayanan(1);
-            });
-        }
+    layananTable = createModal({
+           apiUrl: '<?= site_url("penyelia/layanan") ?>/' + id,
+            tableId: 'layanan-table-modal',
     });
 
-    function pilihLayanan(idLayanan) {
-        if (!confirm("Yakin ingin menambahkan layanan ini ke penyelia?")) return;
 
-        let idPenyeliaEnc = document.getElementById('modalLayanan').getAttribute('data-penyelia');
-        if (!idPenyeliaEnc) return alert("Penyelia belum diketahui.");
+    if (modalLayananInstance) {
+        modalLayananInstance.hide();
+        modalLayananInstance = null;
+    }
+    modalLayananInstance = new bootstrap.Modal(modalEl);
+    modalLayananInstance.show();
+}
 
-        fetch("<?= site_url('penyelia/tambahLayananPenyelia') ?>", {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json', 'X-Requested-With':'XMLHttpRequest'},
-            body: JSON.stringify({layanan: idLayanan, penyelia: idPenyeliaEnc, '<?= csrf_token() ?>':'<?= csrf_hash() ?>'})
+// Hapus data penyelia (konsisten dengan deleteItem)
+function deletePenyelia(event) {
+    let el = event.currentTarget.closest('div');
+    let id = el?.id || event.currentTarget.getAttribute('data-id');
+    if (!id) return sayAlert('errorModal', 'Error', 'ID penyelia tidak ditemukan!', 'warning');
+
+    sayAlert('confirmModal', 'Konfirmasi', 'Yakin ingin menghapus penyelia ini?', 'danger', true, () => {
+        showLoading();
+        fetch("<?= site_url('penyelia/delete') ?>/" + id, {
+            method: 'GET',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
         })
         .then(res => res.json())
         .then(data => {
+            if (data.xhash) csrfHash = data.xhash;
             if (data.res === 'ok') {
-                alert("Layanan berhasil ditambahkan!");
-                document.getElementById('modalTambahLayanan').querySelector('.btn-close').click();
-                lihatLayanan(idPenyeliaEnc);
+                if (typeof table !== 'undefined') table.fetchData({ reload: true });
+                sayAlert('successModal', 'Berhasil', data.msg ?? 'Penyelia berhasil dihapus.', 'success');
             } else {
-                alert("Gagal menambahkan layanan.");
+                sayAlert('errorModal', 'Gagal', data.msg ?? 'Gagal menghapus penyelia.', 'warning');
             }
-        });
+        })
+        .catch(err => {
+            sayAlert('errorModal', 'Error', 'Terjadi kesalahan: ' + err.message, 'warning');
+        })
+        .finally(() => hideLoading());
+    });
+}
+
+
+function deleteItem(event) {
+    let el = event.currentTarget.closest('div');
+    let id = el?.id || event.currentTarget.getAttribute('data-id');
+    if (!id) {
+        sayAlert('errorModal', 'Error', 'ID layanan tidak ditemukan!', 'warning');
+        return;
     }
+
+    sayAlert('confirmModal', 'Konfirmasi', 'Yakin ingin menghapus layanan ini dari penyelia?', 'danger', true, () => {
+        showLoading();
+        fetch("<?= site_url('penyelia/deleteLayanan') ?>/" + id, {
+            method: 'GET',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.xhash) csrfHash = data.xhash;
+            if (data.res === 'ok') {
+                if (typeof table !== 'undefined') table.fetchData({ reload: true });
+                sayAlert('successModal', 'Berhasil', data.msg ?? 'Layanan berhasil dihapus.', 'success');
+                let idPenyelia = document.getElementById('modallayanan').getAttribute('data-penyelia');
+                if (idPenyelia) lihatLayanan(idPenyelia); // refresh modal
+                table.refresh(); // refresh tabel utama
+            } else {
+                sayAlert('errorModal', 'Gagal', data.msg ?? 'Gagal menghapus layanan.', 'warning');
+            }
+        })
+        .catch(err => {
+            sayAlert('errorModal', 'Error', 'Terjadi kesalahan: ' + err.message, 'warning');
+        })
+        .finally(() => hideLoading());
+    });
+}
+
+function tambahlayanan(idLayanan) {
+    sayAlert('confirmModal', 'Konfirmasi', 'Yakin ingin menambahkan layanan ini?', 'primary', true, () => {
+        let idPenyelia = document.getElementById('modallayanan').getAttribute('data-penyelia');
+        showLoading();
+        fetch("<?= site_url('penyelia/tambahLayananPenyelia') ?>", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({
+                layanan: idLayanan,
+                penyelia: idPenyelia,
+                '<?= csrf_token() ?>': csrfHash
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.xhash) csrfHash = data.xhash;
+            if (data.res === 'ok') {
+                lihatLayanan(idPenyelia);
+                if (typeof table !== 'undefined') {
+                    table.fetchData({ reload: true });
+                }
+                sayAlert('successModal', 'Berhasil', data.msg ?? 'Layanan berhasil ditambahkan.', 'success');
+            } else {
+                sayAlert('errorModal', 'Gagal', data.msg ?? 'Gagal menambahkan layanan.', 'warning');
+            }
+        })
+        .catch(err => {
+            sayAlert('errorModal', 'Error', 'Terjadi kesalahan: ' + err.message, 'warning');
+        })
+        .finally(() => hideLoading());
+    });
+}
+
+
+function pilihLayanan(idLayanan) {
+    tambahlayanan(idLayanan);
+}
 </script>
 
 <!-- Modal Form Penyelia -->
@@ -223,35 +201,27 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             
-            <?php echo form_open('penyelia/submit', ['id' => 'myform', 'novalidate' => '']) ?>
+            <?= form_open('penyelia/submit', ['id' => 'myform', 'novalidate' => '']) ?>
                 <div class="modal-body">
                     <input type="hidden" value="" name="id"/>
-
-                    <!-- Username -->
                     <div class="row mb-2">
                         <label class="col-md-4 col-form-label">Username</label>
                         <div class="col">
                             <input name="username" type="text" class="form-control" required>
                         </div>
                     </div>
-
-                    <!-- Nama -->
                     <div class="row mb-2">
                         <label class="col-md-4 col-form-label">Nama</label>
                         <div class="col">
                             <input name="nama" type="text" class="form-control" required>
                         </div>
                     </div>
-
-                    <!-- Password -->
                     <div class="row mb-2">
                         <label class="col-md-4 col-form-label">Password</label>
                         <div class="col">
                             <input name="password" type="password" class="form-control">
                         </div>
                     </div>
-
-                    <!-- Status -->
                     <div class="row mb-2">
                         <label class="col-4 col-form-label">Status</label>
                         <div class="col">
@@ -266,7 +236,6 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="modal-footer">
                     <button class="btn btn-light" type="button" data-bs-dismiss="modal">
                         <i class="bi bi-x-circle"></i> Batal
@@ -280,104 +249,34 @@
     </div>
 </div>
 
-<!-- Modal Detail Layanan -->
-<div class="modal fade" id="modalLayanan" tabindex="-1">
-  <div class="modal-dialog modal-lg">
+<!-- Modal Manajemen Layanan Penyelia -->
+<div class="modal fade" id="modallayanan" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+  <div class="modal-dialog modal-xl" role="document" style="margin: 2% auto">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Layanan yang Dikelola</h5>
+        <h5 class="modal-title">Manajemen Layanan Penyelia</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
-        <div class="d-flex justify-content-end mb-2">
-            <button class="btn btn-success btn-sm" onclick="tambahLayanan()">
-                <i class="bi bi-plus-circle"></i> Tambah Layanan
-            </button>
+         <div class="table-wrapper">
+            <table id="layanan-table" class="saytable border-top-bottom">
+              <thead>
+                <tr>
+                  <th width="8%">No.</th>
+                  <th>Nama Layanan</th>
+                  <th>Status</th>
+                  <th class="action text-end">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="layanan-table-body"></tbody>
+            </table>
         </div>
-        <table class="table table-sm table-bordered mb-2">
-          <thead>
-            <tr>
-             <th width="8%">No.</th>
-             <th width="80%">Nama Layanan</th>
-             <th width="12%">Aksi</th>
-            </tr>
-          </thead>
-          <tbody id="layanan-body"></tbody>
-        </table>
       </div>
-      <div class="modal-footer flex-column">
-        <nav class="w-100 mb-2">
-            <ul id="layanan-pagination" class="pagination pagination-sm justify-content-center mb-0"></ul>
-        </nav>
-        <div class="w-100 d-flex justify-content-end">
-            <button class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
-        </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">
+          <i class="bi bi-x-circle"></i> Tutup
+        </button>
       </div>
     </div>
   </div>
 </div>
-
-<!-- Modal Tambah Layanan -->
-<div class="modal fade" id="modalTambahLayanan" tabindex="-1">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Pilih Layanan</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <div class="d-flex justify-content-end mb-2">
-            <input type="text" id="search-layanan-input" class="form-control form-control-sm w-auto" placeholder="Cari layanan...">
-        </div>
-        <table class="table table-sm table-bordered">
-          <thead>
-            <tr>
-              <th width="8%">No.</th>
-              <th width="80%">Nama Layanan</th>
-              <th width="12%">Aksi</th>
-            </tr>
-          </thead>
-          <tbody id="layanan-kosong-body"></tbody>
-        </table>
-      </div>
-      <div class="modal-footer flex-column">
-        <nav class="w-100 mb-2">
-            <ul id="layanan-kosong-pagination" class="pagination pagination-sm justify-content-center mb-0"></ul>
-        </nav>
-        <div class="w-100 d-flex justify-content-end">
-            <button class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Script lama dipertahankan untuk fallback -->
-<script>
-function lihatLayananSimple(id) {
-    fetch("<?= site_url('penyelia/layanan') ?>/" + id)
-        .then(res => res.json())
-        .then(data => {
-            let body = document.getElementById('layanan-body');
-            body.innerHTML = "";
-
-            if (data.res === 'ok' && data.items.length > 0) {
-            data.items.forEach(item => {
-                body.innerHTML += `
-                    <tr>
-                        <td>${item.no}</td>
-                        <td>${item.nama}</td>
-                        <td>${item.aksi}</td>
-                    </tr>
-                `;
-            });
-
-            } else {
-                body.innerHTML = `<tr><td colspan="3" class="text-center"><i>Tidak ada layanan</i></td></tr>`;
-            }
-
-            var modal = new bootstrap.Modal(document.getElementById('modalLayanan'));
-            modal.show();
-        });
-}
-</script>

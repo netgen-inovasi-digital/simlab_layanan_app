@@ -534,3 +534,9 @@
             }
         });
     }
+
+    // Fungsi konfirmasi fleksibel
+    function sayConfirm(title, message, confirmCallback, type = 'danger') {
+        // Memanggil sayAlert dengan modal konfirmasi dan tipe tombol yang fleksibel
+        sayAlert('confirmModal', title, message, type, true, confirmCallback);
+    }
