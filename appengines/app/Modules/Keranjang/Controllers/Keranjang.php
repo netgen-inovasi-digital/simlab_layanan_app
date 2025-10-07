@@ -43,7 +43,6 @@ class Keranjang extends BaseController
         return view('Modules\Keranjang\Views\v_keranjang', $data);
     }
 
-    // === tampilkan data keranjang (datatable ajax) === //
     public function dataList()
     {
         $session   = session();
@@ -61,10 +60,8 @@ class Keranjang extends BaseController
             $biayaAsli  = isset($row['biaya_asli']) ? (float)$row['biaya_asli'] : 0;
             $biayaTotal = isset($row['biaya']) ? (float)$row['biaya'] : 0;
 
-            // Layanan
             $response[] = '<span class="badge bg-primary">' . $layanan . '</span>';
 
-            // Biaya tampil
             if ($diskon > 0) {
                 $hargaDiskon = $biayaAsli - ($biayaAsli * ($diskon / 100));
                 $biayaTampil = '<span style="color:red;text-decoration:line-through;">Rp ' . number_format($biayaAsli, 0, ',', '.') . '</span><br>';
@@ -74,19 +71,10 @@ class Keranjang extends BaseController
             }
             $response[] = $biayaTampil;
 
-            // Jumlah
             $response[] = $jumlah;
-
-            // Diskon
             $response[] = $diskon > 0 ? $diskon . '%' : '-';
-
-            // Total
             $response[] = 'Rp ' . number_format($biayaTotal, 0, ',', '.');
-
-            // Keterangan
             $response[] = $keterangan;
-
-            // Aksi
             $response[] = $this->aksi($idx);
 
             $data[] = $response;
@@ -96,7 +84,6 @@ class Keranjang extends BaseController
         return $this->response->setJSON($output);
     }
 
-    // === tampilkan form ajax tambah data === //
     public function formTambah()
     {
         $model = new MyModel('simlab_r_layanan_pengujian');
@@ -129,7 +116,6 @@ class Keranjang extends BaseController
         ]);
     }
 
-    // === simpan ke session keranjang === //
     public function submit()
     {
         $session   = session();
@@ -165,12 +151,15 @@ class Keranjang extends BaseController
             'simlab_r_alat a'      => 'a.alatKode = simlab_r_layanan_pengujian.ujiAlatKode'
         ];
 
+        // 🔹 Tambahkan dua kolom baru agar ikut tersimpan ke session
         $where  = ['ujiKode' => $ujiKode];
         $select = 'simlab_r_layanan_pengujian.ujiKode, 
                    simlab_r_layanan_pengujian.ujiBiaya,
                    simlab_r_layanan_pengujian.ujiLayanan,
                    simlab_r_layanan_pengujian.ujiInstansi,
                    simlab_r_layanan_pengujian.ujiDiskon,
+                   simlab_r_layanan_pengujian.ujiPenyelia,
+                   simlab_r_layanan_pengujian.ujiManajerTeknis,
                    p.paraNama, 
                    a.alatNama';
 
@@ -185,28 +174,28 @@ class Keranjang extends BaseController
             ]);
         }
 
-        // Ambil biaya asli & diskon
         $biayaAsli   = isset($row->ujiBiaya) ? (float)$row->ujiBiaya : 0;
         $diskon      = isset($row->ujiDiskon) ? (float)$row->ujiDiskon : 0;
         $biayaSatuan = $biayaAsli;
 
-        // Terapkan diskon hanya jika instansi = ULM
         if (isset($row->ujiInstansi) && strtoupper($row->ujiInstansi) === 'ULM' && $diskon > 0) {
             $biayaSatuan = $biayaAsli - ($biayaAsli * ($diskon / 100));
         }
 
         $totalBiaya = ($biayaSatuan * $jumlah) * (1 - ($diskon / 100));
 
-        // Simpan ke session
+        // 🔹 Tambahkan dua field baru ke data session
         $data = [
-            'lnKode'     => $row->ujiInstansi,
-            'kode'       => $row->ujiKode,
-            'layanan'    => $row->ujiLayanan ?? '',
-            'biaya'      => $totalBiaya,
-            'biaya_asli' => $biayaAsli,
-            'jumlah'     => $jumlah,
-            'keterangan' => $keterangan,
-            'diskon'     => $diskon
+            'lnKode'            => $row->ujiInstansi,
+            'kode'              => $row->ujiKode,
+            'layanan'           => $row->ujiLayanan ?? '',
+            'biaya'             => $totalBiaya,
+            'biaya_asli'        => $biayaAsli,
+            'jumlah'            => $jumlah,
+            'keterangan'        => $keterangan,
+            'diskon'            => $diskon,
+            'ujiPenyelia'       => $row->ujiPenyelia ?? null,
+            'ujiManajerTeknis'  => $row->ujiManajerTeknis ?? null
         ];
 
         $keranjang[] = $data;
@@ -220,131 +209,120 @@ class Keranjang extends BaseController
         ]);
     }
 
-public function checkout()
-{
-    $session = session();
-    $user_id = $session->get('id_user');
+    public function checkout()
+    {
+        $session = session();
+        $user_id = $session->get('id_user');
 
-    // --- Ambil data user dari tabel simlab_account_users ---
-    $modelUser = new \App\Models\MyModel('simlab_account_users');
-    $userRow   = $modelUser->getDataById('user_id', $user_id);
+        $modelUser = new \App\Models\MyModel('simlab_account_users');
+        $userRow   = $modelUser->getDataById('user_id', $user_id);
 
-    $emailFromDB = $userRow->user_email ?? $session->get('username');
-    $nameFromDB  = $userRow->user_name ?? $session->get('nama');
-    $identity    = $userRow->user_identity ?? null;
+        $emailFromDB = $userRow->user_email ?? $session->get('username');
+        $nameFromDB  = $userRow->user_name ?? $session->get('nama');
+        $identity    = $userRow->user_identity ?? null;
 
-    // --- Ambil keranjang ---
-    $keranjang = $session->get($this->sessionKey) ?? [];
-    if (empty($keranjang)) {
-        return $this->response->setJSON([
-            'res' => false,
-            'msg' => 'Keranjang masih kosong.',
-            'xname' => csrf_token(),
-            'xhash' => csrf_hash()
-        ]);
-    }
-
-    // Hitung total biaya
-    $totalBiaya = array_sum(array_column($keranjang, 'biaya'));
-
-    // Model
-    $modelPembayaran = new \App\Models\MyModel('simlab_t_pembayaran');
-    $modelLayanan    = new \App\Models\MyModel('simlab_t_layanan');
-    $modelDetil      = new \App\Models\MyModel('simlab_t_layanan_detil');
-
-    // Buat lnKode manual
-    $lastKode = $modelLayanan->getMax('lnKode', 'simlab_t_layanan');
-    $nextKode = $lastKode ? ($lastKode + 1) : 1;
-
-    // Nomor Invoice
-    $today = date('Y-m-d');
-    $countToday = $modelPembayaran->getCountAllbyManyWhere(['DATE(bayarInvoiceTgl)' => $today]);
-    $nextNumber = str_pad($countToday + 1, 4, '0', STR_PAD_LEFT);
-    $invoiceNo  = 'ULM' . date('Y') . date('m') . $nextNumber;
-
-    // Simpan pembayaran
-    $insertId = $modelPembayaran->insertData([
-        'bayarLnKode'     => $nextKode,
-        'bayarTotalBiaya' => $totalBiaya,
-        'bayarStatus'     => 0,
-        'bayarInvoiceNo'  => $invoiceNo,
-        'bayarInvoiceTgl' => $today,
-        'bayarBuktiFile'  => 'by_admin'
-    ], true);
-
-    if (!$insertId) {
-        return $this->response->setJSON([
-            'res' => false,
-            'msg' => 'Gagal simpan pembayaran.',
-            'xname' => csrf_token(),
-            'xhash' => csrf_hash()
-        ]);
-    }
-
-    // Ambil data tambahan untuk header
-    $email    = $emailFromDB;
-    $tipe     = $this->request->getPost('InTipe') ?: ($identity === 'ULM' ? 'ULM' : 'NONULM');
-    $nama     = $this->request->getPost('InOrangNama') ?: $nameFromDB;
-    $telp     = $this->request->getPost('InOrangTelp') ?: '-';
-    $instansi = $this->request->getPost('InInstansi') ?: 'Tidak diisi';
-
-    // Insert header layanan (sekali saja)
-    $modelLayanan->insertData([
-        'lnKode'        => $nextKode,
-        'lnAccEmail'    => $email,
-        'lnNoTransaksi' => $invoiceNo,
-        'lnTgl'         => date('Y-m-d H:i:s'),
-        'lnTipe'        => $tipe,
-        'lnOrangNama'   => $nama,
-        'lnOrangTelp'   => $telp,
-        'lnOrangEmail'  => $email,
-        'lnInstansi'    => $instansi,
-        'lnStatus'      => 1
-    ]);
-
-    // Insert detail (loop per item keranjang)
-    foreach ($keranjang as $item) {
-        $detil = [
-            'detLnKode'     => $nextKode,
-            'detUjiKode'    => $item['kode'] ?? null,
-            'detBiaya'      => $item['biaya'] ?? null,
-            'detKeterangan' => $item['keterangan'] ?? null,
-            'detLayanan'    => $item['layanan'] ?? null,
-            'detStatus'     => 1,
-            'detFileHasil'  => null,
-            'detJenKode'    => null
-        ];
-
-        $res = $modelDetil->insertData($detil);
-        if (!$res) {
-            $error = $modelDetil->db->error();
-            log_message('error', ' Insert gagal ke simlab_t_layanan_detil. Data: ' . json_encode($detil));
-            log_message('error', ' DB Error: ' . json_encode($error));
-
+        $keranjang = $session->get($this->sessionKey) ?? [];
+        if (empty($keranjang)) {
             return $this->response->setJSON([
                 'res' => false,
-                'msg' => 'Checkout gagal saat simpan detail: ' . ($error['message'] ?? 'Unknown error'),
+                'msg' => 'Keranjang masih kosong.',
                 'xname' => csrf_token(),
                 'xhash' => csrf_hash()
             ]);
         }
+
+        $totalBiaya = array_sum(array_column($keranjang, 'biaya'));
+
+        $modelPembayaran = new \App\Models\MyModel('simlab_t_pembayaran');
+        $modelLayanan    = new \App\Models\MyModel('simlab_t_layanan');
+        $modelDetil      = new \App\Models\MyModel('simlab_t_layanan_detil');
+
+        $lastKode = $modelLayanan->getMax('lnKode', 'simlab_t_layanan');
+        $nextKode = $lastKode ? ($lastKode + 1) : 1;
+
+        $today = date('Y-m-d');
+        $countToday = $modelPembayaran->getCountAllbyManyWhere(['DATE(bayarInvoiceTgl)' => $today]);
+        $nextNumber = str_pad($countToday + 1, 4, '0', STR_PAD_LEFT);
+        $invoiceNo  = 'ULM' . date('Y') . date('m') . $nextNumber;
+
+        $insertId = $modelPembayaran->insertData([
+            'bayarLnKode'     => $nextKode,
+            'bayarTotalBiaya' => $totalBiaya,
+            'bayarStatus'     => 0,
+            'bayarInvoiceNo'  => $invoiceNo,
+            'bayarInvoiceTgl' => $today,
+            'bayarBuktiFile'  => 'by_admin'
+        ], true);
+
+        if (!$insertId) {
+            return $this->response->setJSON([
+                'res' => false,
+                'msg' => 'Gagal simpan pembayaran.',
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        }
+
+        $email    = $emailFromDB;
+        $tipe     = $this->request->getPost('InTipe') ?: ($identity === 'ULM' ? 'ULM' : 'NONULM');
+        $nama     = $this->request->getPost('InOrangNama') ?: $nameFromDB;
+        $telp     = $this->request->getPost('InOrangTelp') ?: '-';
+        $instansi = $this->request->getPost('InInstansi') ?: 'Tidak diisi';
+
+        $modelLayanan->insertData([
+            'lnKode'        => $nextKode,
+            'lnAccEmail'    => $email,
+            'lnNoTransaksi' => $invoiceNo,
+            'lnTgl'         => date('Y-m-d H:i:s'),
+            'lnTipe'        => $tipe,
+            'lnOrangNama'   => $nama,
+            'lnOrangTelp'   => $telp,
+            'lnOrangEmail'  => $email,
+            'lnInstansi'    => $instansi,
+            'lnStatus'      => 1
+        ]);
+
+        // --- ⬇️ Tambahan kolom detPenyelia & detManajerTeknis ---
+        foreach ($keranjang as $item) {
+            $detil = [
+                'detLnKode'         => $nextKode,
+                'detUjiKode'        => $item['kode'] ?? null,
+                'detBiaya'          => $item['biaya'] ?? null,
+                'detKeterangan'     => $item['keterangan'] ?? null,
+                'detLayanan'        => $item['layanan'] ?? null,
+                'detStatus'         => 1,
+                'detFileHasil'      => null,
+                'detJenKode'        => null,
+                'detPenyelia'       => $item['ujiPenyelia'] ?? null,
+                'detManajerTeknis'  => $item['ujiManajerTeknis'] ?? null
+            ];
+
+            $res = $modelDetil->insertData($detil);
+            if (!$res) {
+                $error = $modelDetil->db->error();
+                log_message('error', ' Insert gagal ke simlab_t_layanan_detil. Data: ' . json_encode($detil));
+                log_message('error', ' DB Error: ' . json_encode($error));
+
+                return $this->response->setJSON([
+                    'res' => false,
+                    'msg' => 'Checkout gagal saat simpan detail: ' . ($error['message'] ?? 'Unknown error'),
+                    'xname' => csrf_token(),
+                    'xhash' => csrf_hash()
+                ]);
+            }
+        }
+
+        $session->remove($this->sessionKey);
+
+        return $this->response->setJSON([
+            'res' => true,
+            'msg' => 'Checkout berhasil! Nomor Invoice: ' . $invoiceNo,
+            'invoiceNo' => $invoiceNo,
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
+        ]);
     }
 
-    // Kosongkan keranjang
-    $session->remove($this->sessionKey);
-
-    return $this->response->setJSON([
-        'res' => true,
-        'msg' => 'Checkout berhasil! Nomor Invoice: ' . $invoiceNo,
-        'invoiceNo' => $invoiceNo,
-        'xname' => csrf_token(),
-        'xhash' => csrf_hash()
-    ]);
-}
-
-
-       
-    // === hapus item dari session keranjang === //
     public function delete($id)
     {
         $session   = session();
