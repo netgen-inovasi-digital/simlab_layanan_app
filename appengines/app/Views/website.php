@@ -56,8 +56,8 @@
     <nav class="navbar navbar-expand-lg navbar-light bg-white fixed-top">
         <div class="container">
             <a class="navbar-brand fw-bold" href="<?php echo base_url('') ?>">
-                <img src="assets/img/logosimlab.png" alt="Logo SimLab"
-                    style="width: 180px; object-fit: contain;" class="img-fluid" />
+                <img src="assets/img/logosimlab.png" alt="Logo SimLab" style="width: 180px; object-fit: contain;"
+                    class="img-fluid" />
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavAltMarkup"
                 aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
@@ -66,48 +66,50 @@
             <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
                 <ul class="navbar-nav ms-auto">
                     <?php foreach ($getNavbar as $menu): ?>
-                        <?php if (empty($menu['children'])): ?>
-                            <li class="nav-item">
+                        <?php if ($menu['nama'] == 'Layanan'): ?>
+                            <?php if (empty($menu['children'])): ?>
+                                <li class="nav-item">
+                                    <?php
+                                    $menuUrl = rtrim($menu['link'], '/');
+                                    $currentUrl = rtrim(current_url(), '/');
+                                    $isActive = $currentUrl === $menuUrl;
+                                    ?>
+                                    <a class="nav-link  <?= $isActive ? 'active fw-semibold text-primary' : '' ?>"
+                                        href="<?= $menu['link'] ?>">
+                                        <?= esc($menu['nama']) ?>
+                                    </a>
+
+                                </li>
+                            <?php else: ?>
                                 <?php
-                                $menuUrl = rtrim($menu['link'], '/');
+                                $activeChild = false;
                                 $currentUrl = rtrim(current_url(), '/');
-                                $isActive = $currentUrl === $menuUrl;
-                                ?>
-                                <a class="nav-link  <?= $isActive ? 'active fw-semibold text-primary' : '' ?>"
-                                    href="<?= $menu['link'] ?>">
-                                    <?= esc($menu['nama']) ?>
-                                </a>
 
-                            </li>
-                        <?php else: ?>
-                            <?php
-                            $activeChild = false;
-                            $currentUrl = rtrim(current_url(), '/');
-
-                            foreach ($menu['children'] as $child) {
-                                $menuUrl = rtrim($child['link'], '/');
-                                if ($currentUrl === $menuUrl) {
-                                    $activeChild = true;
-                                    break;
+                                foreach ($menu['children'] as $child) {
+                                    $menuUrl = rtrim($child['link'], '/');
+                                    if ($currentUrl === $menuUrl) {
+                                        $activeChild = true;
+                                        break;
+                                    }
                                 }
-                            }
-                            ?>
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle <?= $activeChild ? 'active fw-semibold text-primary' : '' ?>"
-                                    href="#" role="button" data-bs-toggle="dropdown">
-                                    <?= esc($menu['nama']) ?>
-                                </a>
-                                <ul class="dropdown-menu">
-                                    <?php foreach ($menu['children'] as $child): ?>
-                                        <li>
-                                            <a class="dropdown-item <?= current_url() == rtrim($child['link'], '/') ? 'active fw-semibold text-primary' : '' ?>"
-                                                href="<?= $child['link'] ?>">
-                                                <?= esc($child['nama']) ?>
-                                            </a>
-                                        </li>
-                                    <?php endforeach; ?>
-                                </ul>
-                            </li>
+                                ?>
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle <?= $activeChild ? 'active fw-semibold text-primary' : '' ?>"
+                                        href="#" role="button" data-bs-toggle="dropdown">
+                                        <?= esc($menu['nama']) ?>
+                                    </a>
+                                    <ul class="dropdown-menu">
+                                        <?php foreach ($menu['children'] as $child): ?>
+                                            <li>
+                                                <a class="dropdown-item <?= current_url() == rtrim($child['link'], '/') ? 'active fw-semibold text-primary' : '' ?>"
+                                                    href="<?= $child['link'] ?>">
+                                                    <?= esc($child['nama']) ?>
+                                                </a>
+                                            </li>
+                                        <?php endforeach; ?>
+                                    </ul>
+                                </li>
+                            <?php endif; ?>
                         <?php endif; ?>
                     <?php endforeach; ?>
                 </ul>
@@ -120,7 +122,7 @@
                     <button type="button" class="btn btn-outline-primary me-2" data-bs-toggle="modal"
                         data-bs-target="#authModal">
                         MASUK
-                    
+
                     </button>
                 <?php endif; ?>
             </div>
@@ -231,64 +233,70 @@
         });
     </script>
     <div class="modal fade" id="authModal" tabindex="-1" aria-labelledby="authModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content rounded-4 shadow p-4">
-      <div class="modal-header border-bottom-0">
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-
-      <!--login form masuk-->
-        <div id="login-view">
-            <h5 class="fw-bold mb-4 text-center">Silakan Masuk</h5>
-            <?php if (session()->getFlashdata('login_error')): ?>
-                <div class="alert alert-danger small rounded-pill text-center" role="alert">
-                    <?= session()->getFlashdata('login_error') ?>
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 shadow p-4">
+                <div class="modal-header border-bottom-0">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-            <?php endif; ?>
+                <div class="modal-body">
 
-            <?= form_open('login/auth', ['id' => 'modal-login-form']) ?>
-            <div class="mb-3">
-                <input name="email" type="text" class="form-control rounded-pill mx-auto bg-light-gray" placeholder="Email" value="<?= old('email') ?>" required />
-            </div>
-            <div class="mb-3">
-                <input name="pwd" type="password" class="form-control rounded-pill mx-auto bg-light-gray" placeholder="Password" required />
-            </div>
-            <div class="d-grid">
-                <button type="submit" class="btn btn-primary rounded-pill mx-auto">MASUK</button>
-            </div>
-            </form>
+                    <!--login form masuk-->
+                    <div id="login-view">
+                        <h5 class="fw-bold mb-4 text-center">Silakan Masuk</h5>
+                        <?php if (session()->getFlashdata('login_error')): ?>
+                            <div class="alert alert-danger small rounded-pill text-center" role="alert">
+                                <?= session()->getFlashdata('login_error') ?>
+                            </div>
+                        <?php endif; ?>
 
-            <div class="mt-4 text-muted small">
-                <p class="text-center">
-                    Lupa Sandi? Klik <a href="#" id="show-forgot-view" class="text-decoration-none">Disini</a>.
-                </p>
-                
+                        <?= form_open('login/auth', ['id' => 'modal-login-form']) ?>
+                        <div class="mb-3">
+                            <input name="email" type="text" class="form-control rounded-pill mx-auto bg-light-gray"
+                                placeholder="Email" value="<?= old('email') ?>" required />
+                        </div>
+                        <div class="mb-3">
+                            <input name="pwd" type="password" class="form-control rounded-pill mx-auto bg-light-gray"
+                                placeholder="Password" required />
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary rounded-pill mx-auto">MASUK</button>
+                        </div>
+                        </form>
+
+                        <div class="mt-4 text-muted small">
+                            <p class="text-center">
+                                Lupa Sandi? Klik <a href="#" id="show-forgot-view"
+                                    class="text-decoration-none">Disini</a>.
+                            </p>
+
+                        </div>
+                    </div>
+                    <div id="forgot-view" style="display: none;">
+                        <h5 class="fw-bold mb-4 text-center">Lupa Password</h5>
+                        <p class="text-muted small mb-4 text-center">Masukkan email Anda yang terdaftar. Kami akan
+                            mengirimkan link untuk mereset password.</p>
+
+                        <?= form_open('forgot/auth', ['id' => 'modal-forgot-form']) ?>
+                        <div class="mb-3">
+                            <input name="email" type="email" class="form-control rounded-pill mx-auto bg-light-gray"
+                                placeholder="Masukkan email Anda" value="<?= old('email') ?>" required />
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary rounded-pill mx-auto">SUBMIT</button>
+                        </div>
+                        </form>
+
+                        <div class="mt-4 text-muted small">
+                            <p class="text-center">
+                                Kembali untuk Login? Klik <a href="#" id="show-login-view"
+                                    class="text-decoration-none">Disini</a>.
+                            </p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-        <div id="forgot-view" style="display: none;">
-            <h5 class="fw-bold mb-4 text-center">Lupa Password</h5>
-            <p class="text-muted small mb-4 text-center">Masukkan email Anda yang terdaftar. Kami akan mengirimkan link untuk mereset password.</p>
-
-            <?= form_open('forgot/auth', ['id' => 'modal-forgot-form']) ?>
-              <div class="mb-3">
-                <input name="email" type="email" class="form-control rounded-pill mx-auto bg-light-gray" placeholder="Masukkan email Anda" value="<?= old('email') ?>" required />
-              </div>
-              <div class="d-grid">
-                <button type="submit" class="btn btn-primary rounded-pill mx-auto">SUBMIT</button>
-              </div>
-            </form>
-
-            <div class="mt-4 text-muted small">
-                <p class="text-center">
-                    Kembali untuk Login? Klik <a href="#" id="show-login-view" class="text-decoration-none">Disini</a>.
-                </p>
-            </div>
-        </div>
-      </div>
     </div>
-  </div>
-</div>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const authModal = new bootstrap.Modal(document.getElementById('authModal'));
