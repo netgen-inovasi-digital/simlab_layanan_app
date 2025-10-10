@@ -7,25 +7,14 @@ use CodeIgniter\Model;
 class AuthModelAdmin extends Model
 {
     protected $table = 'simlab_account';
-    protected $primaryKey = 'username';
+    protected $primaryKey = 'user_id';
 
     protected $allowedFields = [
         'username',
         'role_id',
         'password',
-        'lab_kode',
         'status_user'
     ];
-    
-    // public function getLaboranById($idLaboran)
-    // {
-    //     $db = \Config\Database::connect();
-    //     $builder = $db->table('simlab_laboran l');
-    //     $builder->select('l.id_laboran, l.username, l.lab_kode, a.admin_password, a.id_role');
-    //     $builder->join('simlab_account a', 'l.username = a.username');
-    //     $builder->where('l.id_laboran', $idLaboran);
-    //     return $builder->get()->getRowArray();
-    // }
     
     public function getAdminByUsername($username)
     {
@@ -44,4 +33,3 @@ class AuthModelAdmin extends Model
         return $builder->get()->getResult();
     }
 }
-

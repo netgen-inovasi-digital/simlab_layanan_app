@@ -110,7 +110,7 @@ class Auth extends Controller
 				if ($admin['status_user'] == 1) {
 					// Data login admin
 					$ses_data = [
-						'id_user'   => $admin['username'],
+						'id_user'   => $admin['user_id'],
 						'role_id'   => $admin['role_id'],
 						'lab_kode'  => $admin['lab_kode'],
 						'logged_in' => TRUE
