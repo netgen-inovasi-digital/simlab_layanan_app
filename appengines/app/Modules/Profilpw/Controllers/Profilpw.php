@@ -113,8 +113,17 @@ class Profilpw extends BaseController
                     }
                 }
 
-                $filename = $this->doUpload($file);
-                if ($filename != "") $data['bukti'] = $filename;
+                $uploadResult = $this->doUpload($file);
+                if (!$uploadResult['status']) {
+                    return $this->response->setJSON([
+                        'res'   => 'error',
+                        'msg'   => $uploadResult['msg'],
+                        'xname' => csrf_token(),
+                        'xhash' => csrf_hash()
+                    ]);
+                } else {
+                    $data['bukti'] = $uploadResult['filename'];
+                }
             }
         }
 
@@ -138,14 +147,72 @@ class Profilpw extends BaseController
         }
     }
 
-    private function doUpload($file)
+    function doUpload($file)
     {
-        $filename = "";
-        if ($file && $file->isValid() && !$file->hasMoved()) {
-            $ext      = $file->getClientExtension();
-            $filename = time() . bin2hex(random_bytes(5)) . '.' . $ext;
-            $file->move(FCPATH . 'uploads/bukti', $filename, true);
+        // Pastikan file valid dan belum dipindahkan
+        if (!($file && $file->isValid() && !$file->hasMoved())) {
+            return ['status' => false, 'msg' => 'File tidak valid atau sudah dipindahkan'];
         }
-        return $filename;
+
+        // Validasi tipe file (ekstensi & MIME)
+        $allowedExt  = ['jpg', 'jpeg', 'png'];
+        $allowedMime = ['image/jpeg', 'image/png'];
+
+        $ext  = strtolower($file->getClientExtension());
+        $mime = $file->getMimeType();
+
+        if (!in_array($ext, $allowedExt) || !in_array($mime, $allowedMime)) {
+            return ['status' => false, 'msg' => 'Format gambar tidak diperbolehkan'];
+        }
+
+        // Validasi apakah benar file gambar
+        if (@getimagesize($file->getTempName()) === false) {
+            return ['status' => false, 'msg' => 'File bukan gambar asli'];
+        }
+
+        // Validasi ukuran file (contoh: max 2MB)
+        if ($file->getSize() > 2 * 1024 * 1024) {
+            return ['status' => false, 'msg' => 'Ukuran file maksimal 2MB'];
+        }
+
+        // Simpan file ke folder uploads/bukti 
+        try {
+            $filename = time() . bin2hex(random_bytes(5)) . '.' . $ext;
+        } catch (\Exception $e) {
+            // fallback jika random_bytes gagal
+            $filename = time() . '_' . bin2hex(openssl_random_pseudo_bytes(5)) . '.' . $ext;
+        }
+
+        $path = FCPATH . 'uploads/bukti';
+        if (!is_dir($path)) {
+            @mkdir($path, 0755, true);
+        }
+
+        $file->move($path, $filename, true);
+
+        return ['status' => true, 'filename' => $filename];
     }
+
+    public function upload()
+    {
+        $file = $this->request->getFile('upload');
+        $uploadResult = $this->doUpload($file);
+
+        if ($uploadResult['status'] === true) {
+            return $this->response->setJSON([
+                'uploaded' => true,
+                'url'      => base_url('uploads/bukti/' . $uploadResult['filename']),
+                'xname'    => csrf_token(),
+                'xhash'    => csrf_hash()
+            ]);
+        } else {
+            return $this->response->setJSON([
+                'uploaded' => false,
+                'error'    => ['message' => $uploadResult['msg'] ?? 'Upload gagal.'],
+                'xname'    => csrf_token(),
+                'xhash'    => csrf_hash()
+            ]);
+        }
+    }
+
 }

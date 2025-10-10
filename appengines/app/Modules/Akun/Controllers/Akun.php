@@ -102,7 +102,7 @@ class Akun extends BaseController
             $data['user_password'] = password_hash($password, PASSWORD_DEFAULT);
         }
         
-        // Upload Bukti File
+        // Upload Bukti File 
         $file = $this->request->getFile('bukti_file');
         if ($file && $file->isValid() && !$file->hasMoved()) {
             // Jika ini UPDATE, hapus file lama sebelum upload baru
@@ -117,22 +117,26 @@ class Akun extends BaseController
                 }
             }
 
-            // Upload file baru
-            $filename = $this->doUpload($file);
-            if ($filename != "") {
-                $data['bukti'] = $filename;
+            // Upload file baru menggunakan doUpload yang disesuaikan
+            $uploadResult = $this->doUpload($file);
+            if (!$uploadResult['status']) {
+                return $this->response->setJSON([
+                    'res'   => 'error',
+                    'msg'   => $uploadResult['msg'],
+                    'xname' => csrf_token(),
+                    'xhash' => csrf_hash()
+                ]);
+            } else {
+                $data['bukti'] = $uploadResult['filename'];
             }
         }
 
-        // Verifikasi (radio button: 1 = Terverifikasi, 0 = Belum)
         $verifikasi = $this->request->getPost('verifikasi');
         $data['verifikasi'] = ($verifikasi === '1') ? 1 : 0;
 
-        // cek apakah email sudah ada
         $check = $model->getDataById('user_email', $email);
 
         if ($idenc == "") {
-            // INSERT
             if ($check) {
                 $res  = 'check';
                 $link = 'Email sudah ada!';
@@ -140,7 +144,6 @@ class Akun extends BaseController
                 $res = $model->insertData($data);
             }
         } else {
-            // UPDATE
             $id      = $this->encrypter->decrypt(hex2bin($idenc));
             $current = $model->getDataById($this->id, $id);
 
@@ -172,12 +175,10 @@ class Akun extends BaseController
 
             $response[] = $row->user_name;
 
-            // kolom kontak
             $kontak  = "Email : " . $row->user_email;
             $kontak .= "<br>No. Telepon : " . ($row->user_telpon ?? '-'); 
             $response[] = $kontak;
 
-            // identitas + verifikasi
             $identity = $row->user_identity;
 
             if ($row->verifikasi == 1) {
@@ -188,14 +189,12 @@ class Akun extends BaseController
 
             $response[] = $identity . '<br>' . $verify;
 
-            // instansi kalau NON ULM
             if ($row->user_identity === 'NON ULM') {
                 $response[] = $row->user_instansi ?? '-';
             } else {
                 $response[] = '-';
             }
 
-            // status aktif
             $aktif = '<small><i class="bi bi-check-circle text-primary"></i> Aktif</small>';
             if ($row->status_user == 0) {
                 $aktif = '<small class="text-danger"><i class="bi bi-x-circle"></i> Tidak Aktif</small>';
@@ -222,16 +221,63 @@ class Akun extends BaseController
         </div>';
     }
 
+    
     private function doUpload($file)
     {
-        $filename = "";
-        if ($file) {
-            if ($file->isValid() && !$file->hasMoved()) {
-                $ext      = $file->getClientExtension();
-                $filename = time() . bin2hex(random_bytes(5)) . '.' . $ext;
-                $file->move(FCPATH . 'uploads/bukti', $filename, true);
-            }
+        $result = ['status' => false, 'msg' => 'File tidak valid atau sudah dipindahkan', 'filename' => ''];
+
+        if (!($file && $file->isValid() && !$file->hasMoved())) {
+            return $result;
         }
-        return $filename;
+
+        $allowedExt  = ['jpg', 'jpeg', 'png'];
+        $allowedMime = ['image/jpeg', 'image/png'];
+
+        $ext  = strtolower($file->getClientExtension());
+
+        $tmpName = $file->getTempName();
+        $detectedMime = null;
+        if (is_file($tmpName)) {
+            if (function_exists('finfo_open')) {
+                $finfo = finfo_open(FILEINFO_MIME_TYPE);
+                $detectedMime = finfo_file($finfo, $tmpName);
+                finfo_close($finfo);
+            } else {
+                $detectedMime = $file->getMimeType();
+            }
+        } else {
+            return ['status' => false, 'msg' => 'File sementara tidak ditemukan', 'filename' => ''];
+        }
+        if (!in_array($ext, $allowedExt) || !in_array($detectedMime, $allowedMime)) {
+            return ['status' => false, 'msg' => 'Format gambar tidak diperbolehkan', 'filename' => ''];
+        }
+
+        if (@getimagesize($tmpName) === false) {
+            return ['status' => false, 'msg' => 'File bukan gambar asli', 'filename' => ''];
+        }
+
+        // Validasi ukuran file (contoh: max 2MB)
+        if ($file->getSize() > 2 * 1024 * 1024) {
+            return ['status' => false, 'msg' => 'Ukuran file maksimal 2MB', 'filename' => ''];
+        }
+
+        try {
+            $filename = time() . bin2hex(random_bytes(5)) . '.' . $ext;
+        } catch (\Exception $e) {
+            $filename = time() . '_' . bin2hex(openssl_random_pseudo_bytes(5)) . '.' . $ext;
+        }
+
+        $path = FCPATH . 'uploads/bukti';
+        if (!is_dir($path)) {
+            @mkdir($path, 0755, true);
+        }
+
+        try {
+            $file->move($path, $filename, true);
+        } catch (\Exception $e) {
+            return ['status' => false, 'msg' => 'Gagal memindahkan file: ' . $e->getMessage(), 'filename' => ''];
+        }
+
+        return ['status' => true, 'msg' => 'OK', 'filename' => $filename];
     }
 }
