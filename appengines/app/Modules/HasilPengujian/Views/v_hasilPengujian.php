@@ -24,14 +24,14 @@
 </div>
 
 <script>
-    // 🔹 Init table dengan fitur search, show entries, dll
+    //  Init table dengan fitur search, show entries, dll
     table = createTable({
         apiUrl: '<?php echo site_url("hasilpengujian/datalist") ?>',
         dataSrc: 'items'
     });
     addAction();
 
-    // 🔹 Tombol Simpan Data
+    // Tombol Simpan Data
     document.querySelector('#btnSimpan').addEventListener('click', function(e) {
         e.preventDefault();
 
@@ -53,7 +53,7 @@
     });
 
     /**
-     * 🔹 Fungsi untuk simpan data ke server via AJAX
+     *  Fungsi untuk simpan data ke server via AJAX
      */
     function saveData({ url, formData, onSuccess, onError }) {
         showLoading();
@@ -83,7 +83,7 @@
 
             if ($('#modalForm').hasClass('show')) $('#modalForm').modal('hide');
 
-            // 🔹 Kondisi response
+            //  Kondisi response
             if (data.res === true) {
                 if (typeof table !== 'undefined') table.fetchData({ reload: true });
                 sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
@@ -116,7 +116,7 @@
     }
 
     /**
-     * 🔹 Tombol Approve
+     * Tombol Approve
      */
     function confirmApprove(e) {
         e.preventDefault();
@@ -234,7 +234,6 @@
           <thead>
             <tr>
               <th width="5%">No</th>
-              <th width="15%">Kode</th>
               <th width="40%">Layanan</th>
               <th width="20%">Biaya</th>
               <th width="20%">Keterangan</th>
@@ -253,3 +252,163 @@
     </div>
   </div>
 </div>
+
+<!-- Modal Upload LHUS -->
+<div class="modal fade" id="modalUploadLhus" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+  <div class="modal-dialog modal-md" role="document" style="margin: 4% auto">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Unggah File LHUS</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="formUploadLhus" action="<?php echo site_url('hasilpengujian/upload') ?>" method="post" enctype="multipart/form-data">
+          <!-- CSRF input (server-side) -->
+          <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>">
+          <input type="hidden" name="id" id="upload_lhus_id" value="">
+          <div class="mb-3">
+            <label for="lhus_file" class="form-label">Pilih File (jpg, png, pdf, docx, xlsx)</label>
+            <input type="file" name="lhus_file" id="lhus_file" class="form-control" required>
+            <small class="text-muted">Ukuran maksimal 5MB.</small>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-light" type="button" data-bs-dismiss="modal">
+          <i class="bi bi-x-circle"></i> Batal
+        </button>
+        <button class="btn btn-primary" id="btnUploadLhus" type="button">
+          <i class="bi bi-upload"></i> Unggah
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+
+/** Open modal upload, di-trigger oleh tombol Unggah LHUS pada baris */
+function openUploadModal(encId) {
+    // set id terenkripsi (hex)
+    document.getElementById('upload_lhus_id').value = encId;
+    // reset file input
+    const f = document.getElementById('lhus_file');
+    if (f) f.value = '';
+    // show modal
+    $('#modalUploadLhus').modal('show');
+}
+
+document.getElementById('btnUploadLhus').addEventListener('click', function(e) {
+    e.preventDefault();
+    const form = document.getElementById('formUploadLhus');
+    const formData = new FormData(form);
+    const url = form.getAttribute('action');
+
+    // tambahkan CSRF header jika tersedia
+    const csrfInput = document.querySelector('[name="<?= csrf_token() ?>"]');
+    const csrfToken = csrfInput ? csrfInput.value : '';
+
+    if (!formData.get('lhus_file') || formData.get('lhus_file').size === 0) {
+        sayAlert('errorModal', 'Error', 'Pilih file terlebih dahulu.', 'warning');
+        return;
+    }
+
+    showLoading();
+
+    fetch(url, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRF-TOKEN': csrfToken
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        // update csrf tokens di form hidden manapun
+        if (data.xname && data.xhash) {
+            document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => {
+                input.value = data.xhash;
+            });
+        }
+
+        if (data.res === true) {
+            sayAlert('successModal', 'Berhasil', data.msg || 'File berhasil diunggah.', 'success');
+            $('#modalUploadLhus').modal('hide');
+            if (typeof table !== 'undefined') table.fetchData({ reload: true });
+        } else {
+            sayAlert('errorModal', 'Gagal', data.msg || 'Upload gagal.', 'warning');
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        sayAlert('errorModal', 'Error', 'Terjadi kesalahan saat upload.', 'warning');
+    })
+    .finally(() => {
+        hideLoading();
+    });
+});
+
+
+function doSendLhus(encId) {
+    const csrfInput = document.querySelector('[name="<?= csrf_token() ?>"]');
+    const csrfToken = csrfInput ? csrfInput.value : '';
+
+    showLoading();
+
+    const fd = new FormData();
+    fd.append('id', encId);
+
+    fetch('<?php echo site_url("hasilpengujian/submit") ?>', {
+        method: 'POST',
+        body: fd,
+        headers: {
+            'X-CSRF-TOKEN': csrfToken
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.xname && data.xhash) {
+            document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => {
+                input.value = data.xhash;
+            });
+        }
+
+        if (data.res === true) {
+            sayAlert('successModal', 'Berhasil', data.msg || 'File berhasil dikirim.', 'success');
+            if (typeof table !== 'undefined') table.fetchData({ reload: true });
+        } else {
+            sayAlert('errorModal', 'Gagal', data.msg || 'Kirim gagal.', 'warning');
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        sayAlert('errorModal', 'Error', 'Terjadi kesalahan saat mengirim LHUS.', 'warning');
+    })
+    .finally(() => {
+        hideLoading();
+    });
+}
+
+if (typeof window.confirmApprove === 'function') {
+    window._orig_confirmApprove = window.confirmApprove;
+}
+
+window.confirmApprove = function(e, encId) {
+    // jika dipanggil dengan parameter kedua encId -> anggap ini aksi 'kirim LHUS'
+    if (typeof encId !== 'undefined' && encId) {
+        e.preventDefault();
+        if (!confirm('Yakin ingin mengirim file LHUS untuk data ini?')) return;
+
+        doSendLhus(encId);
+        return;
+    }
+
+    // jika tidak ada parameter kedua, panggil original (approve) jika ada
+    if (typeof window._orig_confirmApprove === 'function') {
+        return window._orig_confirmApprove(e);
+    }
+
+    // fallback: lakukan nothing
+    return;
+};
+</script>
