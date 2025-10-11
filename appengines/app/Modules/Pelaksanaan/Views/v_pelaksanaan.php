@@ -221,6 +221,142 @@
                 $('#modalDetail').modal('show');
             });
     }
+
+    /* ------------------ Upload LHU modal integration ------------------ */
+    function openUploadModal(encId, fileUrl = '#', detKode = '') {
+        const inputId = document.getElementById('upload_lhu_id');
+        if (inputId) inputId.value = encId || '';
+
+        const inputDet = document.getElementById('upload_detKode');
+        if (inputDet) inputDet.value = detKode || '';
+
+        // reset file input
+        const f = document.getElementById('lhu_file');
+        if (f) f.value = '';
+
+        // set teks instruksi
+        const sel = document.getElementById('lhu-selection');
+        if (sel) sel.textContent = 'Anda bisa unggah file baru untuk mengganti.';
+
+        const viewBtn = document.getElementById('btnViewExistingLhu');
+        if (viewBtn) {
+            if (fileUrl && fileUrl !== '#' && fileUrl !== '') {
+                viewBtn.removeAttribute('disabled');
+                viewBtn.setAttribute('data-url', fileUrl);
+            } else {
+                viewBtn.setAttribute('disabled', 'disabled');
+                viewBtn.removeAttribute('data-url');
+            }
+        }
+
+        // show modal
+        if (typeof bootstrap !== 'undefined') {
+            const modalEl = document.getElementById('modalUploadLhu');
+            const modal = new bootstrap.Modal(modalEl);
+            modal.show();
+        } else {
+            $('#modalUploadLhu').modal('show');
+        }
+    }
+
+    /* buka data-url pada tombol #btnViewExistingLhu di tab baru */
+    document.addEventListener('click', function(ev) {
+        const target = ev.target;
+        const btn = target.closest ? target.closest('#btnViewExistingLhu') : null;
+        if (!btn) return;
+        const url = btn.getAttribute('data-url') || btn.dataset.url || null;
+        if (url && url !== '#' && url !== '') {
+            const w = window.open('', '_blank');
+            if (w) {
+                try {
+                    w.opener = null;
+                    w.location = url;
+                } catch (err) {
+                    window.open(url, '_blank');
+                }
+            } else {
+                window.open(url, '_blank');
+            }
+        } else {
+            if (typeof sayAlert === 'function') {
+                sayAlert('errorModal', 'Info', 'Tidak ada file bukti.', 'warning');
+            } else {
+                alert('Tidak ada file bukti.');
+            }
+        }
+    });
+
+    /* show filename when user selects a file */
+    (function() {
+        const fi = document.getElementById('lhu_file');
+        const sel = document.getElementById('lhu-selection');
+        if (!fi) return;
+        fi.addEventListener('change', function(e) {
+            const f = e.target.files && e.target.files[0];
+            if (f) {
+                if (sel) sel.textContent = 'Anda memilih: ' + f.name;
+                const viewBtn = document.getElementById('btnViewExistingLhu');
+                if (viewBtn) viewBtn.setAttribute('disabled', 'disabled');
+            } else {
+                if (sel) sel.textContent = 'Anda bisa unggah file baru untuk mengganti.';
+            }
+        });
+    })();
+
+    document.getElementById('btnUploadLhu')?.addEventListener('click', function(e) {
+        e.preventDefault();
+        const form = document.getElementById('formUploadLhu');
+        const formData = new FormData(form);
+        const url = form.getAttribute('action');
+        const csrfInput = document.querySelector('[name="<?= csrf_token() ?>"]');
+        const csrfToken = csrfInput ? csrfInput.value : '';
+
+        // pastikan file dipilih
+        const fileField = formData.get('lhu_file');
+        if (!fileField || (fileField && fileField.size === 0)) {
+            if (typeof sayAlert === 'function') sayAlert('errorModal', 'Error', 'Pilih file terlebih dahulu.', 'warning');
+            else alert('Pilih file terlebih dahulu.');
+            return;
+        }
+
+        showLoading();
+
+        fetch(url, {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-CSRF-TOKEN': csrfToken }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.xname && data.xhash) {
+                document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => input.value = data.xhash);
+            }
+            if (data.res === true) {
+                if (typeof sayAlert === 'function') sayAlert('successModal', 'Berhasil', data.msg || 'File berhasil diunggah.', 'success');
+                // hide modal
+                if (typeof bootstrap !== 'undefined') {
+                    const modalEl = document.getElementById('modalUploadLhu');
+                    const modal = bootstrap.Modal.getInstance(modalEl);
+                    if (modal) modal.hide();
+                } else {
+                    $('#modalUploadLhu').modal('hide');
+                }
+                if (typeof table !== 'undefined') table.fetchData({ reload: true });
+            } else {
+                if (typeof sayAlert === 'function') sayAlert('errorModal', 'Gagal', data.msg || 'Upload gagal.', 'warning');
+                else alert(data.msg || 'Upload gagal.');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            if (typeof sayAlert === 'function') sayAlert('errorModal', 'Error', 'Terjadi kesalahan saat upload.', 'warning');
+            else alert('Terjadi kesalahan saat upload.');
+        })
+        .finally(() => {
+            hideLoading();
+        });
+    });
+
 </script>
 
 <!-- 🔹 Modal Detail -->
@@ -251,6 +387,56 @@
         <button class="btn btn-light" type="button" data-bs-dismiss="modal">
           <i class="bi bi-x-circle"></i> Tutup
         </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Upload LHU -->
+<div class="modal fade" id="modalUploadLhu" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+  <div class="modal-dialog modal-md" role="document" style="margin: 4% auto">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Unggah File LHU</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div style="border-bottom:1px solid #e9ecef"></div>
+
+      <div class="modal-body">
+        <form id="formUploadLhu" action="<?php echo site_url('pelaksanaan/upload') ?>" method="post" enctype="multipart/form-data" novalidate>
+          <!-- CSRF input (server-side) -->
+          <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>">
+          <input type="hidden" name="id" id="upload_lhu_id" value="">
+          <input type="hidden" name="detKode" id="upload_detKode" value="">
+
+          <div class="mb-3">
+            <label for="lhu_file" class="form-label">Pilih File (jpg, png, pdf, docx, xlsx)</label>
+
+            <div class="d-flex align-items-center gap-2">
+              <input type="file" name="lhu_file" id="lhu_file" class="form-control" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx" style="max-width:360px">
+              <button type="button" id="btnViewExistingLhu" class="btn btn-outline-primary btn-sm" title="Lihat Bukti" disabled>
+                <i class="bi bi-eye"></i> <span class="d-none d-sm-inline">Lihat Bukti</span>
+              </button>
+            </div>
+
+            <div id="lhu-selection" class="form-text mt-2">Anda bisa unggah file baru untuk mengganti.</div>
+            <div class="form-text text-muted">Ukuran maksimal 5MB.</div>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-footer justify-content-between">
+        <div class="text-start">
+          <button class="btn btn-light" type="button" id="btnCancelUpload" data-bs-dismiss="modal">
+            <i class="bi bi-x-circle"></i> Batal
+          </button>
+        </div>
+        <div>
+          <button class="btn btn-primary" id="btnUploadLhu" type="button">
+            <i class="bi bi-cloud-upload"></i> Unggah
+          </button>
+        </div>
       </div>
     </div>
   </div>

@@ -9,12 +9,15 @@ $routes->group('pelaksanaan', ['namespace' => 'Modules\Pelaksanaan\Controllers']
     // Default halaman index
     $subroutes->get('/', 'Pelaksanaan::index');
 
-    // Untuk method dinamis seperti detailList, dataList, dll
-    $subroutes->get('(:any)', 'Pelaksanaan::$1');
+    // Endpoint data untuk table (dipanggil dari JS)
+    $subroutes->get('datalist', 'Pelaksanaan::dataList');
 
-    // Hapus data (pakai ID terenkripsi)
+    // Detail list untuk modal detail (dipanggil dari JS: pelaksanaan/detaillist/{id})
+    $subroutes->get('detaillist/(:any)', 'Pelaksanaan::detailList/$1');
+
+    // Upload file LHU/LHUS (POST)
+    $subroutes->post('upload', 'Pelaksanaan::upload');
     $subroutes->post('delete/(:any)', 'Pelaksanaan::delete/$1');
-
-    // Proses data (ubah status jadi LHU disetujui)
     $subroutes->post('proses/(:any)', 'Pelaksanaan::proses/$1');
+    $subroutes->get('(:any)', 'Pelaksanaan::$1');
 });
