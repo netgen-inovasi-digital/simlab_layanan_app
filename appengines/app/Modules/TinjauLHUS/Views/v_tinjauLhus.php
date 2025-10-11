@@ -6,7 +6,7 @@
             </div>
             <div class="card-body">
 
-                <!-- ✅ Hidden CSRF untuk Ajax -->
+                <!--  Hidden CSRF untuk Ajax -->
                 <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>">
 
                 <table id="data-table" class="saytable border-top-bottom">
@@ -65,7 +65,7 @@
                 sayAlert('errorModal', 'Gagal', data.msg || 'Proses LHUS gagal dilakukan', 'warning');
             }
 
-            // ✅ update CSRF token jika ada
+            //  update CSRF token jika ada
             if (data.xname && data.xhash) {
                 document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => {
                     input.value = data.xhash;
@@ -79,15 +79,25 @@
     }
 
     /**
-     * 🔹 Lihat detail layanan
+     *  Lihat detail layanan
+     * NOTE: endpoint diarahkan ke tinjaulhus/detaillist/
+     * colspan disesuaikan ke 5 (No,Kode,Layanan,Biaya,Keterangan)
      */
     function loadDetail(id) {
+        if (!id) return;
         const url = '<?php echo site_url("tinjaulhus/detaillist/") ?>' + id;
         const tbody = document.querySelector('#detail-body');
+
+        // tampilkan loading (colspan 5 sesuai header modal)
         tbody.innerHTML = '<tr><td colspan="5" class="text-center">Loading...</td></tr>';
 
         fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(t => { throw new Error('HTTP ' + response.status + ': ' + t); });
+                }
+                return response.json();
+            })
             .then(data => {
                 tbody.innerHTML = '';
                 if (data.items && data.items.length > 0) {
@@ -100,12 +110,33 @@
                 } else {
                     tbody.innerHTML = '<tr><td colspan="5" class="text-center">Tidak ada data</td></tr>';
                 }
-                $('#modalDetail').modal('show');
+
+                // tampilkan modal — gunakan Bootstrap 5 API bila tersedia, fallback jQuery
+                if (typeof bootstrap !== 'undefined') {
+                    const modalEl = document.getElementById('modalDetail');
+                    let modal = bootstrap.Modal.getInstance(modalEl);
+                    if (!modal) modal = new bootstrap.Modal(modalEl);
+                    modal.show();
+                } else if (typeof $ !== 'undefined' && $.fn && $.fn.modal) {
+                    $('#modalDetail').modal('show');
+                } else {
+                    console.warn('Modal API tidak ditemukan — modal tidak bisa ditampilkan.');
+                }
             })
             .catch(error => {
-                console.error(error);
+                console.error('loadDetail error:', error);
                 tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error load data</td></tr>';
-                $('#modalDetail').modal('show');
+
+                if (typeof bootstrap !== 'undefined') {
+                    const modalEl = document.getElementById('modalDetail');
+                    let modal = bootstrap.Modal.getInstance(modalEl);
+                    if (!modal) modal = new bootstrap.Modal(modalEl);
+                    modal.show();
+                } else if (typeof $ !== 'undefined' && $.fn && $.fn.modal) {
+                    $('#modalDetail').modal('show');
+                } else {
+                    console.warn('Modal API tidak ditemukan — modal tidak bisa ditampilkan.');
+                }
             });
     }
 </script>
@@ -123,7 +154,7 @@
           <thead>
             <tr>
               <th width="5%">No</th>
-              <th width="15%">Kode</th>
+              <!-- <th width="15%">Kode</th> -->
               <th width="40%">Layanan</th>
               <th width="20%">Biaya</th>
               <th width="20%">Keterangan</th>
@@ -141,4 +172,4 @@
       </div>
     </div>
   </div>
-</div> 
+</div>
