@@ -13,8 +13,6 @@ $routes->group('hasilpengujian', ['namespace' => 'Modules\HasilPengujian\Control
     $subroutes->post('detaillist/(:any)', 'HasilPengujian::detailList/$1');
     $subroutes->post('submit', 'HasilPengujian::submit');
     $subroutes->post('upload', 'HasilPengujian::upload');
-    $subroutes->post('edit', 'HasilPengujian::edit');
-    $subroutes->post('delete/(:any)', 'HasilPengujian::delete/$1');
     $subroutes->post('approve/(:any)', 'HasilPengujian::approve/$1');
     $subroutes->get('(:any)', 'HasilPengujian::$1');
 });
