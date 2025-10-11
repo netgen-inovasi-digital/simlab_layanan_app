@@ -215,7 +215,7 @@ class Auth extends Controller
         'user_password' => $hash,
         'user_identity' => $identity,
         'status_user'   => 1,
-        'role_id'       => 2,
+        'role_id'       => 2, //pengaturan user role id
     ];
 
     // Simpan ke database

@@ -261,42 +261,95 @@
         <h5 class="modal-title">Unggah File LHUS</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
+
+      <!-- Garis pemisah -->
+      <div style="border-bottom:1px solid #e9ecef;"></div>
+
       <div class="modal-body">
-        <form id="formUploadLhus" action="<?php echo site_url('hasilpengujian/upload') ?>" method="post" enctype="multipart/form-data">
+        <form id="formUploadLhus" action="<?php echo site_url('hasilpengujian/upload') ?>" method="post" enctype="multipart/form-data" novalidate>
           <!-- CSRF input (server-side) -->
           <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>">
           <input type="hidden" name="id" id="upload_lhus_id" value="">
+          <input type="hidden" name="detKode" id="upload_detKode" value="">
+
           <div class="mb-3">
             <label for="lhus_file" class="form-label">Pilih File (jpg, png, pdf, docx, xlsx)</label>
-            <input type="file" name="lhus_file" id="lhus_file" class="form-control" required>
-            <small class="text-muted">Ukuran maksimal 5MB.</small>
+
+            <div class="d-flex align-items-center gap-2">
+              <input type="file" name="lhus_file" id="lhus_file" class="form-control" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx" style="max-width:360px">
+              <button type="button" id="btnViewExistingLhus" class="btn btn-outline-primary btn-sm" title="Lihat Bukti" disabled>
+                <span aria-hidden="true">👁️</span> <span class="d-none d-sm-inline">Lihat Bukti</span>
+              </button>
+            </div>
+
+            <div id="lhus-selection" class="form-text mt-2">Anda bisa unggah file baru untuk mengganti.</div>
+            <div class="form-text text-muted">Ukuran maksimal 5MB.</div>
           </div>
         </form>
       </div>
-      <div class="modal-footer">
-        <button class="btn btn-light" type="button" data-bs-dismiss="modal">
-          <i class="bi bi-x-circle"></i> Batal
-        </button>
-        <button class="btn btn-primary" id="btnUploadLhus" type="button">
-          <i class="bi bi-upload"></i> Unggah
-        </button>
+
+      <div class="modal-footer justify-content-between">
+        <div class="text-start">
+          <button class="btn btn-light" type="button" id="btnCancelUpload" data-bs-dismiss="modal">
+            <span aria-hidden="true">❌</span> Batal
+          </button>
+        </div>
+        <div>
+          <button class="btn btn-primary" id="btnUploadLhus" type="button">
+            <span aria-hidden="true">📤</span> Unggah
+          </button>
+        </div>
       </div>
     </div>
   </div>
 </div>
 
+
 <script>
 
 /** Open modal upload, di-trigger oleh tombol Unggah LHUS pada baris */
-function openUploadModal(encId) {
+/** Open modal upload, di-trigger oleh tombol Unggah LHUS pada baris
+ *  openUploadModal(encId, fileUrl = '#', detKode = '')
+ */
+function openUploadModal(encId, fileUrl = '#', detKode = '') {
     // set id terenkripsi (hex)
-    document.getElementById('upload_lhus_id').value = encId;
+    document.getElementById('upload_lhus_id').value = encId || '';
+    // set detKode jika ada
+    if (document.getElementById('upload_detKode')) {
+        document.getElementById('upload_detKode').value = detKode || '';
+    }
+
     // reset file input
     const f = document.getElementById('lhus_file');
     if (f) f.value = '';
-    // show modal
-    $('#modalUploadLhus').modal('show');
+
+    // set teks instruksi
+    const sel = document.getElementById('lhus-selection');
+    if (sel) sel.textContent = 'Anda bisa unggah file baru untuk mengganti.';
+
+    // set tombol lihat bukti di modal
+    const viewBtn = document.getElementById('btnViewExistingLhus');
+    if (viewBtn) {
+        if (fileUrl && fileUrl !== '#' && fileUrl !== '') {
+            viewBtn.removeAttribute('disabled');
+            viewBtn.setAttribute('data-url', fileUrl);
+        } else {
+            viewBtn.setAttribute('disabled', 'disabled');
+            viewBtn.removeAttribute('data-url');
+        }
+    }
+
+    // show modal (Bootstrap 5)
+    if (typeof bootstrap !== 'undefined') {
+        const modalEl = document.getElementById('modalUploadLhus');
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+    } else {
+        // fallback jQuery
+        $('#modalUploadLhus').modal('show');
+    }
 }
+
 
 document.getElementById('btnUploadLhus').addEventListener('click', function(e) {
     e.preventDefault();

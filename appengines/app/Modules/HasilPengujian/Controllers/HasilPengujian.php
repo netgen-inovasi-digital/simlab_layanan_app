@@ -89,17 +89,28 @@ class HasilPengujian extends BaseController
 
             $response[] = '<div>' . $itemList . '</div>';
 
+            /***** START: LHUS buttons (perbaikan: selalu aman kirim fileUrl ke JS dengan json_encode) *****/
             $lhusInfo = $this->detectLhusFile($row);
-            if ($lhusInfo['has']) {
-                // jika ada file, tampilkan tombol lihat file
-                $btn = '<a href="' . esc($lhusInfo['url']) . '" target="_blank" class="btn btn-sm btn-outline-primary" title="Lihat LHUS">'
-                     . '<i class="bi bi-file-earmark-text"></i> Lihat File</a>';
+
+            // gunakan json_encode supaya URL aman ketika disuntik ke JS
+            $fileUrl = ($lhusInfo['has'] && !empty($lhusInfo['url'])) ? $lhusInfo['url'] : '#';
+            $fileUrlJson = json_encode($fileUrl); // akan menghasilkan string JS yang aman
+
+            // buat tombol Unggah yang memanggil openUploadModal dengan parameter fileUrl
+            $uploadOnclick = 'openUploadModal(\'' . $id . '\', ' . $fileUrlJson . ')';
+            $btnUpload = '<button class="btn btn-sm btn-outline-secondary me-1" title="Unggah LHUS" onclick="' . $uploadOnclick . '">'
+                       . '<i class="bi bi-upload"></i> Unggah File</button>';
+
+            // jika ada file, tambahkan tombol Lihat Bukti yang langsung buka URL
+            if ($lhusInfo['has'] && !empty($fileUrl) && $fileUrl !== '#') {
+                $btnView = '<a href="' . esc($fileUrl) . '" target="_blank" class="btn btn-sm btn-outline-primary me-1" title="Lihat Bukti">'
+                         . '<i class="bi bi-eye"></i> Lihat Bukti</a>';
             } else {
-                // jika tidak ada file, tampilkan tombol unggah
-                $btn = '<button class="btn btn-sm btn-outline-secondary" title="Unggah LHUS" onclick="openUploadModal(\'' . $id . '\')">'
-                     . '<i class="bi bi-upload"></i> Unggah File</button>';
+                $btnView = '';
             }
-            $response[] = $btn;
+
+            $response[] = $btnView . ' ' . $btnUpload;
+            /***** END: LHUS buttons *****/
 
             // Kolom 5: Status
             $response[] = $this->formatStatus($row->lnStatus);
@@ -186,7 +197,7 @@ class HasilPengujian extends BaseController
         if (!$this->request->isAJAX() || $this->request->getMethod() !== 'post') {
             return $this->response->setStatusCode(400)->setJSON([
                 'res' => 'error',
-                'msg' => 'Invalid request',
+                'msg' => 'Gagal datanya',
                 'xname' => csrf_token(),
                 'xhash' => csrf_hash()
             ]);
