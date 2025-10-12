@@ -24,6 +24,15 @@
     </div>
 </div>
 
+<style>
+    /* Styling untuk button disabled */
+    .btn-action[disabled] {
+        cursor: not-allowed;
+        opacity: 0.5;
+        pointer-events: none;
+    }
+</style>
+
 <!-- Modal Upload File Invoice -->
 <div class="modal fade" id="modalUpload" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
@@ -34,7 +43,7 @@
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <form id="formUpload" enctype="multipart/form-data">
+            <form id="formUpload" enctype="multipart/form-data" method="post" onsubmit="return false;">
                 <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" class="txt_csrfname">
                 <input type="hidden" name="id" id="upload_id">
 
@@ -52,7 +61,7 @@
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                         <i class="bi bi-x-circle"></i> Batal
                     </button>
-                    <button type="submit" class="btn btn-primary" id="btnUpload">
+                    <button type="button" class="btn btn-primary" id="btnUpload" onclick="handleUploadInvoice()">
                         <i class="bi bi-cloud-upload"></i> Upload
                     </button>
                 </div>
@@ -71,7 +80,7 @@
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <form id="formProses">
+            <form id="formProses" method="post" onsubmit="return false;">
                 <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" class="txt_csrfname">
                 <input type="hidden" name="id" id="proses_id">
 
@@ -94,7 +103,7 @@
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                         <i class="bi bi-x-circle"></i> Batal
                     </button>
-                    <button type="submit" class="btn btn-success" id="btnProses">
+                    <button type="button" class="btn btn-success" id="btnProses" onclick="handleProses()">
                         <i class="bi bi-check-circle"></i> Proses & Kirim
                     </button>
                 </div>
@@ -115,99 +124,223 @@
     /**
      * Buka modal upload file
      */
-    function uploadFile(id) {
-        $('#upload_id').val(id);
-        $('#file_invoice').val('');
-        $('#modalUpload').modal('show');
+    function uploadFile(event) {
+        const id = event.target.closest('.btn-action').parentElement.id;
+        console.log('Opening upload modal for ID:', id);
+
+        // Set ID ke input hidden (vanilla JS)
+        document.getElementById('upload_id').value = id;
+
+        // Reset file input
+        document.getElementById('file_invoice').value = '';
+
+        // Show modal menggunakan Bootstrap API
+        const modalElement = document.getElementById('modalUpload');
+        const modal = new bootstrap.Modal(modalElement);
+        modal.show();
     }
 
     /**
-     * Handle upload file invoice
+     * Handle upload file invoice - Tagihan Module
      */
-    function handleUpload() {
-        const formData = new FormData($('#formUpload')[0]);
-        const btnUpload = $('#btnUpload');
+    function handleUploadInvoice() {
+        console.log('=== Tagihan: handleUploadInvoice called ===');
 
-        btnUpload.prop('disabled', true).html('<i class="bi bi-hourglass-split"></i> Uploading...');
+        // Validasi form menggunakan HTML5 validation
+        const form = document.getElementById('formUpload');
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
 
-        $.ajax({
-            url: '<?php echo site_url("tagihan/upload") ?>',
-            type: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-            dataType: 'json',
-            success: function(response) {
-                updateCSRF(response);
+        const formData = new FormData(form);
+        const btnUpload = document.getElementById('btnUpload');
 
-                if (response.status) {
-                    sayAlert('successModal', 'Berhasil', response.message, 'success');
-                    $('#modalUpload').modal('hide');
-                    if (typeof table !== 'undefined') table.fetchData({
-                        reload: true
-                    });
-                } else {
-                    sayAlert('errorModal', 'Gagal', response.message, 'error');
+        // Debug: cek FormData
+        console.log('Form ID:', document.getElementById('upload_id').value);
+        console.log('CSRF Token:', document.querySelector('input[name="<?= csrf_token() ?>"]').value);
+
+        // Log file jika ada
+        const fileInput = document.getElementById('file_invoice');
+        if (fileInput && fileInput.files && fileInput.files[0]) {
+            console.log('File:', fileInput.files[0].name, fileInput.files[0].size, 'bytes');
+        }
+
+        // Disable button dan ubah text
+        btnUpload.disabled = true;
+        btnUpload.innerHTML = '<i class="bi bi-hourglass-split"></i> Uploading...';
+
+        console.log('=== Tagihan: Sending fetch request ===');
+
+        // Gunakan fetch() API (native JavaScript, tidak butuh jQuery)
+        fetch('<?php echo site_url("tagihan/upload") ?>', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                console.log('=== Tagihan: Response received ===', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('=== Tagihan: Upload response ===', data);
+
+                // Update CSRF token
+                if (data.xname && data.xhash) {
+                    const csrfInput = document.querySelector('input[name="' + data.xname + '"]');
+                    if (csrfInput) {
+                        csrfInput.value = data.xhash;
+                        console.log('=== Tagihan: CSRF token updated ===');
+                    }
                 }
-            },
-            error: function() {
-                sayAlert('errorModal', 'Error', 'Terjadi kesalahan saat upload file', 'error');
-            },
-            complete: function() {
-                btnUpload.prop('disabled', false).html('<i class="bi bi-cloud-upload"></i> Upload');
-            }
-        });
+
+                // Reset button
+                btnUpload.disabled = false;
+                btnUpload.innerHTML = '<i class="bi bi-cloud-upload"></i> Upload';
+
+                if (data.res === 'success') {
+                    sayAlert('successModal', 'Berhasil', data.msg, 'success');
+
+                    // Tutup modal menggunakan Bootstrap API
+                    const modalElement = document.getElementById('modalUpload');
+                    const modal = bootstrap.Modal.getInstance(modalElement);
+                    if (modal) {
+                        modal.hide();
+                    } else {
+                        bootstrap.Modal.getOrCreateInstance(modalElement).hide();
+                    }
+
+                    // Reload table
+                    if (typeof table !== 'undefined') {
+                        table.fetchData({
+                            reload: true
+                        });
+                    }
+                } else {
+                    sayAlert('errorModal', 'Gagal', data.msg, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('=== Tagihan: Upload error ===', error);
+
+                // Reset button
+                btnUpload.disabled = false;
+                btnUpload.innerHTML = '<i class="bi bi-cloud-upload"></i> Upload';
+
+                sayAlert('errorModal', 'Error', 'Terjadi kesalahan saat upload file: ' + error.message, 'error');
+            });
     }
 
     /**
      * Buka modal proses tagihan
      */
-    function prosesItem(id) {
-        $('#proses_id').val(id);
-        $('#no_invoice').val('');
-        $('#modalProses').modal('show');
+    function prosesItem(event) {
+        // Cek apakah button disabled
+        const btnElement = event.target.closest('.btn-action');
+        if (btnElement.hasAttribute('disabled')) {
+            sayAlert('warningModal', 'Perhatian', 'Upload file invoice terlebih dahulu sebelum memproses tagihan', 'warning');
+            return;
+        }
+
+        const id = btnElement.parentElement.id;
+
+        // Set ID ke input hidden (vanilla JS)
+        document.getElementById('proses_id').value = id;
+
+        // Reset nomor invoice
+        document.getElementById('no_invoice').value = '';
+
+        // Show modal menggunakan Bootstrap API
+        const modalElement = document.getElementById('modalProses');
+        const modal = new bootstrap.Modal(modalElement);
+        modal.show();
     }
 
     /**
      * Handle proses tagihan
      */
     function handleProses() {
-        const formData = $('#formProses').serialize();
-        const btnProses = $('#btnProses');
+        console.log('=== Tagihan: handleProses called ===');
 
-        btnProses.prop('disabled', true).html('<i class="bi bi-hourglass-split"></i> Memproses...');
+        // Validasi form menggunakan HTML5 validation
+        const form = document.getElementById('formProses');
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
 
-        $.ajax({
-            url: '<?php echo site_url("tagihan/proses") ?>',
-            type: 'POST',
-            data: formData,
-            dataType: 'json',
-            success: function(response) {
-                updateCSRF(response);
+        const formData = new FormData(form);
+        const btnProses = document.getElementById('btnProses');
 
-                if (response.status) {
-                    sayAlert('successModal', 'Berhasil', response.message, 'success');
-                    $('#modalProses').modal('hide');
-                    if (typeof table !== 'undefined') table.fetchData({
-                        reload: true
-                    });
-                } else {
-                    sayAlert('errorModal', 'Gagal', response.message, 'error');
+        console.log('=== Tagihan: Proses ID ===', document.getElementById('proses_id').value);
+        console.log('=== Tagihan: No Invoice ===', document.getElementById('no_invoice').value);
+
+        // Disable button
+        btnProses.disabled = true;
+        btnProses.innerHTML = '<i class="bi bi-hourglass-split"></i> Memproses...';
+
+        // Gunakan fetch() API (native JavaScript)
+        fetch('<?php echo site_url("tagihan/proses") ?>', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                console.log('=== Tagihan: Proses response status ===', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('=== Tagihan: Proses response ===', data);
+
+                // Update CSRF token
+                if (data.xname && data.xhash) {
+                    const csrfInput = document.querySelector('input[name="' + data.xname + '"]');
+                    if (csrfInput) {
+                        csrfInput.value = data.xhash;
+                        console.log('=== Tagihan: CSRF token updated ===');
+                    }
                 }
-            },
-            error: function() {
-                sayAlert('errorModal', 'Error', 'Terjadi kesalahan saat memproses tagihan', 'error');
-            },
-            complete: function() {
-                btnProses.prop('disabled', false).html('<i class="bi bi-check-circle"></i> Proses & Kirim');
-            }
-        });
+
+                // Reset button
+                btnProses.disabled = false;
+                btnProses.innerHTML = '<i class="bi bi-check-circle"></i> Proses & Kirim';
+
+                if (data.res) {
+                    sayAlert('successModal', 'Berhasil', data.msg, 'success');
+
+                    // Tutup modal menggunakan Bootstrap API
+                    const modalElement = document.getElementById('modalProses');
+                    const modal = bootstrap.Modal.getInstance(modalElement);
+                    if (modal) {
+                        modal.hide();
+                    } else {
+                        bootstrap.Modal.getOrCreateInstance(modalElement).hide();
+                    }
+
+                    // Reload table
+                    if (typeof table !== 'undefined') {
+                        table.fetchData({
+                            reload: true
+                        });
+                    }
+                } else {
+                    sayAlert('errorModal', 'Gagal', data.msg, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('=== Tagihan: Proses error ===', error);
+
+                // Reset button
+                btnProses.disabled = false;
+                btnProses.innerHTML = '<i class="bi bi-check-circle"></i> Proses & Kirim';
+
+                sayAlert('errorModal', 'Error', 'Terjadi kesalahan saat memproses tagihan: ' + error.message, 'error');
+            });
     }
 
     /**
      * Hapus tagihan
      */
-    function deleteItem(id) {
+    function deleteItem(event) {
+        const id = event.target.closest('.btn-action').parentElement.id;
         sayConfirm(
             'Konfirmasi Hapus',
             'Apakah Anda yakin ingin menghapus tagihan ini? File invoice juga akan terhapus.',
@@ -221,51 +354,51 @@
      * Eksekusi hapus tagihan
      */
     function executeDelete(id) {
-        $.ajax({
-            url: '<?php echo site_url("tagihan/delete") ?>',
-            type: 'POST',
-            data: {
-                id: id,
-                '<?= csrf_token() ?>': $('.txt_csrfname').val()
-            },
-            dataType: 'json',
-            success: function(response) {
-                updateCSRF(response);
+        console.log('=== Tagihan: executeDelete called for ID ===', id);
 
-                if (response.status) {
-                    sayAlert('successModal', 'Berhasil', response.message, 'success');
-                    if (typeof table !== 'undefined') table.fetchData({
-                        reload: true
-                    });
-                } else {
-                    sayAlert('errorModal', 'Gagal', response.message, 'error');
+        const csrfToken = document.querySelector('.txt_csrfname').value;
+        const csrfName = '<?= csrf_token() ?>';
+
+        // Buat FormData untuk delete request
+        const formData = new FormData();
+        formData.append('id', id);
+        formData.append(csrfName, csrfToken);
+
+        // Gunakan fetch() API
+        fetch('<?php echo site_url("tagihan/delete") ?>', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                console.log('=== Tagihan: Delete response status ===', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('=== Tagihan: Delete response ===', data);
+
+                // Update CSRF token
+                if (data.xname && data.xhash) {
+                    const csrfInput = document.querySelector('input[name="' + data.xname + '"]');
+                    if (csrfInput) {
+                        csrfInput.value = data.xhash;
+                        console.log('=== Tagihan: CSRF token updated ===');
+                    }
                 }
-            },
-            error: function() {
-                sayAlert('errorModal', 'Error', 'Terjadi kesalahan saat menghapus data', 'error');
-            }
-        });
+
+                if (data.res) {
+                    sayAlert('successModal', 'Berhasil', data.msg, 'success');
+                    if (typeof table !== 'undefined') {
+                        table.fetchData({
+                            reload: true
+                        });
+                    }
+                } else {
+                    sayAlert('errorModal', 'Gagal', data.msg, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('=== Tagihan: Delete error ===', error);
+                sayAlert('errorModal', 'Error', 'Terjadi kesalahan saat menghapus data: ' + error.message, 'error');
+            });
     }
-
-    /**
-     * Update CSRF token
-     */
-    function updateCSRF(response) {
-        if (response['<?= csrf_token() ?>']) {
-            $('.txt_csrfname').val(response['<?= csrf_token() ?>']);
-        }
-    }
-
-    // Event handlers
-    $(document).ready(function() {
-        $('#formUpload').on('submit', function(e) {
-            e.preventDefault();
-            handleUpload();
-        });
-
-        $('#formProses').on('submit', function(e) {
-            e.preventDefault();
-            handleProses();
-        });
-    });
 </script>

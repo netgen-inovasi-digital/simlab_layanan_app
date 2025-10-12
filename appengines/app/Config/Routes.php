@@ -37,7 +37,7 @@ foreach (glob(APPPATH . 'Modules/*', GLOB_ONLYDIR) as $item_dir) {
     $moduleName = basename($item_dir);
 
     if (file_exists($item_dir . '/Routes.php')) {
-        if (in_array($moduleName, ['Dashboard', 'Hero', 'Pelayanan', 'Konfigurasi', 'Layanan', 'Menu', 'Mitra', 'Navbar', 'Team', 'Landing',  'Otoritas', 'Pages', 'Pengumuman', 'Role', 'Sosmed', 'User', 'Order', 'Produk', 'Rekening', 'Motif', 'Ukuran', 'Warna', 'Tagihan', 'Riwayat_Pembayaran', 'Pelaksanaan'])) {
+        if (in_array($moduleName, ['Dashboard', 'Hero', 'Pelayanan', 'Konfigurasi', 'Layanan', 'Menu', 'Mitra', 'Navbar', 'Team', 'Landing',  'Otoritas', 'Pages', 'Pengumuman', 'Role', 'Sosmed', 'User', 'Order', 'Produk', 'Rekening', 'Motif', 'Ukuran', 'Warna', 'Tagihan', 'Pembayaran', 'Riwayat_Pembayaran', 'Pelaksanaan'])) {
             // Beri filter auth hanya untuk module admin
             $routes->group('', ['filter' => 'auth'], static function ($routes) use ($item_dir) {
                 require_once $item_dir . '/Routes.php';
