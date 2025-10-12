@@ -9,8 +9,9 @@
                     <thead>
                         <tr>
                             <th show width="5%">No.</th>
-                            <th show width="15%">No. Invoice & Tanggal</th>
-                            <th show width="25%">Nama Layanan</th>
+                            <th show width="15%">No. Invoice & Tanggal</th>  
+                            <th show width="10%">Pemesan</th>
+                            <th show width="25%">Item Layanan</th>
                             <th show width="10%">LHUS </th>
                             <th show width="15%">LHU</th>
                             <th show width="10%">Status</th>
@@ -189,36 +190,53 @@
         }
     }
 
-    /**
-     * 🔹 Tombol Lihat Detail
-     */
+   
+    // 🔹 Tombol Lihat Detail
     function loadDetail(id) {
-        const url = '<?php echo site_url("pelaksanaan/detaillist/") ?>' + id;
+        const url = '<?php echo site_url("hasilpengujian/detaillist/") ?>' + id;
         const tbody = document.querySelector('#detail-body');
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center">Loading...</td></tr>';
 
-        fetch(url)
-            .then(response => response.json())
+        // tampilkan loading
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center">Loading...</td></tr>';
+
+        fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(t => { throw new Error('HTTP ' + response.status + ': ' + t); });
+                }
+                return response.json();
+            })
             .then(data => {
                 tbody.innerHTML = '';
                 if (data.items && data.items.length > 0) {
                     data.items.forEach(function(row) {
                         let tr = '<tr>';
-                        row.forEach(function(col) {
-                            tr += '<td>' + col + '</td>';
-                        });
+                        row.forEach(function(col) { tr += '<td>' + col + '</td>'; });
                         tr += '</tr>';
                         tbody.innerHTML += tr;
                     });
                 } else {
-                    tbody.innerHTML = '<tr><td colspan="5" class="text-center">Tidak ada data</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-center">Tidak ada data</td></tr>';
                 }
-                $('#modalDetail').modal('show');
+                // tampilkan modal
+                if (typeof bootstrap !== 'undefined') {
+                    const modalEl = document.getElementById('modalDetail');
+                    const modal = new bootstrap.Modal(modalEl);
+                    modal.show();
+                } else {
+                    $('#modalDetail').modal('show');
+                }
             })
             .catch(error => {
-                console.error(error);
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error load data</td></tr>';
-                $('#modalDetail').modal('show');
+                console.error('loadDetail error:', error);
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Error load data</td></tr>';
+                if (typeof bootstrap !== 'undefined') {
+                    const modalEl = document.getElementById('modalDetail');
+                    const modal = new bootstrap.Modal(modalEl);
+                    modal.show();
+                } else {
+                    $('#modalDetail').modal('show');
+                }
             });
     }
 
@@ -372,7 +390,7 @@
           <thead>
             <tr>
               <th width="5%">No</th>
-              <th width="15%">Kode</th>
+              <!-- <th width="15%">Kode</th> -->
               <th width="40%">Layanan</th>
               <th width="20%">Biaya</th>
               <th width="20%">Keterangan</th>

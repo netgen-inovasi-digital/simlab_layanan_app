@@ -14,6 +14,7 @@
                         <tr>
                             <th show width="5%">No.</th>
                             <th show width="15%">No. Invoice & Tanggal</th>
+                            <th show width="15%">Pemesan</th>
                             <th show width="30%">Nama Layanan</th>
                             <th show width="15%">LHUS (Tinjau)</th>
                             <th show width="15%">Status</th>
@@ -83,13 +84,13 @@
      * NOTE: endpoint diarahkan ke tinjaulhus/detaillist/
      * colspan disesuaikan ke 5 (No,Kode,Layanan,Biaya,Keterangan)
      */
+   // 🔹 Tombol Lihat Detail
     function loadDetail(id) {
-        if (!id) return;
-        const url = '<?php echo site_url("tinjaulhus/detaillist/") ?>' + id;
+        const url = '<?php echo site_url("hasilpengujian/detaillist/") ?>' + id;
         const tbody = document.querySelector('#detail-body');
 
-        // tampilkan loading (colspan 5 sesuai header modal)
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center">Loading...</td></tr>';
+        // tampilkan loading
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center">Loading...</td></tr>';
 
         fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
             .then(response => {
@@ -108,34 +109,26 @@
                         tbody.innerHTML += tr;
                     });
                 } else {
-                    tbody.innerHTML = '<tr><td colspan="5" class="text-center">Tidak ada data</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-center">Tidak ada data</td></tr>';
                 }
-
-                // tampilkan modal — gunakan Bootstrap 5 API bila tersedia, fallback jQuery
+                // tampilkan modal
                 if (typeof bootstrap !== 'undefined') {
                     const modalEl = document.getElementById('modalDetail');
-                    let modal = bootstrap.Modal.getInstance(modalEl);
-                    if (!modal) modal = new bootstrap.Modal(modalEl);
+                    const modal = new bootstrap.Modal(modalEl);
                     modal.show();
-                } else if (typeof $ !== 'undefined' && $.fn && $.fn.modal) {
-                    $('#modalDetail').modal('show');
                 } else {
-                    console.warn('Modal API tidak ditemukan — modal tidak bisa ditampilkan.');
+                    $('#modalDetail').modal('show');
                 }
             })
             .catch(error => {
                 console.error('loadDetail error:', error);
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error load data</td></tr>';
-
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Error load data</td></tr>';
                 if (typeof bootstrap !== 'undefined') {
                     const modalEl = document.getElementById('modalDetail');
-                    let modal = bootstrap.Modal.getInstance(modalEl);
-                    if (!modal) modal = new bootstrap.Modal(modalEl);
+                    const modal = new bootstrap.Modal(modalEl);
                     modal.show();
-                } else if (typeof $ !== 'undefined' && $.fn && $.fn.modal) {
-                    $('#modalDetail').modal('show');
                 } else {
-                    console.warn('Modal API tidak ditemukan — modal tidak bisa ditampilkan.');
+                    $('#modalDetail').modal('show');
                 }
             });
     }

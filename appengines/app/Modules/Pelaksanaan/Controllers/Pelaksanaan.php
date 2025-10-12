@@ -58,8 +58,13 @@ class Pelaksanaan extends BaseController
                         . (!empty($row->lnTgl) ? date('d-m-Y', strtotime($row->lnTgl)) : '-')
                         . '</div>';
 
+            //Kolom 3 : Nama orang
+            $response[] = $row->lnOrangNama ?? '-';
+
             // Kolom 2: Nama layanan
-            $response[] = '<div>' . esc($itemList) . '</div>';
+            $lihatDetailBtn = '<button type="button" class="btn btn-sm btn-info" title="Lihat Detail Item Layanan" onclick="loadDetail(\'' . $id . '\')">'
+                        . '<i class="bi bi-eye"></i> Lihat Detail Layanan</button>';
+            $response[] = $lihatDetailBtn; 
 
             // ------------------ Kolom LHUS (lihat) ------------------
             // (ambil dari detil_LHUS atau kemungkinan field pada row utama)
@@ -107,63 +112,69 @@ class Pelaksanaan extends BaseController
     }
 
     public function detailList($id)
-    {
+{
+    // tolerant decrypt (id dikirim sebagai hex dari client)
+    try {
+        $lnKode = $this->encrypter->decrypt(hex2bin($id));
+    } catch (\Throwable $e) {
+        // coba decrypt langsung (jika tidak hex)
         try {
-            $lnKode = $this->encrypter->decrypt(hex2bin($id));
-        } catch (\Throwable $e) {
-            // fallback: coba decrypt langsung
-            try {
-                $lnKode = $this->encrypter->decrypt($id);
-            } catch (\Throwable $e2) {
-                return $this->response->setJSON(['items' => [], 'error' => 'Invalid ID']);
-            }
+            $lnKode = $this->encrypter->decrypt($id);
+        } catch (\Throwable $e2) {
+            return $this->response->setJSON([
+                'items' => [],
+                'error' => 'Invalid ID'
+            ]);
         }
-
-        $model = new MyModel('simlab_t_layanan_detil d');
-        $joins = [
-            // join opsional sesuai DB Anda (kosongkan jika tidak diperlukan)
-        ];
-        $where = ['d.detLnKode' => $lnKode];
-
-        // select minimal kolom yang dibutuhkan
-        $select = "
-            d.detKode,
-            d.detUjiKode,
-            d.detLayanan,
-            d.detBiaya,
-            d.detKeterangan,
-            d.detil_LHUS,
-            d.detil_LHU
-        ";
-
-        try {
-            $db = \Config\Database::connect();
-            $builder = $db->table('simlab_t_layanan_detil d')->select($select)->where('d.detLnKode', $lnKode)->orderBy('d.detKode', 'ASC');
-            $list = $builder->get()->getResult();
-        } catch (\Throwable $e) {
-            return $this->response->setJSON(['items' => []]);
-        }
-
-        $data = [];
-        $no = 1;
-        foreach ($list as $row) {
-            $layanan = isset($row->detLayanan) && !empty($row->detLayanan) ? $row->detLayanan : ($row->detUjiKode ?? '-');
-            $biaya = isset($row->detBiaya) ? 'Rp ' . number_format($row->detBiaya, 0, ',', '.') : '-';
-            $ket   = isset($row->detKeterangan) && !empty($row->detKeterangan) ? $row->detKeterangan : '-';
-
-            // Tampilkan layanan tanpa tombol (hindari duplikat)
-            $response = [];
-            $response[] = $no++;
-            $response[] = $row->detKode;
-            $response[] = $layanan;
-            $response[] = $biaya;
-            $response[] = $ket;
-
-            $data[] = $response;
-        }
-
-        return $this->response->setJSON(['items' => $data]);
     }
+
+    // Ambil detil layanan sesuai detLnKode
+    $model = new MyModel('simlab_t_layanan_detil d');
+    $joins = [
+        'simlab_r_layanan_pengujian lp' => 'lp.ujiKode = d.detUjiKode',
+        'simlab_r_parameter p'          => 'p.paraKode = lp.ujiParaKode',
+        'simlab_r_alat a'               => 'a.alatKode = lp.ujiAlatKode',
+    ];
+    $where = ['d.detLnKode' => $lnKode];
+
+    $select = "
+        d.detUjiKode,
+        lp.ujiLayanan,
+        p.paraNama,
+        a.alatNama,
+        d.detBiaya,
+        d.detKeterangan
+    ";
+
+    try {
+        $list = $model->getAllDataWithJoinWhereOrder($joins, $where, ['d.detUjiKode' => 'ASC'], $select);
+    } catch (\Throwable $e) {
+        // jika query error, kembalikan array kosong
+        return $this->response->setJSON(['items' => []]);
+    }
+
+    $data = [];
+    $no = 1;
+    foreach ($list as $row) {
+        $layanan = isset($row->ujiLayanan) ? $row->ujiLayanan : '-';
+        if (isset($row->paraNama) && !empty($row->paraNama)) {
+            $layanan .= ' (' . $row->paraNama . ')';
+        }
+
+        $biaya = isset($row->detBiaya) ? 'Rp ' . number_format($row->detBiaya, 0, ',', '.') : '-';
+        $ket   = isset($row->detKeterangan) && !empty($row->detKeterangan) ? $row->detKeterangan : '-';
+
+        $response = [];
+        $response[] = $no++;
+        $response[] = $layanan;
+        $response[] = $biaya;
+        $response[] = $ket;
+
+        $data[] = $response;
+    }
+
+    return $this->response->setJSON(['items' => $data]);
+}
 
     public function upload()
     {

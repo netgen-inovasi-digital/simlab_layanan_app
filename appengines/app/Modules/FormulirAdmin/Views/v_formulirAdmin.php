@@ -149,6 +149,8 @@
         }
     }
 
+    
+
     // Tombol Hapus
     function deleteItem(e) {
         e.preventDefault();
@@ -185,32 +187,50 @@
 
     // 🔹 Tombol Lihat Detail
     function loadDetail(id) {
-        const url = '<?php echo site_url("formuliradmin/detaillist/") ?>' + id;
+        const url = '<?php echo site_url("hasilpengujian/detaillist/") ?>' + id;
         const tbody = document.querySelector('#detail-body');
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center">Loading...</td></tr>';
 
-        fetch(url)
-            .then(response => response.json())
+        // tampilkan loading
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center">Loading...</td></tr>';
+
+        fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(t => { throw new Error('HTTP ' + response.status + ': ' + t); });
+                }
+                return response.json();
+            })
             .then(data => {
                 tbody.innerHTML = '';
                 if (data.items && data.items.length > 0) {
                     data.items.forEach(function(row) {
                         let tr = '<tr>';
-                        row.forEach(function(col) {
-                            tr += '<td>' + col + '</td>';
-                        });
+                        row.forEach(function(col) { tr += '<td>' + col + '</td>'; });
                         tr += '</tr>';
                         tbody.innerHTML += tr;
                     });
                 } else {
-                    tbody.innerHTML = '<tr><td colspan="5" class="text-center">Tidak ada data</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-center">Tidak ada data</td></tr>';
                 }
-                $('#modalDetail').modal('show');
+                // tampilkan modal
+                if (typeof bootstrap !== 'undefined') {
+                    const modalEl = document.getElementById('modalDetail');
+                    const modal = new bootstrap.Modal(modalEl);
+                    modal.show();
+                } else {
+                    $('#modalDetail').modal('show');
+                }
             })
             .catch(error => {
-                console.error(error);
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error load data</td></tr>';
-                $('#modalDetail').modal('show');
+                console.error('loadDetail error:', error);
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Error load data</td></tr>';
+                if (typeof bootstrap !== 'undefined') {
+                    const modalEl = document.getElementById('modalDetail');
+                    const modal = new bootstrap.Modal(modalEl);
+                    modal.show();
+                } else {
+                    $('#modalDetail').modal('show');
+                }
             });
     }
 </script>
@@ -259,7 +279,7 @@
           <thead>
             <tr>
               <th width="5%">No</th>
-              <th width="15%">Kode</th>
+              <!-- <th width="15%">Kode</th> -->
               <th width="40%">Layanan</th>
               <th width="20%">Biaya</th>
               <th width="20%">Keterangan</th>

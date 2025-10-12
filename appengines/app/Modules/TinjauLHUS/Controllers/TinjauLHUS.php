@@ -50,15 +50,13 @@ class TinjauLHUS extends BaseController
                 . (!empty($row->lnTgl) ? date('d-m-Y', strtotime($row->lnTgl)) : '-')
                 . '</div>';
 
-            // Kolom 2: Nama Layanan (join detil)
-            $modelDet = new MyModel('simlab_t_layanan_detil');
-            $detil = $modelDet->getAllDataById(['detLnKode' => $row->lnKode]);
-            $items = [];
-            foreach ($detil as $d) {
-                $items[] = $d->detLayanan ?? $d->detJenKode;
-            }
-            $response[] = !empty($items) ? implode(', ', $items) : '-';
-
+            // kolom 2 pemesan
+            $response[] = $row->lnOrangNama ?? '-';
+        
+            // kolom 3 : detail
+            $lihatDetailBtn = '<button type="button" class="btn btn-sm btn-info" title="Lihat Detail Item Layanan" onclick="loadDetail(\'' . $id . '\')">'
+                        . '<i class="bi bi-eye"></i> Lihat Detail Layanan</button>';
+            $response[] = $lihatDetailBtn; 
             // Tombol Lihat Detail (panggil loadDetail dengan id terenkripsi)
             // $lihatDetailBtn = '
             //     <span class="text-info btn-action" title="Lihat Detail"
@@ -149,74 +147,70 @@ class TinjauLHUS extends BaseController
         return ['has' => false, 'url' => '#'];
     }
 
-
-    public function detailList($id)
-    {
-        // tolerant decrypt (id dikirim sebagai hex dari client)
+ public function detailList($id)
+{
+    // tolerant decrypt (id dikirim sebagai hex dari client)
+    try {
+        $lnKode = $this->encrypter->decrypt(hex2bin($id));
+    } catch (\Throwable $e) {
+        // coba decrypt langsung (jika tidak hex)
         try {
-            $lnKode = $this->encrypter->decrypt(hex2bin($id));
-        } catch (\Throwable $e) {
-            // coba decrypt langsung (jika tidak hex)
-            try {
-                $lnKode = $this->encrypter->decrypt($id);
-            } catch (\Throwable $e2) {
-                return $this->response->setJSON([
-                    'items' => [],
-                    'error' => 'Invalid ID'
-                ]);
-            }
+            $lnKode = $this->encrypter->decrypt($id);
+        } catch (\Throwable $e2) {
+            return $this->response->setJSON([
+                'items' => [],
+                'error' => 'Invalid ID'
+            ]);
         }
-
-        // Ambil detil layanan sesuai detLnKode
-        $model = new MyModel('simlab_t_layanan_detil d');
-        $joins = [
-            'simlab_r_layanan_pengujian lp' => 'lp.ujiKode = d.detUjiKode',
-            'simlab_r_parameter p'          => 'p.paraKode = lp.ujiParaKode',
-            'simlab_r_alat a'               => 'a.alatKode = lp.ujiAlatKode',
-        ];
-        $where = ['d.detLnKode' => $lnKode];
-
-        $select = "
-            d.detUjiKode,
-            lp.ujiLayanan,
-            p.paraNama,
-            a.alatNama,
-            d.detBiaya,
-            d.detKeterangan
-        ";
-
-        try {
-            $list = $model->getAllDataWithJoinWhereOrder($joins, $where, ['d.detUjiKode' => 'ASC'], $select);
-        } catch (\Throwable $e) {
-            // jika query error, kembalikan array kosong
-            return $this->response->setJSON(['items' => []]);
-        }
-
-        $data = [];
-        $no = 1;
-        foreach ($list as $row) {
-            // tambahkan kolom kode (detUjiKode) supaya total kolom = 5 sesuai modal
-            $kodeUji = isset($row->detUjiKode) ? $row->detUjiKode : '-';
-
-            $layanan = isset($row->ujiLayanan) ? $row->ujiLayanan : '-';
-            if (isset($row->paraNama) && !empty($row->paraNama)) {
-                $layanan .= ' (' . $row->paraNama . ')';
-            }
-
-            $biaya = isset($row->detBiaya) ? 'Rp ' . number_format($row->detBiaya, 0, ',', '.') : '-';
-            $ket   = isset($row->detKeterangan) && !empty($row->detKeterangan) ? $row->detKeterangan : '-';
-
-            $response = [];
-            $response[] = $no++;
-            $response[] = $layanan;         // Layanan
-            $response[] = $biaya;           // Biaya
-            $response[] = $ket;             // Keterangan
-
-            $data[] = $response;
-        }
-
-        return $this->response->setJSON(['items' => $data]);
     }
+
+    // Ambil detil layanan sesuai detLnKode
+    $model = new MyModel('simlab_t_layanan_detil d');
+    $joins = [
+        'simlab_r_layanan_pengujian lp' => 'lp.ujiKode = d.detUjiKode',
+        'simlab_r_parameter p'          => 'p.paraKode = lp.ujiParaKode',
+        'simlab_r_alat a'               => 'a.alatKode = lp.ujiAlatKode',
+    ];
+    $where = ['d.detLnKode' => $lnKode];
+
+    $select = "
+        d.detUjiKode,
+        lp.ujiLayanan,
+        p.paraNama,
+        a.alatNama,
+        d.detBiaya,
+        d.detKeterangan
+    ";
+
+    try {
+        $list = $model->getAllDataWithJoinWhereOrder($joins, $where, ['d.detUjiKode' => 'ASC'], $select);
+    } catch (\Throwable $e) {
+        // jika query error, kembalikan array kosong
+        return $this->response->setJSON(['items' => []]);
+    }
+
+    $data = [];
+    $no = 1;
+    foreach ($list as $row) {
+        $layanan = isset($row->ujiLayanan) ? $row->ujiLayanan : '-';
+        if (isset($row->paraNama) && !empty($row->paraNama)) {
+            $layanan .= ' (' . $row->paraNama . ')';
+        }
+
+        $biaya = isset($row->detBiaya) ? 'Rp ' . number_format($row->detBiaya, 0, ',', '.') : '-';
+        $ket   = isset($row->detKeterangan) && !empty($row->detKeterangan) ? $row->detKeterangan : '-';
+
+        $response = [];
+        $response[] = $no++;
+        $response[] = $layanan;
+        $response[] = $biaya;
+        $response[] = $ket;
+
+        $data[] = $response;
+    }
+
+    return $this->response->setJSON(['items' => $data]);
+}
 
     /**
      * Untuk memproses aksi terima / tolak LHUS.
@@ -298,11 +292,7 @@ class TinjauLHUS extends BaseController
         // gunakan flex agar tombol sejajar dan rapi, tetap float-end
         $btn = '<div id="' . $id . '" class="float-end d-flex align-items-center gap-2">';
 
-        // tombol lihat detail (disamakan gaya dengan tombol aksi lain)
-        $btn .= '<span class="text-info btn-action" title="Lihat Detail"
-                    onclick="loadDetail(\'' . $id . '\')">
-                    <i class="bi bi-eye"></i>
-                </span>';
+       
 
         // jika status = 5, tambahkan tombol terima & tolak
         if ($status == 5) {

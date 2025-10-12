@@ -110,7 +110,7 @@ class HasilPengujian extends BaseController
         $id = bin2hex($this->encrypter->encrypt($row->lnKode));
         $response = [];
 
-        // Ambil item layanan dari tabel detail
+        // Ambil item layanan dari tabel detail (tetap diambil, tapi tidak ditampilkan sebagai teks — kolom Item Layanan jadi tombol lihat)
         $detil = $modelDet->getAllDataById(['detLnKode' => $row->lnKode]);
 
         $items = [];
@@ -131,47 +131,51 @@ class HasilPengujian extends BaseController
                       . '</div>';
         $response[] = $noInvoiceTgl;
 
-        $response[] = '<div>' . $itemList . '</div>';
+        // === Perubahan: tambahkan kolom "Pemesan" sebelum Item Layanan ===
+        // gunakan lnOrangNama sebagai pemesan (escape sederhana)
+        $pemesan = isset($row->lnOrangNama) && $row->lnOrangNama !== '' ? htmlspecialchars($row->lnOrangNama, ENT_QUOTES, 'UTF-8') : '-';
+        $response[] = '<div>' . $pemesan . '</div>';
+
+        // === Perubahan: Kolom "Item Layanan" sekarang berisi tombol Lihat Detail saja ===
+        // tombol memanggil loadDetail(encId) di client
+        $lihatDetailBtn = '<button type="button" class="btn btn-sm btn-info" title="Lihat Detail Item Layanan" onclick="loadDetail(\'' . $id . '\')">'
+                        . '<i class="bi bi-eye"></i> Lihat Detail Layanan</button>';
+        $response[] = $lihatDetailBtn;
 
         // Deteksi apakah LHUS file ada
         $lhusInfo = $this->detectLhusFile($row);
 
-        // Default onclick handler
+        // Default onclick handler untuk upload/lihat LHUS
         $fileUrlEscaped = $lhusInfo['has'] ? esc($lhusInfo['url']) : '#';
         $uploadOnclick  = 'openUploadModal(\'' . $id . '\', \'' . $fileUrlEscaped . '\')';
 
-        // Tombol tunggal: berubah teks sesuai kondisi
+        // Tombol tunggal: berubah teks sesuai kondisi (tetap tampil di kolom LHUS terpisah)
         if ($lhusInfo['has']) {
             $btnUpload = '<button class="btn btn-sm btn-outline-primary me-1" title="Lihat File" onclick="' . $uploadOnclick . '">'
-                       . '<i class="bi bi-eye"></i> Lihat</button>';
+                       . '<i class="bi bi-eye"></i> Lihat File</button>';
         } else {
             $btnUpload = '<button class="btn btn-sm btn-outline-secondary me-1" title="Unggah File" onclick="' . $uploadOnclick . '">'
                        . '<i class="bi bi-upload"></i> Unggah</button>';
         }
 
-        // Kolom LHUS (Tinjau) → hanya 1 tombol ini
+        // Kolom LHUS (Tinjau)
         $response[] = $btnUpload;
 
         // Kolom Status
         $response[] = $this->formatStatus($row->lnStatus);
 
-        // Kolom Aksi
-        $lihatDetailBtn = '
-            <a href="javascript:void(0)" onclick="loadDetail(\'' . $id . '\')" 
-            class="btn btn-sm btn-info me-1" title="Lihat Detail">
-                <i class="bi bi-eye"></i>
-            </a>
-        ';
-
+        // === Perubahan: Kolom Aksi hanya berisi tombol Accept/Kirim LHUS ===
         if ($lhusInfo['has']) {
+            // aktifkan tombol accept
             $sendBtn = '<span class="text-success btn-action" title="Kirim LHUS" onclick="confirmApprove(event, \'' . $id . '\')">'
                      . '<i class="bi bi-check-circle"></i></span>';
         } else {
+            // tampilkan ikon disabled/ muted jika belum ada file
             $sendBtn = '<span class="text-muted btn-action" title="Tidak ada file LHUS">'
                      . '<i class="bi bi-check-circle"></i></span>';
         }
 
-        $response[] = $lihatDetailBtn . ' ' . $sendBtn;
+        $response[] = $sendBtn;
 
         $data[] = $response;
         $no++;
@@ -244,9 +248,6 @@ public function detailList($id)
 
     return $this->response->setJSON(['items' => $data]);
 }
-
-
-
 
     private function detectLhusFile($row)
     {

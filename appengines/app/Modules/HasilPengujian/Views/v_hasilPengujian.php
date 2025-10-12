@@ -9,11 +9,12 @@
                     <thead>
                         <tr>
                             <th show width="5%">No.</th>
-                            <th show width="20%">No. Invoice & Tanggal</th>
-                            <th show width="40%">Nama Layanan</th>
-                            <th show width="12%">LHUS </th>
-                            <th show width="13%">Status</th>
-                            <th show width="20%" class="action text-end">Aksi</th>
+                            <th show width="18%">No. Invoice & Tanggal</th>
+                            <th show width="25%">Pemesan</th> <!-- DITAMBAHKAN -->
+                            <th show width="25%">Item Layanan</th> <!-- DIGANTI LABEL -->
+                            <th show width="15%">LHUS</th>
+                            <th show width="9%">Status</th>
+                            <th show width="10%" class="action text-end">Aksi</th>
                         </tr>
                     </thead>
                     <tbody id="table-body"></tbody>
