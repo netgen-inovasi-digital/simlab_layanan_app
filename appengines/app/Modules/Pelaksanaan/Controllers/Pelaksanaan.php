@@ -26,7 +26,7 @@ class Pelaksanaan extends BaseController
     }
 
     
-    public function dataList()
+        public function dataList()
     {
         $model = new MyModel($this->table);
         $data  = [];
@@ -102,14 +102,58 @@ class Pelaksanaan extends BaseController
             // Kolom Status
             $response[] = $this->formatStatus($row->lnStatus);
 
-            // Kolom Aksi
-            $response[] = $this->aksiButton($id, $row->lnStatus);
+            // ====== NEW: determine if accept/proses button should be allowed ======
+            // Kondisi yang diminta: tombol PROSES (accept) hanya boleh aktif jika:
+            //    1) kuisioner === 1
+            //    2) bayarStatus === 1 (cek pada tabel simlab_t_pembayaran)
+            $kuisionerVal = null;
+            if (isset($row->kuisioner)) {
+                $kuisionerVal = (int) $row->kuisioner;
+            } else {
+                // coba varian nama lain jika ada
+                $kuFields = ['kuisioner', 'lnKuisioner', 'ln_kuisioner'];
+                foreach ($kuFields as $kf) {
+                    if (isset($row->{$kf})) {
+                        $kuisionerVal = (int) $row->{$kf};
+                        break;
+                    }
+                }
+            }
+
+            // Ambil status pembayaran terbaru dari tabel simlab_t_pembayaran untuk lnKode ini
+            $bayarStatusVal = 0; // default not paid
+            try {
+                if (!empty($row->lnKode)) {
+                    $db = \Config\Database::connect();
+                    $pay = $db->table('simlab_t_pembayaran')
+                              ->select('bayarStatus')
+                              ->where('bayarLnKode', $row->lnKode)
+                              ->orderBy('bayarKode', 'DESC')
+                              ->limit(1)
+                              ->get()
+                              ->getRow();
+
+                    if ($pay && isset($pay->bayarStatus)) {
+                        $bayarStatusVal = (int) $pay->bayarStatus;
+                    }
+                }
+            } catch (\Throwable $e) {
+                // jika error DB, anggap belum dibayar (aman)
+                $bayarStatusVal = 0;
+            }
+
+            // Allow accept hanya jika kuisioner == 1 AND bayarStatus == 1
+            $allowAccept = ($kuisionerVal === 1 && $bayarStatusVal === 1);
+
+            // Kolom Aksi (kirim flag $allowAccept)
+            $response[] = $this->aksiButton($id, $row->lnStatus, $allowAccept);
 
             $data[] = $response;
         }
 
         return $this->response->setJSON(["items" => $data]);
     }
+
 
     public function detailList($id)
 {
@@ -531,26 +575,37 @@ class Pelaksanaan extends BaseController
         }
     }
 
-    private function aksiButton($id, $status)
-    {
-        $btn = '<div id="' . $id . '" class="float-end">';
+      private function aksiButton($id, $status, $allowAccept = true)
+{
+    $btn = '<div id="' . $id . '" class="float-end">';
 
-        // tombol proses hanya muncul jika status = 6
-        if ($status == 6) {
+    // tombol proses hanya muncul jika status = 6
+    if ($status == 6) {
+        if ($allowAccept) {
+            // tombol proses aktif (seperti semula)
             $btn .= '<span class="text-success btn-action" title="Proses" onclick="prosesItem(event)">'
                  . '<i class="bi bi-check2-circle"></i>'
                  . '</span> ';
-            $btn .= '<label class="divider">|</label> ';
+        } else {
+            // tampilkan tombol proses TETAP dengan icon yang sama tapi nonaktif
+            $btn .= '<span class="text-muted btn-action" title="Tidak dapat di-accept: Pastikan kuisioner sudah diisi dan pembayaran telah dikonfirmasi" style="cursor:not-allowed;opacity:0.5;">'
+                 . '<i class="bi bi-check2-circle"></i>'
+                 . '</span> ';
         }
 
-        // tombol hapus selalu ada
-        $btn .= '<span class="text-danger btn-action" title="Hapus" onclick="deleteItem(event)">'
-             . '<i class="bi bi-trash"></i>'
-             . '</span>';
-
-        $btn .= '</div>';
-        return $btn;
+        $btn .= '<label class="divider">|</label> ';
     }
+
+    // tombol hapus selalu ada
+    $btn .= '<span class="text-danger btn-action" title="Hapus" onclick="deleteItem(event)">'
+         . '<i class="bi bi-trash"></i>'
+         . '</span>';
+
+    $btn .= '</div>';
+    return $btn;
+}
+
+
 
     // proses ubah status ke 7
     public function proses($id)
@@ -566,8 +621,54 @@ class Pelaksanaan extends BaseController
             ]);
         }
 
+        // Ambil row layanan untuk verifikasi kuisioner
         $model = new MyModel($this->table);
-        $res   = $model->updateData(['lnStatus' => 7], $this->id, $kode);
+        $row = $model->getDataById($this->id, $kode);
+
+        if (!$row) {
+            return $this->response->setJSON([
+                'res'   => false,
+                'msg'   => 'Data layanan tidak ditemukan',
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        }
+
+        $kuisionerVal = isset($row->kuisioner) ? (int) $row->kuisioner : 0;
+
+        // cek bayarStatus di tabel pembayaran (ambil yang terbaru)
+        $bayarStatusVal = 0;
+        try {
+            $db = \Config\Database::connect();
+            $pay = $db->table('simlab_t_pembayaran')
+                      ->select('bayarStatus')
+                      ->where('bayarLnKode', $kode)
+                      ->orderBy('bayarKode', 'DESC')
+                      ->limit(1)
+                      ->get()
+                      ->getRow();
+
+            if ($pay && isset($pay->bayarStatus)) {
+                $bayarStatusVal = (int) $pay->bayarStatus;
+            }
+        } catch (\Throwable $e) {
+            $bayarStatusVal = 0;
+        }
+
+        // Validasi: harus kuisioner == 1 dan bayarStatus == 1
+        if (!($kuisionerVal === 1 && $bayarStatusVal === 1)) {
+            return $this->response->setJSON([
+                'res'   => false,
+                'msg'   => 'Tidak dapat memproses: pastikan kuisioner telah diisi dan pembayaran sudah konfirmasi.',
+                'kuisioner' => $kuisionerVal,
+                'bayarStatus' => $bayarStatusVal,
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        }
+
+        // Semua ok, update status menjadi 7 (LHU Disetujui)
+        $res = $model->updateData(['lnStatus' => 7], $this->id, $kode);
 
         return $this->response->setJSON([
             'res'   => $res,
