@@ -161,12 +161,31 @@ class Auth extends Controller
 		}
 	}
 
-	public function logout()
-	{
+	// public function logout()
+	// {
+	// 	$session = session();
+	// 	$session->destroy();
+	// 	return redirect()->to(base_url('/'));
+	// }
+
+		public function logout(){
 		$session = session();
+
+		// Simpan role sebelum session dihancurkan
+		$roleId = $session->get('role_id');
+
+		// Hapus semua session
 		$session->destroy();
-		return redirect()->to(base_url('/'));
+
+		// Tentukan redirect berdasarkan role
+		if ($roleId != 2) {
+			return redirect()->to(base_url('login'));
+		} else {
+			// Jika tidak ada role (default)
+			return redirect()->to(base_url('/'));
+		}
 	}
+
 
 	public function actRegister()
 	{
