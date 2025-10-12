@@ -28,11 +28,57 @@ class HasilPengujian extends BaseController
 
    public function dataList()
 {
+    $session = session();
+    $user_id = $session->get('id_user');
+
     $model = new MyModel($this->table);
+    $modelDet = new MyModel('simlab_t_layanan_detil');
     $data  = [];
 
-    // Ambil semua data dari tabel utama dan urutkan berdasarkan tanggal DESC
-    $list = $model->getAllDataWithOrder(['lnTgl' => 'DESC']);
+    // Ambil detil berdasarkan detPenyelia = user_id (prioritas)
+    $detilList = $modelDet->getAllDataById(['detPenyelia' => $user_id]);
+
+    // Jika kosong ambil semua baris yang user terkait (gabungan kedua kolom)
+    if (empty($detilList)) {
+        $db = \Config\Database::connect();
+        $builder = $db->table('simlab_t_layanan_detil as d');
+        $builder->select('d.detLnKode');
+        $builder->groupStart();
+        $builder->where('d.detPenyelia', $user_id);
+        $builder->orWhere('d.detManajerTeknis', $user_id);
+        $builder->groupEnd();
+        $rows = $builder->get()->getResult();
+        $detilList = $rows;
+    }
+
+    // Ambil lnKode yang sesuai dari tabel detil — robust untuk array objek/array
+    $lnKodeList = [];
+    foreach ($detilList as $item) {
+        if (is_array($item) && isset($item['detLnKode'])) {
+            $lnKodeList[] = $item['detLnKode'];
+        } elseif (is_object($item) && isset($item->detLnKode)) {
+            $lnKodeList[] = $item->detLnKode;
+        }
+    }
+
+    $lnKodeList = array_values(array_unique(array_filter($lnKodeList, function ($v) {
+        return $v !== null && $v !== '' && $v !== 0;
+    })));
+
+    if (empty($lnKodeList)) {
+        return $this->response->setJSON(["items" => []]);
+    }
+
+    $db = \Config\Database::connect();
+    $builder = $db->table('simlab_t_layanan as l');
+    $builder->select('l.*');
+    $builder->whereIn('l.lnKode', $lnKodeList);
+
+    // Tambahan: jangan ambil baris dengan lnStatus
+    $builder->where('l.lnStatus !=', 2);
+
+    $builder->orderBy('l.lnTgl', 'DESC');
+    $list = $builder->get()->getResult();
 
     // Kelompokkan berdasarkan status 0-9
     $grouped = [];
@@ -65,7 +111,6 @@ class HasilPengujian extends BaseController
         $response = [];
 
         // Ambil item layanan dari tabel detail
-        $modelDet = new MyModel('simlab_t_layanan_detil');
         $detil = $modelDet->getAllDataById(['detLnKode' => $row->lnKode]);
 
         $items = [];
