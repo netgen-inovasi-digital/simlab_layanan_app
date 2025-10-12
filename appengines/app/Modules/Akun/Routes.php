@@ -7,9 +7,9 @@ if (!isset($routes)) {
 $routes->group('akun', ['namespace' => 'Modules\Akun\Controllers'], function($subroutes) {
 
     $subroutes->get('/', 'Akun::index');
-    $subroutes->get('(:any)', 'Akun::$1');
+    $subroutes->get('datalist', 'Akun::dataList');  
     $subroutes->post('submit', 'Akun::submit');
-    $subroutes->post('edit', 'Akun::edit');
-    $subroutes->post('delete', 'Akun::delete');
+    $subroutes->get('edit/(:any)', 'Akun::edit/$1'); // bawa id terenkripsi
+    $subroutes->get('delete/(:any)', 'Akun::delete/$1'); // bawa id terenkripsi
 
 });

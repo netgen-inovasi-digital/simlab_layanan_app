@@ -114,10 +114,9 @@ class FormulirAdmin extends BaseController
             $response[] = $row->lnTipe ?? '-';
             $response[] = $this->formatStatus($row->lnStatus);
 
-            $response[] = '<a href="javascript:void(0)" onclick="loadDetail(\'' . $id . '\')" 
-                            class="btn btn-sm btn-info">
-                            <i class="bi bi-eye"></i> Lihat Detail
-                        </a>';
+            $lihatDetailBtn = '<button type="button" class="btn btn-sm btn-info" title="Lihat Detail Item Layanan" onclick="loadDetail(\'' . $id . '\')">'
+                        . '<i class="bi bi-eye"></i> Lihat Detail Layanan</button>';
+            $response[] = $lihatDetailBtn; 
 
             $response[] = $this->aksi($id, $row->lnStatus);
 
@@ -127,6 +126,71 @@ class FormulirAdmin extends BaseController
         $output = ["items" => $data];
         return $this->response->setJSON($output);
     }
+
+    public function detailList($id)
+{
+    // tolerant decrypt (id dikirim sebagai hex dari client)
+    try {
+        $lnKode = $this->encrypter->decrypt(hex2bin($id));
+    } catch (\Throwable $e) {
+        // coba decrypt langsung (jika tidak hex)
+        try {
+            $lnKode = $this->encrypter->decrypt($id);
+        } catch (\Throwable $e2) {
+            return $this->response->setJSON([
+                'items' => [],
+                'error' => 'Invalid ID'
+            ]);
+        }
+    }
+
+    // Ambil detil layanan sesuai detLnKode
+    $model = new MyModel('simlab_t_layanan_detil d');
+    $joins = [
+        'simlab_r_layanan_pengujian lp' => 'lp.ujiKode = d.detUjiKode',
+        'simlab_r_parameter p'          => 'p.paraKode = lp.ujiParaKode',
+        'simlab_r_alat a'               => 'a.alatKode = lp.ujiAlatKode',
+    ];
+    $where = ['d.detLnKode' => $lnKode];
+
+    $select = "
+        d.detUjiKode,
+        lp.ujiLayanan,
+        p.paraNama,
+        a.alatNama,
+        d.detBiaya,
+        d.detKeterangan
+    ";
+
+    try {
+        $list = $model->getAllDataWithJoinWhereOrder($joins, $where, ['d.detUjiKode' => 'ASC'], $select);
+    } catch (\Throwable $e) {
+        // jika query error, kembalikan array kosong
+        return $this->response->setJSON(['items' => []]);
+    }
+
+    $data = [];
+    $no = 1;
+    foreach ($list as $row) {
+        $layanan = isset($row->ujiLayanan) ? $row->ujiLayanan : '-';
+        if (isset($row->paraNama) && !empty($row->paraNama)) {
+            $layanan .= ' (' . $row->paraNama . ')';
+        }
+
+        $biaya = isset($row->detBiaya) ? 'Rp ' . number_format($row->detBiaya, 0, ',', '.') : '-';
+        $ket   = isset($row->detKeterangan) && !empty($row->detKeterangan) ? $row->detKeterangan : '-';
+
+        $response = [];
+        $response[] = $no++;
+        $response[] = $layanan;
+        $response[] = $biaya;
+        $response[] = $ket;
+
+        $data[] = $response;
+    }
+
+    return $this->response->setJSON(['items' => $data]);
+}
 
     private function aksi($id, $status)
     {

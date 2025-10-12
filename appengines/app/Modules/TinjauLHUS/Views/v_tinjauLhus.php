@@ -6,7 +6,7 @@
             </div>
             <div class="card-body">
 
-                <!-- ✅ Hidden CSRF untuk Ajax -->
+                <!--  Hidden CSRF untuk Ajax -->
                 <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>">
 
                 <table id="data-table" class="saytable border-top-bottom">
@@ -14,6 +14,7 @@
                         <tr>
                             <th show width="5%">No.</th>
                             <th show width="15%">No. Invoice & Tanggal</th>
+                            <th show width="15%">Pemesan</th>
                             <th show width="30%">Nama Layanan</th>
                             <th show width="15%">LHUS (Tinjau)</th>
                             <th show width="15%">Status</th>
@@ -65,7 +66,7 @@
                 sayAlert('errorModal', 'Gagal', data.msg || 'Proses LHUS gagal dilakukan', 'warning');
             }
 
-            // ✅ update CSRF token jika ada
+            //  update CSRF token jika ada
             if (data.xname && data.xhash) {
                 document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => {
                     input.value = data.xhash;
@@ -79,15 +80,25 @@
     }
 
     /**
-     * 🔹 Lihat detail layanan
+     *  Lihat detail layanan
+     * NOTE: endpoint diarahkan ke tinjaulhus/detaillist/
+     * colspan disesuaikan ke 5 (No,Kode,Layanan,Biaya,Keterangan)
      */
+   // 🔹 Tombol Lihat Detail
     function loadDetail(id) {
-        const url = '<?php echo site_url("tinjaulhus/detaillist/") ?>' + id;
+        const url = '<?php echo site_url("hasilpengujian/detaillist/") ?>' + id;
         const tbody = document.querySelector('#detail-body');
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center">Loading...</td></tr>';
+
+        // tampilkan loading
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center">Loading...</td></tr>';
 
         fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(t => { throw new Error('HTTP ' + response.status + ': ' + t); });
+                }
+                return response.json();
+            })
             .then(data => {
                 tbody.innerHTML = '';
                 if (data.items && data.items.length > 0) {
@@ -98,14 +109,27 @@
                         tbody.innerHTML += tr;
                     });
                 } else {
-                    tbody.innerHTML = '<tr><td colspan="5" class="text-center">Tidak ada data</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-center">Tidak ada data</td></tr>';
                 }
-                $('#modalDetail').modal('show');
+                // tampilkan modal
+                if (typeof bootstrap !== 'undefined') {
+                    const modalEl = document.getElementById('modalDetail');
+                    const modal = new bootstrap.Modal(modalEl);
+                    modal.show();
+                } else {
+                    $('#modalDetail').modal('show');
+                }
             })
             .catch(error => {
-                console.error(error);
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error load data</td></tr>';
-                $('#modalDetail').modal('show');
+                console.error('loadDetail error:', error);
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Error load data</td></tr>';
+                if (typeof bootstrap !== 'undefined') {
+                    const modalEl = document.getElementById('modalDetail');
+                    const modal = new bootstrap.Modal(modalEl);
+                    modal.show();
+                } else {
+                    $('#modalDetail').modal('show');
+                }
             });
     }
 </script>
@@ -123,7 +147,7 @@
           <thead>
             <tr>
               <th width="5%">No</th>
-              <th width="15%">Kode</th>
+              <!-- <th width="15%">Kode</th> -->
               <th width="40%">Layanan</th>
               <th width="20%">Biaya</th>
               <th width="20%">Keterangan</th>
@@ -141,4 +165,4 @@
       </div>
     </div>
   </div>
-</div> 
+</div>

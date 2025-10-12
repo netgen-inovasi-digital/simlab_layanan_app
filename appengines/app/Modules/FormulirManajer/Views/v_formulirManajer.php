@@ -262,7 +262,7 @@
           <thead>
             <tr>
               <th width="5%">No</th>
-              <th width="15%">Kode</th>
+              <!-- <th width="15%">Kode</th> -->
               <th width="40%">Layanan</th>
               <th width="20%">Biaya</th>
               <th width="20%">Keterangan</th>
