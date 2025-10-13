@@ -151,7 +151,7 @@ class Keranjang extends BaseController
             'simlab_r_alat a'      => 'a.alatKode = simlab_r_layanan_pengujian.ujiAlatKode'
         ];
 
-        // 🔹 Tambahkan dua kolom baru agar ikut tersimpan ke session
+        // menambah dua kolom baru agar ikut tersimpan ke session
         $where  = ['ujiKode' => $ujiKode];
         $select = 'simlab_r_layanan_pengujian.ujiKode, 
                    simlab_r_layanan_pengujian.ujiBiaya,
@@ -184,7 +184,7 @@ class Keranjang extends BaseController
 
         $totalBiaya = ($biayaSatuan * $jumlah) * (1 - ($diskon / 100));
 
-        // 🔹 Tambahkan dua field baru ke data session
+        //  menambah dua field baru ke data session
         $data = [
             'lnKode'            => $row->ujiInstansi,
             'kode'              => $row->ujiKode,
@@ -269,20 +269,18 @@ class Keranjang extends BaseController
         $telp     = $this->request->getPost('InOrangTelp') ?: '-';
         $instansi = $this->request->getPost('InInstansi') ?: 'Tidak diisi';
 
+        // Disesuaikan dengan struktur tabel simlab_t_layanan terbaru (hanya kolom yang ada)
         $modelLayanan->insertData([
             'lnKode'        => $nextKode,
+            'user_id'       => $user_id,
             'lnAccEmail'    => $email,
             'lnNoTransaksi' => $invoiceNo,
             'lnTgl'         => date('Y-m-d H:i:s'),
-            'lnTipe'        => $tipe,
-            'lnOrangNama'   => $nama,
-            'lnOrangTelp'   => $telp,
-            'lnOrangEmail'  => $email,
-            'lnInstansi'    => $instansi,
-            'lnStatus'      => 1
+            'lnStatus'      => 1,
+            'kuisioner'     => 0
         ]);
 
-        // --- ⬇️ Tambahan kolom detPenyelia & detManajerTeknis ---
+        // --- ⬇ Tambahan kolom detPenyelia & detManajerTeknis ---
         foreach ($keranjang as $item) {
             $detil = [
                 'detLnKode'         => $nextKode,
