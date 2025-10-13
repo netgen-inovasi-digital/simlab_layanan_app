@@ -3,7 +3,6 @@
 namespace Modules\Pelayanan\Controllers;
 
 use App\Controllers\BaseController;
-use Modules\Pelayanan\Models\PelayananModel;
 use App\Models\MyModel;
 
 class Pelayanan extends BaseController
@@ -172,4 +171,28 @@ class Pelayanan extends BaseController
 
         return $this->response->setJSON(["items" => $data]);
     }
+
+    public function checkVerified()
+    {
+        $session = session();
+        $user_id = $session->get('id_user');
+
+        $modelUser = new MyModel('simlab_account_users');
+        $user = $modelUser->getDataById('user_id', $user_id);
+
+        if (!$user) {
+            return $this->response->setJSON(['verified' => false, 'msg' => 'User tidak ditemukan.']);
+        }
+
+        if ((int)$user->verifikasi === 1) {
+            return $this->response->setJSON(['verified' => true, 'msg' => 'Akun sudah terverifikasi.']);
+        } else {
+            return $this->response->setJSON(['verified' => false,
+             'msg' => 'Akun belum diverifikasi. Silakan unggah bukti atau tunggu verifikasi.
+             ']);
+        }
+    }
+
+ 
+
 }

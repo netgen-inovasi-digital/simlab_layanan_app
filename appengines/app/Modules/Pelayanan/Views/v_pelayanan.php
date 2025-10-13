@@ -34,9 +34,28 @@
     });
     addAction();
 
-    document.querySelector('#add').addEventListener('click', function () {
-    window.location.href = '<?php echo site_url("keranjang") ?>';
+        document.querySelector('#add').addEventListener('click', function () {
+        fetch('<?php echo site_url("pelayanan/checkVerified") ?>', {
+            method: 'GET',
+            headers: { 'Accept': 'application/json' }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.verified) {
+                loadContent('<?php echo site_url("keranjang") ?>');
+            } else {
+                sayAlert('warningModal', 'Verifikasi Diperlukan', 'Akun anda belum diverifikasi. Silakan lengkapi data di halaman profil.', 'warning');
+                setTimeout(() => {
+                    loadContent('<?php echo site_url("profilpw") ?>');
+                }, 1500);
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            sayAlert('errorModal', 'Error', 'Gagal memeriksa status verifikasi.', 'warning');
+        });
     });
+
 
     function reloadTable() {
         const tbody = document.querySelector('#table-body');
@@ -155,6 +174,8 @@
                 $('#modalForm').modal('show');
             });
     }
+
+
 </script>
 
 <!-- Modal Detail -->

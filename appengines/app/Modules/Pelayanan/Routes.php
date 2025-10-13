@@ -10,6 +10,7 @@ $routes->group('pelayanan', ['namespace' => 'Modules\Pelayanan\Controllers'], fu
     $subroutes->get('/', 'Pelayanan::index');
     
     // ambil data list pelayanan (untuk datatable/ajax)
+    $subroutes->get('checkVerified', 'Pelayanan::checkVerified');
     $subroutes->get('datalist', 'Pelayanan::dataList');
     
     // detail halaman pelayanan
