@@ -5,6 +5,7 @@
                 <label class="card-title mb-0"><?php echo $title ?></label>
             </div>
             <div class="card-body">
+                <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>">
                 <table id="data-table" class="saytable border-top-bottom">
                     <thead>
                         <tr>
@@ -151,50 +152,72 @@
             });
     }
 
-    // Tombol Approve pada baris utama (tetap ada konfirmasi untuk baris utama)
-    function confirmApprove(e) {
-        e.preventDefault();
-        let id = e.currentTarget.closest('div').id;
-        if (!id) return;
+   // Tombol Approve pada baris utama (tetap ada konfirmasi untuk baris utama)
+function confirmApprove(e) {
+    e.preventDefault();
+    let id = e.currentTarget.closest('div').id;
+    if (!id) return;
 
-        if (!confirm('Yakin ingin approve data ini?')) return;
+    if (!confirm('Yakin ingin approve data ini?')) return;
 
-        const csrfInput = document.querySelector('[name="<?= csrf_token() ?>"]');
-        const csrfToken = csrfInput ? csrfInput.value : '';
+    // ambil CSRF token input (nilai name token berubah setelah request)
+    const csrfInput = document.querySelector('[name="<?= csrf_token() ?>"]');
+    const csrfToken = csrfInput ? csrfInput.value : '';
 
-        // disable sementara tombol supaya tidak double click
-        const container = document.getElementById(id);
-        if (container) container.querySelectorAll('.btn-action').forEach(el => el.style.pointerEvents = 'none');
+    // disable sementara tombol supaya tidak double click
+    const container = document.getElementById(id);
+    if (container) container.querySelectorAll('.btn-action').forEach(el => el.style.pointerEvents = 'none');
 
-        fetch('<?php echo site_url("formulirmanajer/approve/") ?>' + id, {
-            method: 'POST',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRF-TOKEN': csrfToken
-            }
-        })
-        .then(res => res.json())
-        .then(data => {
-            // Update CSRF token
-            if (data.xname && data.xhash) {
-                document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => input.value = data.xhash);
-            }
+    fetch('<?php echo site_url("formulirmanajer/approve/") ?>' + id, {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': csrfToken
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        // Update CSRF token jika dikembalikan
+        if (data.xname && data.xhash) {
+            document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => input.value = data.xhash);
+        }
 
-            if (data.res) {
-                if (typeof table !== 'undefined') table.fetchData({ reload: true });
-                sayAlert('successModal', 'Berhasil', 'Data berhasil diapprove', 'success');
+        if (data.res) {
+            // tampilkan pesan spesifik berdasarkan det_affected
+            const affected = parseInt(data.det_affected || data.affected || 0, 10);
+            if (affected > 0) {
+                sayAlert('successModal', 'Berhasil', `Data berhasil diapprove — ${affected} detail di-acc.`, 'success');
             } else {
-                sayAlert('errorModal', 'Gagal', data.msg || 'Approve gagal dilakukan', 'warning');
+                // Parent sudah diupdate tetapi tidak ada detail yang perlu di-acc (mungkin sudah di-acc)
+                sayAlert('successModal', 'Berhasil', data.msg || 'Parent berhasil diapprove (tidak ada detail baru yang diubah).', 'success');
             }
-        })
-        .catch(err => {
-            console.error(err);
-            sayAlert('errorModal', 'Error', 'Terjadi kesalahan sistem', 'warning');
-        })
-        .finally(() => {
-            if (container) container.querySelectorAll('.btn-action').forEach(el => el.style.pointerEvents = 'auto');
-        });
-    }
+
+            // refresh table utama jika ada
+            if (typeof table !== 'undefined' && typeof table.fetchData === 'function') {
+                table.fetchData({ reload: true });
+            }
+
+            // jika ada modal/detail view terbuka, coba reload detail (fungsi loadDetail harus ada)
+            try {
+                if (typeof loadDetail === 'function') {
+                    loadDetail(id);
+                }
+            } catch (err) {
+                // ignore
+            }
+        } else {
+            sayAlert('errorModal', 'Gagal', data.msg || 'Approve gagal dilakukan', 'warning');
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        sayAlert('errorModal', 'Error', 'Terjadi kesalahan sistem', 'warning');
+    })
+    .finally(() => {
+        if (container) container.querySelectorAll('.btn-action').forEach(el => el.style.pointerEvents = 'auto');
+    });
+}
+
 
     // Tombol Hapus pada baris utama
     function deleteItem(e) {
