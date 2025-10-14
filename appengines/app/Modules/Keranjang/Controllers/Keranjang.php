@@ -151,7 +151,6 @@ class Keranjang extends BaseController
             'simlab_r_alat a'      => 'a.alatKode = simlab_r_layanan_pengujian.ujiAlatKode'
         ];
 
-        // menambah dua kolom baru agar ikut tersimpan ke session
         $where  = ['ujiKode' => $ujiKode];
         $select = 'simlab_r_layanan_pengujian.ujiKode, 
                    simlab_r_layanan_pengujian.ujiBiaya,
@@ -184,7 +183,6 @@ class Keranjang extends BaseController
 
         $totalBiaya = ($biayaSatuan * $jumlah) * (1 - ($diskon / 100));
 
-        //  menambah dua field baru ke data session
         $data = [
             'lnKode'            => $row->ujiInstansi,
             'kode'              => $row->ujiKode,
@@ -195,7 +193,8 @@ class Keranjang extends BaseController
             'keterangan'        => $keterangan,
             'diskon'            => $diskon,
             'ujiPenyelia'       => $row->ujiPenyelia ?? null,
-            'ujiManajerTeknis'  => $row->ujiManajerTeknis ?? null
+            'ujiManajerTeknis'  => $row->ujiManajerTeknis ?? null,
+            'detAccLn'          => 0
         ];
 
         $keranjang[] = $data;
@@ -269,7 +268,7 @@ class Keranjang extends BaseController
         $telp     = $this->request->getPost('InOrangTelp') ?: '-';
         $instansi = $this->request->getPost('InInstansi') ?: 'Tidak diisi';
 
-        // Disesuaikan dengan struktur tabel simlab_t_layanan terbaru (hanya kolom yang ada)
+        // simlab_t_layanan
         $modelLayanan->insertData([
             'lnKode'        => $nextKode,
             'user_id'       => $user_id,
@@ -280,20 +279,20 @@ class Keranjang extends BaseController
             'kuisioner'     => 0
         ]);
 
-        // --- ⬇ Tambahan kolom detPenyelia & detManajerTeknis ---
+        //detail layanan
         foreach ($keranjang as $item) {
             $detil = [
                 'detLnKode'         => $nextKode,
                 'detUjiKode'        => $item['kode'] ?? null,
                 'detBiaya'          => $item['biaya'] ?? null,
-                'detJumlah'         => $item['jumlah'] ?? 1,   
+                'detJumlah'         => $item['jumlah'] ?? 1,
                 'detKeterangan'     => $item['keterangan'] ?? null,
                 'detLayanan'        => $item['layanan'] ?? null,
                 'detStatus'         => 1,
-                'detFileHasil'      => null,
                 'detJenKode'        => null,
                 'detPenyelia'       => $item['ujiPenyelia'] ?? null,
-                'detManajerTeknis'  => $item['ujiManajerTeknis'] ?? null
+                'detManajerTeknis'  => $item['ujiManajerTeknis'] ?? null,
+                'detAccLn'          => $item['detAccLn'] ?? 0
             ];
 
             $res = $modelDetil->insertData($detil);
