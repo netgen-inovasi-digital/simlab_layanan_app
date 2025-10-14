@@ -31,7 +31,6 @@ class Pelayanan extends BaseController
         return view('Modules\Pelayanan\Views\v_pelayanan', $data);
     }
 
- 
     public function dataList()
 {
     $session   = session();
@@ -54,67 +53,116 @@ class Pelayanan extends BaseController
     $list  = $model->getAllDataById($where, ['lnTgl' => 'DESC']);
 
     foreach ($list as $index => $row) {
-        // Encrypt ID untuk keamanan
         $id = bin2hex($this->encrypter->encrypt($row->lnKode));
 
-        $response   = [];
+        $response = [];
 
-        // Format No. Transaksi dan Tanggal ke dalam dua baris
         $noTransaksi = $row->lnNoTransaksi ?? '-';
         $tanggal     = !empty($row->lnTgl) ? date('d-m-Y', strtotime($row->lnTgl)) : '-';
-        $response[]  = '<div>' . $noTransaksi . '<br><small>' . $tanggal . '</small></div>';
+        $response[]  = '<div>' . esc($noTransaksi) . '<br><small>' . esc($tanggal) . '</small></div>';
 
-        // Kolom "Pengujian Untuk" dihapus, tapi tetap disimpan sebagai komentar
-        // $response[] = $row->lnTipe ?? '-'; // Pengujian Untuk (Dihilangkan sesuai permintaan)
-
-        // Status
         $response[] = $this->statusBadge($row->lnStatus);
 
-        // Tombol lihat detail
-        $response[] = '<a href="javascript:void(0)" 
-                        onclick="loadDetail(\'' . $id . '\')" 
-                        class="btn btn-sm btn-info">Lihat detail</a>';
+        $kuisionerVal = 0;
+        if (isset($row->kuisioner) && $row->kuisioner !== '') {
+            $kuisionerVal = (int) $row->kuisioner;
+        } else {
+            $kuFields = ['kuisioner', 'user_kuisioner', 'lnKuisioner', 'ln_kuisioner', 'kuisioner_user'];
+            foreach ($kuFields as $kf) {
+                if (isset($user->{$kf}) && $user->{$kf} !== '') {
+                    $kuisionerVal = (int) $user->{$kf};
+                    break;
+                }
+            }
+        }
+
+        $bayarStatusVal = 0;
+        try {
+            if (!empty($row->lnKode)) {
+                $db = \Config\Database::connect();
+                $pay = $db->table('simlab_t_pembayaran')
+                          ->select('bayarStatus')
+                          ->where('bayarLnKode', $row->lnKode)
+                          ->orderBy('bayarKode', 'DESC')
+                          ->limit(1)
+                          ->get()
+                          ->getRow();
+
+                if ($pay && isset($pay->bayarStatus)) {
+                    $bayarStatusVal = (int) $pay->bayarStatus;
+                }
+            }
+        } catch (\Throwable $e) {
+            $bayarStatusVal = 0;
+        }
+
+        $lnStatusVal = isset($row->lnStatus) ? (int) $row->lnStatus : 0;
+
+        $canViewLhu = ($kuisionerVal === 1 && $bayarStatusVal === 1 && in_array($lnStatusVal, [7, 8], true));
+
+        $lhuInfo = $this->detectLhuFile($row);
+
+        if ($lhuInfo['has'] && $canViewLhu) {
+            $response[] = '<button class="btn btn-sm btn-outline-primary" onclick="window.open(\'' . esc($lhuInfo['url']) . '\', \'_blank\')" title="Buka LHU">'
+                        . '<i class="bi bi-eye"></i> Lihat File</button>';
+        } else {
+            $reason = 'File LHU tidak dapat diakses.';
+            if ($lhuInfo['has'] && !$canViewLhu) {
+                if ($kuisionerVal !== 1) {
+                    $reason = 'Isi kuisioner terlebih dahulu untuk melihat LHU.';
+                } elseif ($bayarStatusVal !== 1) {
+                    $reason = 'LHU hanya bisa dilihat setelah pembayaran dikonfirmasi.';
+                } elseif (!in_array($lnStatusVal, [7,8], true)) {
+                    $reason = 'LHU belum disetujui (status harus 7 atau 8).';
+                }
+            } elseif (!$lhuInfo['has']) {
+                $reason = 'File LHU belum tersedia.';
+            }
+
+            $response[] = '<button class="btn btn-sm btn-secondary" disabled title="' . esc($reason) . '">'
+                        . '<i class="bi bi-eye-slash"></i> Isi Kuisioner </button>';
+        }
+        $response[] = '<a href="javascript:void(0)" onclick="loadDetail(\'' . $id . '\')" class="btn btn-sm btn-info">Lihat detail Layanan</a>';
 
         $data[] = $response;
     }
 
-    // Kembalikan hasil dalam format JSON
     return $this->response->setJSON(["items" => $data]);
 }
 
-     
+
 
     private function statusBadge($status)
-{
-    $labels = [
-        0 => 'Draft',
-        1 => 'Sedang diverifikasi',
-        2 => 'Ditolak',
-        3 => 'Sedang diverifikasi',
-        4 => 'Pengujian Sedang Dilakukan',
-        5 => 'Memproses LHUS',
-        6 => 'LHUS Disetujui',
-        7 => 'Memproses LHU',
-        8 => 'LHU Disetujui',
-        9 => 'Pengujian Selesai',
-    ];
-    $class = [
-        0 => 'secondary',
-        1 => 'warning',
-        2 => 'danger',
-        3 => 'info',
-        4 => 'primary',
-        5 => 'dark',
-        6 => 'success',
-        7 => 'warning',
-        8 => 'success',
-        9 => 'secondary',
-    ];
+    {
+        $labels = [
+            0 => 'Draft',
+            1 => 'Sedang diverifikasi petugas',
+            2 => 'Ditolak',
+            3 => 'Sedang diverifikasi petugas',
+            4 => 'Pengujian Sedang Dilakukan',
+            5 => 'Memproses LHUS',
+            6 => 'LHUS Disetujui',
+            7 => 'LHU Disetujui Petugas',
+            // 8 => 'LHU Disetujui',
+            // 9 => 'Pengujian Selesai',
+        ];
+        $class = [
+            0 => 'secondary',
+            1 => 'info',
+            2 => 'danger',
+            3 => 'info',
+            4 => 'primary',
+            5 => 'dark',
+            6 => 'success',
+            7 => 'warning',
+            // 8 => 'success',
+            // 9 => 'secondary',
+        ];
 
-    return isset($labels[$status])
-        ? '<span class="badge bg-' . $class[$status] . '">' . $labels[$status] . '</span>'
-        : '<span class="badge bg-secondary">Unknown</span>';
-}
+        return isset($labels[$status])
+            ? '<span class="badge bg-' . $class[$status] . '">' . $labels[$status] . '</span>'
+            : '<span class="badge bg-secondary">Unknown</span>';
+    }
 
 
     public function detail($id)
@@ -126,50 +174,69 @@ class Pelayanan extends BaseController
         return view('Modules\Pelayanan\Views\v_detail', ['data' => $get]);
     }
 
-    // === tambahan ajax untuk detail layanan ===
-    public function detailList($id)
+    public function detailList($id = null)
     {
-        $id = $this->encrypter->decrypt(hex2bin($id));
+        if (!$id) {
+            return $this->response->setJSON(['items' => []]);
+        }
 
-        $model = new MyModel('simlab_t_layanan_detil d');
-        $joins = [
-            'simlab_r_layanan_pengujian lp' => 'lp.ujiKode = d.detUjiKode',
-            'simlab_r_parameter p'          => 'p.paraKode = lp.ujiParaKode',
-            'simlab_r_alat a'               => 'a.alatKode = lp.ujiAlatKode',
-        ];
-        $where = ['d.detLnKode' => $id];
+        try {
+            $kode = $this->encrypter->decrypt(hex2bin($id));
+        } catch (\Exception $e) {
+            return $this->response->setJSON(['items' => []]);
+        }
 
-        $select = "
+        // Encrypted hex parent
+        $encLnId = bin2hex($this->encrypter->encrypt($kode));
+
+        $db = \Config\Database::connect();
+        $builder = $db->table('simlab_t_layanan_detil as d');
+
+        $builder->select("
             d.detUjiKode,
-            lp.ujiLayanan,
-            p.paraNama,
-            a.alatNama,
-            d.detBiaya,
-            d.detKeterangan
-        ";
-
-        $list = $model->getAllDataWithJoinWhereOrder(
-            $joins,
-            $where,
-            ['d.detUjiKode' => 'ASC'],
-            $select
-        );
+            d.detLnKode,
+            d.detLayanan,
+            d.detJenKode,
+            GROUP_CONCAT(DISTINCT d.detKeterangan SEPARATOR ' | ') AS detKet,
+            SUM(d.detJumlah) AS jumlah,
+            SUM(d.detBiaya) AS detBiaya,
+            MAX(d.detStatus) AS detStatusGroup
+        ");
+        $builder->where('d.detLnKode', $kode);
+        $builder->groupBy('d.detUjiKode, d.detLnKode, d.detLayanan, d.detJenKode');
+        $rows = $builder->get()->getResult();
 
         $data = [];
         $no = 1;
-        foreach ($list as $row) {
-            $response   = [];
-            $response[] = $no++; // No
-            $response[] = $row->detUjiKode; 
-            $response[] = $row->ujiLayanan . ' (' . $row->paraNama . ')'; // Layanan + Parameter
-            $response[] = $row->alatNama;
-            $response[] = 'Rp ' . number_format($row->detBiaya, 0, ',', '.');
-            $response[] = $row->detKeterangan ?? '-';
+
+        foreach ($rows as $row) {
+            $response = [];
+            $response[] = $no++;
+            $response[] = $row->detLayanan ?? '-';
+            $response[] = isset($row->detBiaya) ? number_format($row->detBiaya, 0, ',', '.') : '-';
+            $response[] = isset($row->jumlah) ? (int)$row->jumlah : 0;
+            $response[] = $row->detKet ?? '';
+
+            // Ambil status grouping (0/1/atau lainnya)
+            $statusGroup = isset($row->detStatusGroup) ? (int)$row->detStatusGroup : null;
+
+            if ($statusGroup === 0) {
+                $statusHtml = '<span class="badge bg-danger">Ditolak</span>';
+            } elseif ($statusGroup === 1) {
+                $statusHtml = '<span class="badge bg-success">Diterima</span>';
+            } else {
+                $statusHtml = '<span class="badge bg-secondary">Belum Diproses</span>';
+            }
+            $response[] = $statusHtml;
+
+            $ujiKodeInt = (int)$row->detUjiKode;
+            $encLnForBtn = $encLnId;
+
 
             $data[] = $response;
         }
 
-        return $this->response->setJSON(["items" => $data]);
+        return $this->response->setJSON(['items' => $data]);
     }
 
     public function checkVerified()
@@ -193,6 +260,54 @@ class Pelayanan extends BaseController
         }
     }
 
- 
+    private function detectLhuFile($row)
+    {
+        $possibleFields = [
+            'lnLhu', 'lnLHU', 'lnFileLhu', 'ln_file_lhu', 'lhu_file', 'ln_lhu', 'ln_lhu_file', 'ln_file_lhu_path'
+        ];
+
+        foreach ($possibleFields as $f) {
+            if (isset($row->{$f}) && !empty($row->{$f})) {
+                $raw = $row->{$f};
+                if (preg_match('/^https?:\/\//i', $raw)) {
+                    return ['has' => true, 'url' => $raw];
+                }
+                $possiblePath = FCPATH . 'uploads/lhu/' . ltrim($raw, '/');
+                if (is_file($possiblePath)) {
+                    $possibleUrl = base_url('uploads/lhu/' . ltrim($raw, '/'));
+                    return ['has' => true, 'url' => $possibleUrl];
+                }
+                return ['has' => false, 'url' => '#'];
+            }
+        }
+
+        // cek di tabel detil (khusus LHU: hanya cek kolom detil_LHU dan varian terkait)
+        if (isset($row->lnKode) && !empty($row->lnKode)) {
+            try {
+                $modelDet = new MyModel('simlab_t_layanan_detil');
+                $detils = $modelDet->getAllDataById(['detLnKode' => $row->lnKode]);
+                foreach ($detils as $d) {
+                    $detFields = ['detil_LHU', 'detFile', 'detFilelhu', 'det_file_lhu'];
+                    foreach ($detFields as $df) {
+                        if (isset($d->{$df}) && !empty($d->{$df})) {
+                            $raw = $d->{$df};
+                            if (preg_match('/^https?:\/\//i', $raw)) {
+                                return ['has' => true, 'url' => $raw];
+                            }
+                            $possiblePath = FCPATH . 'uploads/lhu/' . ltrim($raw, '/');
+                            if (is_file($possiblePath)) {
+                                $possibleUrl = base_url('uploads/lhu/' . ltrim($raw, '/'));
+                                return ['has' => true, 'url' => $possibleUrl];
+                            }
+                        }
+                    }
+                }
+            } catch (\Throwable $e) {
+                // ignore
+            }
+        }
+
+        return ['has' => false, 'url' => '#'];
+    }
 
 }
