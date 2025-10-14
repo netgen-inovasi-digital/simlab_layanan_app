@@ -383,10 +383,10 @@ class FormulirManajer extends BaseController
 }
 
 
-    /**
-     * approveDetail: VALIDATED and return affected rows
-     */
-    public function approveDetail()
+   /**
+ * approveDetail: set detStatus = 1 (diterima)
+ */
+public function approveDetail()
 {
     $lnEnc = $this->request->getPost('ln');
     $ujiRaw = $this->request->getPost('uji');
@@ -416,14 +416,14 @@ class FormulirManajer extends BaseController
     }
 
     $db = \Config\Database::connect();
-    $builder = $db->table('simlab_t_layanan_detil');
+    $table = $db->table('simlab_t_layanan_detil');
 
-    // cek dulu ada berapa baris yang match WHERE
-    $builder->where('detLnKode', $lnId);
-    $builder->where('detUjiKode', $uji);
-    $count = $builder->countAllResults(false); // false: jangan reset query (CI4 quirk)
+    // total rows matching ln + uji
+    $table->where('detLnKode', $lnId);
+    $table->where('detUjiKode', $uji);
+    $total = (int) $table->countAllResults(false);
 
-    if ($count == 0) {
+    if ($total === 0) {
         return $this->response->setJSON([
             'res' => false,
             'affected' => 0,
@@ -433,10 +433,28 @@ class FormulirManajer extends BaseController
         ]);
     }
 
-    // lakukan update (buat query baru)
+    // count how many already have detStatus = 1
+    $table->where('detLnKode', $lnId);
+    $table->where('detUjiKode', $uji);
+    $table->where('detStatus', 1);
+    $already = (int) $table->countAllResults(false);
+
+    if ($already === $total) {
+        // semua sudah disetujui: treat as success but affected = 0
+        return $this->response->setJSON([
+            'res' => true,
+            'affected' => 0,
+            'msg' => 'Sudah disetujui',
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
+        ]);
+    }
+
+    // update only rows that are not yet 1 to avoid no-op updates
     $res = $db->table('simlab_t_layanan_detil')
              ->where('detLnKode', $lnId)
              ->where('detUjiKode', $uji)
+             ->where('(detStatus IS NULL OR detStatus != 1)')
              ->update(['detStatus' => 1]);
 
     $affected = $db->affectedRows();
@@ -450,6 +468,9 @@ class FormulirManajer extends BaseController
     ]);
 }
 
+/**
+ * rejectDetail: set detStatus = 0 (ditolak)
+ */
 public function rejectDetail()
 {
     $lnEnc = $this->request->getPost('ln');
@@ -480,14 +501,14 @@ public function rejectDetail()
     }
 
     $db = \Config\Database::connect();
-    $builder = $db->table('simlab_t_layanan_detil');
+    $table = $db->table('simlab_t_layanan_detil');
 
-    // cek dulu ada berapa baris yang match WHERE
-    $builder->where('detLnKode', $lnId);
-    $builder->where('detUjiKode', $uji);
-    $count = $builder->countAllResults(false);
+    // total rows matching ln + uji
+    $table->where('detLnKode', $lnId);
+    $table->where('detUjiKode', $uji);
+    $total = (int) $table->countAllResults(false);
 
-    if ($count == 0) {
+    if ($total === 0) {
         return $this->response->setJSON([
             'res' => false,
             'affected' => 0,
@@ -497,9 +518,28 @@ public function rejectDetail()
         ]);
     }
 
+    // count how many already have detStatus = 0
+    $table->where('detLnKode', $lnId);
+    $table->where('detUjiKode', $uji);
+    $table->where('detStatus', 0);
+    $already = (int) $table->countAllResults(false);
+
+    if ($already === $total) {
+        // semua sudah ditolak: treat as success but affected = 0
+        return $this->response->setJSON([
+            'res' => true,
+            'affected' => 0,
+            'msg' => 'Sudah ditolak',
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
+        ]);
+    }
+
+    // update only rows that are not yet 0
     $res = $db->table('simlab_t_layanan_detil')
              ->where('detLnKode', $lnId)
              ->where('detUjiKode', $uji)
+             ->where('(detStatus IS NULL OR detStatus != 0)')
              ->update(['detStatus' => 0]);
 
     $affected = $db->affectedRows();
@@ -512,5 +552,6 @@ public function rejectDetail()
         'xhash'    => csrf_hash()
     ]);
 }
+
 
 }

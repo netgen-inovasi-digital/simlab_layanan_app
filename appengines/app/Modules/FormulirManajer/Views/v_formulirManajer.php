@@ -186,25 +186,25 @@ function confirmApprove(e) {
             // tampilkan pesan spesifik berdasarkan det_affected
             const affected = parseInt(data.det_affected || data.affected || 0, 10);
             if (affected > 0) {
-                sayAlert('successModal', 'Berhasil', `Data berhasil diapprove — ${affected} detail di-acc.`, 'success');
+                sayAlert('successModal', 'Berhasil', `- ${affected} layanan telah dikirim`, 'success');
             } else {
                 // Parent sudah diupdate tetapi tidak ada detail yang perlu di-acc (mungkin sudah di-acc)
                 sayAlert('successModal', 'Berhasil', data.msg || 'Parent berhasil diapprove (tidak ada detail baru yang diubah).', 'success');
             }
 
             // refresh table utama jika ada
-            if (typeof table !== 'undefined' && typeof table.fetchData === 'function') {
-                table.fetchData({ reload: true });
-            }
+            // if (typeof table !== 'undefined' && typeof table.fetchData === 'function') {
+            //     table.fetchData({ reload: true });
+            // }
 
             // jika ada modal/detail view terbuka, coba reload detail (fungsi loadDetail harus ada)
-            try {
-                if (typeof loadDetail === 'function') {
-                    loadDetail(id);
-                }
-            } catch (err) {
-                // ignore
-            }
+            // try {
+            //     if (typeof loadDetail === 'function') {
+            //         loadDetail(id);
+            //     }
+            // } catch (err) {
+            //     // ignore
+            // }
         } else {
             sayAlert('errorModal', 'Gagal', data.msg || 'Approve gagal dilakukan', 'warning');
         }
