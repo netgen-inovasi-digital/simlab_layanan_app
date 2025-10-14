@@ -185,54 +185,50 @@
         }
     }
 
-    // 🔹 Tombol Lihat Detail
-    function loadDetail(id) {
-        const url = '<?php echo site_url("hasilpengujian/detaillist/") ?>' + id;
-        const tbody = document.querySelector('#detail-body');
+  function loadDetail(id) {
+    const url = '<?php echo site_url("formuliradmin/detaillist/") ?>' + id;
+    const tbody = document.querySelector('#detail-body');
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center">Loading...</td></tr>';
 
-        // tampilkan loading
-        tbody.innerHTML = '<tr><td colspan="4" class="text-center">Loading...</td></tr>';
-
-        fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-            .then(response => {
-                if (!response.ok) {
-                    return response.text().then(t => { throw new Error('HTTP ' + response.status + ': ' + t); });
-                }
-                return response.json();
-            })
-            .then(data => {
-                tbody.innerHTML = '';
-                if (data.items && data.items.length > 0) {
-                    data.items.forEach(function(row) {
-                        let tr = '<tr>';
-                        row.forEach(function(col) { tr += '<td>' + col + '</td>'; });
-                        tr += '</tr>';
-                        tbody.innerHTML += tr;
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            tbody.innerHTML = '';
+            if (data.items && data.items.length > 0) {
+                data.items.forEach(function(row) {
+                    let tr = '<tr>';
+                    row.forEach(function(col) {
+                        tr += '<td>' + col + '</td>';
                     });
-                } else {
-                    tbody.innerHTML = '<tr><td colspan="4" class="text-center">Tidak ada data</td></tr>';
-                }
-                // tampilkan modal
-                if (typeof bootstrap !== 'undefined') {
-                    const modalEl = document.getElementById('modalDetail');
-                    const modal = new bootstrap.Modal(modalEl);
-                    modal.show();
-                } else {
-                    $('#modalDetail').modal('show');
-                }
-            })
-            .catch(error => {
-                console.error('loadDetail error:', error);
-                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Error load data</td></tr>';
-                if (typeof bootstrap !== 'undefined') {
-                    const modalEl = document.getElementById('modalDetail');
-                    const modal = new bootstrap.Modal(modalEl);
-                    modal.show();
-                } else {
-                    $('#modalDetail').modal('show');
-                }
-            });
-    }
+                    tr += '</tr>';
+                    tbody.innerHTML += tr;
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center">Tidak ada data</td></tr>';
+            }
+            if (typeof bootstrap !== 'undefined') {
+                const modalEl = document.getElementById('modalDetail');
+                const modal = new bootstrap.Modal(modalEl);
+                modal.show();
+            } else {
+                $('#modalDetail').modal('show');
+            }
+        })
+        .catch(error => {
+            console.error(error);
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error load data</td></tr>';
+            if (typeof bootstrap !== 'undefined') {
+                const modalEl = document.getElementById('modalDetail');
+                const modal = new bootstrap.Modal(modalEl);
+                modal.show();
+            } else {
+                $('#modalDetail').modal('show');
+            }
+        });
+}
+
+
+
 </script>
 
 <div class="modal fade" id="modalForm" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
@@ -266,35 +262,36 @@
     </div>
 </div>
 
-<!-- 🔹 Modal Detail -->
-<div class="modal fade" id="modalDetail" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
-  <div class="modal-dialog modal-lg" role="document" style="margin: 2% auto">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Detail Item Layanan</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <table class="table table-bordered">
-          <thead>
-            <tr>
-              <th width="5%">No</th>
-              <!-- <th width="15%">Kode</th> -->
-              <th width="40%">Layanan</th>
-              <th width="20%">Biaya</th>
-              <th width="20%">Keterangan</th>
-            </tr>
-          </thead>
-          <tbody id="detail-body">
-            <tr><td colspan="5" class="text-center">Loading...</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-light" type="button" data-bs-dismiss="modal">
-          <i class="bi bi-x-circle"></i> Tutup
-        </button>
-      </div>
+<!-- GANTI MENJADI: -->
+<div class="modal fade" id="modalDetail" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl" role="document" style="margin: 2% auto">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Detail Layanan</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th width="5%">No</th>
+                            <th width="30%">Layanan</th>
+                            <th width="20%">Biaya</th>
+                            <th width="15%">Jumlah</th>
+                            <th width="15%">Keterangan</th>
+                            <th width="15%">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="detail-body">
+                        <tr><td colspan="6" class="text-center">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-light" type="button" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> Tutup
+                </button>
+            </div>
+        </div>
     </div>
-  </div>
 </div>

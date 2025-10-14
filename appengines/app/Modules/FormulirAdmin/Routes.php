@@ -9,7 +9,6 @@ $routes->group('formuliradmin', ['namespace' => 'Modules\FormulirAdmin\Controlle
 $subroutes->get('/', 'FormulirAdmin::index');
 $subroutes->get('datalist', 'FormulirAdmin::dataList');
 $subroutes->get('detaillist/(:any)', 'FormulirAdmin::detailList/$1');
-
 $subroutes->post('submit', 'FormulirAdmin::submit');
 $subroutes->post('edit', 'FormulirAdmin::edit');
 $subroutes->post('delete/(:any)', 'FormulirAdmin::delete/$1');

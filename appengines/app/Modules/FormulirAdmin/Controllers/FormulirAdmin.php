@@ -63,128 +63,103 @@ class FormulirAdmin extends BaseController
     }
 
     public function dataList()
-    {
-        $model = new MyModel($this->table);
-        $data  = [];
-
-        // ambil semua data, urutkan tanggal DESC dulu
-        $list = $model->getAllDataWithOrder(['lnTgl' => 'DESC']);
-
-        // kelompokkan berdasarkan status (0–9)
-        $grouped = [];
-        for ($i = 0; $i <= 9; $i++) {
-            $grouped[$i] = [];
-        }
-
-        foreach ($list as $row) {
-            $status = (int) $row->lnStatus;
-            if (!isset($grouped[$status])) {
-                $grouped[$status] = [];
-            }
-            $grouped[$status][] = $row;
-        }
-
-        // urutkan 0 → 9
-        $finalList = [];
-        for ($i = 0; $i <= 9; $i++) {
-            $finalList = array_merge($finalList, $grouped[$i]);
-        }
-
-        foreach ($finalList as $row) {
-            if ((int)$row->lnStatus === 0 || (int)$row->lnStatus === 1 || (int)$row->lnStatus === 2) {
-                continue;
-            }
-
-            $id = bin2hex($this->encrypter->encrypt($row->lnKode));
-            $response = [];
-
-            // ambil item layanan dari tabel detil
-            $modelDet = new MyModel('simlab_t_layanan_detil');
-            $detil = $modelDet->getAllDataById(['detLnKode' => $row->lnKode]);
-
-            $items = [];
-            foreach ($detil as $d) {
-                $items[] = $d->detLayanan ?? $d->detJenKode;
-            }
-            $itemList = !empty($items) ? implode(', ', $items) : '-';
-
-            // kolom tabel
-            $response[] = !empty($row->lnTgl) ? date('d-m-Y H:i', strtotime($row->lnTgl)) : '-';
-            $response[] = $row->lnOrangNama ?? '-';
-            $response[] = $row->lnTipe ?? '-';
-            $response[] = $this->formatStatus($row->lnStatus);
-
-            $lihatDetailBtn = '<button type="button" class="btn btn-sm btn-info" title="Lihat Detail Item Layanan" onclick="loadDetail(\'' . $id . '\')">'
-                        . '<i class="bi bi-eye"></i> Lihat Detail Layanan</button>';
-            $response[] = $lihatDetailBtn; 
-
-            $response[] = $this->aksi($id, $row->lnStatus);
-
-            $data[] = $response;
-        }
-
-        $output = ["items" => $data];
-        return $this->response->setJSON($output);
-    }
-
-    public function detailList($id)
 {
-    // tolerant decrypt (id dikirim sebagai hex dari client)
-    try {
-        $lnKode = $this->encrypter->decrypt(hex2bin($id));
-    } catch (\Throwable $e) {
-        // coba decrypt langsung (jika tidak hex)
-        try {
-            $lnKode = $this->encrypter->decrypt($id);
-        } catch (\Throwable $e2) {
-            return $this->response->setJSON([
-                'items' => [],
-                'error' => 'Invalid ID'
-            ]);
-        }
+    $model = new MyModel($this->table);
+    $data  = [];
+
+    // Ambil semua data, urutkan tanggal DESC
+    $list = $model->getAllDataWithOrder(['lnTgl' => 'DESC']);
+
+    // Kelompokkan berdasarkan status
+    $grouped = [];
+    for ($i = 0; $i <= 9; $i++) {
+        $grouped[$i] = [];
     }
-
-    // Ambil detil layanan sesuai detLnKode
-    $model = new MyModel('simlab_t_layanan_detil d');
-    $joins = [
-        'simlab_r_layanan_pengujian lp' => 'lp.ujiKode = d.detUjiKode',
-        'simlab_r_parameter p'          => 'p.paraKode = lp.ujiParaKode',
-        'simlab_r_alat a'               => 'a.alatKode = lp.ujiAlatKode',
-    ];
-    $where = ['d.detLnKode' => $lnKode];
-
-    $select = "
-        d.detUjiKode,
-        lp.ujiLayanan,
-        p.paraNama,
-        a.alatNama,
-        d.detBiaya,
-        d.detKeterangan
-    ";
-
-    try {
-        $list = $model->getAllDataWithJoinWhereOrder($joins, $where, ['d.detUjiKode' => 'ASC'], $select);
-    } catch (\Throwable $e) {
-        // jika query error, kembalikan array kosong
-        return $this->response->setJSON(['items' => []]);
-    }
-
-    $data = [];
-    $no = 1;
     foreach ($list as $row) {
-        $layanan = isset($row->ujiLayanan) ? $row->ujiLayanan : '-';
-        if (isset($row->paraNama) && !empty($row->paraNama)) {
-            $layanan .= ' (' . $row->paraNama . ')';
+        $status = (int) $row->lnStatus;
+        $grouped[$status][] = $row;
+    }
+
+    // Gabungkan urut 0 → 9
+    $finalList = [];
+    for ($i = 0; $i <= 9; $i++) {
+        $finalList = array_merge($finalList, $grouped[$i]);
+    }
+
+    $userModel  = new MyModel('simlab_account_users');
+    $layananDet = new MyModel('simlab_t_layanan_detil');
+
+    foreach ($finalList as $row) {
+        // Lewati status tertentu
+        if (in_array((int)$row->lnStatus, [0, 1, 2])) continue;
+
+        $id = bin2hex($this->encrypter->encrypt($row->lnKode));
+        $response = [];
+
+        // Ambil detail item layanan
+        $detil = $layananDet->getAllDataById(['detLnKode' => $row->lnKode]);
+        $items = [];
+        foreach ($detil as $d) {
+            $items[] = $d->detLayanan ?? $d->detJenKode;
         }
 
-        $biaya = isset($row->detBiaya) ? 'Rp ' . number_format($row->detBiaya, 0, ',', '.') : '-';
-        $ket   = isset($row->detKeterangan) && !empty($row->detKeterangan) ? $row->detKeterangan : '-';
+        // ================== Ambil Data User ==================
+        $personName   = null;
+        $userIdentity = '-';
+        $instansi     = '-';
+        $u            = null;
 
-        $response = [];
-        $response[] = $no++;
-        $response[] = $layanan;
-        $response[] = $biaya;
-        $response[] = $ket;
+        // 1️⃣ Cek langsung dari user_id (FK)
+        if (!empty($row->user_id)) {
+            $u = $userModel->getDataById('user_id', $row->user_id);
+        }
+
+        // 2️⃣ Jika belum ada, cek berdasarkan email (lnAccEmail)
+        if (!$u && !empty($row->lnAccEmail)) {
+            $users = $userModel->getAllDataById(['user_email' => $row->lnAccEmail]);
+            if (!empty($users)) $u = is_array($users) ? $users[0] : $users;
+        }
+
+        // 3️⃣ Jika masih belum ketemu, cari user_id dari invoice (lnNoTransaksi)
+        if (!$u && !empty($row->lnNoTransaksi)) {
+            $db = \Config\Database::connect();
+            $qb = $db->table($this->table);
+            $qb->select('user_id')
+               ->where('lnNoTransaksi', $row->lnNoTransaksi)
+               ->where('user_id IS NOT NULL', null, false);
+            $res = $qb->get()->getResult();
+            if (!empty($res)) {
+                $foundUserId = (int)$res[0]->user_id;
+                $u = $userModel->getDataById('user_id', $foundUserId);
+            }
+        }
+
+        // 4️⃣ Jika user ditemukan, ambil info
+        if ($u) {
+            $personName   = $u->user_name ?? $u->user_email ?? '-';
+            $instansi     = $u->user_instansi ?? '-';
+            $userIdentity = $u->user_identity ?? '-';
+        } else {
+            // fallback kalau gak ada user
+            $personName = $row->lnAccEmail ?? '-';
+        }
+        // =====================================================
+
+        // Kolom tabel
+        $response[] = !empty($row->lnTgl) ? date('d-m-Y H:i', strtotime($row->lnTgl)) : '-'; // Tanggal
+        $response[] = $personName;       // Nama
+        $response[] = $userIdentity;     // Identitas (ULM / NON ULM)
+        $response[] = $this->formatStatus($row->lnStatus); // Status
+
+        // Tombol lihat detail
+        $lihatDetailBtn = '<button type="button" class="btn btn-sm btn-info" 
+                            title="Lihat Detail Item Layanan" 
+                            onclick="loadDetail(\'' . $id . '\')">
+                            <i class="bi bi-eye"></i> Lihat Detail Layanan</button>';
+        $response[] = $lihatDetailBtn;
+
+        // Tombol aksi (approve / hapus)
+        $response[] = $this->aksi($id, $row->lnStatus);
 
         $data[] = $response;
     }
@@ -192,10 +167,76 @@ class FormulirAdmin extends BaseController
     return $this->response->setJSON(['items' => $data]);
 }
 
+
+   public function detailList($id = null)
+    {
+        if (!$id) {
+            return $this->response->setJSON(['items' => []]);
+        }
+
+        try {
+            $kode = $this->encrypter->decrypt(hex2bin($id));
+        } catch (\Exception $e) {
+            return $this->response->setJSON(['items' => []]);
+        }
+
+        // Encrypted hex parent
+        $encLnId = bin2hex($this->encrypter->encrypt($kode));
+
+        $db = \Config\Database::connect();
+        $builder = $db->table('simlab_t_layanan_detil as d');
+
+        $builder->select("
+            d.detUjiKode,
+            d.detLnKode,
+            d.detLayanan,
+            d.detJenKode,
+            GROUP_CONCAT(DISTINCT d.detKeterangan SEPARATOR ' | ') AS detKet,
+            SUM(d.detJumlah) AS jumlah,
+            SUM(d.detBiaya) AS detBiaya,
+            MAX(d.detStatus) AS detStatusGroup
+        ");
+        $builder->where('d.detLnKode', $kode);
+        $builder->groupBy('d.detUjiKode, d.detLnKode, d.detLayanan, d.detJenKode');
+        $rows = $builder->get()->getResult();
+
+        $data = [];
+        $no = 1;
+
+        foreach ($rows as $row) {
+            $response = [];
+            $response[] = $no++;
+            $response[] = $row->detLayanan ?? '-';
+            $response[] = isset($row->detBiaya) ? number_format($row->detBiaya, 0, ',', '.') : '-';
+            $response[] = isset($row->jumlah) ? (int)$row->jumlah : 0;
+            $response[] = $row->detKet ?? '';
+
+            // Ambil status grouping (0/1/atau lainnya)
+            $statusGroup = isset($row->detStatusGroup) ? (int)$row->detStatusGroup : null;
+
+            if ($statusGroup === 0) {
+                $statusHtml = '<span class="badge bg-danger">Ditolak</span>';
+            } elseif ($statusGroup === 1) {
+                $statusHtml = '<span class="badge bg-success">Diterima</span>';
+            } else {
+                $statusHtml = '<span class="badge bg-secondary">Belum Diproses</span>';
+            }
+            $response[] = $statusHtml;
+
+            $ujiKodeInt = (int)$row->detUjiKode;
+            $encLnForBtn = $encLnId;
+
+
+            $data[] = $response;
+        }
+
+        return $this->response->setJSON(['items' => $data]);
+    }
+
     private function aksi($id, $status)
     {
         $btn = '<div id="' . $id . '" class="float-end">';
-        if ($status == 3) { // Admin proses dari status "In Review (Admin)"
+        if ($status == 3) { 
             $btn .= '<span class="text-success btn-action" title="Setujui" onclick="confirmApprove(event)">
                         <i class="bi bi-check-circle"></i></span> ';
             $btn .= '<label class="divider">|</label> ';
