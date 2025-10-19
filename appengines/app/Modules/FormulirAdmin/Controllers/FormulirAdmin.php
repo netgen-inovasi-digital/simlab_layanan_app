@@ -109,18 +109,18 @@ class FormulirAdmin extends BaseController
         $instansi     = '-';
         $u            = null;
 
-        // 1️⃣ Cek langsung dari user_id (FK)
+        // 1️ Cek langsung dari user_id (FK)
         if (!empty($row->user_id)) {
             $u = $userModel->getDataById('user_id', $row->user_id);
         }
 
-        // 2️⃣ Jika belum ada, cek berdasarkan email (lnAccEmail)
+        // 2️ Jika belum ada, cek berdasarkan email (lnAccEmail)
         if (!$u && !empty($row->lnAccEmail)) {
             $users = $userModel->getAllDataById(['user_email' => $row->lnAccEmail]);
             if (!empty($users)) $u = is_array($users) ? $users[0] : $users;
         }
 
-        // 3️⃣ Jika masih belum ketemu, cari user_id dari invoice (lnNoTransaksi)
+        // 3️ Jika masih belum ketemu, cari user_id dari invoice (lnNoTransaksi)
         if (!$u && !empty($row->lnNoTransaksi)) {
             $db = \Config\Database::connect();
             $qb = $db->table($this->table);
@@ -134,7 +134,7 @@ class FormulirAdmin extends BaseController
             }
         }
 
-        // 4️⃣ Jika user ditemukan, ambil info
+        // 4️ Jika user ditemukan, ambil info
         if ($u) {
             $personName   = $u->user_name ?? $u->user_email ?? '-';
             $instansi     = $u->user_instansi ?? '-';
@@ -251,10 +251,10 @@ class FormulirAdmin extends BaseController
     {
         switch ($status) {
             case 0: return '<span class="badge bg-secondary">Draft</span>';
-            case 1: return '<span class="badge bg-warning">In Review (Manajer)</span>';
+            case 1: return '<span class="badge bg-warning">Sedang diulas</span>';
             case 2: return '<span class="badge bg-danger">Ditolak</span>';
-            case 3: return '<span class="badge bg-info">In Review (Admin)</span>';
-            case 4: return '<span class="badge bg-primary">Pengujian</span>';
+            case 3: return '<span class="badge bg-info">Sedang diulas</span>';
+            case 4: return '<span class="badge bg-primary">Dalam Pengujian</span>';
             case 5: return '<span class="badge bg-primary">Memproses LHUS</span>';
             case 6: return '<span class="badge bg-success">LHUS Disetujui</span>';
             case 7: return '<span class="badge bg-primary">Memproses LHU</span>';
