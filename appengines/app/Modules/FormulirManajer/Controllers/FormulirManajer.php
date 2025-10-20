@@ -109,7 +109,8 @@ class FormulirManajer extends BaseController
             </div>';
         $response[] = $combined;
 
-        $response[] = $this->formatStatus($row->lnStatus);
+        //  gunakan user_id session untuk cek pending per-manajer
+        $response[] = $this->formatStatusForManager($row->lnStatus, $row->lnKode, $user_id);
 
         $response[] = '<a href="javascript:void(0)" onclick="loadDetail(\'' . $id . '\')" 
                         class="btn btn-sm btn-info">
@@ -698,6 +699,28 @@ public function saveKomentar()
             default: return '<span class="badge bg-dark">Unknown</span>';
         }
     }
+
+    private function formatStatusForManager($lnStatus, $lnKode, $userId)
+    {
+        $db = \Config\Database::connect();
+        $pendingCount = (int) $db->table('simlab_t_layanan_detil')
+            ->where('detLnKode', $lnKode)
+            ->where('detManajerTeknis', $userId)
+            ->groupStart()
+                ->where('detStatus', 0)
+                ->orWhere('detStatus IS NULL', null, false)
+            ->groupEnd()
+            ->countAllResults(false);
+
+        // jika manajer tidak punya pending lagi -> tunjukkan badge "Layanan terkirim ke admin"
+        if ($pendingCount === 0) {
+            return '<span class="badge bg-info">Layanan terkirim ke admin</span>';
+        }
+
+        // selain itu, tampilkan status parent sebagaimana biasa
+        return $this->formatStatus((int)$lnStatus);
+    }
+
 
 
 }
