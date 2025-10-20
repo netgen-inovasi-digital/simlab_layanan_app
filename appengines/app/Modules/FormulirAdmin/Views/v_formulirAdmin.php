@@ -11,13 +11,12 @@
                 <table id="data-table" class="saytable border-top-bottom">
                     <thead>
                         <tr>
-                            <th show width="8%">No.</th>
-                            <th show>Tanggal</th>
-                            <th show>Pemesan</th>
-                            <th show>Tipe</th>
-                            <th show>Status</th>
-                            <th show>Item Layanan</th>
-                            <th show class="action text-end">Aksi<i class="bi bi-code sort-icon"></i></th>
+                            <th show width="5%">No.</th>
+                            <th show width="30%">Pemesan</th>
+                            <th show width="15%">No Invoice</th>
+                            <th show width="15%">Status</th>
+                            <th show width="15%">Detail Layanan</th>
+                            <th show width="15%" class="action text-end">Aksi<i class="bi bi-code sort-icon"></i></th>
                         </tr>
                     </thead>
                     <tbody id="table-body"></tbody>
@@ -28,7 +27,6 @@
 </div>
 
 <script>
-    // init table dengan fitur search, show entries, dll
     table = createTable({
         apiUrl: '<?php echo site_url("formuliradmin/datalist") ?>',
         dataSrc: 'items'
@@ -276,10 +274,11 @@
                         <tr>
                             <th width="5%">No</th>
                             <th width="30%">Layanan</th>
-                            <th width="20%">Biaya</th>
-                            <th width="15%">Jumlah</th>
-                            <th width="15%">Keterangan</th>
-                            <th width="15%">Status</th>
+                            <th width="10%">Biaya</th>
+                            <th width="5%">Jumlah</th>
+                            <th width="20%">Keterangan</th>
+                            <th width="10%">Status</th>
+                            <th width="20%">Keterangan Manajer</th>
                         </tr>
                     </thead>
                     <tbody id="detail-body">

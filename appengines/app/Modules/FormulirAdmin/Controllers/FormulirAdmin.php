@@ -62,7 +62,7 @@ class FormulirAdmin extends BaseController
         ]);
     }
 
-    public function dataList()
+   public function dataList()
 {
     $model = new MyModel($this->table);
     $data  = [];
@@ -103,7 +103,7 @@ class FormulirAdmin extends BaseController
             $items[] = $d->detLayanan ?? $d->detJenKode;
         }
 
-        // ================== Ambil Data User ==================
+        // ambil data user
         $personName   = null;
         $userIdentity = '-';
         $instansi     = '-';
@@ -140,25 +140,31 @@ class FormulirAdmin extends BaseController
             $instansi     = $u->user_instansi ?? '-';
             $userIdentity = $u->user_identity ?? '-';
         } else {
-            // fallback kalau gak ada user
             $personName = $row->lnAccEmail ?? '-';
         }
-        // =====================================================
 
-        // Kolom tabel
-        $response[] = !empty($row->lnTgl) ? date('d-m-Y H:i', strtotime($row->lnTgl)) : '-'; // Tanggal
-        $response[] = $personName;       // Nama
-        $response[] = $userIdentity;     // Identitas (ULM / NON ULM)
-        $response[] = $this->formatStatus($row->lnStatus); // Status
+        $invoiceNo = !empty($row->lnNoTransaksi) ? $row->lnNoTransaksi : 'Belum tersedia';
 
-        // Tombol lihat detail
+        $pemesanNama = !empty($personName) ? $personName : '-';
+        $tipe = !empty($userIdentity) ? $userIdentity : '-';
+        $tanggal = !empty($row->lnTgl) ? date('d-m-Y H:i', strtotime($row->lnTgl)) : '-';
+
+        $combined = '
+            <div style="line-height:1.3;">
+                <span style="font-size:1rem; font-weight:600;">' . esc($pemesanNama) . '</span><br>
+                <span style="font-size:0.9rem; color:#555;">' . esc($tanggal) . ' | ' . esc($tipe) . '</span>
+            </div>';
+
+        $response[] = $combined; 
+        $response[] = esc($invoiceNo); 
+        $response[] = $this->formatStatus($row->lnStatus);
+
         $lihatDetailBtn = '<button type="button" class="btn btn-sm btn-info" 
                             title="Lihat Detail Item Layanan" 
                             onclick="loadDetail(\'' . $id . '\')">
-                            <i class="bi bi-eye"></i> Lihat Detail Layanan</button>';
+                            <i class="bi bi-eye"></i> Lihat Layanan</button>';
         $response[] = $lihatDetailBtn;
 
-        // Tombol aksi (approve / hapus)
         $response[] = $this->aksi($id, $row->lnStatus);
 
         $data[] = $response;
@@ -168,70 +174,78 @@ class FormulirAdmin extends BaseController
 }
 
 
-   public function detailList($id = null)
-    {
-        if (!$id) {
-            return $this->response->setJSON(['items' => []]);
-        }
-
-        try {
-            $kode = $this->encrypter->decrypt(hex2bin($id));
-        } catch (\Exception $e) {
-            return $this->response->setJSON(['items' => []]);
-        }
-
-        // Encrypted hex parent
-        $encLnId = bin2hex($this->encrypter->encrypt($kode));
-
-        $db = \Config\Database::connect();
-        $builder = $db->table('simlab_t_layanan_detil as d');
-
-        $builder->select("
-            d.detUjiKode,
-            d.detLnKode,
-            d.detLayanan,
-            d.detJenKode,
-            GROUP_CONCAT(DISTINCT d.detKeterangan SEPARATOR ' | ') AS detKet,
-            SUM(d.detJumlah) AS jumlah,
-            SUM(d.detBiaya) AS detBiaya,
-            MAX(d.detStatus) AS detStatusGroup
-        ");
-        $builder->where('d.detLnKode', $kode);
-        $builder->groupBy('d.detUjiKode, d.detLnKode, d.detLayanan, d.detJenKode');
-        $rows = $builder->get()->getResult();
-
-        $data = [];
-        $no = 1;
-
-        foreach ($rows as $row) {
-            $response = [];
-            $response[] = $no++;
-            $response[] = $row->detLayanan ?? '-';
-            $response[] = isset($row->detBiaya) ? number_format($row->detBiaya, 0, ',', '.') : '-';
-            $response[] = isset($row->jumlah) ? (int)$row->jumlah : 0;
-            $response[] = $row->detKet ?? '';
-
-            // Ambil status grouping (0/1/atau lainnya)
-            $statusGroup = isset($row->detStatusGroup) ? (int)$row->detStatusGroup : null;
-
-            if ($statusGroup === 0) {
-                $statusHtml = '<span class="badge bg-danger">Ditolak</span>';
-            } elseif ($statusGroup === 1) {
-                $statusHtml = '<span class="badge bg-success">Diterima</span>';
-            } else {
-                $statusHtml = '<span class="badge bg-secondary">Belum Diproses</span>';
-            }
-            $response[] = $statusHtml;
-
-            $ujiKodeInt = (int)$row->detUjiKode;
-            $encLnForBtn = $encLnId;
 
 
-            $data[] = $response;
-        }
-
-        return $this->response->setJSON(['items' => $data]);
+   public function detailList($id = null) 
+{
+    if (!$id) {
+        return $this->response->setJSON(['items' => []]);
     }
+
+    try {
+        $kode = $this->encrypter->decrypt(hex2bin($id));
+    } catch (\Exception $e) {
+        return $this->response->setJSON(['items' => []]);
+    }
+
+    // Encrypted hex parent
+    $encLnId = bin2hex($this->encrypter->encrypt($kode));
+
+    $db = \Config\Database::connect();
+    $builder = $db->table('simlab_t_layanan_detil as d');
+
+    $builder->select("
+        d.detUjiKode,
+        d.detLnKode,
+        d.detLayanan,
+        d.detJenKode,
+        GROUP_CONCAT(DISTINCT d.detKeterangan SEPARATOR ' | ') AS detKet,
+        GROUP_CONCAT(DISTINCT d.detKetLn SEPARATOR ' | ') AS detKetLn,
+        SUM(d.detJumlah) AS jumlah,
+        SUM(d.detBiaya) AS detBiaya,
+        MAX(d.detStatus) AS detStatusGroup
+    ");
+    $builder->where('d.detLnKode', $kode);
+    $builder->groupBy('d.detUjiKode, d.detLnKode, d.detLayanan, d.detJenKode');
+    $rows = $builder->get()->getResult();
+
+    $data = [];
+    $no = 1;
+
+    foreach ($rows as $row) {
+        $response = [];
+        $response[] = $no++;
+        $response[] = $row->detLayanan ?? '-';
+        $response[] = isset($row->detBiaya) ? number_format($row->detBiaya, 0, ',', '.') : '-';
+        $response[] = isset($row->jumlah) ? (int)$row->jumlah : 0;
+        $response[] = $row->detKet ?? '';
+
+        
+        // Ambil status grouping (1 = diterima, 2 = ditolak, lainnya = belum diproses)
+        $statusGroup = isset($row->detStatusGroup) ? (int)$row->detStatusGroup : null;
+        
+        if ($statusGroup === 1) {
+            $statusHtml = '<span class="badge bg-success">Diterima</span>';
+        } elseif ($statusGroup === 2) {
+            $statusHtml = '<span class="badge bg-danger">Ditolak</span>';
+        } else {
+            $statusHtml = '<span class="badge bg-secondary">Belum Diproses</span>';
+        }
+        $response[] = $statusHtml;
+        
+        // tambahkan detKetLn dari detail
+        $response[] = $row->detKetLn ?? '';
+
+        // jika perlu gunakan $row->detUjiKode dan $encLnId untuk tombol/aksi
+        $ujiKodeInt = (int)$row->detUjiKode;
+        $encLnForBtn = $encLnId;
+
+        $data[] = $response;
+    }
+
+    return $this->response->setJSON(['items' => $data]);
+}
+
 
     private function aksi($id, $status)
     {
@@ -250,21 +264,20 @@ class FormulirAdmin extends BaseController
     private function formatStatus($status)
     {
         switch ($status) {
-            case 0: return '<span class="badge bg-secondary">Draft</span>';
-            case 1: return '<span class="badge bg-warning">Sedang diulas</span>';
+            // case 0: return '<span class="badge bg-secondary">Draft</span>';
+            // case 1: return '<span class="badge bg-warning">Sedang diulas</span>';
             case 2: return '<span class="badge bg-danger">Ditolak</span>';
-            case 3: return '<span class="badge bg-info">Sedang diulas</span>';
-            case 4: return '<span class="badge bg-primary">Dalam Pengujian</span>';
-            case 5: return '<span class="badge bg-primary">Memproses LHUS</span>';
-            case 6: return '<span class="badge bg-success">LHUS Disetujui</span>';
-            case 7: return '<span class="badge bg-primary">Memproses LHU</span>';
-            case 8: return '<span class="badge bg-success">LHU Disetujui</span>';
-            case 9: return '<span class="badge bg-dark">Pengujian Selesai</span>';
+            case 3: return '<span class="badge bg-info">Belum direview</span>';
+            case 4: return '<span class="badge bg-primary">Dalam pengujian</span>';
+            case 5: return '<span class="badge bg-primary">LHUS diproses</span>';
+            case 6: return '<span class="badge bg-success">LHUS disetujui</span>';
+            case 7: return '<span class="badge bg-primary">LHU diproses</span>';
+            case 8: return '<span class="badge bg-success">LHU disetujui</span>';
+            case 9: return '<span class="badge bg-dark">Pengujian selesai</span>';
             default: return '<span class="badge bg-dark">Unknown</span>';
         }
     }
 
-    // untuk aksi approve Admin (dari 3 -> 4)
     public function approve($id)
     {
         try {

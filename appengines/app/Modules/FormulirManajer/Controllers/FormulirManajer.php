@@ -620,7 +620,7 @@ class FormulirManajer extends BaseController
             case 0: return '<span class="badge bg-secondary">Draft</span>';
             case 1: return '<span class="badge bg-warning">Layanan belum direview</span>';
             case 2: return '<span class="badge bg-danger">Ditolak</span>';
-            case 3: return '<span class="badge bg-info">Layanan sudah direview</span>';
+            case 3: return '<span class="badge bg-info">Layanan terkirim ke admin</span>';
             case 4: return '<span class="badge bg-primary">Pengujian sedang dilakukan</span>';
             case 5: return '<span class="badge bg-primary">LHUS sedang diproses</span>';
             case 6: return '<span class="badge bg-success">LHUS telah disetujui</span>';
