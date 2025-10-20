@@ -25,7 +25,6 @@
                         <?= view('auth/v_register'); ?>
                     </div>
                 </div>
-                
             </div>
         </div>
     </div>
@@ -198,32 +197,78 @@
             </div>
         </section> -->
 
-    <?php elseif ($kode == 'pengumuman'): ?>
-        <!-- PENGUMUMAN SECTION -->
-        <!-- <section id="notice">
-            <div class="container">
-                <h2 class="section-title fw-bold mb-4 text-center"><?= esc($konten->judul ?? 'Pengumuman') ?></h2>
-                <div class="swiper notice-swiper">
-                    <div class="swiper-wrapper">
-                        <?php foreach ($getPengumuman as $pengumuman): ?>
-                            <div class="swiper-slide">
-                                <div class="card notice-card h-100 shadow-sm border-0">
-                                    <div class="card-body d-flex flex-column text-center px-4">
-                                        <h5 class="card-title section-title"><?= esc($pengumuman->judul) ?></h5>
-                                        <p class="card-text flex-grow-1"><?= esc($pengumuman->deskripsi) ?></p>
-                                        <p class="text-muted small">Diumumkan: <?= formatTanggalIndo($pengumuman->tanggal) ?></p>
-                                    </div>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
-                    <!-- Optional: Pagination & Nav -->
-        <div class="swiper-button-prev"></div>
-        <div class="swiper-button-next"></div>
-        </div>
-        </div>
-        </section> -->
+        <?php /*elseif ($kode == 'pengumuman'): ?>
+           <!-- PENGUMUMAN SECTION -->
+           <section id="notice">
+               <div class="container">
+                   <h2 class="section-title fw-bold mb-4 text-center"><?= esc($konten->judul ?? 'Pengumuman') ?></h2>
+                   <div class="swiper notice-swiper">
+                       <div class="swiper-wrapper">
+                           <?php foreach ($getPengumuman as $pengumuman): ?>
+                               <div class="swiper-slide">
+                                   <div class="card notice-card h-100 shadow-sm border-0">
+                                       <div class="card-body d-flex flex-column text-center px-4">
+                                           <h5 class="card-title section-title"><?= esc($pengumuman->judul) ?></h5>
+                                           <p class="card-text flex-grow-1"><?= esc($pengumuman->deskripsi) ?></p>
+                                           <p class="text-muted small">Diumumkan: <?= formatTanggalIndo($pengumuman->tanggal) ?></p>
+                                       </div>
+                                   </div>
+                               </div>
+                           <?php endforeach; ?>
+                       </div>
+                       <!-- Optional: Pagination & Nav -->
+                       <div class="swiper-button-prev"></div>
+                       <div class="swiper-button-next"></div>
+                   </div>
+               </div>
+               <div class="modal fade" id="pengumumanModal" tabindex="-1" aria-labelledby="pengumumanModalLabel"
+                   aria-hidden="true">
+                   <div class="modal-dialog modal-lg modal-dialog-centered">
+                       <div class="modal-content">
+                           <div class="modal-header">
+                               <h5 class="modal-title" id="pengumumanModalLabel"><?= esc($konten->judul ?? 'Pengumuman') ?></h5>
+                               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                           </div>
+                           <div class="modal-body">
+                               <div class="swiper notice-swiper">
+                                   <div class="swiper-wrapper">
+                                       <?php foreach ($getPengumuman as $pengumuman): ?>
+                                           <div class="swiper-slide">
+                                               <div class="card notice-card h-100 shadow-sm border-0">
+                                                   <div class="card-body d-flex flex-column text-center px-4">
+                                                       <h5 class="card-title section-title"><?= esc($pengumuman->judul) ?></h5>
 
+                                                       <div class="my-3">
+                                                           <?php
+                                                           // Logika untuk menampilkan file (gambar atau PDF)
+                                                           if (!empty($pengumuman->file)) {
+                                                               $fileUrl = base_url('uploads/pengumuman/' . $pengumuman->file);
+                                                               $ext = pathinfo($pengumuman->file, PATHINFO_EXTENSION);
+                                                               if (in_array($ext, ['jpg', 'png', 'jpeg'])) {
+                                                                   echo '<img src="' . $fileUrl . '" class="img-fluid rounded" style="max-height: 300px; object-fit: contain;" />';
+                                                               } elseif ($ext == 'pdf') {
+                                                                   echo '<a href="' . $fileUrl . '" target="_blank" class="btn btn-outline-danger"><i class="bi bi-file-earmark-pdf"></i> Lihat Dokumen PDF</a>';
+                                                               }
+                                                           }
+                                                           ?>
+                                                       </div>
+
+                                                       <p class="text-muted small mt-auto">Diumumkan:
+                                                           <?= formatTanggalIndo($pengumuman->tanggal) ?></p>
+                                                   </div>
+                                               </div>
+                                           </div>
+                                       <?php endforeach; ?>
+                                   </div>
+                                   <div class="swiper-button-prev"></div>
+                                   <div class="swiper-button-next"></div>
+                               </div>
+                           </div>
+                       </div>
+                   </div>
+               </div>
+           </section>
+       <?php endif; */ ?>
 
     <?php elseif ($kode == 'mitra'): ?>
         <!-- MITRA SECTION -->

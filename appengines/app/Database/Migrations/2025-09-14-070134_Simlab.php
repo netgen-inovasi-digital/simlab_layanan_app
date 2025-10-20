@@ -741,8 +741,9 @@ class Simlab extends Migration
                 'constraint' => '80',
                 'null' => true,
             ],
-            'deskripsi' => [
-                'type' => 'TEXT',
+            'file' => [
+                'type' => 'VARCHAR',
+                'constraint' => '255',
                 'null' => true,
             ],
             'status' => [
@@ -750,10 +751,7 @@ class Simlab extends Migration
                 'constraint' => ['tampil', 'tersembunyi'],
                 'null' => true,
             ],
-            'tanggal' => [
-                'type' => 'DATE',
-                'null' => true,
-            ],
+            
         ]);
         $this->forge->addKey('id_pengumuman', true);
         $this->forge->addKey('user_id', false, false, 'author_id');

@@ -50,6 +50,21 @@
             background-color: #fff;
             font-weight: bold;
         }
+
+        .modal-body img,
+        .modal-body iframe {
+            max-width: 100%;
+            border-radius: 12px;
+        }
+
+        .modal-body h4 {
+            font-size: 1.5rem;
+        }
+
+        .modal-body {
+            max-height: 80vh;
+            overflow-y: auto;
+        }
     </style>
 
     <!-- Navbar -->
@@ -66,50 +81,29 @@
             <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
                 <ul class="navbar-nav ms-auto">
                     <?php foreach ($getNavbar as $menu): ?>
-                        <?php if ($menu['nama'] == 'Layanan'): ?>
-                            <?php if (empty($menu['children'])): ?>
+                        <?php if ($menu['nama'] == 'Layanan' || $menu['nama'] == 'Pengumuman'): ?>
+
+                            <?php if ($menu['nama'] == 'Pengumuman'): ?>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#pengumumanModal">
+                                        Pengumuman
+                                    </a>
+                                </li>
+                            <?php elseif (empty($menu['children'])): ?>
                                 <li class="nav-item">
                                     <?php
                                     $menuUrl = rtrim($menu['link'], '/');
                                     $currentUrl = rtrim(current_url(), '/');
                                     $isActive = $currentUrl === $menuUrl;
                                     ?>
-                                    <a class="nav-link  <?= $isActive ? 'active fw-semibold text-primary' : '' ?>"
+                                    <a class="nav-link <?= $isActive ? 'active fw-semibold text-primary' : '' ?>"
                                         href="<?= $menu['link'] ?>">
                                         <?= esc($menu['nama']) ?>
                                     </a>
-
                                 </li>
                             <?php else: ?>
-                                <?php
-                                $activeChild = false;
-                                $currentUrl = rtrim(current_url(), '/');
-
-                                foreach ($menu['children'] as $child) {
-                                    $menuUrl = rtrim($child['link'], '/');
-                                    if ($currentUrl === $menuUrl) {
-                                        $activeChild = true;
-                                        break;
-                                    }
-                                }
-                                ?>
-                                <li class="nav-item dropdown">
-                                    <a class="nav-link dropdown-toggle <?= $activeChild ? 'active fw-semibold text-primary' : '' ?>"
-                                        href="#" role="button" data-bs-toggle="dropdown">
-                                        <?= esc($menu['nama']) ?>
-                                    </a>
-                                    <ul class="dropdown-menu">
-                                        <?php foreach ($menu['children'] as $child): ?>
-                                            <li>
-                                                <a class="dropdown-item <?= current_url() == rtrim($child['link'], '/') ? 'active fw-semibold text-primary' : '' ?>"
-                                                    href="<?= $child['link'] ?>">
-                                                    <?= esc($child['nama']) ?>
-                                                </a>
-                                            </li>
-                                        <?php endforeach; ?>
-                                    </ul>
-                                </li>
                             <?php endif; ?>
+
                         <?php endif; ?>
                     <?php endforeach; ?>
                 </ul>
@@ -297,45 +291,93 @@
             </div>
         </div>
     </div>
+    <div class="modal fade" id="pengumumanModal" tabindex="-1" aria-labelledby="pengumumanModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+
+            <div class="modal-header border-0 bg-primary text-white">
+                <h4 class="modal-title fw-semibold" id="pengumumanModalLabel">
+                    <i class="bi bi-megaphone-fill me-2"></i> Pengumuman
+                </h4>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body p-4" style="overflow-y: auto;">
+                <?php if (!empty($getPengumuman)): ?>
+                    <?php foreach ($getPengumuman as $index => $pengumuman): ?>
+
+                        <div>
+                            <h4 class="fw-bold mb-3"><?= esc($pengumuman->judul ?? 'Pengumuman') ?></h4>
+                            
+                            <?php
+                            if (!empty($pengumuman->file)) {
+                                $fileUrl = base_url('uploads/pengumuman/' . $pengumuman->file);
+                                $ext = strtolower(pathinfo($pengumuman->file, PATHINFO_EXTENSION));
+
+                                if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'])) {
+                                    echo '<img src="' . $fileUrl . '" class="img-fluid w-100" style="border-radius: 12px;" alt="' . esc($pengumuman->judul ?? 'Gambar Pengumuman') . '">';
+                                } elseif ($ext === 'pdf') {
+                                    echo '<iframe src="' . $fileUrl . '" class="w-100" style="height: 75vh; border: none; border-radius: 12px;"></iframe>';
+                                } else {
+                                    echo '<div class="p-4 text-center"><a href="' . $fileUrl . '" class="btn btn-outline-primary" target="_blank"><i class="bi bi-file-earmark-fill me-1"></i> Lihat File</a></div>';
+                                }
+                            }
+                            ?>
+                        </div>
+
+                        <?php if ($index < count($getPengumuman) - 1): ?>
+                            <hr class="my-4">
+                        <?php endif; ?>
+
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <p class="text-center text-muted my-4">Tidak ada pengumuman untuk ditampilkan.</p>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+</div>
+
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const authModal = new bootstrap.Modal(document.getElementById('authModal'));
 
-            // Cek jika ada pesan error login dari server
             <?php if (session()->getFlashdata('login_error')): ?>
-                // Jika ada, langsung tampilkan modal saat halaman dimuat
                 authModal.show();
             <?php endif; ?>
 
-            // Ambil semua elemen yang dibutuhkan
             const loginView = document.getElementById('login-view');
             const forgotView = document.getElementById('forgot-view');
             const showForgotLink = document.getElementById('show-forgot-view');
             const showLoginLink = document.getElementById('show-login-view');
 
-            // Event listener untuk link "Lupa Sandi"
             showForgotLink.addEventListener('click', function (e) {
-                e.preventDefault(); // Mencegah link pindah halaman
+                e.preventDefault();
                 loginView.style.display = 'none';
                 forgotView.style.display = 'block';
             });
 
-            // Event listener untuk link "Kembali ke Login"
             showLoginLink.addEventListener('click', function (e) {
-                e.preventDefault(); // Mencegah link pindah halaman
+                e.preventDefault();
                 forgotView.style.display = 'none';
                 loginView.style.display = 'block';
             });
+
             const authModalElement = document.getElementById('authModal');
-
-            // Tambahkan 'event listener' yang berjalan SETELAH modal ditutup
             authModalElement.addEventListener('hidden.bs.modal', function (event) {
-                // Saat modal sudah tertutup, paksa kembali ke tampilan login
                 forgotView.style.display = 'none';
                 loginView.style.display = 'block';
             });
-        });
 
+            const pengumumanModalElement = document.getElementById('pengumumanModal');
+            if (pengumumanModalElement) {
+                const pengumumanModal = new bootstrap.Modal(pengumumanModalElement);
+                <?php if (!empty($getPengumuman)): ?>
+                    pengumumanModal.show();
+                <?php endif; ?>
+            }
+        });
     </script>
 </body>
 
