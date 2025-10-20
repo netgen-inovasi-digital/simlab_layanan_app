@@ -25,43 +25,50 @@
 
 
 <!--  Modal Detail -->
+<!--  Modal Detail (LEBIH BESAR & RESPONSIVE) -->
 <div class="modal fade" id="modalDetail" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
-  <div class="modal-dialog modal-lg" role="document" style="margin: 2% auto">
+  <!-- gunakan modal-xl dan atur max-width supaya tidak terlalu melebar -->
+  <div class="modal-dialog modal-xl modal-dialog-centered" role="document" style="max-width:1200px; margin: 1.5% auto;">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title">Detail Item Layanan</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <button id="btnSaveKomentar" type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
-        <table class="table table-bordered">
-          <thead>
-           <tr>
-                <th width="5%">No</th>
-                <th width="35%">Layanan</th>
-                <th width="15%">Total</th>
-                <th width="5%">Jumlah</th>
-                <th width="40%">Keterangan</th>
-                <th width="20%">Status</th>
-                <th width="15%" class="text-center">Aksi</th>
-            </tr>
-          </thead>
-          <tbody id="detail-body">
-            <tr><td colspan="7" class="text-center">Loading...</td></tr>
-          </tbody>
-        </table>
+        <!-- responsive wrapper: jika tabel lebar maka muncul scroll -->
+        <div class="table-responsive">
+          <table class="table table-bordered align-middle">
+            <thead>
+             <tr>
+                  <th style="min-width:40px; width:5%;">No</th>
+                  <th style="min-width:300px; width:35%;">Layanan</th>
+                  <th style="min-width:60px; width:5%;">Jumlah</th>
+                  <th style="min-width:200px; width:20%;">Keterangan</th>
+                  <th style="min-width:120px; width:7%;">Status</th>
+                  <th style="min-width:110px; width:10%;" class="text-center">Aksi</th>
+                  <th style="min-width:300px; width:25%;">Keterangan Manajer</th>
+              </tr>
+            </thead>
+            <tbody id="detail-body">
+              <tr><td colspan="8" class="text-center">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
+
       <div class="modal-footer">
-        <button class="btn btn-light" type="button" data-bs-dismiss="modal">
+        <button id="btnSaveKomentar" class="btn btn-light" type="button" data-bs-dismiss="modal">
           <i class="bi bi-x-circle"></i> Tutup
         </button>
 
-         <button id="btnKirimDetail" class="btn btn-primary" type="button" title="Kirim semua item (approve)">
+         <button id="btnKirimDetail" class="btn btn-success" type="button" title="Kirim semua item (approve)">
           <i class="bi bi-send"></i> Kirim
         </button>
       </div>
     </div>
   </div>
 </div>
+
 
 <script>
     // init table dengan fitur search, show entries, dll
@@ -93,6 +100,87 @@
             }
         });
     });
+
+    // --- setelah loadDetail() definisi ---
+
+   // Simpan komentar (per-layanan) — silent (tanpa notif / tanpa showLoading)
+document.addEventListener('click', function(e) {
+    if (!e.target.matches('#btnSaveKomentar') && !e.target.closest('#btnSaveKomentar')) return;
+    e.preventDefault();
+
+    const btn = document.getElementById('btnSaveKomentar');
+    if (!btn) return;
+
+    // ambil encLn dari response yang disimpan di modal (set saat loadDetail)
+    const modalEl = document.getElementById('modalDetail');
+    let encLn = modalEl ? modalEl.dataset.encLn : null;
+    if (!encLn) {
+        // fallback: gunakan data-ln di tombol Kirim jika tersedia
+        const btnKirim = document.getElementById('btnKirimDetail');
+        if (btnKirim && btnKirim.dataset.ln) {
+            encLn = btnKirim.dataset.ln;
+        }
+    }
+    if (!encLn) {
+        console.warn('LN tidak ditemukan untuk menyimpan komentar');
+        return;
+    }
+
+    // kumpulkan textarea komentar
+    const inputs = modalEl.querySelectorAll('.komentar-input');
+    const items = [];
+    inputs.forEach(function(inp) {
+        const uji = inp.getAttribute('data-uji');
+        const val = inp.value;
+        if (uji !== null && uji !== '') {
+            items.push({ ujiKode: parseInt(uji, 10), komentar: val });
+        }
+    });
+
+    if (items.length === 0) {
+        // tidak ada yang disimpan (silent)
+        return;
+    }
+
+    const csrfToken = _getCsrf();
+
+    btn.disabled = true;
+
+    fetch('<?php echo site_url("formulirmanajer/savekomentar") ?>', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+            lnId: encLn,
+            items: items
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.xname && data.xhash) {
+            document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => input.value = data.xhash);
+        }
+        if (data.res) {
+            // reload detail dan tabel utama (silent)
+            if (typeof table !== 'undefined') table.fetchData({ reload: true });
+            // loadDetail(encLn);
+        } else {
+            // gagal: hanya log ke console (silent)
+            console.warn('Gagal menyimpan komentar:', data.msg || null);
+        }
+    })
+    .catch(err => {
+        console.error('Error saat menyimpan komentar:', err);
+    })
+    .finally(() => {
+        btn.disabled = false;
+    });
+});
+
+
 
     function saveData({ url, formData, onSuccess, onError }) {
         showLoading();
@@ -236,10 +324,11 @@
     });
 
 
-   function loadDetail(id) {
+  function loadDetail(id) {
     const url = '<?php echo site_url("formulirmanajer/detailList/") ?>' + id;
     const tbody = document.querySelector('#detail-body');
-    tbody.innerHTML = '<tr><td colspan="7" class="text-center">Loading...</td></tr>';
+    // sesuaikan colspan kalau header punya 8 kolom
+    tbody.innerHTML = '<tr><td colspan="8" class="text-center">Loading...</td></tr>';
 
     fetch(url)
         .then(response => response.json())
@@ -256,7 +345,14 @@
                     tbody.innerHTML += tr;
                 });
             } else {
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center">Tidak ada data</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center">Tidak ada data</td></tr>';
+            }
+
+            // SIMPAN encLn ke modal agar handler lain (saveKomentar) bisa pakai
+            const modalEl = document.getElementById('modalDetail');
+            if (modalEl) {
+                if (data.encLn) modalEl.dataset.encLn = data.encLn;
+                else modalEl.dataset.encLn = id; // fallback kalau server tidak mengembalikan encLn
             }
 
             // set LN pada tombol Kirim di modal agar handler tahu LN yang sedang ditampilkan
@@ -274,13 +370,14 @@
         })
         .catch(error => {
             console.error(error);
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error load data</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error load data</td></tr>';
             try {
                 if (_modalDetailInstance) _modalDetailInstance.show();
                 else if (typeof $ === 'function') $('#modalDetail').modal('show');
             } catch (e) {}
         });
 }
+
 
 // approve detail: langsung panggil endpoint dan reload detail dan tabel utama
 function confirmApproveDetail(e) {

@@ -13,4 +13,5 @@ $routes->group('formulirmanajer', ['namespace' => 'Modules\FormulirManajer\Contr
     $subroutes->post('kirim', 'FormulirManajer::kirim');
     $subroutes->post('approveDetail', 'FormulirManajer::approveDetail');
     $subroutes->post('rejectDetail',  'FormulirManajer::rejectDetail');
+    $subroutes->post('savekomentar', 'FormulirManajer::saveKomentar');
 });

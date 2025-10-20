@@ -141,95 +141,172 @@ class FormulirManajer extends BaseController
     }
 
     public function detailList($id = null)
-    {
-        if (!$id) {
-            return $this->response->setJSON(['items' => []]);
-        }
-
-        $session = session();
-        $user_id = $session->get('id_user');
-
-        try {
-            $kode = $this->encrypter->decrypt(hex2bin($id));
-        } catch (\Exception $e) {
-            return $this->response->setJSON(['items' => []]);
-        }
-
-        // User session adalah detManajerTeknis untuk ln ini
-        $db = \Config\Database::connect();
-        $checkBuilder = $db->table('simlab_t_layanan_detil as d');
-        $checkBuilder->select('1');
-        $checkBuilder->where('d.detLnKode', $kode);
-        $checkBuilder->where('d.detManajerTeknis', $user_id);
-        $exists = $checkBuilder->limit(1)->get()->getRow();
-
-        if (!$exists) {
-            // tidak diizinkan / tidak ada data untuk manajer teknis ini
-            return $this->response->setJSON(['items' => []]);
-        }
-
-        // Encrypted hex parent (dipakai untuk tombol aksi)
-        $encLnId = bin2hex($this->encrypter->encrypt($kode));
-
-        $builder = $db->table('simlab_t_layanan_detil as d');
-
-        // baris yang milik detManajerTeknis = session user dan untuk ln yang diminta
-        $builder->select("
-            d.detUjiKode,
-            d.detLnKode,
-            d.detLayanan,
-            d.detJenKode,
-            GROUP_CONCAT(DISTINCT d.detKeterangan SEPARATOR ' | ') AS detKet,
-            SUM(d.detJumlah) AS jumlah,
-            SUM(d.detBiaya) AS detBiaya,
-            MAX(d.detStatus) AS detStatusGroup
-        ");
-        $builder->where('d.detLnKode', $kode);
-        $builder->where('d.detManajerTeknis', $user_id);
-        $builder->groupBy('d.detUjiKode, d.detLnKode, d.detLayanan, d.detJenKode');
-        $rows = $builder->get()->getResult();
-
-        $data = [];
-        $no = 1;
-
-        foreach ($rows as $row) {
-            $response = [];
-            $response[] = $no++;
-            $response[] = $row->detLayanan ?? '-';
-            $response[] = isset($row->detBiaya) ? number_format($row->detBiaya, 0, ',', '.') : '-';
-            $response[] = isset($row->jumlah) ? (int)$row->jumlah : 0;
-            $response[] = $row->detKet ?? '';
-
-            // Ambil status grouping (0/1/atau lainnya)
-            $statusGroup = isset($row->detStatusGroup) ? (int)$row->detStatusGroup : null;
-
-            if ($statusGroup === 2) {
-                $statusHtml = '<span class="badge bg-danger">Ditolak</span>';
-            } elseif ($statusGroup === 1) {
-                $statusHtml = '<span class="badge bg-success">Diterima</span>';
-            } elseif ($statusGroup === 0) {
-                $statusHtml = '<span class="badge bg-secondary">Menunggu (Pending)</span>';
-            } else {
-                $statusHtml = '<span class="badge bg-secondary">Belum Diproses</span>';
-            }
-            $response[] = $statusHtml;
-
-            // Aksi: gunakan span dengan atribut data-ln (hex) dan data-uji (integer, tidak di-escape)
-            $ujiKodeInt = (int)$row->detUjiKode;
-            $encLnForBtn = $encLnId;
-
-            $aksiHtml = '<div class="d-flex justify-content-center gap-2 align-items-center">';
-            $aksiHtml .= '<span class="text-success btn-action" title="Setujui" data-ln="' . $encLnForBtn . '" data-uji="' . $ujiKodeInt . '" onclick="confirmApproveDetail(event)"><i class="bi bi-check-circle"></i></span> ';
-            $aksiHtml .= '<span class="text-warning btn-action" title="Tolak" data-ln="' . $encLnForBtn . '" data-uji="' . $ujiKodeInt . '" onclick="confirmRejectDetail(event)"><i class="bi bi-x-circle"></i></span>';
-            $aksiHtml .= '</div>';
-
-            $response[] = $aksiHtml;
-
-            $data[] = $response;
-        }
-
-        return $this->response->setJSON(['items' => $data]);
+{
+    if (!$id) {
+        return $this->response->setJSON(['items' => []]);
     }
+
+    $session = session();
+    $user_id = $session->get('id_user');
+
+    try {
+        $kode = $this->encrypter->decrypt(hex2bin($id));
+    } catch (\Exception $e) {
+        return $this->response->setJSON(['items' => []]);
+    }
+
+    // cek user sebagai manajer teknis untuk Ln ini
+    $db = \Config\Database::connect();
+    $checkBuilder = $db->table('simlab_t_layanan_detil as d');
+    $checkBuilder->select('1');
+    $checkBuilder->where('d.detLnKode', $kode);
+    $checkBuilder->where('d.detManajerTeknis', $user_id);
+    $exists = $checkBuilder->limit(1)->get()->getRow();
+
+    if (!$exists) {
+        return $this->response->setJSON(['items' => []]);
+    }
+
+    // Encrypted ln dipakai di tombol & save
+    $encLnId = bin2hex($this->encrypter->encrypt($kode));
+
+    $builder = $db->table('simlab_t_layanan_detil as d');
+
+    $builder->select("
+        d.detUjiKode,
+        d.detLnKode,
+        d.detLayanan,
+        d.detJenKode,
+        GROUP_CONCAT(DISTINCT d.detKeterangan SEPARATOR ' | ') AS detKet,
+        GROUP_CONCAT(DISTINCT d.detKetLn SEPARATOR ' | ') AS detKetLn,
+        SUM(d.detJumlah) AS jumlah,
+        SUM(d.detBiaya) AS detBiaya,
+        MAX(d.detStatus) AS detStatusGroup
+    ");
+    $builder->where('d.detLnKode', $kode);
+    $builder->where('d.detManajerTeknis', $user_id);
+    $builder->groupBy('d.detUjiKode, d.detLnKode, d.detLayanan, d.detJenKode');
+    $rows = $builder->get()->getResult();
+
+    $data = [];
+    $no = 1;
+
+    foreach ($rows as $row) {
+        $response = [];
+        $response[] = $no++;
+        $response[] = $row->detLayanan ?? '-';
+        $response[] = isset($row->jumlah) ? (int)$row->jumlah : 0;
+        $response[] = $row->detKet ?? '';
+
+        // status grouping
+        $statusGroup = isset($row->detStatusGroup) ? (int)$row->detStatusGroup : null;
+        if ($statusGroup === 2) {
+            $statusHtml = '<span class="badge bg-danger">Ditolak</span>';
+        } elseif ($statusGroup === 1) {
+            $statusHtml = '<span class="badge bg-success">Diterima</span>';
+        } elseif ($statusGroup === 0) {
+            $statusHtml = '<span class="badge bg-secondary">Pending</span>';
+        } else {
+            $statusHtml = '<span class="badge bg-secondary">Belum Diproses</span>';
+        }
+        $response[] = $statusHtml;
+
+        // aksi approve/reject (sama seperti sebelumnya)
+        $ujiKodeInt = (int)$row->detUjiKode;
+        $encLnForBtn = $encLnId;
+
+        $aksiHtml = '<div class="d-flex justify-content-center gap-2 align-items-center">';
+        $aksiHtml .= '<span class="text-success btn-action" title="Setujui" data-ln="' . $encLnForBtn . '" data-uji="' . $ujiKodeInt . '" onclick="confirmApproveDetail(event)"><i class="bi bi-check-circle"></i></span> ';
+        $aksiHtml .= '<span class="text-warning btn-action" title="Tolak" data-ln="' . $encLnForBtn . '" data-uji="' . $ujiKodeInt . '" onclick="confirmRejectDetail(event)"><i class="bi bi-x-circle"></i></span>';
+        $aksiHtml .= '</div>';
+        $response[] = $aksiHtml;
+
+        // komentar per-layanan: textarea multiline, data-uji untuk identifikasi
+        $komentarVal = $row->detKetLn !== null ? esc($row->detKetLn) : '';
+        $textarea = '<textarea class="form-control komentar-input" data-uji="' . $ujiKodeInt . '" rows="2" placeholder="Keterangan/manajer...">'
+                    . $komentarVal .
+                    '</textarea>';
+        $response[] = $textarea;
+
+        $data[] = $response;
+    }
+
+    // kirim juga encLn agar JS bisa pakai
+    return $this->response->setJSON(['items' => $data, 'encLn' => $encLnId]);
+}
+
+public function saveKomentar()
+{
+    // baca raw JSON
+    $raw = file_get_contents('php://input');
+    $input = json_decode($raw, true);
+
+    if (!$input || !isset($input['lnId']) || !isset($input['items']) || !is_array($input['items'])) {
+        return $this->response->setJSON([
+            'res' => false,
+            'msg' => 'Payload tidak lengkap',
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
+        ]);
+    }
+
+    try {
+        $lnKode = $this->encrypter->decrypt(hex2bin($input['lnId']));
+        $lnKode = (int)$lnKode;
+    } catch (\Exception $e) {
+        return $this->response->setJSON([
+            'res' => false,
+            'msg' => 'LN ID tidak valid',
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
+        ]);
+    }
+
+    $session = session();
+    $user_id = $session->get('id_user');
+
+    $db = \Config\Database::connect();
+    $builder = $db->table('simlab_t_layanan_detil');
+
+    // Otorisasi singkat: pastikan user adalah manager teknis untuk minimal 1 baris LN ini
+    $check = (int)$db->table('simlab_t_layanan_detil')
+        ->where('detLnKode', $lnKode)
+        ->where('detManajerTeknis', $user_id)
+        ->limit(1)
+        ->countAllResults(false);
+
+    if ($check === 0) {
+        return $this->response->setJSON([
+            'res' => false,
+            'msg' => 'Anda tidak berwenang mengubah komentar pada layanan ini',
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
+        ]);
+    }
+
+    $db->transStart();
+    foreach ($input['items'] as $it) {
+        $uji = isset($it['ujiKode']) ? (int)$it['ujiKode'] : null;
+        $kom = isset($it['komentar']) ? $it['komentar'] : null;
+        if ($uji === null) continue;
+
+        // update semua baris yang sesuai detLnKode + detUjiKode
+        $builder->where('detLnKode', $lnKode)
+                ->where('detUjiKode', $uji)
+                ->update(['detKetLn' => $kom]);
+    }
+    $db->transComplete();
+
+    $ok = $db->transStatus();
+
+    return $this->response->setJSON([
+        'res' => $ok,
+        'msg' => $ok ? 'Komentar berhasil disimpan' : 'Gagal menyimpan komentar',
+        'xname' => csrf_token(),
+        'xhash' => csrf_hash()
+    ]);
+}
+
 
 
     public function approveDetail()
