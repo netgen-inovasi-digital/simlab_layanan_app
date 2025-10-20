@@ -12,10 +12,11 @@
                     <thead>
                         <tr>
                             <th show width="5%">No.</th>
-                            <th show width="15%">No. Transaksi</th>
-                            <th show width="15%">Status</th>
-                            <th show width="15%">Lihat file LHU</th>
-                            <th show class="action text-center">Layanan</th>
+                            <th show width="15%">No. transaksi</th>
+                            <th show width="15%">Status pesanan</th>
+                            <th show width="15%">Status pembayaran</th>
+                            <th show width="15%">File LHU</th>
+                            <th show class="action text-center">Detail pesanan</th>
                         </tr>
                     </thead>
                     <tbody id="table-body">
