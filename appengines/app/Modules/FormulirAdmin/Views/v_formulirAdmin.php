@@ -7,6 +7,15 @@
                     <i class="bi bi-plus-circle-dotted"></i> Pesan Layanan Baru
                 </button>
             </div>
+            <select id="statusFilter" class="form-select form-select-sm" style="width:180px; display:inline-block; margin-left:8px;">
+                <option value="all">Semua Kategori</option>
+                <option value="1">In Review Manajer</option>
+                <option value="3">Belum direview</option>
+                <option value="4">Dalam pengujian</option>
+                <option value="5">LHUS diproses</option>
+                <option value="6">LHUS disetujui</option>
+                <option value="7">LHU proses</option>
+            </select>
             <div class="card-body">
                 <table id="data-table" class="saytable border-top-bottom">
                     <thead>
@@ -27,11 +36,46 @@
 </div>
 
 <script>
+    var urlParams = new URLSearchParams(window.location.search);
+    var kategoriFromUrl = urlParams.get('kategoriLayanan');
+
+    // Buat base URL dengan parameter
+    var baseApiUrl = '<?php echo site_url("formuliradmin/datalist") ?>';
+    if (kategoriFromUrl) {
+        baseApiUrl += '?kategoriLayanan=' + kategoriFromUrl;
+    }
+
+    // Inisialisasi table
     table = createTable({
-        apiUrl: '<?php echo site_url("formuliradmin/datalist") ?>',
+        apiUrl: baseApiUrl,
         dataSrc: 'items'
     });
+
+    // Set dropdown sesuai parameter URL
+    if (kategoriFromUrl) {
+        document.getElementById('statusFilter').value = kategoriFromUrl;
+    }
+
     addAction();
+
+    // Event listener untuk filter dropdown
+    document.getElementById('statusFilter').addEventListener('change', function() {
+        const selectedValue = this.value;
+        
+        const tableConfig = table.getConfig();
+        
+        // Update apiUrl di config
+        if (selectedValue === 'all') {
+            tableConfig.apiUrl = '<?php echo site_url("formuliradmin/datalist") ?>';
+        } else {
+            tableConfig.apiUrl = '<?php echo site_url("formuliradmin/datalist") ?>?kategoriLayanan=' + selectedValue;
+        }
+        
+        // Reset ke page 1 dan reload
+        tableConfig.currentPage = 1;
+        table.fetchData({ page: 1, reload: true });
+    });
+
 
     // simpan data
     document.querySelector('#btnSimpan').addEventListener('click', function(e) {
@@ -146,8 +190,8 @@
             .catch(err => sayAlert('errorModal', 'Error', 'Terjadi kesalahan sistem', 'warning'));
         }
     }
-
     
+
 
     // Tombol Hapus
     function deleteItem(e) {
@@ -224,9 +268,6 @@
             }
         });
 }
-
-
-
 </script>
 
 <div class="modal fade" id="modalForm" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
