@@ -50,14 +50,29 @@
             background-color: #fff;
             font-weight: bold;
         }
+
+        .modal-body img,
+        .modal-body iframe {
+            max-width: 100%;
+            border-radius: 12px;
+        }
+
+        .modal-body h4 {
+            font-size: 1.5rem;
+        }
+
+        .modal-body {
+            max-height: 80vh;
+            overflow-y: auto;
+        }
     </style>
 
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-light bg-white fixed-top">
         <div class="container">
             <a class="navbar-brand fw-bold" href="<?php echo base_url('') ?>">
-                <img src="assets/img/logosimlab.png" alt="Logo SimLab"
-                    style="width: 180px; object-fit: contain;" class="img-fluid" />
+                <img src="assets/img/logosimlab.png" alt="Logo SimLab" style="width: 180px; object-fit: contain;"
+                    class="img-fluid" />
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavAltMarkup"
                 aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
@@ -66,48 +81,29 @@
             <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
                 <ul class="navbar-nav ms-auto">
                     <?php foreach ($getNavbar as $menu): ?>
-                        <?php if (empty($menu['children'])): ?>
-                            <li class="nav-item">
-                                <?php
-                                $menuUrl = rtrim($menu['link'], '/');
-                                $currentUrl = rtrim(current_url(), '/');
-                                $isActive = $currentUrl === $menuUrl;
-                                ?>
-                                <a class="nav-link  <?= $isActive ? 'active fw-semibold text-primary' : '' ?>"
-                                    href="<?= $menu['link'] ?>">
-                                    <?= esc($menu['nama']) ?>
-                                </a>
+                        <?php if ($menu['nama'] == 'Layanan' || $menu['nama'] == 'Pengumuman'): ?>
 
-                            </li>
-                        <?php else: ?>
-                            <?php
-                            $activeChild = false;
-                            $currentUrl = rtrim(current_url(), '/');
+                            <?php if ($menu['nama'] == 'Pengumuman'): ?>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#pengumumanModal">
+                                        Pengumuman
+                                    </a>
+                                </li>
+                            <?php elseif (empty($menu['children'])): ?>
+                                <li class="nav-item">
+                                    <?php
+                                    $menuUrl = rtrim($menu['link'], '/');
+                                    $currentUrl = rtrim(current_url(), '/');
+                                    $isActive = $currentUrl === $menuUrl;
+                                    ?>
+                                    <a class="nav-link <?= $isActive ? 'active fw-semibold text-primary' : '' ?>"
+                                        href="<?= $menu['link'] ?>">
+                                        <?= esc($menu['nama']) ?>
+                                    </a>
+                                </li>
+                            <?php else: ?>
+                            <?php endif; ?>
 
-                            foreach ($menu['children'] as $child) {
-                                $menuUrl = rtrim($child['link'], '/');
-                                if ($currentUrl === $menuUrl) {
-                                    $activeChild = true;
-                                    break;
-                                }
-                            }
-                            ?>
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle <?= $activeChild ? 'active fw-semibold text-primary' : '' ?>"
-                                    href="#" role="button" data-bs-toggle="dropdown">
-                                    <?= esc($menu['nama']) ?>
-                                </a>
-                                <ul class="dropdown-menu">
-                                    <?php foreach ($menu['children'] as $child): ?>
-                                        <li>
-                                            <a class="dropdown-item <?= current_url() == rtrim($child['link'], '/') ? 'active fw-semibold text-primary' : '' ?>"
-                                                href="<?= $child['link'] ?>">
-                                                <?= esc($child['nama']) ?>
-                                            </a>
-                                        </li>
-                                    <?php endforeach; ?>
-                                </ul>
-                            </li>
                         <?php endif; ?>
                     <?php endforeach; ?>
                 </ul>
@@ -120,7 +116,7 @@
                     <button type="button" class="btn btn-outline-primary me-2" data-bs-toggle="modal"
                         data-bs-target="#authModal">
                         MASUK
-                    
+
                     </button>
                 <?php endif; ?>
             </div>
@@ -231,103 +227,157 @@
         });
     </script>
     <div class="modal fade" id="authModal" tabindex="-1" aria-labelledby="authModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content rounded-4 shadow p-4">
-      <div class="modal-header border-bottom-0">
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-
-      <!--login form masuk-->
-        <div id="login-view">
-            <h5 class="fw-bold mb-4 text-center">Silakan Masuk</h5>
-            <?php if (session()->getFlashdata('login_error')): ?>
-                <div class="alert alert-danger small rounded-pill text-center" role="alert">
-                    <?= session()->getFlashdata('login_error') ?>
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 shadow p-4">
+                <div class="modal-header border-bottom-0">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-            <?php endif; ?>
+                <div class="modal-body">
 
-            <?= form_open('login/auth', ['id' => 'modal-login-form']) ?>
-            <div class="mb-3">
-                <input name="email" type="text" class="form-control rounded-pill mx-auto bg-light-gray" placeholder="Email" value="<?= old('email') ?>" required />
-            </div>
-            <div class="mb-3">
-                <input name="pwd" type="password" class="form-control rounded-pill mx-auto bg-light-gray" placeholder="Password" required />
-            </div>
-            <div class="d-grid">
-                <button type="submit" class="btn btn-primary rounded-pill mx-auto">MASUK</button>
-            </div>
-            </form>
+                    <!--login form masuk-->
+                    <div id="login-view">
+                        <h5 class="fw-bold mb-4 text-center">Silakan Masuk</h5>
+                        <?php if (session()->getFlashdata('login_error')): ?>
+                            <div class="alert alert-danger small rounded-pill text-center" role="alert">
+                                <?= session()->getFlashdata('login_error') ?>
+                            </div>
+                        <?php endif; ?>
 
-            <div class="mt-4 text-muted small">
-                <p class="text-center">
-                    Lupa Sandi? Klik <a href="#" id="show-forgot-view" class="text-decoration-none">Disini</a>.
-                </p>
-                
+                        <?= form_open('login/auth', ['id' => 'modal-login-form']) ?>
+                        <div class="mb-3">
+                            <input name="email" type="text" class="form-control rounded-pill mx-auto bg-light-gray"
+                                placeholder="Email" value="<?= old('email') ?>" required />
+                        </div>
+                        <div class="mb-3">
+                            <input name="pwd" type="password" class="form-control rounded-pill mx-auto bg-light-gray"
+                                placeholder="Password" required />
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary rounded-pill mx-auto">MASUK</button>
+                        </div>
+                        </form>
+
+                        <div class="mt-4 text-muted small">
+                            <p class="text-center">
+                                Lupa Sandi? Klik <a href="#" id="show-forgot-view"
+                                    class="text-decoration-none">Disini</a>.
+                            </p>
+
+                        </div>
+                    </div>
+                    <div id="forgot-view" style="display: none;">
+                        <h5 class="fw-bold mb-4 text-center">Lupa Password</h5>
+                        <p class="text-muted small mb-4 text-center">Masukkan email Anda yang terdaftar. Kami akan
+                            mengirimkan link untuk mereset password.</p>
+
+                        <?= form_open('forgot/auth', ['id' => 'modal-forgot-form']) ?>
+                        <div class="mb-3">
+                            <input name="email" type="email" class="form-control rounded-pill mx-auto bg-light-gray"
+                                placeholder="Masukkan email Anda" value="<?= old('email') ?>" required />
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary rounded-pill mx-auto">SUBMIT</button>
+                        </div>
+                        </form>
+
+                        <div class="mt-4 text-muted small">
+                            <p class="text-center">
+                                Kembali untuk Login? Klik <a href="#" id="show-login-view"
+                                    class="text-decoration-none">Disini</a>.
+                            </p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-        <div id="forgot-view" style="display: none;">
-            <h5 class="fw-bold mb-4 text-center">Lupa Password</h5>
-            <p class="text-muted small mb-4 text-center">Masukkan email Anda yang terdaftar. Kami akan mengirimkan link untuk mereset password.</p>
-
-            <?= form_open('forgot/auth', ['id' => 'modal-forgot-form']) ?>
-              <div class="mb-3">
-                <input name="email" type="email" class="form-control rounded-pill mx-auto bg-light-gray" placeholder="Masukkan email Anda" value="<?= old('email') ?>" required />
-              </div>
-              <div class="d-grid">
-                <button type="submit" class="btn btn-primary rounded-pill mx-auto">SUBMIT</button>
-              </div>
-            </form>
-
-            <div class="mt-4 text-muted small">
-                <p class="text-center">
-                    Kembali untuk Login? Klik <a href="#" id="show-login-view" class="text-decoration-none">Disini</a>.
-                </p>
-            </div>
-        </div>
-      </div>
     </div>
-  </div>
+    <div class="modal fade" id="pengumumanModal" tabindex="-1" aria-labelledby="pengumumanModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+
+            <div class="modal-header border-0 bg-primary text-white">
+                <h4 class="modal-title fw-semibold" id="pengumumanModalLabel">
+                    <i class="bi bi-megaphone-fill me-2"></i> Pengumuman
+                </h4>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body p-4" style="overflow-y: auto;">
+                <?php if (!empty($getPengumuman)): ?>
+                    <?php foreach ($getPengumuman as $index => $pengumuman): ?>
+
+                        <div>
+                            <h4 class="fw-bold mb-3"><?= esc($pengumuman->judul ?? 'Pengumuman') ?></h4>
+                            
+                            <?php
+                            if (!empty($pengumuman->file)) {
+                                $fileUrl = base_url('uploads/pengumuman/' . $pengumuman->file);
+                                $ext = strtolower(pathinfo($pengumuman->file, PATHINFO_EXTENSION));
+
+                                if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'])) {
+                                    echo '<img src="' . $fileUrl . '" class="img-fluid w-100" style="border-radius: 12px;" alt="' . esc($pengumuman->judul ?? 'Gambar Pengumuman') . '">';
+                                } elseif ($ext === 'pdf') {
+                                    echo '<iframe src="' . $fileUrl . '" class="w-100" style="height: 75vh; border: none; border-radius: 12px;"></iframe>';
+                                } else {
+                                    echo '<div class="p-4 text-center"><a href="' . $fileUrl . '" class="btn btn-outline-primary" target="_blank"><i class="bi bi-file-earmark-fill me-1"></i> Lihat File</a></div>';
+                                }
+                            }
+                            ?>
+                        </div>
+
+                        <?php if ($index < count($getPengumuman) - 1): ?>
+                            <hr class="my-4">
+                        <?php endif; ?>
+
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <p class="text-center text-muted my-4">Tidak ada pengumuman untuk ditampilkan.</p>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
 </div>
+
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const authModal = new bootstrap.Modal(document.getElementById('authModal'));
 
-            // Cek jika ada pesan error login dari server
             <?php if (session()->getFlashdata('login_error')): ?>
-                // Jika ada, langsung tampilkan modal saat halaman dimuat
                 authModal.show();
             <?php endif; ?>
 
-            // Ambil semua elemen yang dibutuhkan
             const loginView = document.getElementById('login-view');
             const forgotView = document.getElementById('forgot-view');
             const showForgotLink = document.getElementById('show-forgot-view');
             const showLoginLink = document.getElementById('show-login-view');
 
-            // Event listener untuk link "Lupa Sandi"
             showForgotLink.addEventListener('click', function (e) {
-                e.preventDefault(); // Mencegah link pindah halaman
+                e.preventDefault();
                 loginView.style.display = 'none';
                 forgotView.style.display = 'block';
             });
 
-            // Event listener untuk link "Kembali ke Login"
             showLoginLink.addEventListener('click', function (e) {
-                e.preventDefault(); // Mencegah link pindah halaman
+                e.preventDefault();
                 forgotView.style.display = 'none';
                 loginView.style.display = 'block';
             });
+
             const authModalElement = document.getElementById('authModal');
-
-            // Tambahkan 'event listener' yang berjalan SETELAH modal ditutup
             authModalElement.addEventListener('hidden.bs.modal', function (event) {
-                // Saat modal sudah tertutup, paksa kembali ke tampilan login
                 forgotView.style.display = 'none';
                 loginView.style.display = 'block';
             });
-        });
 
+            const pengumumanModalElement = document.getElementById('pengumumanModal');
+            if (pengumumanModalElement) {
+                const pengumumanModal = new bootstrap.Modal(pengumumanModalElement);
+                <?php if (!empty($getPengumuman)): ?>
+                    pengumumanModal.show();
+                <?php endif; ?>
+            }
+        });
     </script>
 </body>
 

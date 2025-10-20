@@ -741,8 +741,9 @@ class CreateCompleteNetxTemplateDatabase extends Migration
                 'constraint' => '80',
                 'null' => true,
             ],
-            'deskripsi' => [
-                'type' => 'TEXT',
+            'file' => [
+                'type' => 'VARCHAR',
+                'constraint' => '255',
                 'null' => true,
             ],
             'status' => [

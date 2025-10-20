@@ -73,12 +73,19 @@ class Profilpw extends BaseController
             'user_identity' => $this->request->getPost('user_identity'),
         ];
 
-        if ($data['user_identity'] === 'NON ULM' && !empty($user->bukti)) {
-            $oldPath = FCPATH . 'uploads/bukti/' . $user->bukti;
-            if (is_file($oldPath) && strpos(realpath($oldPath), realpath(FCPATH . 'uploads/bukti')) === 0) {
-                unlink($oldPath);
+        // Jika memilih NON ULM -> otomatis terverifikasi
+        if ($data['user_identity'] === 'NON ULM') {
+            if (!empty($user->bukti)) {
+                $oldPath = FCPATH . 'uploads/bukti/' . $user->bukti;
+                if (is_file($oldPath) && strpos(realpath($oldPath), realpath(FCPATH . 'uploads/bukti')) === 0) {
+                    unlink($oldPath);
+                }
             }
             $data['bukti'] = null;
+            $data['verifikasi'] = 1;
+        } else {
+            // ULM atau lainnya -> menunggu verifikasi admin
+            $data['verifikasi'] = 0;
         }
 
         if (!empty($passwordLama) && !empty($passwordBaru)) {
@@ -130,12 +137,13 @@ class Profilpw extends BaseController
         $res = $model->updateData($data, $this->id, session()->get('id_user'));
 
         if ($res) {
-            // Response sukses AJAX, **tidak ada redirect atau refresh**
+            // Kembalikan flag refresh supaya frontend bisa me-reload halaman
             return $this->response->setJSON([
-                'res'   => true,
-                'msg'   => 'Data berhasil disimpan.',
-                'xname' => csrf_token(),
-                'xhash' => csrf_hash()
+                'res'     => true,
+                'msg'     => 'Data berhasil disimpan.',
+                'refresh' => true,
+                'xname'   => csrf_token(),
+                'xhash'   => csrf_hash()
             ]);
         } else {
             return $this->response->setJSON([
@@ -146,6 +154,7 @@ class Profilpw extends BaseController
             ]);
         }
     }
+
 
     function doUpload($file)
     {

@@ -151,7 +151,6 @@ class Keranjang extends BaseController
             'simlab_r_alat a'      => 'a.alatKode = simlab_r_layanan_pengujian.ujiAlatKode'
         ];
 
-        // 🔹 Tambahkan dua kolom baru agar ikut tersimpan ke session
         $where  = ['ujiKode' => $ujiKode];
         $select = 'simlab_r_layanan_pengujian.ujiKode, 
                    simlab_r_layanan_pengujian.ujiBiaya,
@@ -184,7 +183,6 @@ class Keranjang extends BaseController
 
         $totalBiaya = ($biayaSatuan * $jumlah) * (1 - ($diskon / 100));
 
-        // 🔹 Tambahkan dua field baru ke data session
         $data = [
             'lnKode'            => $row->ujiInstansi,
             'kode'              => $row->ujiKode,
@@ -195,7 +193,8 @@ class Keranjang extends BaseController
             'keterangan'        => $keterangan,
             'diskon'            => $diskon,
             'ujiPenyelia'       => $row->ujiPenyelia ?? null,
-            'ujiManajerTeknis'  => $row->ujiManajerTeknis ?? null
+            'ujiManajerTeknis'  => $row->ujiManajerTeknis ?? null,
+            // 'detAccLn'          => 0
         ];
 
         $keranjang[] = $data;
@@ -209,7 +208,7 @@ class Keranjang extends BaseController
         ]);
     }
 
-    public function checkout()
+        public function checkout()
     {
         $session = session();
         $user_id = $session->get('id_user');
@@ -237,91 +236,126 @@ class Keranjang extends BaseController
         $modelLayanan    = new \App\Models\MyModel('simlab_t_layanan');
         $modelDetil      = new \App\Models\MyModel('simlab_t_layanan_detil');
 
-        $lastKode = $modelLayanan->getMax('lnKode', 'simlab_t_layanan');
-        $nextKode = $lastKode ? ($lastKode + 1) : 1;
+        $db = \Config\Database::connect();
 
-        $today = date('Y-m-d');
-        $countToday = $modelPembayaran->getCountAllbyManyWhere(['DATE(bayarInvoiceTgl)' => $today]);
-        $nextNumber = str_pad($countToday + 1, 4, '0', STR_PAD_LEFT);
-        $invoiceNo  = 'ULM' . date('Y') . date('m') . $nextNumber;
+        // Gunakan transaction untuk atomicity
+        $db->transStart();
 
-        $insertId = $modelPembayaran->insertData([
-            'bayarLnKode'     => $nextKode,
-            'bayarTotalBiaya' => $totalBiaya,
-            'bayarStatus'     => 0,
-            'bayarInvoiceNo'  => $invoiceNo,
-            'bayarInvoiceTgl' => $today,
-            'bayarBuktiFile'  => 'by_admin'
-        ], true);
+        try {
+            // 1) Insert ke simlab_t_layanan dulu (tanpa lnNoTransaksi)
+            $insertLayananId = $modelLayanan->insertData([
+                // Jika model Anda tidak mengembalikan insertId, gunakan $db->insertID() setelah insert
+                'user_id'       => $user_id,
+                'lnAccEmail'    => $emailFromDB,
+                'lnNoTransaksi' => null,
+                'lnTgl'         => date('Y-m-d H:i:s'),
+                'lnStatus'      => 1,
+                'kuisioner'     => 0
+            ], true);
 
-        if (!$insertId) {
-            return $this->response->setJSON([
-                'res' => false,
-                'msg' => 'Gagal simpan pembayaran.',
-                'xname' => csrf_token(),
-                'xhash' => csrf_hash()
-            ]);
-        }
+            // Pastikan kita punya lnKode (primary key) yang valid
+            if (!$insertLayananId) {
+                // coba ambil last insert id dari koneksi DB jika model tidak mengembalikan
+                $insertLayananId = $db->insertID();
+            }
 
-        $email    = $emailFromDB;
-        $tipe     = $this->request->getPost('InTipe') ?: ($identity === 'ULM' ? 'ULM' : 'NONULM');
-        $nama     = $this->request->getPost('InOrangNama') ?: $nameFromDB;
-        $telp     = $this->request->getPost('InOrangTelp') ?: '-';
-        $instansi = $this->request->getPost('InInstansi') ?: 'Tidak diisi';
-
-        $modelLayanan->insertData([
-            'lnKode'        => $nextKode,
-            'lnAccEmail'    => $email,
-            'lnNoTransaksi' => $invoiceNo,
-            'lnTgl'         => date('Y-m-d H:i:s'),
-            'lnTipe'        => $tipe,
-            'lnOrangNama'   => $nama,
-            'lnOrangTelp'   => $telp,
-            'lnOrangEmail'  => $email,
-            'lnInstansi'    => $instansi,
-            'lnStatus'      => 1
-        ]);
-
-        // --- ⬇️ Tambahan kolom detPenyelia & detManajerTeknis ---
-        foreach ($keranjang as $item) {
-            $detil = [
-                'detLnKode'         => $nextKode,
-                'detUjiKode'        => $item['kode'] ?? null,
-                'detBiaya'          => $item['biaya'] ?? null,
-                'detKeterangan'     => $item['keterangan'] ?? null,
-                'detLayanan'        => $item['layanan'] ?? null,
-                'detStatus'         => 1,
-                'detFileHasil'      => null,
-                'detJenKode'        => null,
-                'detPenyelia'       => $item['ujiPenyelia'] ?? null,
-                'detManajerTeknis'  => $item['ujiManajerTeknis'] ?? null
-            ];
-
-            $res = $modelDetil->insertData($detil);
-            if (!$res) {
-                $error = $modelDetil->db->error();
-                log_message('error', ' Insert gagal ke simlab_t_layanan_detil. Data: ' . json_encode($detil));
-                log_message('error', ' DB Error: ' . json_encode($error));
-
+            if (!$insertLayananId) {
+                // gagal dapat lnKode -> rollback dan error
+                $db->transRollback();
                 return $this->response->setJSON([
                     'res' => false,
-                    'msg' => 'Checkout gagal saat simpan detail: ' . ($error['message'] ?? 'Unknown error'),
+                    'msg' => 'Gagal membuat record layanan (lnKode tidak tersedia).',
                     'xname' => csrf_token(),
                     'xhash' => csrf_hash()
                 ]);
             }
+
+            $lnKode = (int)$insertLayananId;
+
+            // 2) Sekarang insert pembayaran yang merujuk ke lnKode yang sudah ada
+            $today = date('Y-m-d');
+            $insertPembayaranId = $modelPembayaran->insertData([
+                'bayarLnKode'     => $lnKode,
+                'bayarTotalBiaya' => $totalBiaya,
+                'bayarStatus'     => 0,
+                'bayarInvoiceNo'  => null,
+                'bayarInvoiceTgl' => $today,
+                'bayarBuktiFile'  => 'by_admin'
+            ], true);
+
+            if (!$insertPembayaranId) {
+                $db->transRollback();
+                return $this->response->setJSON([
+                    'res' => false,
+                    'msg' => 'Gagal simpan pembayaran.',
+                    'xname' => csrf_token(),
+                    'xhash' => csrf_hash()
+                ]);
+            }
+
+            // 3) Simpan detail layanan (detLnKode -> lnKode)
+            foreach ($keranjang as $item) {
+                $detil = [
+                    'detLnKode'         => $lnKode,
+                    'detUjiKode'        => $item['kode'] ?? null,
+                    'detBiaya'          => $item['biaya'] ?? null,
+                    'detJumlah'         => $item['jumlah'] ?? 1,
+                    'detKeterangan'     => $item['keterangan'] ?? null,
+                    'detLayanan'        => $item['layanan'] ?? null,
+                    'detStatus'         => 0,
+                    'detJenKode'        => null,
+                    'detPenyelia'       => $item['ujiPenyelia'] ?? null,
+                    'detManajerTeknis'  => $item['ujiManajerTeknis'] ?? null,
+                    // 'detAccLn'          => $item['detAccLn'] ?? 0
+                ];
+
+                $res = $modelDetil->insertData($detil);
+                if (!$res) {
+                    $error = $modelDetil->db->error();
+                    log_message('error', ' Insert gagal ke simlab_t_layanan_detil. Data: ' . json_encode($detil));
+                    log_message('error', ' DB Error: ' . json_encode($error));
+
+                    $db->transRollback();
+
+                    return $this->response->setJSON([
+                        'res' => false,
+                        'msg' => 'Checkout gagal saat simpan detail: ' . ($error['message'] ?? 'Unknown error'),
+                        'xname' => csrf_token(),
+                        'xhash' => csrf_hash()
+                    ]);
+                    }
+                }
+
+            // jika semua sukses, commit
+            $db->transComplete();
+
+            // kosongkan keranjang
+            $session->remove($this->sessionKey);
+
+            return $this->response->setJSON([
+                'res' => true,
+                'msg' => 'Checkout berhasil! ', 
+                'lnKode' => $lnKode,
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        } catch (\Exception $e) {
+            if ($db->transStatus() === FALSE) {
+                $db->transRollback();
+            }
+
+            log_message('error', 'Checkout exception: ' . $e->getMessage() . ' Trace: ' . $e->getTraceAsString());
+
+            return $this->response->setJSON([
+                'res' => false,
+                'msg' => 'Checkout gagal: ' . $e->getMessage(),
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
         }
-
-        $session->remove($this->sessionKey);
-
-        return $this->response->setJSON([
-            'res' => true,
-            'msg' => 'Checkout berhasil! Nomor Invoice: ' . $invoiceNo,
-            'invoiceNo' => $invoiceNo,
-            'xname' => csrf_token(),
-            'xhash' => csrf_hash()
-        ]);
     }
+
+
 
     public function delete($id)
     {

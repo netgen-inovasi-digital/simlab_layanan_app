@@ -7,13 +7,10 @@ if (!isset($routes)) {
 $routes->group('formulirmanajer', ['namespace' => 'Modules\FormulirManajer\Controllers'], function ($subroutes) {
 
     $subroutes->get('/', 'FormulirManajer::index');
-    $subroutes->get('datalist', 'FormulirManajer::formulirManajerDataList');
-    $subroutes->get('detaillist/(:any)', 'FormulirManajer::formulirManajerDetailList/$1'); 
+    $subroutes->get('datalist', 'FormulirManajer::datalist');
+    $subroutes->get('detailList/(:any)', 'FormulirManajer::detailList/$1');
 
-    $subroutes->post('submit', 'FormulirManajer::formulirManajerSubmit');
-    $subroutes->post('edit', 'FormulirManajer::formulirManajerEdit');
-    $subroutes->post('delete/(:any)', 'FormulirManajer::formulirManajerDelete/$1');
-    $subroutes->post('upload', 'FormulirManajer::formulirManajerUpload');
-    $subroutes->post('approve/(:any)', 'FormulirManajer::formulirManajerApprove/$1');
+    $subroutes->post('kirim', 'FormulirManajer::kirim');
+    $subroutes->post('approveDetail', 'FormulirManajer::approveDetail');
+    $subroutes->post('rejectDetail',  'FormulirManajer::rejectDetail');
 });
-

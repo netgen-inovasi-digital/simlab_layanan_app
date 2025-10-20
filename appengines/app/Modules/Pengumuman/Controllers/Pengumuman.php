@@ -7,205 +7,180 @@ use App\Models\MyModel;
 
 class Pengumuman extends BaseController
 {
-	private $table = 'pengumuman';
-	private $id = 'id_pengumuman';
+    private $table = 'pengumuman';
+    private $id = 'id_pengumuman';
 
-	public function index()
-	{
-		$session = session(); // aktifkan session
-		$user_id = $session->get('id_user');
+    public function index()
+    {
+        $data = [
+            'title' => 'Data Pengumuman'
+        ];
+        return view('Modules\Pengumuman\Views\v_pengumuman', $data);
+    }
 
-		$modelUser = new MyModel('users');
+    public function edit()
+    {
+        $idenc = $this->request->getPost('id');
+        $id = $this->encrypter->decrypt(hex2bin($idenc));
+        $model = new MyModel($this->table);
+        $get = $model->getDataById($this->id, $id);
 
+        if (!$get) {
+            return $this->response->setJSON(['res' => 'error', 'msg' => 'Data tidak ditemukan.']);
+        }
 
-		$data = [
-			'title' => 'Data Pengumuman',
-			'user' => $modelUser->getDataById('id_user', $user_id),
-		];
+        $data = [
+            csrf_token() => csrf_hash(),
+            'id' => $idenc,
+            'judul' => $get->judul,
+            'file' => $get->file,
+            'status' => $get->status,
+        ];
 
-		return view('Modules\Pengumuman\Views\v_pengumuman', $data);
-	}
-
-	function edit($id)
-	{
-		$idenc = $id;
-		$id = $this->encrypter->decrypt(hex2bin($id));
-		$model = new MyModel($this->table);
-		$get = $model->getDataById($this->id, $id);
-
-		$modelUser = new MyModel('users');
-		$user = $modelUser->getDataById('id_user', $get->user_id);
-
-		$data[csrf_token()] = csrf_hash();
-		$data['id'] = $idenc;
-		$data['judul'] = $get->judul;
-		$data['deskripsi'] = $get->deskripsi;
-		$data['user_id'] = $get->user_id;
-		$data['tanggal'] = $get->tanggal;
-		$data['status'] = $get->status;
-		$data['nama'] = $user->nama;
-
-		// 'userId' => session()->get('idUser'),
-		return $this->response->setJSON($data);
-	}
-
-	function delete($id)
-	{
-		$id = $this->encrypter->decrypt(hex2bin($id));
-		$model = new MyModel($this->table);
-		$res = $model->deleteData($this->id, $id);
-		return $this->response->setJSON(array('res' => $res, 'xname' => csrf_token(), 'xhash' => csrf_hash()));
-	}
-
-	public function submit()
-	{
-		$idenc = $this->request->getPost('id');
-		$statusBaru = $this->request->getPost('status');
-
-		$data = array(
-			'judul' => $this->request->getPost('judul'),
-			'deskripsi' => $this->request->getPost('deskripsi'),
-			'status' => $statusBaru,
-			'user_id' => $this->request->getPost('user_id'),
-			'tanggal' => date('Y-m-d', strtotime($this->request->getPost('tanggal'))),
-		);
-
-		$model = new MyModel($this->table);
-		if ($idenc == "") {
-			$res = $model->insertData($data);
-		} else {
-			// Edit data
-			$id = $this->encrypter->decrypt(hex2bin($idenc));
-			$res = $model->updateData($data, $this->id, $id);
-		}
-
-		return $this->response->setJSON([
-			'res' => $res,
-			'xname' => csrf_token(),
-			'xhash' => csrf_hash()
-		]);
-	}
+        return $this->response->setJSON($data);
+    }
 
 
-	function doUpload($file)
-	{
-		$filename = "";
-		if ($file) {
-			if ($file->isValid() && ! $file->hasMoved()) {
-				$ext = $file->getClientExtension();
-				$filename = time() . bin2hex(random_bytes(5)) . '.' . $ext;
-				$path = FCPATH . 'uploads';
-				$file->move($path, $filename, true);
-			}
-		}
-		return $filename;
-	}
+    public function delete($id)
+    {
+        $id = $this->encrypter->decrypt(hex2bin($id));
+        $model = new MyModel($this->table);
 
-	public function upload()
-	{
-		$file = $this->request->getFile('upload');
-		$filename = $this->doUpload($file);
+        // Hapus file fisik sebelum hapus data
+        $existing = $model->getDataById($this->id, $id);
+        if ($existing && !empty($existing->file) && file_exists(FCPATH . 'uploads/pengumuman/' . $existing->file)) {
+            unlink(FCPATH . 'uploads/pengumuman/' . $existing->file);
+        }
 
-		if ($filename !== "") {
-			return $this->response->setJSON([
-				'uploaded' => true,
-				'url'      => base_url('uploads/' . $filename),
-				'xname'    => csrf_token(),
-				'xhash'    => csrf_hash()
-			]);
-		} else {
-			return $this->response->setJSON([
-				'uploaded' => false,
-				'error'    => ['message' => 'Upload gagal.'],
-				'xname'    => csrf_token(),
-				'xhash'    => csrf_hash()
-			]);
-		}
-	}
+        $res = $model->deleteData($this->id, $id);
 
-	public function dataList()
-	{
-		$model = new MyModel($this->table);
-		$data = array();
+        return $this->response->setJSON([
+            'res' => $res,
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
+        ]);
+    }
 
-		$join = array(
-			'users' => 'users.id_user=pengumuman.user_id',
-		);
-		$list = $model->getAllDataByJoin($join);
-		foreach ($list as $row) {
-			$id = bin2hex($this->encrypter->encrypt($row->id_pengumuman));
-			$response = array();
-			$titleBlock = '
-				<div class="d-flex flex-column">
-					<strong>' . $row->judul . '</strong>
-					' . esc($row->deskripsi) . '
-					<div class="d-flex flex-wrap justify-content-start small text-muted gap-2 mt-2">
-						<div>👤 ' . esc($row->nama) . '</div>
-						<div>🗓️ ' . formatTanggalIndo($row->tanggal) . '</div>
-					</div>
-				</div>
-			';
-			$response[] = $titleBlock;
-			$isChecked = $row->status === 'tampil' ? 'checked' : '';
-			$status = '
-			<div class="form-check form-switch d-flex justify-content-center">
-				<input class="form-check-input status-toggle-pengumuman" type="checkbox" 
-					data-id="' . $id . '" ' . $isChecked . ' data-bs-toggle="tooltip"
-        	title="Aktif/Nonaktif">
-			</div>';
-			$response[] = $status;
-			$response[] = $this->aksi($id);
-			$data[] = $response;
-		}
-		$output = array("items" => $data);
-		return $this->response->setJSON($output);
-	}
+    public function submit()
+    {
+        $idenc = $this->request->getPost('id');
+        $judul = $this->request->getPost('judul');
 
-	function aksi($id)
-	{
-		return '<div id="' . $id . '" class="float-end">
-			<span class="text-secondary btn-action" title="Ubah" onclick="editItem(event)">
-				<i class="bi bi-pencil-square"></i></span> 
-			<label class="divider">|</label>
-			<span class="text-danger btn-action" title="Hapus" onclick="deleteItem(event)">
-				<i class="bi bi-trash"></i></span>
-		</div>';
-	}
+        $statusPost = $this->request->getPost('status');
+        $status = ($statusPost == 'on' || $statusPost == '1' || $statusPost == 'true') ? 'tampil' : 'tersembunyi';
 
-	function formatTanggalIndo($tanggal)
-	{
-		$bulanIndo = [
-			1 => 'Januari',
-			'Februari',
-			'Maret',
-			'April',
-			'Mei',
-			'Juni',
-			'Juli',
-			'Agustus',
-			'September',
-			'Oktober',
-			'November',
-			'Desember'
-		];
 
-		$tanggal = date('Y-m-d', strtotime($tanggal));
-		list($tahun, $bulan, $hari) = explode('-', $tanggal);
+        $data = [
+            'judul' => $judul,
+            'status' => $status
+        ];
 
-		return (int)$hari . ' ' . $bulanIndo[(int)$bulan] . ' ' . $tahun;
-	}
+        $validationRule = [
+            'judul' => 'required',
+            'file' => 'max_size[file,2048]|ext_in[file,png,jpg,jpeg]',
+        ];
 
-	function toggle()
-	{
-		$idenc = $this->request->getPost('id');
-		$id = $this->encrypter->decrypt(hex2bin($idenc));
-		$status = $this->request->getPost('status');
-		$data = [
-			'status' => $status,
-		];
+        if (!$this->validate($validationRule)) {
+            return $this->response->setJSON([
+                'res' => 'check',
+                'link' => $this->validator->getErrors(),
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        }
 
-		$model = new MyModel('pengumuman');
-		$res = $model->updateData($data, $this->id, $id);
-		return $this->response->setJSON(array('res' => $res, 'xhash' => csrf_hash()));
-	}
+        $model = new MyModel($this->table);
+        $file = $this->request->getFile('file');
+
+        // Upload file baru jika ada
+        if ($file && $file->isValid() && !$file->hasMoved()) {
+            $filename = $this->doUpload($file);
+            $data['file'] = $filename;
+
+            // Hapus file lama jika edit
+            if ($idenc) {
+                $id = $this->encrypter->decrypt(hex2bin($idenc));
+                $existing = $model->getDataById($this->id, $id);
+                if ($existing && !empty($existing->file) && file_exists(FCPATH . 'uploads/pengumuman/' . $existing->file)) {
+                    unlink(FCPATH . 'uploads/pengumuman/' . $existing->file);
+                }
+            }
+        }
+
+        if ($idenc == "") {
+            $res = $model->insertData($data);
+        } else {
+            $id = $this->encrypter->decrypt(hex2bin($idenc));
+            $res = $model->updateData($data, $this->id, $id);
+        }
+
+        return $this->response->setJSON([
+            'res' => $res,
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
+        ]);
+    }
+
+    public function dataList()
+    {
+        $model = new MyModel($this->table);
+        $data = array();
+        $list = $model->getAllData();
+
+        foreach ($list as $row) {
+            $id = bin2hex($this->encrypter->encrypt($row->{$this->id}));
+            $response = array();
+
+            $response[] = $row->judul;
+
+            $filePreview = '-';
+            if (!empty($row->file)) {
+                $fileUrl = base_url('uploads/pengumuman/' . $row->file);
+                $filePreview = '<a href="' . $fileUrl . '" target="_blank" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-eye"></i> Lihat
+                </a>';
+            }
+            $response[] = $filePreview;
+
+            $status = '<small><i class="bi bi-check-circle text-primary"></i> Active</small>';
+            if ($row->status == 'tersembunyi') {
+                $status = '<small class="text-danger"><i class="bi bi-x-circle"></i> Non-Active</small>';
+            }
+            $response[] = $status;
+
+            $response[] = $this->aksi($id);
+            $data[] = $response;
+        }
+
+        $output = array("items" => $data);
+        return $this->response->setJSON($output);
+    }
+
+    private function aksi($id)
+    {
+        return '<div id="' . $id . '" class="float-end">
+            <span class="text-secondary btn-action" title="Ubah" onclick="editItem(event)">
+                <i class="bi bi-pencil-square"></i>
+            </span> 
+            <label class="divider">|</label>
+            <span class="text-danger btn-action" title="Hapus" onclick="deleteItem(event)">
+                <i class="bi bi-trash"></i>
+            </span>
+        </div>';
+    }
+
+    private function doUpload($file)
+    {
+        $filename = '';
+        if ($file && $file->isValid() && !$file->hasMoved()) {
+            $ext = $file->getClientExtension();
+            $filename = time() . bin2hex(random_bytes(5)) . '.' . $ext;
+            $path = FCPATH . 'uploads/pengumuman';
+            if (!is_dir($path)) {
+                mkdir($path, 0755, true);
+            }
+            $file->move($path, $filename, true);
+        }
+        return $filename;
+    }
 }

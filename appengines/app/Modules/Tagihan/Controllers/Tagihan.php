@@ -23,64 +23,75 @@ class Tagihan extends BaseController
      */
     public function dataList()
     {
-        $model = new MyModel($this->table);
-        $data = [];
+        try {
+            $model = new MyModel($this->table);
+            $data = [];
 
-        // JOIN dengan simlab_t_layanan untuk mendapatkan data layanan dan nama pemesan
-        $joins = [
-            'simlab_t_layanan' => 'simlab_t_pembayaran.bayarLnKode = simlab_t_layanan.lnKode'
-        ];
+            // JOIN dengan simlab_t_layanan untuk mendapatkan data layanan dan email pemesan
+            $joins = [
+                'simlab_t_layanan' => 'simlab_t_pembayaran.bayarLnKode = simlab_t_layanan.lnKode'
+            ];
 
-        $select = 'simlab_t_pembayaran.*, simlab_t_layanan.lnKode, simlab_t_layanan.lnOrangNama';
+            $select = 'simlab_t_pembayaran.*, simlab_t_layanan.lnKode, simlab_t_layanan.lnAccEmail';
 
-        $orderBy = ['simlab_t_pembayaran.bayarKode' => 'DESC'];
+            $orderBy = ['simlab_t_pembayaran.bayarKode' => 'DESC'];
 
-        $list = $model->getAllDataByJoinWithOrder($joins, [], $orderBy, $select, 'inner');
+            $list = $model->getAllDataByJoinWithOrder($joins, [], $orderBy, $select, 'inner');
 
-        $no = 1;
-        foreach ($list as $row) {
-            $encrypted_id = bin2hex(service('encrypter')->encrypt($row->bayarKode));
+            // Log untuk debugging
+            log_message('debug', 'Tagihan dataList - Total records: ' . count($list));
 
-            // Cek status dari simlab_t_layanan_detil
-            $detilStatus = $this->getDetilStatus($row->bayarLnKode);
+            $no = 1;
+            foreach ($list as $row) {
+                $encrypted_id = bin2hex(service('encrypter')->encrypt($row->bayarKode));
 
-            // Status badge
-            $status = $this->formatStatus($detilStatus);
+                // Cek status dari simlab_t_layanan_detil
+                $detilStatus = $this->getDetilStatus($row->bayarLnKode);
 
-            // Cek apakah ada file di session (file temporary yang belum disave)
-            $sessionKey = 'temp_invoice_' . $row->bayarKode;
-            $tempFile = session()->get($sessionKey);
-            $currentFile = !empty($tempFile) ? $tempFile : ($row->bayarInvoiceFile ?? '');
+                // Status badge
+                $status = $this->formatStatus($detilStatus);
 
-            // Tombol aksi
-            $aksi = $this->aksiButton($encrypted_id, $detilStatus, $currentFile);
+                // Cek apakah ada file di session (file temporary yang belum disave)
+                $sessionKey = 'temp_invoice_' . $row->bayarKode;
+                $tempFile = session()->get($sessionKey);
+                $currentFile = !empty($tempFile) ? $tempFile : ($row->bayarInvoiceFile ?? '');
 
-            // Gunakan indexed array, bukan associative array
-            $response = [];
-            $response[] = $row->bayarInvoiceNo ?? '<span class="badge bg-warning">Belum Ditambahkan</span>';
-            $response[] = $row->lnOrangNama ?? '-';
-            $response[] = 'Rp ' . number_format($row->bayarTotalBiaya ?? 0, 0, ',', '.');
+                // Tombol aksi
+                $aksi = $this->aksiButton($encrypted_id, $detilStatus, $currentFile);
 
-            // Tampilkan info file (dari session atau database)
-            if (!empty($currentFile)) {
-                if (!empty($tempFile)) {
-                    // File baru dari session (belum disave)
-                    $response[] = '<span class="badge bg-info"><i class="bi bi-clock-history"></i> File Terupload</span>';
+                // Gunakan indexed array, bukan associative array
+                $response = [];
+                $response[] = $row->bayarInvoiceNo ?? '<span class="badge bg-warning">Belum Ditambahkan</span>';
+                $response[] = $row->lnAccEmail ?? '-';
+                $response[] = 'Rp ' . number_format($row->bayarTotalBiaya ?? 0, 0, ',', '.');
+
+                // Tampilkan info file (dari session atau database)
+                if (!empty($currentFile)) {
+                    if (!empty($tempFile)) {
+                        // File baru dari session (belum disave)
+                        $response[] = '<span class="badge bg-info"><i class="bi bi-clock-history"></i> File Terupload</span>';
+                    } else {
+                        // File dari database (sudah disave)
+                        $response[] = '<a href="' . base_url('uploads/invoice/' . $currentFile) . '" target="_blank" class="btn btn-sm btn-info"><i class="bi bi-file-pdf"></i> Lihat</a>';
+                    }
                 } else {
-                    // File dari database (sudah disave)
-                    $response[] = '<a href="' . base_url('uploads/invoice/' . $currentFile) . '" target="_blank" class="btn btn-sm btn-info"><i class="bi bi-file-pdf"></i> Lihat</a>';
+                    $response[] = '<span class="text-muted">Belum upload</span>';
                 }
-            } else {
-                $response[] = '<span class="text-muted">Belum upload</span>';
+
+                $response[] = $status;
+                $response[] = $aksi;
+
+                $data[] = $response;
             }
 
-            $response[] = $status;
-            $response[] = $aksi;
-
-            $data[] = $response;
+            return $this->response->setJSON(["items" => $data]);
+        } catch (\Exception $e) {
+            log_message('error', 'Tagihan dataList error: ' . $e->getMessage());
+            return $this->response->setJSON([
+                "items" => [],
+                "error" => $e->getMessage()
+            ]);
         }
-
-        return $this->response->setJSON(["items" => $data]);
     }
 
     /**

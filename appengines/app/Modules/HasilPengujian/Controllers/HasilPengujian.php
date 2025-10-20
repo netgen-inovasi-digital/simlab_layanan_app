@@ -584,7 +584,7 @@ public function detailList($id)
             case 2: return '<span class="badge bg-danger">Ditolak</span>';
             case 3: return '<span class="badge bg-info">In Review (Admin)</span>';
             case 4: return '<span class="badge bg-primary">Menunggu Hasil Uji</span>';
-            case 5: return '<span class="badge bg-primary">Menunggu Verifikasi Manajer Teknis</span>';
+            case 5: return '<span class="badge bg-primary">Verifikasi Manajer </span>';
             case 6: return '<span class="badge bg-success">LHUS Disetujui</span>';
             case 7: return '<span class="badge bg-primary">Memproses LHU</span>';
             case 8: return '<span class="badge bg-success">LHU Disetujui</span>';

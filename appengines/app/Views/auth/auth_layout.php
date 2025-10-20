@@ -29,8 +29,7 @@
             <div>&copy; 2025. Simlab.</div>
             <div class="mt-2 mt-md-0">
               <a href="<?= base_url() ?>" class=" mx-2">Ke Beranda</a>
-              <a href="#" class="mx-2">Tentang Aplikasi</a>
-              <a href="#" class="mx-2">Kontak</a>
+
             </div>
           </div>
         </footer>
