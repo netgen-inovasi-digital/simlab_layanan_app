@@ -110,7 +110,7 @@ class Auth extends Controller
 				if ($admin['status_user'] == 1) {
 					// Data login admin
 					$ses_data = [
-						'id_user'   => $admin['username'],
+						'id_user'   => $admin['user_id'],
 						'role_id'   => $admin['role_id'],
 						// 'lab_kode'  => $admin['lab_kode'],
 						'logged_in' => TRUE
@@ -161,12 +161,31 @@ class Auth extends Controller
 		}
 	}
 
-	public function logout()
-	{
+	// public function logout()
+	// {
+	// 	$session = session();
+	// 	$session->destroy();
+	// 	return redirect()->to(base_url('/'));
+	// }
+
+		public function logout(){
 		$session = session();
+
+		// Simpan role sebelum session dihancurkan
+		$roleId = $session->get('role_id');
+
+		// Hapus semua session
 		$session->destroy();
-		return redirect()->to(base_url('/'));
+
+		// Tentukan redirect berdasarkan role
+		if ($roleId != 2) {
+			return redirect()->to(base_url('login'));
+		} else {
+			// Jika tidak ada role (default)
+			return redirect()->to(base_url('/'));
+		}
 	}
+
 
 	public function actRegister()
 	{
@@ -215,7 +234,7 @@ class Auth extends Controller
         'user_password' => $hash,
         'user_identity' => $identity,
         'status_user'   => 1,
-        'role_id'       => 2,
+        'role_id'       => 2, //pengaturan user role id
     ];
 
     // Simpan ke database
