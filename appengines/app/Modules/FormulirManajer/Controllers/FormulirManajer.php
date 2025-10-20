@@ -32,113 +32,97 @@ class FormulirManajer extends BaseController
     }
 
     public function datalist()
-    {
-        $session = session();
-        $user_id = $session->get('id_user');
+{
+    $session = session();
+    $user_id = $session->get('id_user');
 
-        $model = new MyModel($this->table);
-        $modelDet = new MyModel('simlab_t_layanan_detil');
+    $model = new MyModel($this->table);
+    $modelDet = new MyModel('simlab_t_layanan_detil');
 
-        $data  = [];
+    $data  = [];
 
-        $detilList = $modelDet->getAllDataById(['detManajerTeknis' => $user_id]);
+    // dapatkan daftar detil untuk manajer teknis ini
+    $detilList = $modelDet->getAllDataById(['detManajerTeknis' => $user_id]);
 
-        if (empty($detilList)) {
-            $db = \Config\Database::connect();
-            $builder = $db->table('simlab_t_layanan_detil as d');
-            $builder->select('d.detLnKode');
-            $builder->groupStart();
-            $builder->where('d.detPenyelia', $user_id);
-            $builder->orWhere('d.detManajerTeknis', $user_id);
-            $builder->groupEnd();
-            $rows = $builder->get()->getResult();
-            $detilList = $rows;
-        }
-
-        $lnKodeList = [];
-        foreach ($detilList as $item) {
-            if (is_array($item) && isset($item['detLnKode'])) {
-                $lnKodeList[] = $item['detLnKode'];
-            } elseif (is_object($item) && isset($item->detLnKode)) {
-                $lnKodeList[] = $item->detLnKode;
-            }
-        }
-
-        $lnKodeList = array_values(array_unique(array_filter($lnKodeList, function ($v) {
-            return $v !== null && $v !== '' && $v !== 0;
-        })));
-
-        if (empty($lnKodeList)) {
-            return $this->response->setJSON(['items' => []]);
-        }
-
+    if (empty($detilList)) {
         $db = \Config\Database::connect();
-        $builder = $db->table('simlab_t_layanan as l');
-
-        $builder->select('l.*, u.user_name as pemesan_name, u.user_email as pemesan_email, u.user_identity as pemesan_identity');
-        $builder->join('simlab_account_users as u', 'u.user_id = l.user_id', 'left');
-        $builder->whereIn('l.lnKode', $lnKodeList);
-
-        // exclude lnStatus = 2 (Ditolak)
-        $builder->where('l.lnStatus !=', 2);
-
-        $builder->orderBy('l.lnTgl', 'DESC');
-        $list = $builder->get()->getResult();
-
-        // grouping by status (0..9) so order is stable
-        $grouped = [];
-        for ($i = 0; $i <= 9; $i++) {
-            $grouped[$i] = [];
-        }
-
-        foreach ($list as $row) {
-            $status = (int) $row->lnStatus;
-            if (!isset($grouped[$status])) {
-                $grouped[$status] = [];
-            }
-            $grouped[$status][] = $row;
-        }
-
-        $finalList = [];
-        for ($i = 0; $i <= 9; $i++) {
-            $finalList = array_merge($finalList, $grouped[$i]);
-        }
-
-        foreach ($finalList as $row) {
-            // sesuai kode awal : lewati status 0
-            if ((int)$row->lnStatus === 0) {
-                continue;
-            }
-
-            $id = bin2hex($this->encrypter->encrypt($row->lnKode));
-            $response = [];
-
-            $pemesanNama = !empty($row->pemesan_name) ? $row->pemesan_name : '-';
-            $tipe = !empty($row->pemesan_identity) ? $row->pemesan_identity : '-';
-            $tanggal = !empty($row->lnTgl) ? date('d-m-Y H:i', strtotime($row->lnTgl)) : '-';
-
-            $combined = '
-                <div style="line-height:1.3;">
-                    <span style="font-size:1rem; font-weight:600;">' . esc($pemesanNama) . '</span><br>
-                    <span style="font-size:0.9rem; color:#555;">' . esc($tanggal) . ' | ' . esc($tipe) . '</span>
-                </div>';
-            $response[] = $combined;
-
-            $response[] = $this->formatStatus($row->lnStatus);
-
-            $response[] = '<a href="javascript:void(0)" onclick="loadDetail(\'' . $id . '\')" 
-                            class="btn btn-sm btn-info">
-                            <i class="bi bi-gear"></i> Review Layanan
-                        </a>';
-
-            // $response[] = $this->aksi($id, $row->lnStatus);
-
-            $data[] = $response;
-        }
-
-        $output = ["items" => $data];
-        return $this->response->setJSON($output);
+        $builder = $db->table('simlab_t_layanan_detil as d');
+        $builder->select('d.detLnKode');
+        $builder->groupStart();
+        $builder->where('d.detPenyelia', $user_id);
+        $builder->orWhere('d.detManajerTeknis', $user_id);
+        $builder->groupEnd();
+        $rows = $builder->get()->getResult();
+        $detilList = $rows;
     }
+
+    $lnKodeList = [];
+    foreach ($detilList as $item) {
+        if (is_array($item) && isset($item['detLnKode'])) {
+            $lnKodeList[] = $item['detLnKode'];
+        } elseif (is_object($item) && isset($item->detLnKode)) {
+            $lnKodeList[] = $item->detLnKode;
+        }
+    }
+
+    $lnKodeList = array_values(array_unique(array_filter($lnKodeList, function ($v) {
+        return $v !== null && $v !== '' && $v !== 0;
+    })));
+
+    if (empty($lnKodeList)) {
+        return $this->response->setJSON(['items' => []]);
+    }
+
+    // ambil parent list, langsung order by tanggal terbaru
+    $db = \Config\Database::connect();
+    $builder = $db->table('simlab_t_layanan as l');
+
+    $builder->select('l.*, u.user_name as pemesan_name, u.user_email as pemesan_email, u.user_identity as pemesan_identity');
+    $builder->join('simlab_account_users as u', 'u.user_id = l.user_id', 'left');
+    $builder->whereIn('l.lnKode', $lnKodeList);
+
+    // exclude lnStatus = 2 (Ditolak) seperti semula
+    $builder->where('l.lnStatus !=', 2);
+
+    // urutkan berdasarkan tanggal terbaru
+    $builder->orderBy('l.lnTgl', 'DESC');
+    $list = $builder->get()->getResult();
+
+    // langsung iterasi list sesuai urutan tanggal (baru -> lama)
+    foreach ($list as $row) {
+        // lewati status 0 sesuai kode awal
+        if ((int)$row->lnStatus === 0) {
+            continue;
+        }
+
+        $id = bin2hex($this->encrypter->encrypt($row->lnKode));
+        $response = [];
+
+        $pemesanNama = !empty($row->pemesan_name) ? $row->pemesan_name : '-';
+        $tipe = !empty($row->pemesan_identity) ? $row->pemesan_identity : '-';
+        $tanggal = !empty($row->lnTgl) ? date('d-m-Y H:i', strtotime($row->lnTgl)) : '-';
+
+        $combined = '
+            <div style="line-height:1.3;">
+                <span style="font-size:1rem; font-weight:600;">' . esc($pemesanNama) . '</span><br>
+                <span style="font-size:0.9rem; color:#555;">' . esc($tanggal) . ' | ' . esc($tipe) . '</span>
+            </div>';
+        $response[] = $combined;
+
+        $response[] = $this->formatStatus($row->lnStatus);
+
+        $response[] = '<a href="javascript:void(0)" onclick="loadDetail(\'' . $id . '\')" 
+                        class="btn btn-sm btn-info">
+                        <i class="bi bi-gear"></i> Review Layanan
+                    </a>';
+
+        $data[] = $response;
+    }
+
+    $output = ["items" => $data];
+    return $this->response->setJSON($output);
+}
+
 
     public function detailList($id = null)
 {
@@ -196,7 +180,13 @@ class FormulirManajer extends BaseController
         $response[] = $no++;
         $response[] = $row->detLayanan ?? '-';
         $response[] = isset($row->jumlah) ? (int)$row->jumlah : 0;
-        $response[] = $row->detKet ?? '';
+        $response[] = '<div 
+                    style="display:block; max-width:240px; min-width:160px; width:100%;
+                        max-height:120px; min-height:48px; overflow-y:auto; overflow-x:hidden;
+                        padding:4px 6px; border:1px solid #ddd; border-radius:4px; background:#f9f9f9;
+                        white-space:pre-wrap; word-break:break-word; font-size:0.9rem;">'
+                    . htmlspecialchars($row->detKet ?? '', ENT_QUOTES, 'UTF-8') .
+                    '</div>';
 
         // status grouping
         $statusGroup = isset($row->detStatusGroup) ? (int)$row->detStatusGroup : null;
@@ -211,33 +201,34 @@ class FormulirManajer extends BaseController
         }
         $response[] = $statusHtml;
 
-        // aksi approve/reject (sama seperti sebelumnya)
+        // aksi approve/reject 
         $ujiKodeInt = (int)$row->detUjiKode;
         $encLnForBtn = $encLnId;
 
+        
+        // komentar per-layanan: textarea multiline, data-uji untuk identifikasi
+        $komentarVal = $row->detKetLn !== null ? esc($row->detKetLn) : '';
+        $textarea = '<textarea class="form-control komentar-input" data-uji="' . $ujiKodeInt . '" rows="2" placeholder="Keterangan/manajer..."'
+        . ' style="max-width:240px; min-width:160px; max-height:120px; min-height:48px; overflow-y:auto; overflow-x:hidden; resize:vertical; white-space:pre-wrap; word-break:break-word;">'
+        . $komentarVal .
+        '</textarea>';
+        
+        $response[] = $textarea;
+        
         $aksiHtml = '<div class="d-flex justify-content-center gap-2 align-items-center">';
         $aksiHtml .= '<span class="text-success btn-action" title="Setujui" data-ln="' . $encLnForBtn . '" data-uji="' . $ujiKodeInt . '" onclick="confirmApproveDetail(event)"><i class="bi bi-check-circle"></i></span> ';
         $aksiHtml .= '<span class="text-warning btn-action" title="Tolak" data-ln="' . $encLnForBtn . '" data-uji="' . $ujiKodeInt . '" onclick="confirmRejectDetail(event)"><i class="bi bi-x-circle"></i></span>';
         $aksiHtml .= '</div>';
         $response[] = $aksiHtml;
 
-        // komentar per-layanan: textarea multiline, data-uji untuk identifikasi
-        $komentarVal = $row->detKetLn !== null ? esc($row->detKetLn) : '';
-        $textarea = '<textarea class="form-control komentar-input" data-uji="' . $ujiKodeInt . '" rows="2" placeholder="Keterangan/manajer...">'
-                    . $komentarVal .
-                    '</textarea>';
-        $response[] = $textarea;
-
         $data[] = $response;
     }
 
-    // kirim juga encLn agar JS bisa pakai
     return $this->response->setJSON(['items' => $data, 'encLn' => $encLnId]);
 }
 
 public function saveKomentar()
 {
-    // baca raw JSON
     $raw = file_get_contents('php://input');
     $input = json_decode($raw, true);
 
@@ -268,7 +259,7 @@ public function saveKomentar()
     $db = \Config\Database::connect();
     $builder = $db->table('simlab_t_layanan_detil');
 
-    // Otorisasi singkat: pastikan user adalah manager teknis untuk minimal 1 baris LN ini
+    // Otorisasi singkat, user adalah manager teknis untuk minimal 1 baris LN ini
     $check = (int)$db->table('simlab_t_layanan_detil')
         ->where('detLnKode', $lnKode)
         ->where('detManajerTeknis', $user_id)
@@ -391,7 +382,7 @@ public function saveKomentar()
             ]);
         }
 
-        // update only rows that are not yet 1
+        // update hanya row bkn 1
         $res = $db->table('simlab_t_layanan_detil')
                 ->where('detLnKode', $lnId)
                 ->where('detUjiKode', $uji)
@@ -512,7 +503,7 @@ public function saveKomentar()
             ]);
         }
 
-        // update only rows that are not yet 2
+        // update hanya row bkn 2
         $res = $db->table('simlab_t_layanan_detil')
                 ->where('detLnKode', $lnId)
                 ->where('detUjiKode', $uji)
@@ -595,7 +586,7 @@ public function saveKomentar()
         ]);
     }
 
-    // 1) Pastikan manajer saat ini sudah tidak memiliki item pending
+    // 1) manajer saat ini sudah tidak memiliki item pending
     $pendingManagerCount = (int) $db->table('simlab_t_layanan_detil')
         ->where('detLnKode', $lnId)
         ->where('detManajerTeknis', $user_id)

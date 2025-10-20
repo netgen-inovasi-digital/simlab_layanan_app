@@ -236,7 +236,13 @@ class Pelayanan extends BaseController
         $response[] = $row->detLayanan ?? '-';
         $response[] = isset($row->detBiaya) ? number_format($row->detBiaya, 0, ',', '.') : '-';
         $response[] = isset($row->jumlah) ? (int)$row->jumlah : 0;
-        $response[] = $row->detKet ?? '';
+        $response[] = '<div 
+                    style="display:block; max-width:240px; min-width:160px; width:100%;
+                        max-height:120px; min-height:48px; overflow-y:auto; overflow-x:hidden;
+                        padding:4px 6px; border:1px solid #ddd; border-radius:4px; background:#f9f9f9;
+                        white-space:pre-wrap; word-break:break-word; font-size:0.9rem;">'
+                    . htmlspecialchars($row->detKet ?? '', ENT_QUOTES, 'UTF-8') .
+                    '</div>';
 
         // Status grouping (0 = pending, 1 = diterima, 2 = ditolak)
         $statusGroup = isset($row->detStatusGroup) ? (int)$row->detStatusGroup : null;
