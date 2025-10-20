@@ -14,7 +14,7 @@
                             <th show width="15%">Nilai Tagihan</th>
                             <th show width="15%">File Invoice</th>
                             <th show width="15%">Status</th>
-                            <th show width="10%">Aksi</th>
+                            <th show width="10%" class="text-end">Aksi</th>
                         </tr>
                     </thead>
                     <tbody id="table-body"></tbody>
@@ -336,69 +336,4 @@
             });
     }
 
-    /**
-     * Hapus tagihan
-     */
-    function deleteItem(event) {
-        const id = event.target.closest('.btn-action').parentElement.id;
-        sayConfirm(
-            'Konfirmasi Hapus',
-            'Apakah Anda yakin ingin menghapus tagihan ini? File invoice juga akan terhapus.',
-            function() {
-                executeDelete(id);
-            }
-        );
-    }
-
-    /**
-     * Eksekusi hapus tagihan
-     */
-    function executeDelete(id) {
-        console.log('=== Tagihan: executeDelete called for ID ===', id);
-
-        const csrfToken = document.querySelector('.txt_csrfname').value;
-        const csrfName = '<?= csrf_token() ?>';
-
-        // Buat FormData untuk delete request
-        const formData = new FormData();
-        formData.append('id', id);
-        formData.append(csrfName, csrfToken);
-
-        // Gunakan fetch() API
-        fetch('<?php echo site_url("tagihan/delete") ?>', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => {
-                console.log('=== Tagihan: Delete response status ===', response.status);
-                return response.json();
-            })
-            .then(data => {
-                console.log('=== Tagihan: Delete response ===', data);
-
-                // Update CSRF token
-                if (data.xname && data.xhash) {
-                    const csrfInput = document.querySelector('input[name="' + data.xname + '"]');
-                    if (csrfInput) {
-                        csrfInput.value = data.xhash;
-                        console.log('=== Tagihan: CSRF token updated ===');
-                    }
-                }
-
-                if (data.res) {
-                    sayAlert('successModal', 'Berhasil', data.msg, 'success');
-                    if (typeof table !== 'undefined') {
-                        table.fetchData({
-                            reload: true
-                        });
-                    }
-                } else {
-                    sayAlert('errorModal', 'Gagal', data.msg, 'error');
-                }
-            })
-            .catch(error => {
-                console.error('=== Tagihan: Delete error ===', error);
-                sayAlert('errorModal', 'Error', 'Terjadi kesalahan saat menghapus data: ' + error.message, 'error');
-            });
-    }
 </script>

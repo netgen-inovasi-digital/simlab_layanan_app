@@ -9,7 +9,7 @@
                     <thead>
                         <tr>
                             <th show width="5%">No.</th>
-                            <th show width="15%">No. Invoice & Tanggal</th>  
+                            <th show width="15%">No. Invoice & Tanggal</th>
                             <th show width="10%">Pemesan</th>
                             <th show width="25%">Item Layanan</th>
                             <th show width="10%">LHUS </th>
@@ -46,7 +46,9 @@
                 formData: formData,
                 onSuccess: function(data) {
                     if (data.res === true) {
-                        if (typeof table !== 'undefined') table.fetchData({ reload: true });
+                        if (typeof table !== 'undefined') table.fetchData({
+                            reload: true
+                        });
                         sayAlert('successModal', 'Berhasil', 'Data berhasil disimpan.', 'success');
                         if ($('#modalForm').hasClass('show')) $('#modalForm').modal('hide');
                     }
@@ -58,64 +60,71 @@
     /**
      * 🔹 Fungsi untuk simpan data ke server via AJAX
      */
-    function saveData({ url, formData, onSuccess, onError }) {
+    function saveData({
+        url,
+        formData,
+        onSuccess,
+        onError
+    }) {
         showLoading();
 
         const csrfInput = document.querySelector('[name="<?= csrf_token() ?>"]');
         const csrfToken = csrfInput ? csrfInput.value : '';
 
         fetch(url, {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-CSRF-TOKEN': csrfToken
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.xname && data.xhash) {
-                document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => {
-                    input.value = data.xhash;
-                });
-            }
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.xname && data.xhash) {
+                    document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => {
+                        input.value = data.xhash;
+                    });
+                }
 
-            if (typeof onSuccess === 'function') {
-                onSuccess(data);
-                return;
-            }
+                if (typeof onSuccess === 'function') {
+                    onSuccess(data);
+                    return;
+                }
 
-            if ($('#modalForm').hasClass('show')) $('#modalForm').modal('hide');
+                if ($('#modalForm').hasClass('show')) $('#modalForm').modal('hide');
 
-            // 🔹 Kondisi response
-            if (data.res === true) {
-                if (typeof table !== 'undefined') table.fetchData({ reload: true });
-                sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
-            } else if (data.res === 'reload') {
-                sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
-            } else if (data.res === 'refresh') {
-                loadContent(data.link);
-                sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
-            } else if (data.res === 'redirect') {
-                window.location.href = data.link;
-            } else if (data.res === 'check') {
-                sayAlert('errorModal', 'Error', data.link, 'warning');
-            } else if (data.res === 'refresh-print') {
-                loadContent(data.link);
-                window.open(data.print, "_blank");
-            } else {
-                sayAlert('errorModal', 'Error', 'Data gagal disimpan.', 'warning');
-            }
-        })
-        .catch(error => {
-            if (typeof onError === 'function') {
-                onError(error);
-            } else {
-                sayAlert('errorModal', 'Error', 'Terjadi kesalahan pada sistem.', 'warning');
-            }
-        })
-        .finally(() => {
-            hideLoading();
-        });
+                // 🔹 Kondisi response
+                if (data.res === true) {
+                    if (typeof table !== 'undefined') table.fetchData({
+                        reload: true
+                    });
+                    sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
+                } else if (data.res === 'reload') {
+                    sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
+                } else if (data.res === 'refresh') {
+                    loadContent(data.link);
+                    sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
+                } else if (data.res === 'redirect') {
+                    window.location.href = data.link;
+                } else if (data.res === 'check') {
+                    sayAlert('errorModal', 'Error', data.link, 'warning');
+                } else if (data.res === 'refresh-print') {
+                    loadContent(data.link);
+                    window.open(data.print, "_blank");
+                } else {
+                    sayAlert('errorModal', 'Error', 'Data gagal disimpan.', 'warning');
+                }
+            })
+            .catch(error => {
+                if (typeof onError === 'function') {
+                    onError(error);
+                } else {
+                    sayAlert('errorModal', 'Error', 'Terjadi kesalahan pada sistem.', 'warning');
+                }
+            })
+            .finally(() => {
+                hideLoading();
+            });
     }
 
     /**
@@ -131,26 +140,28 @@
             const csrfToken = csrfInput ? csrfInput.value : '';
 
             fetch('<?php echo site_url("pelaksanaan/proses/") ?>' + id, {
-                method: 'POST',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': csrfToken
-                }
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.res) {
-                    if (typeof table !== 'undefined') table.fetchData({ reload: true });
-                    sayAlert('successModal', 'Berhasil', 'Data berhasil diproses', 'success');
-                } else {
-                    sayAlert('errorModal', 'Gagal', data.msg || 'Proses gagal dilakukan', 'warning');
-                }
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': csrfToken
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.res) {
+                        if (typeof table !== 'undefined') table.fetchData({
+                            reload: true
+                        });
+                        sayAlert('successModal', 'Berhasil', 'Data berhasil diproses', 'success');
+                    } else {
+                        sayAlert('errorModal', 'Gagal', data.msg || 'Proses gagal dilakukan', 'warning');
+                    }
 
-                if (data.xname && data.xhash) {
-                    document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => input.value = data.xhash);
-                }
-            })
-            .catch(err => sayAlert('errorModal', 'Error', 'Terjadi kesalahan sistem', 'warning'));
+                    if (data.xname && data.xhash) {
+                        document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => input.value = data.xhash);
+                    }
+                })
+                .catch(err => sayAlert('errorModal', 'Error', 'Terjadi kesalahan sistem', 'warning'));
         }
     }
 
@@ -167,30 +178,32 @@
             const csrfToken = csrfInput ? csrfInput.value : '';
 
             fetch('<?php echo site_url("pelaksanaan/delete/") ?>' + id, {
-                method: 'POST',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': csrfToken
-                }
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.res) {
-                    if (typeof table !== 'undefined') table.fetchData({ reload: true });
-                    sayAlert('successModal', 'Berhasil', 'Data berhasil dihapus', 'success');
-                } else {
-                    sayAlert('errorModal', 'Gagal', data.msg || 'Hapus gagal dilakukan', 'warning');
-                }
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': csrfToken
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.res) {
+                        if (typeof table !== 'undefined') table.fetchData({
+                            reload: true
+                        });
+                        sayAlert('successModal', 'Berhasil', 'Data berhasil dihapus', 'success');
+                    } else {
+                        sayAlert('errorModal', 'Gagal', data.msg || 'Hapus gagal dilakukan', 'warning');
+                    }
 
-                if (data.xname && data.xhash) {
-                    document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => input.value = data.xhash);
-                }
-            })
-            .catch(err => sayAlert('errorModal', 'Error', 'Terjadi kesalahan sistem', 'warning'));
+                    if (data.xname && data.xhash) {
+                        document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => input.value = data.xhash);
+                    }
+                })
+                .catch(err => sayAlert('errorModal', 'Error', 'Terjadi kesalahan sistem', 'warning'));
         }
     }
 
-   
+
     // 🔹 Tombol Lihat Detail
     function loadDetail(id) {
         const url = '<?php echo site_url("hasilpengujian/detaillist/") ?>' + id;
@@ -199,10 +212,16 @@
         // tampilkan loading
         tbody.innerHTML = '<tr><td colspan="4" class="text-center">Loading...</td></tr>';
 
-        fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        fetch(url, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
             .then(response => {
                 if (!response.ok) {
-                    return response.text().then(t => { throw new Error('HTTP ' + response.status + ': ' + t); });
+                    return response.text().then(t => {
+                        throw new Error('HTTP ' + response.status + ': ' + t);
+                    });
                 }
                 return response.json();
             })
@@ -211,7 +230,9 @@
                 if (data.items && data.items.length > 0) {
                     data.items.forEach(function(row) {
                         let tr = '<tr>';
-                        row.forEach(function(col) { tr += '<td>' + col + '</td>'; });
+                        row.forEach(function(col) {
+                            tr += '<td>' + col + '</td>';
+                        });
                         tr += '</tr>';
                         tbody.innerHTML += tr;
                     });
@@ -340,122 +361,127 @@
         showLoading();
 
         fetch(url, {
-            method: 'POST',
-            body: formData,
-            headers: { 'X-CSRF-TOKEN': csrfToken }
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.xname && data.xhash) {
-                document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => input.value = data.xhash);
-            }
-            if (data.res === true) {
-                if (typeof sayAlert === 'function') sayAlert('successModal', 'Berhasil', data.msg || 'File berhasil diunggah.', 'success');
-                // hide modal
-                if (typeof bootstrap !== 'undefined') {
-                    const modalEl = document.getElementById('modalUploadLhu');
-                    const modal = bootstrap.Modal.getInstance(modalEl);
-                    if (modal) modal.hide();
-                } else {
-                    $('#modalUploadLhu').modal('hide');
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken
                 }
-                if (typeof table !== 'undefined') table.fetchData({ reload: true });
-            } else {
-                if (typeof sayAlert === 'function') sayAlert('errorModal', 'Gagal', data.msg || 'Upload gagal.', 'warning');
-                else alert(data.msg || 'Upload gagal.');
-            }
-        })
-        .catch(err => {
-            console.error(err);
-            if (typeof sayAlert === 'function') sayAlert('errorModal', 'Error', 'Terjadi kesalahan saat upload.', 'warning');
-            else alert('Terjadi kesalahan saat upload.');
-        })
-        .finally(() => {
-            hideLoading();
-        });
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.xname && data.xhash) {
+                    document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => input.value = data.xhash);
+                }
+                if (data.res === true) {
+                    if (typeof sayAlert === 'function') sayAlert('successModal', 'Berhasil', data.msg || 'File berhasil diunggah.', 'success');
+                    // hide modal
+                    if (typeof bootstrap !== 'undefined') {
+                        const modalEl = document.getElementById('modalUploadLhu');
+                        const modal = bootstrap.Modal.getInstance(modalEl);
+                        if (modal) modal.hide();
+                    } else {
+                        $('#modalUploadLhu').modal('hide');
+                    }
+                    if (typeof table !== 'undefined') table.fetchData({
+                        reload: true
+                    });
+                } else {
+                    if (typeof sayAlert === 'function') sayAlert('errorModal', 'Gagal', data.msg || 'Upload gagal.', 'warning');
+                    else alert(data.msg || 'Upload gagal.');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                if (typeof sayAlert === 'function') sayAlert('errorModal', 'Error', 'Terjadi kesalahan saat upload.', 'warning');
+                else alert('Terjadi kesalahan saat upload.');
+            })
+            .finally(() => {
+                hideLoading();
+            });
     });
-
 </script>
 
 <!-- 🔹 Modal Detail -->
 <div class="modal fade" id="modalDetail" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
-  <div class="modal-dialog modal-lg" role="document" style="margin: 2% auto">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Detail Item Layanan</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <table class="table table-bordered">
-          <thead>
-            <tr>
-              <th width="5%">No</th>
-              <!-- <th width="15%">Kode</th> -->
-              <th width="40%">Layanan</th>
-              <th width="20%">Biaya</th>
-              <th width="20%">Keterangan</th>
-            </tr>
-          </thead>
-          <tbody id="detail-body">
-            <tr><td colspan="5" class="text-center">Loading...</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-light" type="button" data-bs-dismiss="modal">
-          <i class="bi bi-x-circle"></i> Tutup
-        </button>
-      </div>
+    <div class="modal-dialog modal-lg" role="document" style="margin: 2% auto">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Detail Item Layanan</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th width="5%">No</th>
+                            <!-- <th width="15%">Kode</th> -->
+                            <th width="40%">Layanan</th>
+                            <th width="20%">Biaya</th>
+                            <th width="20%">Keterangan</th>
+                        </tr>
+                    </thead>
+                    <tbody id="detail-body">
+                        <tr>
+                            <td colspan="5" class="text-center">Loading...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-light" type="button" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> Tutup
+                </button>
+            </div>
+        </div>
     </div>
-  </div>
 </div>
 
 <!-- Modal Upload LHU -->
 <div class="modal fade" id="modalUploadLhu" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
-  <div class="modal-dialog modal-md" role="document" style="margin: 4% auto">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Unggah File LHU</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-
-      <div style="border-bottom:1px solid #e9ecef"></div>
-
-      <div class="modal-body">
-        <form id="formUploadLhu" action="<?php echo site_url('pelaksanaan/upload') ?>" method="post" enctype="multipart/form-data" novalidate>
-          <!-- CSRF input (server-side) -->
-          <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>">
-          <input type="hidden" name="id" id="upload_lhu_id" value="">
-          <input type="hidden" name="detKode" id="upload_detKode" value="">
-
-          <div class="mb-3">
-            <label for="lhu_file" class="form-label">Pilih File (jpg, png, pdf, docx, xlsx)</label>
-
-            <div class="d-flex align-items-center gap-2">
-              <input type="file" name="lhu_file" id="lhu_file" class="form-control" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx" style="max-width:360px">
-              <button type="button" id="btnViewExistingLhu" class="btn btn-outline-primary btn-sm" title="Lihat Bukti" disabled>
-                <i class="bi bi-eye"></i> <span class="d-none d-sm-inline">Lihat Bukti</span>
-              </button>
+    <div class="modal-dialog modal-md" role="document" style="margin: 4% auto">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Unggah File LHU</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
 
-            <div id="lhu-selection" class="form-text mt-2">Anda bisa unggah file baru untuk mengganti.</div>
-            <div class="form-text text-muted">Ukuran maksimal 5MB.</div>
-          </div>
-        </form>
-      </div>
+            <div style="border-bottom:1px solid #e9ecef"></div>
 
-      <div class="modal-footer justify-content-between">
-        <div class="text-start">
-          <button class="btn btn-light" type="button" id="btnCancelUpload" data-bs-dismiss="modal">
-            <i class="bi bi-x-circle"></i> Batal
-          </button>
+            <div class="modal-body">
+                <form id="formUploadLhu" action="<?php echo site_url('pelaksanaan/upload') ?>" method="post" enctype="multipart/form-data" novalidate>
+                    <!-- CSRF input (server-side) -->
+                    <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>">
+                    <input type="hidden" name="id" id="upload_lhu_id" value="">
+                    <input type="hidden" name="detKode" id="upload_detKode" value="">
+
+                    <div class="mb-3">
+                        <label for="lhu_file" class="form-label">Pilih File (jpg, png, pdf, docx, xlsx)</label>
+
+                        <div class="d-flex align-items-center gap-2">
+                            <input type="file" name="lhu_file" id="lhu_file" class="form-control" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx" style="max-width:360px">
+                            <button type="button" id="btnViewExistingLhu" class="btn btn-outline-primary btn-sm" title="Lihat Bukti" disabled>
+                                <i class="bi bi-eye"></i> <span class="d-none d-sm-inline">Lihat Bukti</span>
+                            </button>
+                        </div>
+
+                        <div id="lhu-selection" class="form-text mt-2">Anda bisa unggah file baru untuk mengganti.</div>
+                        <div class="form-text text-muted">Ukuran maksimal 5MB.</div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="modal-footer justify-content-between">
+                <div class="text-start">
+                    <button class="btn btn-light" type="button" id="btnCancelUpload" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Batal
+                    </button>
+                </div>
+                <div>
+                    <button class="btn btn-primary" id="btnUploadLhu" type="button">
+                        <i class="bi bi-cloud-upload"></i> Unggah
+                    </button>
+                </div>
+            </div>
         </div>
-        <div>
-          <button class="btn btn-primary" id="btnUploadLhu" type="button">
-            <i class="bi bi-cloud-upload"></i> Unggah
-          </button>
-        </div>
-      </div>
     </div>
-  </div>
 </div>

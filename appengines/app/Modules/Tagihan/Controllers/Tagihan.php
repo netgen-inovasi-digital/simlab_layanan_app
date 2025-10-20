@@ -57,7 +57,7 @@ class Tagihan extends BaseController
 
             // Gunakan indexed array, bukan associative array
             $response = [];
-            $response[] = $row->bayarInvoiceNo ?? '<span class="badge bg-warning">Belum Ada</span>';
+            $response[] = $row->bayarInvoiceNo ?? '<span class="badge bg-warning">Belum Ditambahkan</span>';
             $response[] = $row->lnOrangNama ?? '-';
             $response[] = 'Rp ' . number_format($row->bayarTotalBiaya ?? 0, 0, ',', '.');
 
@@ -101,7 +101,7 @@ class Tagihan extends BaseController
 
         // Hitung detil yang sudah status = 1
         $detilSelesai = $builder->where('detLnKode', $lnKode)
-            ->where('detStatus', 1)
+            ->where('detKirim', 1)
             ->countAllResults();
 
         // Jika semua detil sudah selesai, return 1, jika tidak return 0
@@ -143,9 +143,6 @@ class Tagihan extends BaseController
             <label class="divider">|</label>
             <span class="' . $prosesClass . ' btn-action" ' . $prosesDisabled . ' title="' . $prosesTitle . '" onclick="prosesItem(event)">
                 <i class="bi bi-check-circle"></i></span>
-            <label class="divider">|</label>
-            <span class="text-danger btn-action" title="Hapus" onclick="deleteItem(event)">
-                <i class="bi bi-trash"></i></span>
         </div>';
     }
 
@@ -458,12 +455,12 @@ class Tagihan extends BaseController
 
         // Jika ada detil, update statusnya
         if ($countDetil > 0) {
-            log_message('debug', 'Updating detStatus for lnKode: ' . $lnKode);
+            log_message('debug', 'Updating detKirim for lnKode: ' . $lnKode);
 
             // Update semua detil yang terkait dengan lnKode ini
             $builder = $db->table('simlab_t_layanan_detil');
             $builder->where('detLnKode', $lnKode);
-            $builder->set('detStatus', 1);
+            $builder->set('detKirim', 1);
             $updateDetil = $builder->update();
 
             log_message('debug', 'Update detil result: ' . ($updateDetil ? 'success' : 'failed'));
@@ -483,53 +480,12 @@ class Tagihan extends BaseController
         ]);
     }
 
-    /**
-     * Hapus tagihan beserta file invoice
-     */
-    public function delete()
-    {
-        $id = $this->request->getPost('id');
-
-        try {
-            $id = service('encrypter')->decrypt(hex2bin($id));
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'res' => false,
-                'msg' => 'ID tidak valid',
-                'xname' => csrf_token(),
-                'xhash' => csrf_hash()
-            ]);
-        }
-
-        $model = new MyModel($this->table);
-
-        // Ambil data untuk hapus file invoice jika ada
-        $data = $model->getDataById($this->id, $id);
-        if ($data && !empty($data->bayarInvoiceFile)) {
-            $filePath = FCPATH . 'uploads/invoice/' . $data->bayarInvoiceFile;
-            if (file_exists($filePath)) {
-                @unlink($filePath);
-            }
-        }
-
-        $res = $model->deleteData($this->id, $id);
-
-        return $this->response->setJSON([
-            'res' => $res,
-            'msg' => $res ? 'Tagihan berhasil dihapus' : 'Gagal menghapus tagihan',
-            'xname' => csrf_token(),
-            'xhash' => csrf_hash()
-        ]);
-    }
-
     function aksi($id)
     {
         return '<div id="' . $id . '" class="float-end">
 			<span class="text-secondary btn-action" title="Ubah" onclick="editItem(event)">
 				<i class="bi bi-pencil-square"></i></span> 
 			<label class="divider">|</label>
-			<span class="text-danger btn-action" title="Hapus" onclick="deleteItem(event)">
-				<i class="bi bi-trash"></i></span>
 		</div>';
     }
 }
