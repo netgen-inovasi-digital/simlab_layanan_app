@@ -10,12 +10,10 @@
                     <thead>
                         <tr>
                             <th show width="8%">No.</th>
-                            <th show>Tanggal</th>
-                            <th show>Pemesan</th>
-                            <th show>Asal</th>
-                            <th show>Status</th>
-                            <th show>Item Layanan</th>
-                            <th show class="action text-end">Aksi<i class="bi bi-code sort-icon"></i></th>
+                            <th show width="35%">Pemesan</th>
+                            <th show width="25%">Status layanan</th>
+                            <th show width="15%">Aksi</th>
+                            <!-- <th show class="action text-end">Aksi<i class="bi bi-code sort-icon"></i></th> -->
                         </tr>
                     </thead>
                     <tbody id="table-body"></tbody>
@@ -26,7 +24,7 @@
 </div>
 
 
-<!-- 🔹 Modal Detail -->
+<!--  Modal Detail -->
 <div class="modal fade" id="modalDetail" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
   <div class="modal-dialog modal-lg" role="document" style="margin: 2% auto">
     <div class="modal-content">
@@ -55,6 +53,10 @@
       <div class="modal-footer">
         <button class="btn btn-light" type="button" data-bs-dismiss="modal">
           <i class="bi bi-x-circle"></i> Tutup
+        </button>
+
+         <button id="btnKirimDetail" class="btn btn-primary" type="button" title="Kirim semua item (approve)">
+          <i class="bi bi-send"></i> Kirim
         </button>
       </div>
     </div>
@@ -152,114 +154,87 @@
             });
     }
 
-   // Tombol Approve pada baris utama (tetap ada konfirmasi untuk baris utama)
-function confirmApprove(e) {
-    e.preventDefault();
-    let id = e.currentTarget.closest('div').id;
-    if (!id) return;
-
-    if (!confirm('Yakin ingin approve data ini?')) return;
-
-    // ambil CSRF token input (nilai name token berubah setelah request)
-    const csrfInput = document.querySelector('[name="<?= csrf_token() ?>"]');
-    const csrfToken = csrfInput ? csrfInput.value : '';
-
-    // disable sementara tombol supaya tidak double click
-    const container = document.getElementById(id);
-    if (container) container.querySelectorAll('.btn-action').forEach(el => el.style.pointerEvents = 'none');
-
-    fetch('<?php echo site_url("formulirmanajer/approve/") ?>' + id, {
-        method: 'POST',
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': csrfToken
+    // Buat satu instance modal (Bootstrap 5) jika tersedia, agar tidak membuat banyak backdrop
+    const _modalDetailEl = document.getElementById('modalDetail');
+    let _modalDetailInstance = null;
+    try {
+        if (_modalDetailEl) {
+            _modalDetailInstance = new bootstrap.Modal(_modalDetailEl);
         }
-    })
-    .then(res => res.json())
-    .then(data => {
-        // Update CSRF token jika dikembalikan
-        if (data.xname && data.xhash) {
-            document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => input.value = data.xhash);
-        }
+    } catch (err) {
+        // jika bootstrap belum tersedia, akan fallback ke jQuery modal show/hide seperti sebelumnya
+        _modalDetailInstance = null;
+    }
 
-        if (data.res) {
-            // tampilkan pesan spesifik berdasarkan det_affected
-            const affected = parseInt(data.det_affected || data.affected || 0, 10);
-            if (affected > 0) {
-                sayAlert('successModal', 'Berhasil', `- ${affected} layanan telah dikirim`, 'success');
-            } else {
-                // Parent sudah diupdate tetapi tidak ada detail yang perlu di-acc (mungkin sudah di-acc)
-                sayAlert('successModal', 'Berhasil', data.msg || 'Parent berhasil diapprove (tidak ada detail baru yang diubah).', 'success');
-            }
-
-            // refresh table utama jika ada
-            // if (typeof table !== 'undefined' && typeof table.fetchData === 'function') {
-            //     table.fetchData({ reload: true });
-            // }
-
-            // jika ada modal/detail view terbuka, coba reload detail (fungsi loadDetail harus ada)
-            // try {
-            //     if (typeof loadDetail === 'function') {
-            //         loadDetail(id);
-            //     }
-            // } catch (err) {
-            //     // ignore
-            // }
-        } else {
-            sayAlert('errorModal', 'Gagal', data.msg || 'Approve gagal dilakukan', 'warning');
-        }
-    })
-    .catch(err => {
-        console.error(err);
-        sayAlert('errorModal', 'Error', 'Terjadi kesalahan sistem', 'warning');
-    })
-    .finally(() => {
-        if (container) container.querySelectorAll('.btn-action').forEach(el => el.style.pointerEvents = 'auto');
-    });
-}
-
-
-    // Tombol Hapus pada baris utama
-    function deleteItem(e) {
-        e.preventDefault();
-        let id = e.currentTarget.closest('div').id;
-        if (!id) return;
-
-        if (!confirm('Yakin ingin menghapus data ini?')) return;
-
+    // Utility: ambil token CSRF saat ini
+    function _getCsrf() {
         const csrfInput = document.querySelector('[name="<?= csrf_token() ?>"]');
-        const csrfToken = csrfInput ? csrfInput.value : '';
+        return csrfInput ? csrfInput.value : '';
+    }
 
-        const container = document.getElementById(id);
-        if (container) container.querySelectorAll('.btn-action').forEach(el => el.style.pointerEvents = 'none');
+    // Tombol Kirim: gunakan flag sending dan disabled (tidak hanya pointerEvents)
+    document.querySelector('#btnKirimDetail')?.addEventListener('click', async function(e) {
+        e.preventDefault();
+        const btn = e.currentTarget;
+        const ln = btn.dataset.ln;
+        if (!ln) {
+            sayAlert('errorModal', 'Gagal', 'LN tidak ditemukan untuk dikirim', 'warning');
+            return;
+        }
 
-        fetch('<?php echo site_url("formulirmanajer/delete/") ?>' + id, {
-            method: 'POST',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRF-TOKEN': csrfToken
-            }
-        })
-        .then(res => res.json())
-        .then(data => {
+        if (btn.dataset.sending === '1') return; // sudah dalam proses
+        if (!confirm('Kirim semua item pada layanan ini? Pastikan semua item sudah disetujui/ditolak.')) return;
+
+        btn.dataset.sending = '1';
+        btn.disabled = true;
+
+        const csrfToken = _getCsrf();
+
+        const formData = new FormData();
+        formData.append('ln', ln);
+
+        try {
+            const res = await fetch('<?php echo site_url("formulirmanajer/kirim") ?>', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': csrfToken
+                }
+            });
+
+            const data = await res.json();
+
+            // update token jika dikembalikan
             if (data.xname && data.xhash) {
                 document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => input.value = data.xhash);
             }
+
             if (data.res) {
+                // sukses
+                sayAlert('successModal', 'Berhasil', data.msg || 'Layanan berhasil dikirim', 'success');
+                // reload detail & tabel utama
+                loadDetail(ln);
                 if (typeof table !== 'undefined') table.fetchData({ reload: true });
-                sayAlert('successModal', 'Berhasil', 'Data berhasil dihapus', 'success');
+                // tutup modal jika mau: gunakan instance agar backdrop tidak menumpuk
+                try {
+                    if (_modalDetailInstance) _modalDetailInstance.hide();
+                    else if (typeof $ === 'function') $('#modalDetail').modal('hide');
+                } catch (err) { /* ignore */ }
             } else {
-                sayAlert('errorModal', 'Gagal', data.msg || 'Hapus gagal dilakukan', 'warning');
+                // gagal (mungkin ada pending)
+                const msg = data.msg || 'Gagal mengirim layanan';
+                sayAlert('errorModal', 'Gagal', msg, 'warning');
             }
-        })
-        .catch(err => {
+        } catch (err) {
             console.error(err);
-            sayAlert('errorModal', 'Error', 'Terjadi kesalahan sistem', 'warning');
-        })
-        .finally(() => {
-            if (container) container.querySelectorAll('.btn-action').forEach(el => el.style.pointerEvents = 'auto');
-        });
-    }
+            sayAlert('errorModal', 'Error', 'Terjadi kesalahan sistem saat mengirim', 'warning');
+        } finally {
+            btn.dataset.sending = '0';
+            btn.disabled = false;
+        }
+    });
+
 
    function loadDetail(id) {
     const url = '<?php echo site_url("formulirmanajer/detailList/") ?>' + id;
@@ -283,12 +258,27 @@ function confirmApprove(e) {
             } else {
                 tbody.innerHTML = '<tr><td colspan="7" class="text-center">Tidak ada data</td></tr>';
             }
-            $('#modalDetail').modal('show');
+
+            // set LN pada tombol Kirim di modal agar handler tahu LN yang sedang ditampilkan
+            const btn = document.getElementById('btnKirimDetail');
+            if (btn) btn.dataset.ln = id;
+
+            // show modal menggunakan instance jika ada (mencegah backdrop ganda)
+            try {
+                if (_modalDetailInstance) _modalDetailInstance.show();
+                else if (typeof $ === 'function') $('#modalDetail').modal('show');
+            } catch (err) {
+                // fallback: tetap coba tampilkan dengan jQuery atau biarkan HTML default
+                if (typeof $ === 'function' && $('#modalDetail').modal) $('#modalDetail').modal('show');
+            }
         })
         .catch(error => {
             console.error(error);
             tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error load data</td></tr>';
-            $('#modalDetail').modal('show');
+            try {
+                if (_modalDetailInstance) _modalDetailInstance.show();
+                else if (typeof $ === 'function') $('#modalDetail').modal('show');
+            } catch (e) {}
         });
 }
 
@@ -310,10 +300,12 @@ function confirmApproveDetail(e) {
         return;
     }
 
+    // prevent double click by disabling pointer & using dataset.sending
+    if (el.dataset.sending === '1') return;
+    el.dataset.sending = '1';
     el.style.pointerEvents = 'none';
 
-    const csrfInput = document.querySelector('[name="<?= csrf_token() ?>"]');
-    const csrfToken = csrfInput ? csrfInput.value : '';
+    const csrfToken = _getCsrf();
 
     const formData = new FormData();
     formData.append('ln', ln);
@@ -346,6 +338,7 @@ function confirmApproveDetail(e) {
         sayAlert('errorModal', 'Error', 'Terjadi kesalahan sistem', 'warning');
     })
     .finally(() => {
+        el.dataset.sending = '0';
         el.style.pointerEvents = 'auto';
     });
 }
@@ -366,10 +359,12 @@ function confirmRejectDetail(e) {
         return;
     }
 
+    // prevent double click
+    if (el.dataset.sending === '1') return;
+    el.dataset.sending = '1';
     el.style.pointerEvents = 'none';
 
-    const csrfInput = document.querySelector('[name="<?= csrf_token() ?>"]');
-    const csrfToken = csrfInput ? csrfInput.value : '';
+    const csrfToken = _getCsrf();
 
     const formData = new FormData();
     formData.append('ln', ln);
@@ -402,6 +397,7 @@ function confirmRejectDetail(e) {
         sayAlert('errorModal', 'Error', 'Terjadi kesalahan sistem', 'warning');
     })
     .finally(() => {
+        el.dataset.sending = '0';
         el.style.pointerEvents = 'auto';
     });
 }

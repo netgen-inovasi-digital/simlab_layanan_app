@@ -302,7 +302,7 @@ class Keranjang extends BaseController
                     'detJumlah'         => $item['jumlah'] ?? 1,
                     'detKeterangan'     => $item['keterangan'] ?? null,
                     'detLayanan'        => $item['layanan'] ?? null,
-                    'detStatus'         => 1,
+                    'detStatus'         => 0,
                     'detJenKode'        => null,
                     'detPenyelia'       => $item['ujiPenyelia'] ?? null,
                     'detManajerTeknis'  => $item['ujiManajerTeknis'] ?? null,
