@@ -32,7 +32,7 @@ class Tagihan extends BaseController
                 'simlab_t_layanan' => 'simlab_t_pembayaran.bayarLnKode = simlab_t_layanan.lnKode'
             ];
 
-            $select = 'simlab_t_pembayaran.*, simlab_t_layanan.lnKode, simlab_t_layanan.lnAccEmail';
+            $select = 'simlab_t_pembayaran.*, simlab_t_layanan.lnKode, simlab_t_layanan.lnAccEmail, simlab_t_layanan.lnNoTransaksi, simlab_t_layanan.lnTgl, simlab_t_layanan.user_id';
 
             $orderBy = ['simlab_t_pembayaran.bayarKode' => 'DESC'];
 
@@ -41,12 +41,14 @@ class Tagihan extends BaseController
             // Log untuk debugging
             log_message('debug', 'Tagihan dataList - Total records: ' . count($list));
 
+            $userModel = new MyModel('simlab_account_users');
+
             $no = 1;
             foreach ($list as $row) {
                 $encrypted_id = bin2hex(service('encrypter')->encrypt($row->bayarKode));
 
-                // Cek status dari simlab_t_layanan_detil
-                $detilStatus = $this->getDetilStatus($row->bayarLnKode);
+                // Cek status berdasarkan lnNoTransaksi (bukan dari detKirim)
+                $detilStatus = !empty($row->lnNoTransaksi) ? 1 : 0;
 
                 // Status badge
                 $status = $this->formatStatus($detilStatus);
@@ -59,10 +61,61 @@ class Tagihan extends BaseController
                 // Tombol aksi
                 $aksi = $this->aksiButton($encrypted_id, $detilStatus, $currentFile);
 
+                // Ambil data user (seperti di FormulirAdmin)
+                $personName = null;
+                $userIdentity = '-';
+                $instansi = '-';
+                $u = null;
+
+                // 1️⃣ Cek langsung dari user_id (FK)
+                if (!empty($row->user_id)) {
+                    $u = $userModel->getDataById('user_id', $row->user_id);
+                }
+
+                // 2️⃣ Jika belum ada, cek berdasarkan email (lnAccEmail)
+                if (!$u && !empty($row->lnAccEmail)) {
+                    $users = $userModel->getAllDataById(['user_email' => $row->lnAccEmail]);
+                    if (!empty($users)) $u = is_array($users) ? $users[0] : $users;
+                }
+
+                // 3️⃣ Jika masih belum ketemu, cari user_id dari invoice (lnNoTransaksi)
+                if (!$u && !empty($row->lnNoTransaksi)) {
+                    $db = \Config\Database::connect();
+                    $qb = $db->table('simlab_t_layanan');
+                    $qb->select('user_id')
+                        ->where('lnNoTransaksi', $row->lnNoTransaksi)
+                        ->where('user_id IS NOT NULL', null, false);
+                    $res = $qb->get()->getResult();
+                    if (!empty($res)) {
+                        $foundUserId = (int)$res[0]->user_id;
+                        $u = $userModel->getDataById('user_id', $foundUserId);
+                    }
+                }
+
+                // 4️⃣ Jika user ditemukan, ambil info
+                if ($u) {
+                    $personName = $u->user_name ?? $u->user_email ?? '-';
+                    $instansi = $u->user_instansi ?? '-';
+                    $userIdentity = $u->user_identity ?? '-';
+                } else {
+                    $personName = $row->lnAccEmail ?? '-';
+                }
+
+                $pemesanNama = !empty($personName) ? $personName : '-';
+                $tipe = !empty($userIdentity) ? $userIdentity : '-';
+                $tanggal = !empty($row->lnTgl) ? date('d-m-Y H:i', strtotime($row->lnTgl)) : '-';
+
+                // Format gabungan seperti di FormulirAdmin
+                $combined = '
+                    <div style="line-height:1.3;">
+                        <span style="font-size:1rem; font-weight:600;">' . esc($pemesanNama) . '</span><br>
+                        <span style="font-size:0.9rem; color:#555;">' . esc($tanggal) . ' | ' . esc($tipe) . '</span>
+                    </div>';
+
                 // Gunakan indexed array, bukan associative array
                 $response = [];
                 $response[] = $row->bayarInvoiceNo ?? '<span class="badge bg-warning">Belum Ditambahkan</span>';
-                $response[] = $row->lnAccEmail ?? '-';
+                $response[] = $combined; // Nama + Tanggal + Tipe
                 $response[] = 'Rp ' . number_format($row->bayarTotalBiaya ?? 0, 0, ',', '.');
 
                 // Tampilkan info file (dari session atau database)
@@ -95,38 +148,15 @@ class Tagihan extends BaseController
     }
 
     /**
-     * Get status dari tabel simlab_t_layanan_detil
-     * Cek apakah semua detil sudah status = 1 (terkirim)
-     */
-    private function getDetilStatus($lnKode)
-    {
-        if (empty($lnKode)) {
-            return 0;
-        }
-
-        $db = \Config\Database::connect();
-        $builder = $db->table('simlab_t_layanan_detil');
-
-        // Hitung total detil
-        $totalDetil = $builder->where('detLnKode', $lnKode)->countAllResults(false);
-
-        // Hitung detil yang sudah status = 1
-        $detilSelesai = $builder->where('detLnKode', $lnKode)
-            ->where('detKirim', 1)
-            ->countAllResults();
-
-        // Jika semua detil sudah selesai, return 1, jika tidak return 0
-        return ($totalDetil > 0 && $totalDetil == $detilSelesai) ? 1 : 0;
-    }
-
-    /**
-     * Format status badge
+     * Format status badge berdasarkan lnNoTransaksi
+     * Jika lnNoTransaksi != null = Terkirim
+     * Jika lnNoTransaksi == null = Menunggu Proses
      */
     private function formatStatus($status)
     {
         switch ($status) {
             case 0:
-                return '<span class="badge bg-warning">Belum Diproses</span>';
+                return '<span class="badge bg-warning">Menunggu Proses</span>';
             case 1:
                 return '<span class="badge bg-success">Terkirim</span>';
             default:
@@ -455,37 +485,12 @@ class Tagihan extends BaseController
             log_message('warning', 'Failed to update lnNoTransaksi in simlab_t_layanan for lnKode: ' . $lnKode);
         }
 
-        // Update status di tabel simlab_t_layanan_detil
-        $builder = $db->table('simlab_t_layanan_detil');
-
-        // Cek apakah ada detil dengan lnKode ini
-        $countDetil = $builder->where('detLnKode', $lnKode)->countAllResults();
-        log_message('debug', 'Total detil found with lnKode ' . $lnKode . ': ' . $countDetil);
-
-        $msg = 'Tagihan berhasil diproses';
-
-        // Jika ada detil, update statusnya
-        if ($countDetil > 0) {
-            log_message('debug', 'Updating detKirim for lnKode: ' . $lnKode);
-
-            // Update semua detil yang terkait dengan lnKode ini
-            $builder = $db->table('simlab_t_layanan_detil');
-            $builder->where('detLnKode', $lnKode);
-            $builder->set('detKirim', 1);
-            $updateDetil = $builder->update();
-
-            log_message('debug', 'Update detil result: ' . ($updateDetil ? 'success' : 'failed'));
-            log_message('debug', 'Affected rows: ' . $db->affectedRows());
-            log_message('debug', 'Last query: ' . $db->getLastQuery());
-
-            $msg = 'Tagihan berhasil diproses dan status layanan diperbarui';
-        } else {
-            log_message('debug', 'No detil records found for lnKode ' . $lnKode . ', skipping detil status update');
-        }
+        // Status akan otomatis berubah menjadi "Terkirim" karena lnNoTransaksi sudah terisi
+        log_message('debug', 'Invoice sent successfully. Status will be updated to "Terkirim" automatically.');
 
         return $this->response->setJSON([
             'res' => true,
-            'msg' => $msg,
+            'msg' => 'Invoice berhasil dikirim ke pelanggan',
             'xname' => csrf_token(),
             'xhash' => csrf_hash()
         ]);

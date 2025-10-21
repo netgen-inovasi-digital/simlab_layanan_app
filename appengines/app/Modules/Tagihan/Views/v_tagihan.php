@@ -274,6 +274,17 @@
         console.log('=== Tagihan: Proses ID ===', document.getElementById('proses_id').value);
         console.log('=== Tagihan: No Invoice ===', document.getElementById('no_invoice').value);
 
+        // Explicitly add CSRF token to FormData
+        const csrfName = '<?= csrf_token() ?>';
+        const csrfHash = '<?= csrf_hash() ?>';
+        formData.set(csrfName, csrfHash);
+        console.log('=== CSRF Token Added ===', csrfName, '=', csrfHash);
+
+        // Debug: Log semua FormData
+        for (let pair of formData.entries()) {
+            console.log('FormData:', pair[0], '=', pair[1]);
+        }
+
         // Disable button
         btnProses.disabled = true;
         btnProses.innerHTML = '<i class="bi bi-hourglass-split"></i> Memproses...';
@@ -335,5 +346,4 @@
                 sayAlert('errorModal', 'Error', 'Terjadi kesalahan saat memproses tagihan: ' + error.message, 'error');
             });
     }
-
 </script>
