@@ -27,11 +27,30 @@ class PembayaranAdmin extends BaseController
             $db = \Config\Database::connect();
             $data = [];
 
-            // Query SEMUA pembayaran yang sudah ada invoice (admin melihat semua data)
+            // Ambil parameter filter dari request
+            $tanggalAwal = $this->request->getGet('tanggal_awal');
+            $tanggalAkhir = $this->request->getGet('tanggal_akhir');
+            $filterStatus = $this->request->getGet('status'); // 0=Menunggu, 1=Terkirim, 2=Belum Diverifikasi, 3=Terverifikasi, 4=Ditolak
+
+            // Debug log
+            log_message('info', 'Filter parameters - Tanggal Awal: ' . ($tanggalAwal ?? 'null') . ', Tanggal Akhir: ' . ($tanggalAkhir ?? 'null') . ', Status: ' . ($filterStatus ?? 'null'));
+
+            // Query SEMUA pembayaran dengan lnStatus > 3 (admin melihat semua data)
             $builder = $db->table('simlab_t_pembayaran');
-            $builder->select('simlab_t_pembayaran.*, simlab_t_layanan.lnKode, simlab_t_layanan.lnAccEmail, simlab_t_layanan.lnNoTransaksi, simlab_t_layanan.lnTgl, simlab_t_layanan.user_id');
+            $builder->select('simlab_t_pembayaran.*, simlab_t_layanan.lnKode, simlab_t_layanan.lnAccEmail, simlab_t_layanan.lnNoTransaksi, simlab_t_layanan.lnTgl, simlab_t_layanan.lnStatus, simlab_t_layanan.user_id');
             $builder->join('simlab_t_layanan', 'simlab_t_pembayaran.bayarLnKode = simlab_t_layanan.lnKode', 'inner');
-            $builder->where('simlab_t_pembayaran.bayarInvoiceNo IS NOT NULL');
+            $builder->where('simlab_t_layanan.lnStatus >', 3);
+
+            // Aplikasikan filter tanggal jika ada
+            if (!empty($tanggalAwal) && !empty($tanggalAkhir)) {
+                $builder->where('DATE(simlab_t_layanan.lnTgl) >=', $tanggalAwal);
+                $builder->where('DATE(simlab_t_layanan.lnTgl) <=', $tanggalAkhir);
+            } elseif (!empty($tanggalAwal)) {
+                $builder->where('DATE(simlab_t_layanan.lnTgl) >=', $tanggalAwal);
+            } elseif (!empty($tanggalAkhir)) {
+                $builder->where('DATE(simlab_t_layanan.lnTgl) <=', $tanggalAkhir);
+            }
+
             $builder->orderBy('simlab_t_pembayaran.bayarKode', 'DESC');
 
             $list = $builder->get()->getResult();
@@ -41,12 +60,55 @@ class PembayaranAdmin extends BaseController
             foreach ($list as $row) {
                 $encrypted_id = bin2hex(service('encrypter')->encrypt($row->bayarKode));
 
-                // Status pembayaran berdasarkan bayarBuktiFile dan bayarStatus
+                // Cek file invoice dari session (file baru yang belum dikirim)
+                $sessionKey = 'temp_invoice_' . $row->bayarKode;
+                $tempInvoiceFile = session()->get($sessionKey);
+
+                // Status berdasarkan lnNoTransaksi dan bayarBuktiFile (seperti di Tagihan dengan tambahan status verifikasi)
+                // 0 = Menunggu Proses (lnNoTransaksi kosong)
+                // 1 = Terkirim (lnNoTransaksi terisi, bukti bayar belum ada)
+                // 2 = Belum Diverifikasi (lnNoTransaksi terisi, bukti bayar ada, bayarStatus = 0)
+                // 3 = Terverifikasi (bayarStatus = 1)
+                // 4 = Ditolak (bayarStatus = 2)
+                $invoiceStatus = 0;
+                if (!empty($row->lnNoTransaksi)) {
+                    // Invoice sudah terkirim
+                    if (!empty($row->bayarBuktiFile)) {
+                        // Bukti bayar sudah ada, cek status verifikasi
+                        if ($row->bayarStatus == 1) {
+                            $invoiceStatus = 3; // Terverifikasi
+                        } elseif ($row->bayarStatus == 2) {
+                            $invoiceStatus = 4; // Ditolak
+                        } else {
+                            $invoiceStatus = 2; // Belum Diverifikasi
+                        }
+                    } else {
+                        $invoiceStatus = 1; // Terkirim (belum ada bukti bayar)
+                    }
+                } else {
+                    $invoiceStatus = 0; // Menunggu Proses (invoice belum terkirim)
+                }
+
+                // Filter berdasarkan status jika dipilih
+                if ($filterStatus !== null && $filterStatus !== '' && $filterStatus !== 'all') {
+                    // Konversi filterStatus ke integer untuk perbandingan
+                    $filterStatusInt = (int)$filterStatus;
+
+                    // Debug log untuk troubleshooting
+                    log_message('debug', 'Comparing status - filterStatus: ' . $filterStatusInt . ' (type: ' . gettype($filterStatusInt) . '), invoiceStatus: ' . $invoiceStatus . ' (type: ' . gettype($invoiceStatus) . ')');
+
+                    if ($filterStatusInt !== $invoiceStatus) {
+                        continue; // Skip row ini jika tidak sesuai filter
+                    }
+                }
+
+                $status = $this->formatInvoiceStatus($invoiceStatus);
+
+                // Status pembayaran untuk logic button (tetap gunakan bayarStatus)
                 $paymentStatus = $this->getPaymentStatus($row->bayarBuktiFile, $row->bayarStatus);
-                $status = $this->formatStatus($paymentStatus);
 
                 // Tombol aksi
-                $aksi = $this->aksiButton($encrypted_id, $paymentStatus, $row->bayarBuktiFile);
+                $aksi = $this->aksiButton($encrypted_id, $paymentStatus, $row->bayarBuktiFile, $row->bayarInvoiceFile, $row->lnNoTransaksi, $tempInvoiceFile);
 
                 // Ambil data user (sama seperti di Tagihan)
                 $personName = null;
@@ -85,10 +147,37 @@ class PembayaranAdmin extends BaseController
                         <span style="font-size:0.9rem; color:#555;">' . esc($tanggal) . ' | ' . esc($tipe) . '</span>
                     </div>';
 
+                // Kolom File Invoice - dengan logic seperti di Tagihan
+                $fileInvoiceDisplay = '';
+                $currentFile = !empty($tempInvoiceFile) ? $tempInvoiceFile : ($row->bayarInvoiceFile ?? '');
+
+                if (!empty($currentFile)) {
+                    if (!empty($tempInvoiceFile)) {
+                        // File baru dari session (belum dikirim) - Status: Menunggu Proses
+                        $fileInvoiceDisplay = '<span class="badge bg-info"><i class="bi bi-clock-history"></i> File Terupload</span>';
+                    } else {
+                        // File dari database (sudah dikirim) - Status: Terkirim
+                        $fileInvoiceDisplay = '<a href="' . base_url('uploads/invoice/' . $currentFile) . '" target="_blank" class="btn btn-sm btn-info"><i class="bi bi-file-pdf"></i> Lihat</a>';
+                    }
+                } else {
+                    // Belum ada file sama sekali - Status: Menunggu Proses
+                    $fileInvoiceDisplay = '<span class="text-muted">-</span>';
+                }
+
                 // Kolom bukti bayar
+                // Hanya tampilkan "-" jika status = Menunggu Proses (invoiceStatus = 0)
+                // Untuk status lain (Terkirim, Belum Diverifikasi, Terverifikasi, Ditolak), tampilkan file jika ada
                 $buktiBayar = '-';
-                if (!empty($row->bayarBuktiFile)) {
-                    $buktiBayar = '<a href="' . base_url('uploads/bukti/' . $row->bayarBuktiFile) . '" target="_blank" class="btn btn-sm btn-success"><i class="bi bi-file-earmark-check"></i> Lihat</a>';
+                if ($invoiceStatus == 0) {
+                    // Status Menunggu Proses - selalu tampilkan "-"
+                    $buktiBayar = '<span class="text-muted">-</span>';
+                } else {
+                    // Status Terkirim/Belum Diverifikasi/Terverifikasi/Ditolak - tampilkan bukti bayar jika ada
+                    if (!empty($row->bayarBuktiFile)) {
+                        $buktiBayar = '<a href="' . base_url('uploads/bukti/' . $row->bayarBuktiFile) . '" target="_blank" class="btn btn-sm btn-success"><i class="bi bi-file-earmark-check"></i> Lihat</a>';
+                    } else {
+                        $buktiBayar = '<span class="text-muted">-</span>';
+                    }
                 }
 
                 // Response array: 8 kolom
@@ -96,9 +185,7 @@ class PembayaranAdmin extends BaseController
                     !empty($row->bayarInvoiceNo) ? esc($row->bayarInvoiceNo) : '<span class="text-muted">-</span>', // No. Invoice
                     $combined, // Pemesan (Nama + Tanggal + Tipe)
                     'Rp ' . number_format($row->bayarTotalBiaya, 0, ',', '.'), // Total Biaya
-                    !empty($row->bayarInvoiceFile)
-                        ? '<a href="' . base_url('uploads/invoice/' . $row->bayarInvoiceFile) . '" target="_blank" class="btn btn-sm btn-info"><i class="bi bi-file-pdf"></i> Lihat</a>'
-                        : '<span class="text-muted">-</span>', // File Invoice
+                    $fileInvoiceDisplay, // File Invoice (dengan badge jika baru upload)
                     $buktiBayar, // Bukti Bayar
                     $status, // Status
                     $aksi // Aksi
@@ -145,7 +232,34 @@ class PembayaranAdmin extends BaseController
     }
 
     /**
-     * Format status badge untuk ADMIN VIEW
+     * Format status badge untuk INVOICE STATUS (dengan status verifikasi)
+     * Berdasarkan lnNoTransaksi dan bayarStatus
+     * 0 = Menunggu Proses (lnNoTransaksi kosong)
+     * 1 = Terkirim (lnNoTransaksi terisi, belum ada bukti bayar)
+     * 2 = Belum Diverifikasi (ada bukti bayar, bayarStatus = 0)
+     * 3 = Terverifikasi (bayarStatus = 1)
+     * 4 = Ditolak (bayarStatus = 2)
+     */
+    private function formatInvoiceStatus($status)
+    {
+        switch ($status) {
+            case 0:
+                return '<span class="badge bg-warning">Menunggu Proses</span>';
+            case 1:
+                return '<span class="badge bg-success">Terkirim</span>';
+            case 2:
+                return '<span class="badge bg-info">Belum Diverifikasi</span>';
+            case 3:
+                return '<span class="badge bg-primary">Terverifikasi</span>';
+            case 4:
+                return '<span class="badge bg-danger">Ditolak</span>';
+            default:
+                return '<span class="badge bg-secondary">Unknown</span>';
+        }
+    }
+
+    /**
+     * Format status badge untuk PAYMENT VERIFICATION (tidak digunakan di kolom, hanya untuk logic)
      */
     private function formatStatus($status)
     {
@@ -164,42 +278,80 @@ class PembayaranAdmin extends BaseController
     }
 
     /**
-     * Tombol aksi admin - Upload, Terima, Tolak
+     * Tombol aksi admin - Upload Invoice, Kirim Invoice, Upload Bukti, Terima, Tolak
      */
-    private function aksiButton($id, $status, $file)
+    private function aksiButton($id, $status, $file, $invoiceFile, $invoiceNo, $tempInvoiceFile = null)
     {
         $fileUrl = !empty($file) ? base_url('uploads/bukti/' . $file) : '';
+        $invoiceUrl = !empty($invoiceFile) ? base_url('uploads/invoice/' . $invoiceFile) : '';
+
+        // Tentukan apakah ada file invoice (baik dari DB atau session)
+        $hasInvoiceFile = !empty($invoiceFile) || !empty($tempInvoiceFile);
 
         $html = '<div id="' . $id . '" class="float-end">';
 
-        // Button 1: Upload (admin bisa upload bukti untuk user)
-        $uploadDisabled = ($status == 2) ? 'disabled' : '';
-        $uploadClass = ($status == 2) ? 'text-secondary' : 'text-primary';
-        $uploadTitle = ($status == 2) ? 'Sudah terverifikasi' : 'Upload Bukti Bayar';
+        // Dropdown Button
+        $html .= '<div class="dropdown">';
+        $html .= '<button class="btn btn-sm btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">';
+        $html .= '<i class="bi bi-three-dots-vertical"></i> Aksi';
+        $html .= '</button>';
+        $html .= '<ul class="dropdown-menu dropdown-menu-end">';
 
-        $html .= '<span class="' . $uploadClass . ' btn-action" ' . $uploadDisabled . ' title="' . $uploadTitle . '" data-fileurl="' . esc($fileUrl) . '" onclick="uploadBukti(event)">';
-        $html .= '<i class="bi bi-upload"></i></span>';
+        // Menu 1: Upload Invoice (aktif jika invoice belum dikirim)
+        $uploadInvoiceDisabled = (!empty($invoiceNo)) ? 'disabled' : '';
+        $uploadInvoiceTitle = (!empty($invoiceNo)) ? 'Invoice sudah terkirim' : 'Upload Invoice';
 
-        // Button 2: Terima (hanya aktif jika Belum Diverifikasi atau Tidak Terverifikasi)
-        $html .= ' <label class="divider">|</label>';
+        $html .= '<li><a class="dropdown-item btn-action ' . $uploadInvoiceDisabled . '" href="javascript:void(0)" title="' . $uploadInvoiceTitle . '" data-invoiceurl="' . esc($invoiceUrl) . '" onclick="uploadInvoice(event)">';
+        $html .= '<i class="bi bi-file-pdf text-info"></i> Upload Invoice</a></li>';
+
+        // Menu 2: Kirim Invoice (aktif jika ada invoice file ATAU temp file, tapi belum terkirim)
+        if ($hasInvoiceFile && empty($invoiceNo)) {
+            $html .= '<li><a class="dropdown-item btn-action" href="javascript:void(0)" title="Kirim Invoice ke Pelanggan" onclick="kirimInvoice(event)">';
+            $html .= '<i class="bi bi-send text-primary"></i> Kirim Invoice</a></li>';
+        } else {
+            $kirimTitle = !$hasInvoiceFile ? 'Upload invoice terlebih dahulu' : 'Invoice sudah terkirim';
+            $html .= '<li><a class="dropdown-item btn-action disabled" href="javascript:void(0)" title="' . $kirimTitle . '">';
+            $html .= '<i class="bi bi-send text-secondary"></i> Kirim Invoice</a></li>';
+        }
+
+        // Menu 3: Upload Bukti Bayar (admin bisa upload bukti untuk user)
+        // DISABLED jika invoice belum TERKIRIM (invoiceNo kosong) ATAU sudah terverifikasi
+        $uploadBuktiDisabled = (empty($invoiceNo) || $status == 2) ? 'disabled' : '';
+
+        if (empty($invoiceNo)) {
+            $uploadBuktiTitle = 'Kirim invoice terlebih dahulu';
+        } else if ($status == 2) {
+            $uploadBuktiTitle = 'Sudah terverifikasi';
+        } else {
+            $uploadBuktiTitle = 'Upload Bukti Bayar';
+        }
+
+        $iconClass = (empty($invoiceNo) || $status == 2) ? 'text-secondary' : 'text-warning';
+        $html .= '<li><a class="dropdown-item btn-action ' . $uploadBuktiDisabled . '" href="javascript:void(0)" title="' . $uploadBuktiTitle . '" data-fileurl="' . esc($fileUrl) . '" onclick="uploadBukti(event)">';
+        $html .= '<i class="bi bi-upload ' . $iconClass . '"></i> Upload Bukti Bayar</a></li>';
+
+        $html .= '<li><hr class="dropdown-divider"></li>';
+
+        // Menu 4: Terima (hanya aktif jika Belum Diverifikasi atau Tidak Terverifikasi)
         if ($status == 1 || $status == 3) {
-            $html .= '<span class="text-success btn-action" title="Terima & Verifikasi" onclick="terimaVerifikasi(event)">';
-            $html .= '<i class="bi bi-check-circle"></i></span>';
+            $html .= '<li><a class="dropdown-item btn-action" href="javascript:void(0)" title="Terima & Verifikasi" onclick="terimaVerifikasi(event)">';
+            $html .= '<i class="bi bi-check-circle text-success"></i> Terima & Verifikasi</a></li>';
         } else {
-            $html .= '<span class="text-secondary btn-action" disabled title="Tidak perlu verifikasi">';
-            $html .= '<i class="bi bi-check-circle"></i></span>';
+            $html .= '<li><a class="dropdown-item btn-action disabled" href="javascript:void(0)" title="Tidak perlu verifikasi">';
+            $html .= '<i class="bi bi-check-circle text-secondary"></i> Terima & Verifikasi</a></li>';
         }
 
-        // Button 3: Tolak (hanya aktif jika Belum Diverifikasi)
-        $html .= ' <label class="divider">|</label>';
+        // Menu 5: Tolak (hanya aktif jika Belum Diverifikasi)
         if ($status == 1) {
-            $html .= '<span class="text-danger btn-action" title="Tolak Verifikasi" onclick="tolakVerifikasi(event)">';
-            $html .= '<i class="bi bi-x-circle"></i></span>';
+            $html .= '<li><a class="dropdown-item btn-action" href="javascript:void(0)" title="Tolak Verifikasi" onclick="tolakVerifikasi(event)">';
+            $html .= '<i class="bi bi-x-circle text-danger"></i> Tolak Verifikasi</a></li>';
         } else {
-            $html .= '<span class="text-secondary btn-action" disabled title="Tidak bisa ditolak">';
-            $html .= '<i class="bi bi-x-circle"></i></span>';
+            $html .= '<li><a class="dropdown-item btn-action disabled" href="javascript:void(0)" title="Tidak bisa ditolak">';
+            $html .= '<i class="bi bi-x-circle text-secondary"></i> Tolak Verifikasi</a></li>';
         }
 
+        $html .= '</ul>';
+        $html .= '</div>';
         $html .= '</div>';
         return $html;
     }
@@ -490,6 +642,241 @@ class PembayaranAdmin extends BaseController
             ]);
         } catch (\Exception $e) {
             log_message('error', 'TolakVerifikasi exception: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'res' => false,
+                'msg' => 'Terjadi kesalahan: ' . $e->getMessage(),
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        }
+    }
+
+    /**
+     * Upload file invoice (PDF) - Admin upload invoice untuk pelanggan
+     */
+    public function uploadInvoice()
+    {
+        try {
+            $file = $this->request->getFile('file_invoice');
+            $encId = $this->request->getPost('id');
+
+            if (empty($encId)) {
+                return $this->response->setJSON([
+                    'res' => false,
+                    'msg' => 'ID tidak ditemukan',
+                    'xname' => csrf_token(),
+                    'xhash' => csrf_hash()
+                ]);
+            }
+
+            try {
+                $id = service('encrypter')->decrypt(hex2bin($encId));
+            } catch (\Throwable $e) {
+                return $this->response->setJSON([
+                    'res' => false,
+                    'msg' => 'ID tidak valid',
+                    'xname' => csrf_token(),
+                    'xhash' => csrf_hash()
+                ]);
+            }
+
+            if (!($file && $file->isValid() && !$file->hasMoved())) {
+                return $this->response->setJSON([
+                    'res' => false,
+                    'msg' => 'File tidak valid atau belum dipilih',
+                    'xname' => csrf_token(),
+                    'xhash' => csrf_hash()
+                ]);
+            }
+
+            // Upload file ke folder invoice
+            $uploadResult = $this->doUpload($file, 'invoice');
+
+            if (!$uploadResult['status']) {
+                return $this->response->setJSON([
+                    'res' => false,
+                    'msg' => $uploadResult['msg'],
+                    'xname' => csrf_token(),
+                    'xhash' => csrf_hash()
+                ]);
+            }
+
+            $filename = $uploadResult['filename'];
+
+            // Update file invoice di database (tanpa nomor invoice)
+            $model = new MyModel($this->table);
+            $currentData = $model->getDataById($this->id, $id);
+
+            // Hapus file lama jika ada
+            if (!empty($currentData->bayarInvoiceFile)) {
+                $oldFile = FCPATH . 'uploads/invoice/' . $currentData->bayarInvoiceFile;
+                if (file_exists($oldFile)) {
+                    @unlink($oldFile);
+                }
+            }
+
+            // Update file invoice di database
+            $dataPembayaran = [
+                'bayarInvoiceFile' => $filename
+            ];
+
+            $update = $model->updateData($dataPembayaran, $this->id, $id);
+
+            if (!$update) {
+                return $this->response->setJSON([
+                    'res' => false,
+                    'msg' => 'Gagal menyimpan invoice',
+                    'xname' => csrf_token(),
+                    'xhash' => csrf_hash()
+                ]);
+            }
+
+            // Simpan ke session juga (sebagai penanda file baru diupload)
+            session()->set('temp_invoice_' . $id, $filename);
+
+            return $this->response->setJSON([
+                'res' => 'success',
+                'msg' => 'Invoice berhasil diupload. Silakan kirim ke pelanggan.',
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'UploadInvoice exception: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'res' => false,
+                'msg' => 'Terjadi kesalahan: ' . $e->getMessage(),
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        }
+    }
+
+    /**
+     * Kirim invoice ke pelanggan - Update nomor invoice dan file ke database
+     */
+    public function kirimInvoice()
+    {
+        try {
+            $encId = $this->request->getPost('id');
+            $noInvoice = $this->request->getPost('no_invoice');
+
+            if (empty($encId)) {
+                return $this->response->setJSON([
+                    'res' => false,
+                    'msg' => 'ID tidak ditemukan',
+                    'xname' => csrf_token(),
+                    'xhash' => csrf_hash()
+                ]);
+            }
+
+            try {
+                $id = service('encrypter')->decrypt(hex2bin($encId));
+            } catch (\Throwable $e) {
+                return $this->response->setJSON([
+                    'res' => false,
+                    'msg' => 'ID tidak valid',
+                    'xname' => csrf_token(),
+                    'xhash' => csrf_hash()
+                ]);
+            }
+
+            $model = new MyModel($this->table);
+            $currentData = $model->getDataById($this->id, $id);
+
+            // Cek file dari session (file yang baru diupload)
+            $sessionKey = 'temp_invoice_' . $id;
+            $tempFilename = session()->get($sessionKey);
+
+            // Jika tidak ada file di session, cek di database (file lama)
+            if (empty($tempFilename) && (empty($currentData) || empty($currentData->bayarInvoiceFile))) {
+                return $this->response->setJSON([
+                    'res' => false,
+                    'msg' => 'Upload file invoice terlebih dahulu',
+                    'xname' => csrf_token(),
+                    'xhash' => csrf_hash()
+                ]);
+            }
+
+            // Gunakan file dari session jika ada, jika tidak gunakan file lama
+            $filename = !empty($tempFilename) ? $tempFilename : $currentData->bayarInvoiceFile;
+
+            // Validasi nomor invoice
+            if (empty($noInvoice)) {
+                return $this->response->setJSON([
+                    'res' => false,
+                    'msg' => 'Nomor invoice harus diisi',
+                    'xname' => csrf_token(),
+                    'xhash' => csrf_hash()
+                ]);
+            }
+
+            // Cek apakah nomor invoice sudah ada
+            $cekInvoice = $model->getDataByArray(['bayarInvoiceNo' => $noInvoice]);
+            if ($cekInvoice) {
+                return $this->response->setJSON([
+                    'res' => false,
+                    'msg' => 'Nomor invoice sudah digunakan',
+                    'xname' => csrf_token(),
+                    'xhash' => csrf_hash()
+                ]);
+            }
+
+            // Ambil lnKode dari pembayaran
+            $lnKode = $currentData->bayarLnKode;
+            if (empty($lnKode)) {
+                return $this->response->setJSON([
+                    'res' => false,
+                    'msg' => 'Data layanan tidak ditemukan',
+                    'xname' => csrf_token(),
+                    'xhash' => csrf_hash()
+                ]);
+            }
+
+            // Hapus file lama jika ada dan berbeda dengan file baru
+            if (!empty($currentData->bayarInvoiceFile) && !empty($tempFilename) && $currentData->bayarInvoiceFile !== $tempFilename) {
+                $oldFilePath = FCPATH . 'uploads/invoice/' . $currentData->bayarInvoiceFile;
+                if (file_exists($oldFilePath)) {
+                    @unlink($oldFilePath);
+                }
+            }
+
+            // Update nomor invoice dan filename di tabel pembayaran
+            $dataPembayaran = [
+                'bayarInvoiceNo' => $noInvoice,
+                'bayarInvoiceFile' => $filename
+            ];
+
+            $updatePembayaran = $model->updateData($dataPembayaran, $this->id, $id);
+
+            if (!$updatePembayaran) {
+                return $this->response->setJSON([
+                    'res' => false,
+                    'msg' => 'Gagal menyimpan invoice',
+                    'xname' => csrf_token(),
+                    'xhash' => csrf_hash()
+                ]);
+            }
+
+            // Hapus dari session setelah berhasil save
+            if (!empty($tempFilename)) {
+                session()->remove($sessionKey);
+            }
+
+            // Update nomor invoice ke tabel simlab_t_layanan kolom lnNoTransaksi
+            $db = \Config\Database::connect();
+            $layananBuilder = $db->table('simlab_t_layanan');
+            $layananBuilder->where('lnKode', $lnKode);
+            $layananBuilder->set('lnNoTransaksi', $noInvoice);
+            $layananBuilder->update();
+
+            return $this->response->setJSON([
+                'res' => true,
+                'msg' => 'Invoice berhasil dikirim ke pelanggan',
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'KirimInvoice exception: ' . $e->getMessage());
             return $this->response->setJSON([
                 'res' => false,
                 'msg' => 'Terjadi kesalahan: ' . $e->getMessage(),

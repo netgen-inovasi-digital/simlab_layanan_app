@@ -2,9 +2,51 @@
     <div class="col-md-12">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <label class="card-title mb-0"><i class="bi bi-shield-check"></i> <?php echo $title ?></label>
+                <label class="card-title mb-0"><i class="bi bi-shield-check"></i> <?php echo "Invoice dan Verifikasi Pembayaran" ?></label>
             </div>
             <div class="card-body">
+                <!-- Filter Section -->
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <div class="card border-0 bg-light">
+                            <div class="card-body py-3">
+                                <label class="form-label fw-bold mb-3"><i class="bi bi-funnel"></i> Filter Data</label>
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-md-3">
+                                        <label for="tanggal_awal" class="form-label small">Tanggal Awal</label>
+                                        <input type="date" id="tanggal_awal" class="form-control">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="tanggal_akhir" class="form-label small">Tanggal Akhir</label>
+                                        <input type="date" id="tanggal_akhir" class="form-control">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="filter_status" class="form-label small">Status</label>
+                                        <select id="filter_status" class="form-select">
+                                            <option value="all">Semua Status</option>
+                                            <option value="0">Menunggu Proses</option>
+                                            <option value="1">Terkirim</option>
+                                            <option value="2">Belum Diverifikasi</option>
+                                            <option value="3">Terverifikasi</option>
+                                            <option value="4">Ditolak</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button type="button" class="btn btn-primary w-100 btnFilterData">
+                                            <i class="bi bi-search me-1"></i>Tampilkan
+                                        </button>
+                                    </div>
+                                    <div class="col-md-1">
+                                        <button type="button" class="btn btn-outline-secondary w-100 btnResetFilter">
+                                            <i class="bi bi-arrow-clockwise"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <table id="data-table" class="saytable border-top-bottom">
                     <thead>
                         <tr>
@@ -12,10 +54,10 @@
                             <th show width="10%">No. Invoice</th>
                             <th show width="20%">Pemesan</th>
                             <th show width="12%">Total Biaya</th>
-                            <th show width="10%">File Invoice</th>
-                            <th show width="10%">Bukti Bayar</th>
-                            <th show width="13%">Status</th>
-                            <th show width="20%" class="text-end">Aksi</th>
+                            <th show width="14%">File Invoice</th>
+                            <th show width="14%">Bukti Bayar</th>
+                            <th show width="18%">Status</th>
+                            <th show width="10%" class="text-end">Aksi</th>
                         </tr>
                     </thead>
                     <tbody id="table-body"></tbody>
@@ -126,6 +168,93 @@
     </div>
 </div>
 
+<!-- Modal Upload Invoice -->
+<div class="modal fade" id="modalUploadInvoice" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-file-pdf"></i> Upload Invoice
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="formUploadInvoice" enctype="multipart/form-data" method="post" onsubmit="return false;">
+                <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" class="txt_csrfname">
+                <input type="hidden" name="id" id="upload_invoice_id">
+
+                <div class="modal-body">
+                    <!-- Tombol Lihat Invoice yang sudah ada -->
+                    <div class="mb-3">
+                        <button type="button" class="btn btn-sm btn-outline-info w-100" id="btnViewExistingInvoice" disabled>
+                            <i class="bi bi-eye"></i> Lihat Invoice yang Sudah Ada
+                        </button>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="file_invoice" class="form-label">
+                            Pilih File Invoice (PDF) <span class="text-danger">*</span>
+                        </label>
+                        <input type="file" class="form-control" id="file_invoice" name="file_invoice" accept=".pdf" required>
+                        <div class="form-text" id="invoice-selection">Format: PDF, Maksimal 5MB</div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Batal
+                    </button>
+                    <button type="button" class="btn btn-info text-white" id="btnUploadInvoice" onclick="handleUploadInvoice()">
+                        <i class="bi bi-cloud-upload"></i> Upload
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Kirim Invoice -->
+<div class="modal fade" id="modalKirimInvoice" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-send"></i> Kirim Invoice ke Pelanggan
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="formKirimInvoice" method="post" onsubmit="return false;">
+                <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" class="txt_csrfname">
+                <input type="hidden" name="id" id="kirim_invoice_id">
+
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="no_invoice" class="form-label">
+                            Nomor Invoice <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" class="form-control" id="no_invoice" name="no_invoice"
+                            placeholder="Contoh: INV/2025/001" required>
+                        <small class="text-muted">Masukkan nomor invoice yang unik</small>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        Invoice akan dikirim ke pelanggan dan dapat diakses melalui menu Pembayaran User.
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Batal
+                    </button>
+                    <button type="button" class="btn btn-primary" id="btnKirimInvoice" onclick="handleKirimInvoice()">
+                        <i class="bi bi-send"></i> Kirim ke Pelanggan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
     // Inisialisasi tabel dengan sistem sayTable
     table = createTable({
@@ -134,11 +263,67 @@
     });
     addAction();
 
+    // Handle Filter Data
+    document.querySelector('.btnFilterData').addEventListener('click', function() {
+        const tanggalAwal = document.getElementById('tanggal_awal').value;
+        const tanggalAkhir = document.getElementById('tanggal_akhir').value;
+        const filterStatus = document.getElementById('filter_status').value;
+
+        // Build base URL with filter parameters
+        let baseUrl = '<?php echo site_url("pembayaran_admin/dataList") ?>';
+        let params = [];
+
+        if (tanggalAwal) {
+            params.push('tanggal_awal=' + encodeURIComponent(tanggalAwal));
+        }
+        if (tanggalAkhir) {
+            params.push('tanggal_akhir=' + encodeURIComponent(tanggalAkhir));
+        }
+        if (filterStatus && filterStatus !== 'all') {
+            params.push('status=' + encodeURIComponent(filterStatus));
+        }
+
+        if (params.length > 0) {
+            baseUrl += '?' + params.join('&');
+        }
+
+        // Update global config and clear cache
+        config.apiUrl = baseUrl;
+        allItems = [];
+        allItemsSorted = [];
+        isDataLoaded = false;
+
+        // Force reload with new URL
+        table.fetchData({
+            page: 1,
+            reload: true
+        });
+    });
+
+    // Handle Reset Filter
+    document.querySelector('.btnResetFilter').addEventListener('click', function() {
+        document.getElementById('tanggal_awal').value = '';
+        document.getElementById('tanggal_akhir').value = '';
+        document.getElementById('filter_status').value = 'all';
+
+        // Reset to original URL and clear cache
+        config.apiUrl = '<?php echo site_url("pembayaran_admin/dataList") ?>';
+        allItems = [];
+        allItemsSorted = [];
+        isDataLoaded = false;
+
+        // Force reload
+        table.fetchData({
+            page: 1,
+            reload: true
+        });
+    });
+
     /**
      * Upload Bukti (Admin)
      */
     function uploadBukti(event) {
-        const id = event.target.closest('.btn-action').parentElement.id;
+        const id = event.target.closest('.dropdown').parentElement.id;
         document.getElementById('upload_bukti_id').value = id;
 
         const fileInput = document.getElementById('file_bukti');
@@ -273,7 +458,7 @@
             return;
         }
 
-        const id = btnElement.parentElement.id;
+        const id = event.target.closest('.dropdown').parentElement.id;
 
         // Ambil CSRF token terbaru dari hidden input
         const csrfInput = document.querySelector('input.txt_csrfname');
@@ -323,7 +508,7 @@
             return;
         }
 
-        const id = btnElement.parentElement.id;
+        const id = event.target.closest('.dropdown').parentElement.id;
         document.getElementById('tolak_id').value = id;
 
         const modalElement = document.getElementById('modalTolak');
@@ -394,6 +579,215 @@
             .catch(error => {
                 btnTolak.disabled = false;
                 btnTolak.innerHTML = '<i class="bi bi-x-circle"></i> Tolak Verifikasi';
+                sayAlert('errorModal', 'Error', 'Terjadi kesalahan: ' + error.message, 'error');
+            });
+    }
+    /**
+     * Upload Invoice (Admin)
+     */
+    function uploadInvoice(event) {
+        // Untuk dropdown, cari parent dengan ID (skip <li> dan <ul>, langsung ke <div id="...">)
+        const id = event.target.closest('.dropdown').parentElement.id;
+        document.getElementById('upload_invoice_id').value = id;
+
+        const fileInput = document.getElementById('file_invoice');
+        if (fileInput) fileInput.value = '';
+
+        const selText = document.getElementById('invoice-selection');
+        if (selText) selText.textContent = 'Format: PDF, Maksimal 5MB';
+
+        const btnElement = event.target.closest('.btn-action');
+        const invoiceUrl = btnElement.getAttribute('data-invoiceurl') || '';
+
+        const viewBtn = document.getElementById('btnViewExistingInvoice');
+        if (viewBtn) {
+            if (invoiceUrl && invoiceUrl !== '#' && invoiceUrl !== '') {
+                viewBtn.removeAttribute('disabled');
+                viewBtn.classList.remove('btn-outline-info');
+                viewBtn.classList.add('btn-info');
+                viewBtn.setAttribute('data-url', invoiceUrl);
+            } else {
+                viewBtn.setAttribute('disabled', 'disabled');
+                viewBtn.classList.remove('btn-info');
+                viewBtn.classList.add('btn-outline-info');
+                viewBtn.removeAttribute('data-url');
+            }
+        }
+
+        const modalElement = document.getElementById('modalUploadInvoice');
+        const modal = new bootstrap.Modal(modalElement);
+        modal.show();
+    }
+
+    // Handler untuk tombol Lihat Invoice
+    document.addEventListener('click', function(ev) {
+        const btn = ev.target.closest('#btnViewExistingInvoice');
+        if (!btn) return;
+
+        const url = btn.getAttribute('data-url') || '';
+        if (url && url !== '#' && url !== '') {
+            window.open(url, '_blank');
+        } else {
+            sayAlert('errorModal', 'Info', 'Tidak ada file invoice.', 'warning');
+        }
+    });
+
+    // Show filename when user selects invoice file
+    (function() {
+        const fi = document.getElementById('file_invoice');
+        const sel = document.getElementById('invoice-selection');
+        const viewBtn = document.getElementById('btnViewExistingInvoice');
+
+        if (!fi) return;
+
+        fi.addEventListener('change', function(e) {
+            const f = e.target.files && e.target.files[0];
+            if (f) {
+                sel.textContent = 'File dipilih: ' + f.name + ' (' + (f.size / 1024).toFixed(2) + ' KB)';
+                if (viewBtn) viewBtn.setAttribute('disabled', 'disabled');
+            } else {
+                sel.textContent = 'Format: PDF, Maksimal 5MB';
+            }
+        });
+    })();
+
+    /**
+     * Handle Upload Invoice (Admin)
+     */
+    function handleUploadInvoice() {
+        const form = document.getElementById('formUploadInvoice');
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+
+        const formData = new FormData(form);
+        const btnUpload = document.getElementById('btnUploadInvoice');
+
+        // Ambil CSRF token terbaru dari hidden input
+        const csrfInput = document.querySelector('input.txt_csrfname');
+        const csrfName = csrfInput ? csrfInput.getAttribute('name') : '<?= csrf_token() ?>';
+        const csrfHash = csrfInput ? csrfInput.value : '<?= csrf_hash() ?>';
+        formData.set(csrfName, csrfHash);
+
+        btnUpload.disabled = true;
+        btnUpload.innerHTML = '<i class="bi bi-hourglass-split"></i> Uploading...';
+
+        fetch('<?php echo site_url("pembayaran_admin/uploadInvoice") ?>', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Update CSRF token untuk request berikutnya
+                if (data.xname && data.xhash) {
+                    const allCsrfInputs = document.querySelectorAll('input.txt_csrfname');
+                    allCsrfInputs.forEach(input => {
+                        input.setAttribute('name', data.xname);
+                        input.value = data.xhash;
+                    });
+                }
+
+                btnUpload.disabled = false;
+                btnUpload.innerHTML = '<i class="bi bi-cloud-upload"></i> Upload';
+
+                if (data.res === 'success') {
+                    sayAlert('successModal', 'Berhasil', data.msg, 'success');
+
+                    const modalElement = document.getElementById('modalUploadInvoice');
+                    const modal = bootstrap.Modal.getInstance(modalElement);
+                    if (modal) modal.hide();
+
+                    if (typeof table !== 'undefined') table.fetchData({
+                        reload: true
+                    });
+                } else {
+                    sayAlert('errorModal', 'Gagal', data.msg, 'error');
+                }
+            })
+            .catch(error => {
+                btnUpload.disabled = false;
+                btnUpload.innerHTML = '<i class="bi bi-cloud-upload"></i> Upload';
+                sayAlert('errorModal', 'Error', 'Terjadi kesalahan: ' + error.message, 'error');
+            });
+    }
+
+    /**
+     * Kirim Invoice ke Pelanggan
+     */
+    function kirimInvoice(event) {
+        const btnElement = event.target.closest('.btn-action');
+        if (btnElement.hasAttribute('disabled')) {
+            sayAlert('warningModal', 'Perhatian', 'Upload invoice terlebih dahulu', 'warning');
+            return;
+        }
+
+        const id = event.target.closest('.dropdown').parentElement.id;
+        document.getElementById('kirim_invoice_id').value = id;
+        document.getElementById('no_invoice').value = '';
+
+        const modalElement = document.getElementById('modalKirimInvoice');
+        const modal = new bootstrap.Modal(modalElement);
+        modal.show();
+    }
+
+    /**
+     * Handle Kirim Invoice
+     */
+    function handleKirimInvoice() {
+        const form = document.getElementById('formKirimInvoice');
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+
+        const formData = new FormData(form);
+        const btnKirim = document.getElementById('btnKirimInvoice');
+
+        // Ambil CSRF token terbaru dari hidden input
+        const csrfInput = document.querySelector('input.txt_csrfname');
+        const csrfName = csrfInput ? csrfInput.getAttribute('name') : '<?= csrf_token() ?>';
+        const csrfHash = csrfInput ? csrfInput.value : '<?= csrf_hash() ?>';
+        formData.set(csrfName, csrfHash);
+
+        btnKirim.disabled = true;
+        btnKirim.innerHTML = '<i class="bi bi-hourglass-split"></i> Mengirim...';
+
+        fetch('<?php echo site_url("pembayaran_admin/kirimInvoice") ?>', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Update CSRF token untuk request berikutnya
+                if (data.xname && data.xhash) {
+                    const allCsrfInputs = document.querySelectorAll('input.txt_csrfname');
+                    allCsrfInputs.forEach(input => {
+                        input.setAttribute('name', data.xname);
+                        input.value = data.xhash;
+                    });
+                }
+
+                btnKirim.disabled = false;
+                btnKirim.innerHTML = '<i class="bi bi-send"></i> Kirim ke Pelanggan';
+
+                if (data.res === true) {
+                    sayAlert('successModal', 'Berhasil', data.msg, 'success');
+
+                    const modalElement = document.getElementById('modalKirimInvoice');
+                    const modal = bootstrap.Modal.getInstance(modalElement);
+                    if (modal) modal.hide();
+
+                    if (typeof table !== 'undefined') table.fetchData({
+                        reload: true
+                    });
+                } else {
+                    sayAlert('errorModal', 'Gagal', data.msg, 'error');
+                }
+            })
+            .catch(error => {
+                btnKirim.disabled = false;
+                btnKirim.innerHTML = '<i class="bi bi-send"></i> Kirim ke Pelanggan';
                 sayAlert('errorModal', 'Error', 'Terjadi kesalahan: ' + error.message, 'error');
             });
     }
