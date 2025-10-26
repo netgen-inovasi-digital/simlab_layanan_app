@@ -1,11 +1,11 @@
 <?php
 
-namespace Modules\PembayaranUser\Controllers;
+namespace Modules\PembayaranAdmin\Controllers;
 
 use App\Controllers\BaseController;
 use App\Models\MyModel;
 
-class PembayaranUser extends BaseController
+class PembayaranAdmin extends BaseController
 {
     private $table = 'simlab_t_pembayaran';
     private $id = 'bayarKode';
@@ -13,66 +13,28 @@ class PembayaranUser extends BaseController
     public function index()
     {
         $data = [
-            'title' => 'Pembayaran',
+            'title' => 'Verifikasi Pembayaran',
         ];
-        return view('Modules\PembayaranUser\Views\v_pembayaran_user', $data);
+        return view('Modules\PembayaranAdmin\Views\v_pembayaran_admin', $data);
     }
 
     /**
-     * Get data list untuk tabel - hanya menampilkan tagihan yang sudah diproses (ada nomor invoice)
+     * Get data list untuk tabel admin - menampilkan SEMUA tagihan yang sudah ada invoice (tidak ada filter user)
      */
     public function dataList()
     {
         try {
-            $session = session();
-            $user_id = $session->get('id_user'); // ✅ Sama seperti Pelayanan.php
-
-            log_message('debug', '=== PembayaranUser dataList START ===');
-            log_message('debug', 'Session id_user: ' . ($user_id ?? 'NULL'));
-
-            // Validasi: User harus login
-            if (empty($user_id)) {
-                log_message('error', '⚠️ USER NOT LOGGED IN! Session id_user is NULL');
-                return $this->response->setJSON([
-                    "items" => [],
-                    "error" => "User belum login atau session expired. Silakan login kembali."
-                ]);
-            }
-
-            // Ambil user dari tabel simlab_account_users (sama seperti Pelayanan.php)
-            $modelUser = new MyModel('simlab_account_users');
-            $user = $modelUser->getDataById('user_id', $user_id);
-
-            // Jika user tidak ditemukan, kembalikan data kosong
-            if (!$user) {
-                log_message('error', '⚠️ USER NOT FOUND! user_id=' . $user_id);
-                return $this->response->setJSON([
-                    "items" => [],
-                    "error" => "Data user tidak ditemukan."
-                ]);
-            }
-
-            log_message('debug', 'User found: ' . $user->user_email);
-
             $db = \Config\Database::connect();
             $data = [];
 
-            // Query dengan JOIN - filter berdasarkan EMAIL seperti di Pelayanan.php
+            // Query SEMUA pembayaran yang sudah ada invoice (admin melihat semua data)
             $builder = $db->table('simlab_t_pembayaran');
             $builder->select('simlab_t_pembayaran.*, simlab_t_layanan.lnKode, simlab_t_layanan.lnAccEmail, simlab_t_layanan.lnNoTransaksi, simlab_t_layanan.lnTgl, simlab_t_layanan.user_id');
             $builder->join('simlab_t_layanan', 'simlab_t_pembayaran.bayarLnKode = simlab_t_layanan.lnKode', 'inner');
             $builder->where('simlab_t_pembayaran.bayarInvoiceNo IS NOT NULL');
-            $builder->where('simlab_t_layanan.lnAccEmail', $user->user_email); // ✅ Filter by EMAIL
             $builder->orderBy('simlab_t_pembayaran.bayarKode', 'DESC');
 
-            // Log SQL query
-            $sql = $builder->getCompiledSelect(false);
-            log_message('debug', 'SQL Query: ' . $sql);
-
             $list = $builder->get()->getResult();
-
-            log_message('debug', 'Total records found: ' . count($list));
-            log_message('debug', '=== PembayaranUser dataList END ===');
 
             $userModel = new MyModel('simlab_account_users');
 
@@ -83,13 +45,8 @@ class PembayaranUser extends BaseController
                 $paymentStatus = $this->getPaymentStatus($row->bayarBuktiFile, $row->bayarStatus);
                 $status = $this->formatStatus($paymentStatus);
 
-                // Cek apakah ada file bukti di session (file temporary yang belum disave)
-                $sessionKey = 'temp_bukti_' . $row->bayarKode;
-                $tempBukti = session()->get($sessionKey);
-                $currentFile = !empty($tempBukti) ? $tempBukti : ($row->bayarBuktiFile ?? '');
-
                 // Tombol aksi
-                $aksi = $this->aksiButton($encrypted_id, $paymentStatus, $currentFile);
+                $aksi = $this->aksiButton($encrypted_id, $paymentStatus, $row->bayarBuktiFile);
 
                 // Ambil data user (sama seperti di Tagihan)
                 $personName = null;
@@ -128,19 +85,13 @@ class PembayaranUser extends BaseController
                         <span style="font-size:0.9rem; color:#555;">' . esc($tanggal) . ' | ' . esc($tipe) . '</span>
                     </div>';
 
-                // Kolom bukti bayar dengan logika: null = "-", ada file = tombol lihat
+                // Kolom bukti bayar
                 $buktiBayar = '-';
-                if (!empty($currentFile)) {
-                    if (!empty($tempBukti)) {
-                        // File baru dari session (belum disave)
-                        $buktiBayar = '<span class="badge bg-info"><i class="bi bi-clock-history"></i> File Terupload</span>';
-                    } else {
-                        // File dari database (sudah disave)
-                        $buktiBayar = '<a href="' . base_url('uploads/bukti/' . $currentFile) . '" target="_blank" class="btn btn-sm btn-success"><i class="bi bi-file-earmark-check"></i> Lihat</a>';
-                    }
+                if (!empty($row->bayarBuktiFile)) {
+                    $buktiBayar = '<a href="' . base_url('uploads/bukti/' . $row->bayarBuktiFile) . '" target="_blank" class="btn btn-sm btn-success"><i class="bi bi-file-earmark-check"></i> Lihat</a>';
                 }
 
-                // Response array
+                // Response array: 8 kolom
                 $data[] = [
                     !empty($row->bayarInvoiceNo) ? esc($row->bayarInvoiceNo) : '<span class="text-muted">-</span>', // No. Invoice
                     $combined, // Pemesan (Nama + Tanggal + Tipe)
@@ -156,7 +107,7 @@ class PembayaranUser extends BaseController
 
             return $this->response->setJSON(["items" => $data]);
         } catch (\Exception $e) {
-            log_message('error', 'PembayaranUser dataList error: ' . $e->getMessage());
+            log_message('error', 'PembayaranAdmin dataList error: ' . $e->getMessage());
             return $this->response->setJSON([
                 "items" => [],
                 "error" => $e->getMessage()
@@ -165,13 +116,13 @@ class PembayaranUser extends BaseController
     }
 
     /**
-     * Tentukan status pembayaran
-     * @return int 0 = Belum Diunggah, 1 = Menunggu Verifikasi, 2 = Terverifikasi
+     * Tentukan status pembayaran untuk ADMIN VIEW
+     * @return int 0 = Belum Diunggah, 1 = Belum Diverifikasi, 2 = Terverifikasi, 3 = Tidak Terverifikasi
      */
     private function getPaymentStatus($buktiBayar, $bayarStatus)
     {
-        // Jika bayarBuktiFile == null & bayarStatus == 0 → Belum Diunggah
-        if (empty($buktiBayar) && $bayarStatus == 0) {
+        // Jika bayarBuktiFile == null → Belum Diunggah
+        if (empty($buktiBayar)) {
             return 0;
         }
 
@@ -180,12 +131,12 @@ class PembayaranUser extends BaseController
             return 2;
         }
 
-        // Jika bayarBuktiFile != null & bayarStatus == 2 → Verifikasi Gagal
+        // Jika bayarBuktiFile != null & bayarStatus == 2 → Tidak Terverifikasi (Ditolak)
         if (!empty($buktiBayar) && $bayarStatus == 2) {
             return 3;
         }
 
-        // Jika bayarBuktiFile != null & bayarStatus == 0 → Menunggu Verifikasi
+        // Jika bayarBuktiFile != null & bayarStatus == 0 → Belum Diverifikasi (Menunggu)
         if (!empty($buktiBayar) && $bayarStatus == 0) {
             return 1;
         }
@@ -194,71 +145,71 @@ class PembayaranUser extends BaseController
     }
 
     /**
-     * Format status badge
+     * Format status badge untuk ADMIN VIEW
      */
     private function formatStatus($status)
     {
         switch ($status) {
             case 0:
-                return '<span class="badge bg-secondary">Belum Terkirim</span>';
+                return '<span class="badge bg-secondary">Belum Diunggah</span>';
             case 1:
-                return '<span class="badge bg-info">Menunggu Verifikasi</span>';
+                return '<span class="badge bg-warning text-dark">Belum Diverifikasi</span>';
             case 2:
                 return '<span class="badge bg-success">Terverifikasi</span>';
             case 3:
-                return '<span class="badge bg-danger">Verifikasi Gagal</span>';
+                return '<span class="badge bg-danger">Tidak Terverifikasi</span>';
             default:
                 return '<span class="badge bg-secondary">Unknown</span>';
         }
     }
 
     /**
-     * Tombol aksi - update logic untuk status verifikasi gagal
+     * Tombol aksi admin - Upload, Terima, Tolak
      */
     private function aksiButton($id, $status, $file)
     {
-        // URL file bukti bayar (jika ada)
         $fileUrl = !empty($file) ? base_url('uploads/bukti/' . $file) : '';
 
-        // Button "Upload Bukti":
-        // - Disabled jika status = Menunggu Verifikasi (1) atau Terverifikasi (2)
-        // - Aktif jika status = Belum Terkirim (0) atau Verifikasi Gagal (3)
-        $uploadDisabled = ($status == 1 || $status == 2) ? 'disabled' : '';
-        $uploadClass = ($status == 1 || $status == 2) ? 'text-secondary' : 'text-primary';
-        $uploadTitle = ($status == 2) ? 'Sudah terverifikasi'
-            : (($status == 1) ? 'Menunggu verifikasi admin'
-                : (($status == 3) ? 'Upload ulang bukti bayar'
-                    : 'Upload Bukti Bayar'));
+        $html = '<div id="' . $id . '" class="float-end">';
 
-        // Button "Kirim":
-        // - Aktif jika sudah upload file DAN (status = Belum Terkirim atau Verifikasi Gagal)
-        // - Disabled jika belum upload, Menunggu Verifikasi, atau Terverifikasi
-        $prosesDisabled = (empty($file) || $status == 1 || $status == 2) ? 'disabled' : '';
-        $prosesClass = (empty($file) || $status == 1 || $status == 2) ? 'text-secondary' : 'text-success';
-        $prosesTitle = empty($file)
-            ? 'Upload bukti bayar terlebih dahulu'
-            : (($status == 2) ? 'Sudah terverifikasi'
-                : (($status == 1) ? 'Menunggu verifikasi admin'
-                    : (($status == 3) ? 'Kirim ulang bukti pembayaran'
-                        : 'Kirim Bukti Pembayaran')));
+        // Button 1: Upload (admin bisa upload bukti untuk user)
+        $uploadDisabled = ($status == 2) ? 'disabled' : '';
+        $uploadClass = ($status == 2) ? 'text-secondary' : 'text-primary';
+        $uploadTitle = ($status == 2) ? 'Sudah terverifikasi' : 'Upload Bukti Bayar';
 
-        return '<div id="' . $id . '" class="float-end">
-        <span class="' . $uploadClass . ' btn-action" ' . $uploadDisabled . ' title="' . $uploadTitle . '" data-fileurl="' . esc($fileUrl) . '" onclick="uploadBukti(event)">
-            <i class="bi bi-upload"></i></span> 
-        <label class="divider">|</label>
-        <span class="' . $prosesClass . ' btn-action" ' . $prosesDisabled . ' title="' . $prosesTitle . '" onclick="kirimBukti(event)">
-            <i class="bi bi-send"></i></span>
-    </div>';
+        $html .= '<span class="' . $uploadClass . ' btn-action" ' . $uploadDisabled . ' title="' . $uploadTitle . '" data-fileurl="' . esc($fileUrl) . '" onclick="uploadBukti(event)">';
+        $html .= '<i class="bi bi-upload"></i></span>';
+
+        // Button 2: Terima (hanya aktif jika Belum Diverifikasi atau Tidak Terverifikasi)
+        $html .= ' <label class="divider">|</label>';
+        if ($status == 1 || $status == 3) {
+            $html .= '<span class="text-success btn-action" title="Terima & Verifikasi" onclick="terimaVerifikasi(event)">';
+            $html .= '<i class="bi bi-check-circle"></i></span>';
+        } else {
+            $html .= '<span class="text-secondary btn-action" disabled title="Tidak perlu verifikasi">';
+            $html .= '<i class="bi bi-check-circle"></i></span>';
+        }
+
+        // Button 3: Tolak (hanya aktif jika Belum Diverifikasi)
+        $html .= ' <label class="divider">|</label>';
+        if ($status == 1) {
+            $html .= '<span class="text-danger btn-action" title="Tolak Verifikasi" onclick="tolakVerifikasi(event)">';
+            $html .= '<i class="bi bi-x-circle"></i></span>';
+        } else {
+            $html .= '<span class="text-secondary btn-action" disabled title="Tidak bisa ditolak">';
+            $html .= '<i class="bi bi-x-circle"></i></span>';
+        }
+
+        $html .= '</div>';
+        return $html;
     }
 
     /**
-     * Upload bukti bayar (PNG/JPG/PDF/image format)
+     * Upload bukti bayar oleh admin (untuk user yang tidak bisa upload sendiri)
      */
     public function uploadBukti()
     {
         try {
-            log_message('debug', 'UploadBukti request received');
-
             $file = $this->request->getFile('file_bukti');
             $encId = $this->request->getPost('id');
 
@@ -282,8 +233,6 @@ class PembayaranUser extends BaseController
                 ]);
             }
 
-            log_message('debug', 'Decrypted ID: ' . $id);
-
             if (!($file && $file->isValid() && !$file->hasMoved())) {
                 return $this->response->setJSON([
                     'res' => false,
@@ -293,7 +242,7 @@ class PembayaranUser extends BaseController
                 ]);
             }
 
-            // Upload file ke folder uploads/bukti/
+            // Upload file
             $uploadResult = $this->doUpload($file, 'bukti');
 
             if (!$uploadResult['status']) {
@@ -306,12 +255,34 @@ class PembayaranUser extends BaseController
             }
 
             $filename = $uploadResult['filename'];
-            log_message('debug', 'Bukti uploaded successfully: ' . $filename);
 
-            // Simpan filename untuk sementara di session
-            session()->set('temp_bukti_' . $id, $filename);
+            // Update langsung ke database (admin langsung save)
+            $model = new MyModel($this->table);
+            $currentData = $model->getDataById($this->id, $id);
 
-            log_message('debug', 'Bukti saved to session: temp_bukti_' . $id . ' = ' . $filename);
+            // Hapus file lama jika ada
+            if (!empty($currentData->bayarBuktiFile)) {
+                $oldFile = FCPATH . 'uploads/bukti/' . $currentData->bayarBuktiFile;
+                if (file_exists($oldFile)) {
+                    @unlink($oldFile);
+                }
+            }
+
+            $dataPembayaran = [
+                'bayarBuktiFile' => $filename,
+                'bayarStatus' => 0  // Set status Belum Diverifikasi
+            ];
+
+            $update = $model->updateData($dataPembayaran, $this->id, $id);
+
+            if (!$update) {
+                return $this->response->setJSON([
+                    'res' => false,
+                    'msg' => 'Gagal menyimpan bukti bayar',
+                    'xname' => csrf_token(),
+                    'xhash' => csrf_hash()
+                ]);
+            }
 
             return $this->response->setJSON([
                 'res' => 'success',
@@ -331,7 +302,7 @@ class PembayaranUser extends BaseController
     }
 
     /**
-     * Helper untuk upload file (PNG/JPG/PDF/image)
+     * Helper untuk upload file
      */
     private function doUpload($file, $folder = 'bukti')
     {
@@ -339,7 +310,6 @@ class PembayaranUser extends BaseController
             return ['status' => false, 'msg' => 'File tidak valid'];
         }
 
-        // Validasi tipe file (image dan PDF)
         $allowedExt  = ['pdf', 'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'];
         $allowedMime = [
             'application/pdf',
@@ -358,7 +328,6 @@ class PembayaranUser extends BaseController
             return ['status' => false, 'msg' => 'File sementara tidak ditemukan'];
         }
 
-        // Deteksi MIME type
         $detectedMime = null;
         if (function_exists('finfo_open')) {
             $finfo = finfo_open(FILEINFO_MIME_TYPE);
@@ -368,17 +337,14 @@ class PembayaranUser extends BaseController
             $detectedMime = $file->getClientMimeType();
         }
 
-        // Validasi ekstensi dan MIME type
         if (!in_array($ext, $allowedExt) || !in_array($detectedMime, $allowedMime)) {
-            return ['status' => false, 'msg' => 'Format file harus gambar (PNG/JPG/etc) atau PDF. Detected: ' . $detectedMime];
+            return ['status' => false, 'msg' => 'Format file harus gambar atau PDF'];
         }
 
-        // Validasi ukuran file (max 5MB)
         if ($file->getSize() > 5 * 1024 * 1024) {
             return ['status' => false, 'msg' => 'Ukuran file maksimal 5MB'];
         }
 
-        // Generate filename
         try {
             $rand = bin2hex(random_bytes(8));
         } catch (\Exception $e) {
@@ -397,7 +363,6 @@ class PembayaranUser extends BaseController
             $fullPath = $path . DIRECTORY_SEPARATOR . $filename;
 
             if (is_file($fullPath)) {
-                log_message('debug', 'File moved successfully to: ' . $fullPath);
                 return ['status' => true, 'filename' => $filename];
             } else {
                 return ['status' => false, 'msg' => 'File gagal dipindahkan'];
@@ -408,91 +373,129 @@ class PembayaranUser extends BaseController
     }
 
     /**
-     * Kirim bukti bayar - update database dan ubah status
+     * Terima & Verifikasi pembayaran
      */
-    public function kirimBukti()
+    public function terimaVerifikasi()
     {
-        log_message('debug', '=== KIRIM BUKTI REQUEST START ===');
-        log_message('debug', 'POST data: ' . json_encode($this->request->getPost()));
-
-        $id = $this->request->getPost('id');
-
-        log_message('debug', 'ID received: ' . ($id ?? 'NULL'));
-
         try {
-            $id = service('encrypter')->decrypt(hex2bin($id));
-            log_message('debug', 'Decrypted ID: ' . $id);
-        } catch (\Exception $e) {
-            log_message('error', 'Decrypt error: ' . $e->getMessage());
-            return $this->response->setJSON([
-                'res' => false,
-                'msg' => 'ID tidak valid: ' . $e->getMessage(),
-                'xname' => csrf_token(),
-                'xhash' => csrf_hash()
-            ]);
-        }
+            $encId = $this->request->getPost('id');
 
-        $model = new MyModel($this->table);
-        $currentData = $model->getDataById($this->id, $id);
-
-        // Cek file dari session (file yang baru diupload)
-        $sessionKey = 'temp_bukti_' . $id;
-        $tempFilename = session()->get($sessionKey);
-
-        // Jika tidak ada file di session, cek di database (file lama)
-        if (empty($tempFilename) && (empty($currentData) || empty($currentData->bayarBuktiFile))) {
-            return $this->response->setJSON([
-                'res' => false,
-                'msg' => 'Bukti bayar belum diupload. Upload terlebih dahulu sebelum mengirim.',
-                'xname' => csrf_token(),
-                'xhash' => csrf_hash()
-            ]);
-        }
-
-        // Gunakan file dari session jika ada, jika tidak gunakan file lama dari database
-        $filename = !empty($tempFilename) ? $tempFilename : $currentData->bayarBuktiFile;
-
-        log_message('debug', 'Processing with bukti filename: ' . $filename);
-
-        // Hapus file lama jika ada dan berbeda dengan file baru
-        if (!empty($currentData->bayarBuktiFile) && !empty($tempFilename) && $currentData->bayarBuktiFile !== $tempFilename) {
-            $oldFilePath = FCPATH . 'uploads/bukti/' . $currentData->bayarBuktiFile;
-            if (file_exists($oldFilePath)) {
-                @unlink($oldFilePath);
-                log_message('debug', 'Old bukti file deleted: ' . $currentData->bayarBuktiFile);
+            if (empty($encId)) {
+                return $this->response->setJSON([
+                    'res' => false,
+                    'msg' => 'ID tidak ditemukan',
+                    'xname' => csrf_token(),
+                    'xhash' => csrf_hash()
+                ]);
             }
-        }
 
-        // Update bukti bayar dan set bayarStatus = 0 (menunggu verifikasi)
-        $dataPembayaran = [
-            'bayarBuktiFile' => $filename,
-            'bayarStatus' => 0  // Menunggu verifikasi admin
-        ];
+            try {
+                $id = service('encrypter')->decrypt(hex2bin($encId));
+            } catch (\Throwable $e) {
+                return $this->response->setJSON([
+                    'res' => false,
+                    'msg' => 'ID tidak valid',
+                    'xname' => csrf_token(),
+                    'xhash' => csrf_hash()
+                ]);
+            }
 
-        $updatePembayaran = $model->updateData($dataPembayaran, $this->id, $id);
+            $model = new MyModel($this->table);
 
-        if (!$updatePembayaran) {
+            // Update bayarStatus menjadi 1 (Terverifikasi)
+            $data = ['bayarStatus' => 1];
+            $update = $model->updateData($data, $this->id, $id);
+
+            if (!$update) {
+                return $this->response->setJSON([
+                    'res' => false,
+                    'msg' => 'Gagal memverifikasi pembayaran',
+                    'xname' => csrf_token(),
+                    'xhash' => csrf_hash()
+                ]);
+            }
+
+            return $this->response->setJSON([
+                'res' => true,
+                'msg' => 'Pembayaran berhasil diverifikasi',
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'TerimaVerifikasi exception: ' . $e->getMessage());
             return $this->response->setJSON([
                 'res' => false,
-                'msg' => 'Gagal menyimpan bukti bayar',
+                'msg' => 'Terjadi kesalahan: ' . $e->getMessage(),
                 'xname' => csrf_token(),
                 'xhash' => csrf_hash()
             ]);
         }
+    }
 
-        // Hapus dari session setelah berhasil save
-        if (!empty($tempFilename)) {
-            session()->remove($sessionKey);
-            log_message('debug', 'Session key removed: ' . $sessionKey);
+    /**
+     * Tolak verifikasi pembayaran
+     */
+    public function tolakVerifikasi()
+    {
+        try {
+            $encId = $this->request->getPost('id');
+            $alasan = $this->request->getPost('alasan');
+
+            if (empty($encId)) {
+                return $this->response->setJSON([
+                    'res' => false,
+                    'msg' => 'ID tidak ditemukan',
+                    'xname' => csrf_token(),
+                    'xhash' => csrf_hash()
+                ]);
+            }
+
+            try {
+                $id = service('encrypter')->decrypt(hex2bin($encId));
+            } catch (\Throwable $e) {
+                return $this->response->setJSON([
+                    'res' => false,
+                    'msg' => 'ID tidak valid',
+                    'xname' => csrf_token(),
+                    'xhash' => csrf_hash()
+                ]);
+            }
+
+            $model = new MyModel($this->table);
+
+            // Update bayarStatus menjadi 2 (Tidak Terverifikasi)
+            $data = ['bayarStatus' => 2];
+
+            // Jika ada alasan, simpan (perlu kolom bayarCatatan di database)
+            if (!empty($alasan)) {
+                $data['bayarCatatan'] = $alasan;
+            }
+
+            $update = $model->updateData($data, $this->id, $id);
+
+            if (!$update) {
+                return $this->response->setJSON([
+                    'res' => false,
+                    'msg' => 'Gagal menolak pembayaran',
+                    'xname' => csrf_token(),
+                    'xhash' => csrf_hash()
+                ]);
+            }
+
+            return $this->response->setJSON([
+                'res' => true,
+                'msg' => 'Pembayaran ditolak. User dapat mengupload ulang bukti bayar.',
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'TolakVerifikasi exception: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'res' => false,
+                'msg' => 'Terjadi kesalahan: ' . $e->getMessage(),
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
         }
-
-        log_message('debug', 'Bukti bayar sent successfully. Status: Menunggu Verifikasi');
-
-        return $this->response->setJSON([
-            'res' => true,
-            'msg' => 'Bukti pembayaran berhasil dikirim. Menunggu verifikasi petugas lab.',
-            'xname' => csrf_token(),
-            'xhash' => csrf_hash()
-        ]);
     }
 }
