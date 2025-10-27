@@ -140,6 +140,14 @@ class PembayaranUser extends BaseController
                     }
                 }
 
+                // Tombol lihat catatan jika verifikasi ditolak
+                $catatanButton = '';
+                if ($paymentStatus == 3 && !empty($row->bayarCatatan)) {
+                    $catatanButton = '<button class="btn btn-sm btn-warning mt-1" onclick="lihatCatatan(\'' . $encrypted_id . '\', \'' . esc($row->bayarCatatan, 'js') . '\')">
+                        <i class="bi bi-file-text"></i> Lihat Catatan
+                    </button>';
+                }
+
                 // Response array
                 $data[] = [
                     !empty($row->bayarInvoiceNo) ? esc($row->bayarInvoiceNo) : '<span class="text-muted">-</span>', // No. Invoice
@@ -149,7 +157,7 @@ class PembayaranUser extends BaseController
                         ? '<a href="' . base_url('uploads/invoice/' . $row->bayarInvoiceFile) . '" target="_blank" class="btn btn-sm btn-info"><i class="bi bi-file-pdf"></i> Lihat</a>'
                         : '<span class="text-muted">-</span>', // File Invoice
                     $buktiBayar, // Bukti Bayar
-                    $status, // Status
+                    $status . $catatanButton, // Status + Tombol Catatan (jika ditolak)
                     $aksi // Aksi
                 ];
             }
@@ -200,7 +208,7 @@ class PembayaranUser extends BaseController
     {
         switch ($status) {
             case 0:
-                return '<span class="badge bg-secondary">Belum Terkirim</span>';
+                return '<span class="badge bg-secondary">Belum Bayar</span>';
             case 1:
                 return '<span class="badge bg-info">Menunggu Verifikasi</span>';
             case 2:

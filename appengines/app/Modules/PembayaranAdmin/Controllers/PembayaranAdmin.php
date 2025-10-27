@@ -554,8 +554,11 @@ class PembayaranAdmin extends BaseController
 
             $model = new MyModel($this->table);
 
-            // Update bayarStatus menjadi 1 (Terverifikasi)
-            $data = ['bayarStatus' => 1];
+            // Update bayarStatus menjadi 1 (Terverifikasi) dan kosongkan bayarCatatan
+            $data = [
+                'bayarStatus' => 1,
+                'bayarCatatan' => null  // Hapus catatan penolakan lama
+            ];
             $update = $model->updateData($data, $this->id, $id);
 
             if (!$update) {

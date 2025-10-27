@@ -112,6 +112,38 @@
 </div>
 
 
+<!-- Modal Lihat Catatan Penolakan -->
+<div class="modal fade" id="modalLihatCatatan" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title">
+                    <i class="bi bi-exclamation-triangle"></i> Catatan Penolakan
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning mb-3">
+                    <i class="bi bi-info-circle"></i>
+                    Bukti pembayaran Anda ditolak oleh admin. Silakan perbaiki dan upload ulang sesuai catatan berikut:
+                </div>
+                <div class="card">
+                    <div class="card-body">
+                        <h6 class="card-subtitle mb-2 text-muted">Alasan Penolakan:</h6>
+                        <p class="card-text" id="catatanText" style="white-space: pre-wrap;"></p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 <script>
     // Inisialisasi tabel dengan sistem sayTable
     table = createTable({
@@ -119,6 +151,24 @@
         dataSrc: 'items'
     });
     addAction();
+
+    /**
+     * Fungsi untuk menampilkan catatan penolakan
+     */
+    function lihatCatatan(id, catatan) {
+        console.log('Opening catatan modal for ID:', id);
+
+        // Set catatan ke dalam modal
+        const catatanText = document.getElementById('catatanText');
+        if (catatanText) {
+            catatanText.textContent = catatan || 'Tidak ada catatan.';
+        }
+
+        // Show modal menggunakan Bootstrap API
+        const modalElement = document.getElementById('modalLihatCatatan');
+        const modal = new bootstrap.Modal(modalElement);
+        modal.show();
+    }
 
     /**
      * Buka modal upload bukti bayar
