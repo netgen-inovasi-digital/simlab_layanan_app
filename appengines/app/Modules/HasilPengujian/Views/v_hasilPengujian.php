@@ -1,3 +1,4 @@
+<!-- v_hasilPengujian.php -->
 <div class="row">
     <div class="col-md-12">
         <div class="card">
@@ -9,12 +10,9 @@
                     <thead>
                         <tr>
                             <th show width="5%">No.</th>
-                            <th show width="18%">No. Invoice & Tanggal</th>
                             <th show width="25%">Pemesan</th> <!-- DITAMBAHKAN -->
-                            <th show width="25%">Item Layanan</th> <!-- DIGANTI LABEL -->
-                            <th show width="15%">LHUS</th>
-                            <th show width="9%">Status</th>
-                            <th show width="10%" class="action text-end">Aksi</th>
+                            <th show width="25%">Status Layanan</th>
+                            <th show width="15%">Aksi layanan</th> 
                         </tr>
                     </thead>
                     <tbody id="table-body"></tbody>
@@ -24,6 +22,86 @@
     </div>
 </div>
 
+<!--  Modal Detail (tetap ada) -->
+<div class="modal fade" id="modalDetail" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+  <div class="modal-dialog modal-xl modal-dialog-centered" role="document" style="max-width:1200px; margin: 1.5% auto;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Detail Item Layanan</h5>
+        <button id="btnSaveKomentar" type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="table-responsive">
+          <table class="table table-bordered align-middle">
+            <thead>
+             <tr>
+                  <th style="min-width:40px; width:5%;">No</th>
+                  <th style="min-width:300px; width:15%;">Layanan</th>
+                  <th style="min-width:60px; width:5%;">Jumlah</th>
+                  <th style="min-width:200px; width:25%;" class="text-center">Keterangan</th>
+                  <th style="min-width:200px; width:5%;" class="text-center">Status File</th>
+                  <th style="min-width:110px; width:5%;" class="text-center">LHUS</th>
+                  <th style="min-width:300px; width:20%;" class="text-center">keterangan Manajer</th>
+              </tr>
+            </thead>
+            <tbody id="detail-body">
+              <tr><td colspan="8" class="text-center">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+         <button id="btnKirimDetail" class="btn btn-success" type="button" title="Kirim semua item (approve)" disabled
+                 data-enc="">
+          <i class="bi bi-send"></i> Kirim
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- NOTE: modalUploadLhus tetap ada (tidak dipakai oleh default flow langsung-upload), disimpan untuk fallback -->
+<div class="modal fade" id="modalUploadLhus" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+  <div class="modal-dialog modal-md" role="document" style="margin: 4% auto">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Unggah File LHUS</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div style="border-bottom:1px solid #e9ecef"></div>
+      <div class="modal-body">
+        <form id="formUploadLhus" action="<?php echo site_url('hasilpengujian/upload') ?>" method="post" enctype="multipart/form-data" novalidate>
+          <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>">
+          <input type="hidden" name="id" id="upload_lhus_id" value="">
+          <input type="hidden" name="detKode" id="upload_detKode" value="">
+
+          <div class="mb-3">
+            <label for="lhus_file" class="form-label">Pilih File (jpg, png, pdf, docx, xlsx)</label>
+            <div class="d-flex align-items-center gap-2">
+              <input type="file" name="lhus_file" id="lhus_file" class="form-control" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx" style="max-width:360px">
+              <button type="button" id="btnViewExistingLhus" class="btn btn-outline-primary btn-sm" title="Lihat Bukti" disabled>
+                <span aria-hidden="true"></span> <span class="d-none d-sm-inline">Lihat Bukti</span>
+              </button>
+            </div>
+            <div id="lhus-selection" class="form-text mt-2">Anda bisa unggah file baru untuk mengganti.</div>
+            <div class="form-text text-muted">Ukuran maksimal 5MB.</div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer justify-content-between">
+        <div class="text-start">
+          <button class="btn btn-light" type="button" id="btnCancelUpload" data-bs-dismiss="modal">Batal</button>
+        </div>
+        <div>
+          <button class="btn btn-primary" id="btnUploadLhus" type="button">Unggah</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
     table = createTable({
         apiUrl: '<?php echo site_url("hasilpengujian/datalist") ?>',
@@ -31,13 +109,11 @@
     });
     addAction();
 
-    document.querySelector('#btnSimpan').addEventListener('click', function(e) {
+    document.querySelector('#btnSimpan')?.addEventListener('click', function(e) {
         e.preventDefault();
-
         const form = document.querySelector('#myform');
         const formData = new FormData(form);
         const actionUrl = form.getAttribute('action');
-
         saveData({
             url: actionUrl,
             formData: formData,
@@ -70,8 +146,7 @@
                 if (typeof table !== 'undefined') table.fetchData({ reload: true });
                 sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
             } else if (data.res === 'reload' || data.res === 'refresh') {
-                sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
-                if (data.res === 'refresh' && data.link) loadContent(data.link);
+                sayAlert('errorModal', 'Error', data.link, 'warning');
             } else if (data.res === 'redirect') {
                 window.location.href = data.link;
             } else if (data.res === 'check') {
@@ -90,245 +165,280 @@
         .finally(() => { hideLoading(); });
     }
 
-     function confirmApprove(e) {
-        e.preventDefault();
-        let id = e.currentTarget.closest('div').id;
-        if (!id) return;
-
-        if (confirm('Yakin ingin approve data ini?')) {
-            const csrfInput = document.querySelector('[name="<?= csrf_token() ?>"]');
-            const csrfToken = csrfInput ? csrfInput.value : '';
-
-            fetch('<?php echo site_url("hasilpengujian/approve/") ?>' + id, {
-                method: 'POST',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': csrfToken
-                }
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.res) {
-                    if (typeof table !== 'undefined') table.fetchData({ reload: true });
-                    sayAlert('successModal', 'Berhasil', 'Data berhasil diapprove', 'success');
-                } else {
-                    sayAlert('errorModal', 'Gagal', data.msg || 'Approve gagal dilakukan', 'warning');
-                }
-
-                if (data.xname && data.xhash) {
-                    document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => input.value = data.xhash);
-                }
-            })
-            .catch(err => sayAlert('errorModal', 'Error', 'Terjadi kesalahan sistem', 'warning'));
-        }
-    }
-
+    //  function confirmApprove(e) {
+    //     e.preventDefault();
+    //     let id = e.currentTarget.closest('div')?.id;
+    //     if (!id) return;
+    //     if (confirm('Yakin ingin approve data ini?')) {
+    //         const csrfInput = document.querySelector('[name="<?= csrf_token() ?>"]');
+    //         const csrfToken = csrfInput ? csrfInput.value : '';
+    //         fetch('<?php echo site_url("hasilpengujian/approve/") ?>' + id, {
+    //             method: 'POST',
+    //             headers: {
+    //                 'X-Requested-With': 'XMLHttpRequest',
+    //                 'X-CSRF-TOKEN': csrfToken
+    //             }
+    //         })
+    //         .then(res => res.json())
+    //         .then(data => {
+    //             if (data.res) {
+    //                 if (typeof table !== 'undefined') table.fetchData({ reload: true });
+    //                 sayAlert('successModal', 'Berhasil', 'Data berhasil diapprove', 'success');
+    //             } else {
+    //                 sayAlert('errorModal', 'Gagal', data.msg || 'Approve gagal dilakukan', 'warning');
+    //             }
+    //             if (data.xname && data.xhash) {
+    //                 document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => input.value = data.xhash);
+    //             }
+    //         })
+    //         .catch(err => sayAlert('errorModal', 'Error', 'Terjadi kesalahan sistem', 'warning'));
+    //     }
+    // }
 
     function loadDetail(id) {
-        const url = '<?php echo site_url("hasilpengujian/detaillist/") ?>' + id;
-        const tbody = document.querySelector('#detail-body');
+    const url = '<?php echo site_url("hasilpengujian/detaillist/") ?>' + id;
+    const tbody = document.querySelector('#detail-body');
+    tbody.innerHTML = '<tr><td colspan="8" class="text-center">Loading...</td></tr>';
 
-        // tampilkan loading
-        tbody.innerHTML = '<tr><td colspan="4" class="text-center">Loading...</td></tr>';
+    fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(response => {
+            if (!response.ok) {
+                return response.text().then(t => { throw new Error('HTTP ' + response.status + ': ' + t); });
+            }
+            return response.json();
+        })
+        .then(data => {
+            tbody.innerHTML = '';
+            if (data.items && data.items.length > 0) {
+                data.items.forEach(function(row) {
+                    let tr = '<tr>';
+                    row.forEach(function(col) { tr += '<td>' + col + '</td>'; });
+                    tr += '</tr>';
+                    tbody.innerHTML += tr;
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center">Tidak ada data</td></tr>';
+            }
 
-        fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-            .then(response => {
-                if (!response.ok) {
-                    return response.text().then(t => { throw new Error('HTTP ' + response.status + ': ' + t); });
+            const btnKirim = document.getElementById('btnKirimDetail');
+            if (btnKirim) {
+                const encLn = data.encLn || '';
+                btnKirim.setAttribute('data-enc', encLn);
+                if (data.allFilesUploaded) btnKirim.removeAttribute('disabled');
+                else btnKirim.setAttribute('disabled', 'disabled');
+
+                const newBtn = btnKirim.cloneNode(true);
+                btnKirim.parentNode.replaceChild(newBtn, btnKirim);
+
+                newBtn.addEventListener('click', function(ev) {
+                    ev.preventDefault();
+                    const enc = this.getAttribute('data-enc') || '';
+                    if (!enc) { sayAlert('errorModal','Error','ID tidak ditemukan.','warning'); return; }
+                    if (!confirm('Yakin ingin mengirim file LHUS untuk semua item ini?')) return;
+                    doSendLhus(enc);
+                });
+            }
+
+            // show modal - only show if it's not already visible to avoid stacking backdrops
+            const modalEl = document.getElementById('modalDetail');
+            if (modalEl) {
+                // If Bootstrap 5 available, check class 'show' OR use getInstance
+                try {
+                    // prefer to check existing instance first
+                    const existing = bootstrap.Modal && bootstrap.Modal.getInstance ? bootstrap.Modal.getInstance(modalEl) : null;
+                    const isShown = modalEl.classList.contains('show') || (existing && typeof existing._isShown !== 'undefined' && existing._isShown);
+
+                    if (!isShown) {
+                        // create instance if not exists
+                        const modal = existing || new bootstrap.Modal(modalEl);
+                        modal.show();
+                    } else {
+                        // already shown — do nothing (content already updated)
+                    }
+                } catch (e) {
+                    // fallback to jQuery if bootstrap object not available
+                    try {
+                        if (typeof $ !== 'undefined') {
+                            if (!$('#modalDetail').hasClass('show')) $('#modalDetail').modal('show');
+                        } else {
+                            // last resort: attempt to show (but this branch unlikely)
+                            const modal = new bootstrap.Modal(modalEl);
+                            modal.show();
+                        }
+                    } catch (ee) {
+                        console.warn('modal show fallback error', ee);
+                    }
                 }
-                return response.json();
-            })
-            .then(data => {
-                tbody.innerHTML = '';
-                if (data.items && data.items.length > 0) {
-                    data.items.forEach(function(row) {
-                        let tr = '<tr>';
-                        row.forEach(function(col) { tr += '<td>' + col + '</td>'; });
-                        tr += '</tr>';
-                        tbody.innerHTML += tr;
-                    });
-                } else {
-                    tbody.innerHTML = '<tr><td colspan="4" class="text-center">Tidak ada data</td></tr>';
+            } else {
+                // fallback for older jQuery modal
+                if (typeof $ !== 'undefined' && !$('#modalDetail').hasClass('show')) $('#modalDetail').modal('show');
+            }
+        })
+        .catch(error => {
+            console.error('loadDetail error:', error);
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error load data</td></tr>';
+            // show modal only if not already shown
+            const modalEl = document.getElementById('modalDetail');
+            if (modalEl) {
+                try {
+                    const existing = bootstrap.Modal && bootstrap.Modal.getInstance ? bootstrap.Modal.getInstance(modalEl) : null;
+                    const isShown = modalEl.classList.contains('show') || (existing && typeof existing._isShown !== 'undefined' && existing._isShown);
+                    if (!isShown) {
+                        const modal = existing || new bootstrap.Modal(modalEl);
+                        modal.show();
+                    }
+                } catch (e) {
+                    if (typeof $ !== 'undefined' && !$('#modalDetail').hasClass('show')) $('#modalDetail').modal('show');
                 }
-                // tampilkan modal
-                if (typeof bootstrap !== 'undefined') {
-                    const modalEl = document.getElementById('modalDetail');
-                    const modal = new bootstrap.Modal(modalEl);
-                    modal.show();
-                } else {
-                    $('#modalDetail').modal('show');
-                }
-            })
-            .catch(error => {
-                console.error('loadDetail error:', error);
-                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Error load data</td></tr>';
-                if (typeof bootstrap !== 'undefined') {
-                    const modalEl = document.getElementById('modalDetail');
-                    const modal = new bootstrap.Modal(modalEl);
-                    modal.show();
-                } else {
-                    $('#modalDetail').modal('show');
-                }
-            });
-    }
+            }
+        });
+}
+
 </script>
 
-<!-- 🔹 Modal Detail -->
-<div class="modal fade" id="modalDetail" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
-  <div class="modal-dialog modal-lg" role="document" style="margin: 2% auto">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Detail Item Layanan</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <table class="table table-bordered">
-          <thead>
-            <tr>
-              <th width="5%">No</th>
-              <th width="40%">Layanan</th>
-              <th width="20%">Biaya</th>
-              <th width="20%">Keterangan</th>
-            </tr>
-          </thead>
-          <tbody id="detail-body">
-            <tr><td colspan="5" class="text-center">Loading...</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-light" type="button" data-bs-dismiss="modal">
-          <i class="bi bi-x-circle"></i> Tutup
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Modal Upload LHUS -->
-<div class="modal fade" id="modalUploadLhus" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
-  <div class="modal-dialog modal-md" role="document" style="margin: 4% auto">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Unggah File LHUS</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-
-      <!-- Garis pemisah -->
-      <div style="border-bottom:1px solid #e9ecef"></div>
-
-      <div class="modal-body">
-        <form id="formUploadLhus" action="<?php echo site_url('hasilpengujian/upload') ?>" method="post" enctype="multipart/form-data" novalidate>
-          <!-- CSRF input (server-side) -->
-          <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>">
-          <input type="hidden" name="id" id="upload_lhus_id" value="">
-          <input type="hidden" name="detKode" id="upload_detKode" value="">
-
-          <div class="mb-3">
-            <label for="lhus_file" class="form-label">Pilih File (jpg, png, pdf, docx, xlsx)</label>
-
-            <div class="d-flex align-items-center gap-2">
-              <input type="file" name="lhus_file" id="lhus_file" class="form-control" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx" style="max-width:360px">
-              <button type="button" id="btnViewExistingLhus" class="btn btn-outline-primary btn-sm" title="Lihat Bukti" disabled>
-                <span aria-hidden="true"></span> <span class="d-none d-sm-inline">Lihat Bukti</span>
-              </button>
-            </div>
-
-            <div id="lhus-selection" class="form-text mt-2">Anda bisa unggah file baru untuk mengganti.</div>
-            <div class="form-text text-muted">Ukuran maksimal 5MB.</div>
-          </div>
-        </form>
-      </div>
-
-      <div class="modal-footer justify-content-between">
-        <div class="text-start">
-          <button class="btn btn-light" type="button" id="btnCancelUpload" data-bs-dismiss="modal">
-            <span aria-hidden="true"></span> Batal
-          </button>
-        </div>
-        <div>
-          <button class="btn btn-primary" id="btnUploadLhus" type="button">
-            <span aria-hidden="true"></span> Unggah
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
 <script>
-function openUploadModal(encId, fileUrl = '#', detKode = '') {
-    // set id terenkripsi (hex)
-    const inputId = document.getElementById('upload_lhus_id');
-    if (inputId) inputId.value = encId || '';
+/**
+ * autoUploadFile(input)
+ * - Input element must have attributes:
+ *    data-ln = encrypted ln (hex)
+ *    data-detlist = comma separated detKode(s) OR empty
+ * Behavior: upload file via fetch to hasilpengujian/upload and update UI inline.
+ */
+async function autoUploadFile(input) {
+    if (!input || !input.files || input.files.length === 0) return;
+    const file = input.files[0];
+    const name = file.name || '';
+    const ext = name.split('.').pop().toLowerCase();
+    const allowedExt = ['jpg','jpeg','png','pdf','doc','docx','xls','xlsx'];
+    const maxSize = 5 * 1024 * 1024;
+    if (!allowedExt.includes(ext)) { alert('Format file tidak diperbolehkan.'); input.value = ''; return; }
+    if (file.size > maxSize) { alert('Ukuran file maksimal 5MB.'); input.value = ''; return; }
 
-    const inputDet = document.getElementById('upload_detKode');
-    if (inputDet) inputDet.value = detKode || '';
+    const encLn = input.getAttribute('data-ln') || '';
+    const detlist = input.getAttribute('data-detlist') || '';
+    const detCodes = detlist.split(',').map(s => s.trim()).filter(Boolean);
+    let detKodeToSend = '';
+    if (detCodes.length === 1) detKodeToSend = detCodes[0];
 
-    // reset file input
-    const f = document.getElementById('lhus_file');
-    if (f) f.value = '';
+    const fd = new FormData();
+    fd.append('lhus_file', file, file.name);
+    fd.append('id', encLn);
+    if (detKodeToSend) fd.append('detKode', detKodeToSend);
 
-    // set teks instruksi
-    const sel = document.getElementById('lhus-selection');
-    if (sel) sel.textContent = 'Anda bisa unggah file baru untuk mengganti.';
+    // attach CSRF if present in DOM as hidden input (common CI pattern)
+    const csrfInput = document.querySelector('[name="<?= csrf_token() ?>"]');
+    if (csrfInput) fd.append(csrfInput.name, csrfInput.value);
 
-    // set tombol lihat bukti di modal: simpan url di data-url dan aktifkan/disable tombol
-    const viewBtn = document.getElementById('btnViewExistingLhus');
-    if (viewBtn) {
-        if (fileUrl && fileUrl !== '#' && fileUrl !== '') {
-            viewBtn.removeAttribute('disabled');
-            // simpan url secara eksplisit ke attribute data-url
-            viewBtn.setAttribute('data-url', fileUrl);
-        } else {
-            viewBtn.setAttribute('disabled', 'disabled');
-            viewBtn.removeAttribute('data-url');
+    // UI: set uploading state on nearest button (if any)
+    const parent = input.parentElement;
+    const btn = parent ? parent.querySelector('button') : null;
+    const originalHtml = btn ? btn.innerHTML : null;
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Mengunggah...'; }
+
+    try {
+        const res = await fetch('<?php echo site_url("hasilpengujian/upload") ?>', {
+            method: 'POST',
+            body: fd,
+            credentials: 'same-origin'
+        });
+        const json = await res.json();
+        if (json.xname && json.xhash) {
+            document.querySelectorAll('[name="' + json.xname + '"]').forEach(i => i.value = json.xhash);
         }
-    }
 
-    // show modal (Bootstrap 5) — gunakan bootstrap modal API jika tersedia
-    if (typeof bootstrap !== 'undefined') {
-        const modalEl = document.getElementById('modalUploadLhus');
-        const modal = new bootstrap.Modal(modalEl);
-        modal.show();
-    } else {
-        $('#modalUploadLhus').modal('show');
+        if (json && (json.res === true || json.res === 'true')) {
+            const fileUrl = json.url || null;
+            // Replace uploader area with "Lihat File" button
+            if (fileUrl) {
+                if (parent) {
+                    parent.innerHTML = '<div class="mb-2">'
+                    + '<button type="button" class="btn btn-sm btn-outline-primary w-100 text-start" onclick="window.open(' + JSON.stringify(fileUrl) + ', \'_blank\')">'
+                    + '<i class="bi bi-eye me-1"></i> Lihat File</button>'
+                    + '</div>';
+                }
+            } else {
+                if (btn) {
+                    btn.innerHTML = 'Terunggah';
+                    btn.classList.remove('btn-outline-secondary');
+                    btn.classList.add('btn-outline-success');
+                }
+            }
+
+            // Enable send button in same row if exists
+            const tr = input.closest('tr');
+            if (tr) {
+                const sendElem = tr.querySelector('.btn-action[title="Tidak ada file LHUS"], .btn-action[title="Kirim LHUS"]');
+                if (sendElem) {
+                    // ganti menjadi aktif send
+                    const enc = encLn || '';
+                    const wrapper = document.createElement('span');
+                    wrapper.className = 'text-success btn-action';
+                    wrapper.title = 'Kirim LHUS';
+                    wrapper.innerHTML = '<i class="bi bi-check-circle"></i>';
+                    wrapper.setAttribute('onclick', 'confirmApprove(event, \'' + enc + '\')');
+                    sendElem.parentNode.replaceChild(wrapper, sendElem);
+                }
+            }
+
+            if (typeof sayAlert === 'function') {
+                    sayAlert('successModal','Berhasil', json.msg || 'File berhasil diunggah.','success');
+                    loadDetail(encLn); 
+                } else {
+                    alert(json.msg || 'File berhasil diunggah.');
+                }
+            } else {
+                const message = (json && json.msg) ? json.msg : 'Gagal mengunggah file.';
+                if (typeof sayAlert === 'function') sayAlert('errorModal','Gagal', message, 'warning'); else alert(message);
+                if (btn) { btn.disabled = false; btn.innerHTML = originalHtml; }
+                input.value = '';
+            }
+    } catch (err) {
+        console.error(err);
+        if (typeof sayAlert === 'function') sayAlert('errorModal','Error','Terjadi kesalahan saat mengunggah file.','warning'); else alert('Terjadi kesalahan saat mengunggah file.');
+        if (btn) { btn.disabled = false; btn.innerHTML = originalHtml; }
+        input.value = '';
     }
 }
 
-/* ---------- Tambahan: handler untuk tombol Lihat Bukti di modal ---------- */
-/* buka data-url pada tombol #btnViewExistingLhus di tab baru */
+/* Utility: attach click-to-open file input for rows created by server data.
+   Server will render input.lhus-uploader-input inside LHUS column - see controller detailList() output.
+   If table is re-rendered, ensure addAction() (existing) runs again or call attachUploaderTriggers().
+*/
+function attachUploaderTriggers() {
+    document.querySelectorAll('input.lhus-uploader-input').forEach(function(inp) {
+        // ensure event only once
+        if (!inp.dataset._hasAutoUpload) {
+            inp.dataset._hasAutoUpload = '1';
+            inp.addEventListener('change', function(){ autoUploadFile(inp); });
+        }
+    });
+}
+
+// initial attach (if table loads elements on render)
+attachUploaderTriggers();
+
+// Re-attach after table fetches new data (if your createTable calls addAction or trigger event, ensure attachUploaderTriggers runs)
+if (typeof table !== 'undefined' && table.on) {
+    table.on('draw', attachUploaderTriggers); // if createTable exposes events
+}
+</script>
+
+<script>
 document.addEventListener('click', function(ev) {
     const target = ev.target;
-    // gunakan closest agar klik icon/span di dalam button juga bekerja
     const btn = target.closest ? target.closest('#btnViewExistingLhus') : null;
     if (!btn) return;
     const url = btn.getAttribute('data-url') || btn.dataset.url || null;
     if (url && url !== '#' && url !== '') {
-        // buka di tab baru (tambahkan noopener noreferrer)
         const w = window.open('', '_blank');
         if (w) {
-            try {
-                w.opener = null;
-                w.location = url;
-            } catch (err) {
-                // fallback
-                window.open(url, '_blank');
-            }
-        } else {
-            window.open(url, '_blank');
-        }
+            try { w.opener = null; w.location = url; } catch (err) { window.open(url, '_blank'); }
+        } else { window.open(url, '_blank'); }
     } else {
-        // tampilkan info jika tidak ada file
-        if (typeof sayAlert === 'function') {
-            sayAlert('errorModal', 'Info', 'Tidak ada file bukti.', 'warning');
-        } else {
-            alert('Tidak ada file bukti.');
-        }
+        sayAlert('errorModal','Info','Tidak ada file bukti.','warning');
     }
 });
 
-/* ---- show filename when user selects a file ---- */
 (function() {
     const fi = document.getElementById('lhus_file');
     const sel = document.getElementById('lhus-selection');
@@ -337,7 +447,6 @@ document.addEventListener('click', function(ev) {
         const f = e.target.files && e.target.files[0];
         if (f) {
             if (sel) sel.textContent = 'Anda memilih: ' + f.name;
-            // disable lihat bukti because user is replacing; keep previous URL in data-url if present
             const viewBtn = document.getElementById('btnViewExistingLhus');
             if (viewBtn) viewBtn.setAttribute('disabled', 'disabled');
         } else {
@@ -346,7 +455,7 @@ document.addEventListener('click', function(ev) {
     });
 })();
 
-document.getElementById('btnUploadLhus').addEventListener('click', function(e) {
+document.getElementById('btnUploadLhus')?.addEventListener('click', function(e) {
     e.preventDefault();
     const form = document.getElementById('formUploadLhus');
     const formData = new FormData(form);
@@ -355,8 +464,7 @@ document.getElementById('btnUploadLhus').addEventListener('click', function(e) {
     const csrfToken = csrfInput ? csrfInput.value : '';
 
     if (!formData.get('lhus_file') || formData.get('lhus_file').size === 0) {
-        if (typeof sayAlert === 'function') sayAlert('errorModal', 'Error', 'Pilih file terlebih dahulu.', 'warning');
-        else alert('Pilih file terlebih dahulu.');
+        sayAlert('errorModal','Error','Pilih file terlebih dahulu.','warning');
         return;
     }
 
@@ -373,45 +481,36 @@ document.getElementById('btnUploadLhus').addEventListener('click', function(e) {
             document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => input.value = data.xhash);
         }
         if (data.res === true) {
-            if (typeof sayAlert === 'function') sayAlert('successModal', 'Berhasil', data.msg || 'File berhasil diunggah.', 'success');
+            sayAlert('successModal','Berhasil', data.msg || 'File berhasil diunggah.','success');
             $('#modalUploadLhus').modal('hide');
             if (typeof table !== 'undefined') table.fetchData({ reload: true });
         } else {
-            if (typeof sayAlert === 'function') sayAlert('errorModal', 'Gagal', data.msg || 'Upload gagal.', 'warning');
-            else alert(data.msg || 'Upload gagal.');
+            sayAlert('errorModal','Gagal', data.msg || 'Upload gagal.','warning');
         }
     })
-    .catch(err => {
-        console.error(err);
-        if (typeof sayAlert === 'function') sayAlert('errorModal', 'Error', 'Terjadi kesalahan saat upload.', 'warning');
-        else alert('Terjadi kesalahan saat upload.');
-    })
+    .catch(err => { console.error(err); sayAlert('errorModal','Error','Terjadi kesalahan saat upload.','warning'); })
     .finally(() => { hideLoading(); });
 });
 
-/**
- * doSendLhus(encId)
- * - mengirim id sebagai application/x-www-form-urlencoded untuk kompatibilitas CSRF/CI
- * - menerima encId (hex) yang dihasilkan oleh server (bin2hex(encrypt(...)))
- */
 function doSendLhus(encId) {
     const csrfInput = document.querySelector('[name="<?= csrf_token() ?>"]');
     const csrfToken = csrfInput ? csrfInput.value : '';
+    // disable send button segera
+    const btnKirim = document.getElementById('btnKirimDetail');
+    if (btnKirim) {
+        btnKirim.setAttribute('disabled', 'disabled');
+    }
     showLoading();
 
-    // jika tidak diberikan encId, beri peringatan dan return
     if (!encId || encId === '') {
         hideLoading();
-        if (typeof sayAlert === 'function') sayAlert('errorModal', 'Error', 'ID tidak ditemukan.', 'warning');
-        else alert('ID tidak ditemukan.');
+        if (btnKirim) btnKirim.removeAttribute('disabled');
+        sayAlert('errorModal','Error','ID tidak ditemukan.','warning');
         return;
     }
 
-    // Gunakan URLSearchParams (x-www-form-urlencoded) karena hanya mengirim satu field 'id'
     const body = new URLSearchParams();
     body.append('id', encId);
-    // beberapa setup CSRF memerlukan token juga sebagai field POST — tambahkan jika perlu:
-    // body.append('<?= csrf_token() ?>', csrfToken);
 
     fetch('<?php echo site_url("hasilpengujian/submit") ?>', {
         method: 'POST',
@@ -423,62 +522,87 @@ function doSendLhus(encId) {
         body: body.toString()
     })
     .then(res => {
-        if (!res.ok) {
-            return res.text().then(t => { throw new Error('HTTP ' + res.status + ': ' + t); });
-        }
+        if (!res.ok) return res.text().then(t => { throw new Error('HTTP ' + res.status + ': ' + t); });
         return res.json();
     })
     .then(data => {
         if (data.xname && data.xhash) {
             document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => input.value = data.xhash);
         }
+
+        // 1) TUTUP modal detail segera (sebelum notifikasi)
+        try {
+            const modalEl = document.getElementById('modalDetail');
+            if (modalEl) {
+                // Bootstrap 5 preferred
+                if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                    const inst = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                    try { inst.hide(); } catch (e) { /* ignore */ }
+                } else if (typeof $ !== 'undefined') {
+                    // jQuery fallback
+                    try { $('#modalDetail').modal('hide'); } catch (e) {}
+                }
+            }
+        } catch (e) {
+            console.warn('hide modal error', e);
+        }
+
+        // 2) Tampilkan notifikasi
         if (data.res === true) {
-            sayAlert('successModal', 'Berhasil', data.msg || 'File berhasil dikirim.', 'success');
-            if (typeof table !== 'undefined') table.fetchData({ reload: true });
+            if (typeof sayAlert === 'function') {
+                sayAlert('successModal','Berhasil', data.msg || 'File berhasil dikirim.','success');
+            } else {
+                alert(data.msg || 'File berhasil dikirim.');
+            }
+
+            // 3) refresh tabel sedikit setelah notifikasi ditampilkan
+            const REFRESH_DELAY = 300; // ms - sesuaikan jika perlu
+            setTimeout(function() {
+                try {
+                    if (typeof table !== 'undefined' && typeof table.fetchData === 'function') {
+                        table.fetchData({ reload: true });
+                    }
+                } catch (e) { console.warn('table.fetchData error', e); }
+            }, REFRESH_DELAY);
+
         } else {
-            sayAlert('errorModal', 'Gagal', data.msg || 'Kirim gagal.', 'warning');
-            console.warn('submit response:', data);
+            if (typeof sayAlert === 'function') sayAlert('errorModal','Gagal', data.msg || 'Kirim gagal.','warning');
+            else alert(data.msg || 'Kirim gagal.');
+            // jika gagal, kita bisa buka kembali modal (opsional) — di sini biarkan tertutup
         }
     })
     .catch(err => {
         console.error('doSendLhus error:', err);
-        sayAlert('errorModal', 'Error', 'Terjadi kesalahan saat mengirim LHUS. ' + (err.message || ''), 'warning');
+        if (typeof sayAlert === 'function') sayAlert('errorModal','Error','Terjadi kesalahan saat mengirim LHUS.','warning');
+        else alert('Terjadi kesalahan saat mengirim LHUS.');
     })
-    .finally(() => { hideLoading(); });
+    .finally(() => {
+        hideLoading();
+        if (btnKirim) btnKirim.removeAttribute('disabled');
+    });
 }
 
-
-// override global confirmApprove agar kompatibel:
-// 1) Jika dipanggil confirmApprove(event, encId) -> gunakan encId langsung
-// 2) Jika dipanggil confirmApprove(event) -> fallback ke _orig_confirmApprove jika ada (sebelumnya)
+// override confirmApprove to support confirmApprove(event, encId)
 if (typeof window.confirmApprove === 'function') {
     window._orig_confirmApprove = window.confirmApprove;
 }
-
 window.confirmApprove = function(e, encId) {
-    // jika encId diberikan (dipanggil per-row dengan ID), pakai doSendLhus
     if (typeof encId !== 'undefined' && encId) {
         e.preventDefault();
         if (!confirm('Yakin ingin mengirim file LHUS untuk data ini?')) return;
         doSendLhus(encId);
         return;
     }
-
-    // fallback: jika ada implementasi confirmApprove lama, panggil
     if (typeof window._orig_confirmApprove === 'function') {
         return window._orig_confirmApprove(e);
     }
-
-    // jika tidak ada sama sekali, coba ambil id dari DOM (div parent)
     try {
         e.preventDefault();
         let id = e.currentTarget && e.currentTarget.closest ? e.currentTarget.closest('div').id : null;
         if (!id) return;
         if (!confirm('Yakin ingin mengirim file LHUS untuk data ini?')) return;
         doSendLhus(id);
-    } catch (err) {
-        console.warn('confirmApprove fallback error:', err);
-    }
+    } catch (err) { console.warn('confirmApprove fallback error:', err); }
     return;
 };
 </script>

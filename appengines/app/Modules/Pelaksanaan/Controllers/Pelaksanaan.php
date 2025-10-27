@@ -27,198 +27,280 @@ class Pelaksanaan extends BaseController
 
     
         public function dataList()
-    {
-        $model = new MyModel($this->table);
-        $data  = [];
-
-        $list = $model->getAllDataWithOrder(['lnTgl' => 'DESC']);
-
-        foreach ($list as $row) {
-            // hanya tampilkan status >= 6
-            if ((int) $row->lnStatus < 6) {
-                continue;
-            }
-
-            $id = bin2hex($this->encrypter->encrypt($row->lnKode));
-            $response = [];
-
-            // detail layanan
-            $modelDet = new MyModel('simlab_t_layanan_detil');
-            $detil = $modelDet->getAllDataById(['detLnKode' => $row->lnKode]);
-
-            $items = [];
-            foreach ($detil as $d) {
-                $items[] = $d->detLayanan ?? $d->detJenKode ?? '-';
-            }
-            $itemList = !empty($items) ? implode(', ', $items) : '-';
-
-            // Kolom 1: No Invoice + Tanggal
-            $response[] = '<div>'
-                        . ($row->lnNoTransaksi ?? '-') . '<br>'
-                        . (!empty($row->lnTgl) ? date('d-m-Y', strtotime($row->lnTgl)) : '-')
-                        . '</div>';
-
-            //Kolom 3 : Nama orang
-            $response[] = $row->lnOrangNama ?? '-';
-
-            // Kolom 2: Nama layanan
-            $lihatDetailBtn = '<button type="button" class="btn btn-sm btn-info" title="Lihat Detail Item Layanan" onclick="loadDetail(\'' . $id . '\')">'
-                        . '<i class="bi bi-eye"></i> Lihat Detail Layanan</button>';
-            $response[] = $lihatDetailBtn; 
-
-            // ------------------ Kolom LHUS (lihat) ------------------
-            // (ambil dari detil_LHUS atau kemungkinan field pada row utama)
-            $lhusInfo = $this->detectLhusFile($row);
-            if ($lhusInfo['has']) {
-                // buka di tab baru 
-                $response[] = '<button class="btn btn-sm btn-outline-primary" onclick="window.open(\'' . esc($lhusInfo['url']) . '\', \'_blank\')">'
-                            . '<i class="bi bi-eye"></i> Lihat</button>';
-            } else {
-                $response[] = '<button class="btn btn-sm btn-secondary" disabled>'
-                            . '<i class="bi bi-file-earmark-text"></i> Lihat</button>';
-            }
-
-           
-            // Deteksi file LHU (detil_LHU)
-            $lhuInfo = $this->detectLhuFile($row);
-
-            // Tombol lihat LHU (jika ada)
-            if ($lhuInfo['has']) {
-                $btnViewLhu = '<button class="btn btn-sm btn-outline-primary me-1" onclick="window.open(\'' . esc($lhuInfo['url']) . '\', \'_blank\')">'
-                            . '<i class="bi bi-eye"></i> Lihat</button>';
-            } else {
-                $btnViewLhu = '<button class="btn btn-sm btn-secondary me-1" disabled><i class="bi bi-eye"></i> Lihat</button>';
-            }
-
-            // Tombol upload: pastikan modal mendapatkan URL LHU (bukan LHUS)
-            // openUploadModal(encId, fileUrl, detKode) — fileUrl sekarang adalah URL LHU existing
-            $uploadOnclick = "openUploadModal('{$id}', '" . ($lhuInfo['has'] ? esc($lhuInfo['url']) : '#') . "')";
-            $btnUpload = '<button class="btn btn-sm btn-outline-primary" onclick="' . $uploadOnclick . '">'
-                       . '<i class="bi bi-upload"></i> Upload</button>';
-
-        
-            $response[] = '<div class="d-flex align-items-center">' . $btnUpload . '</div>';
-
-            // Kolom Status
-            $response[] = $this->formatStatus($row->lnStatus);
-
-            // ====== NEW: determine if accept/proses button should be allowed ======
-            // Kondisi yang diminta: tombol PROSES (accept) hanya boleh aktif jika:
-            //    1) kuisioner === 1
-            //    2) bayarStatus === 1 (cek pada tabel simlab_t_pembayaran)
-            $kuisionerVal = null;
-            if (isset($row->kuisioner)) {
-                $kuisionerVal = (int) $row->kuisioner;
-            } else {
-                // coba varian nama lain jika ada
-                $kuFields = ['kuisioner', 'lnKuisioner', 'ln_kuisioner'];
-                foreach ($kuFields as $kf) {
-                    if (isset($row->{$kf})) {
-                        $kuisionerVal = (int) $row->{$kf};
-                        break;
-                    }
-                }
-            }
-
-            // Ambil status pembayaran terbaru dari tabel simlab_t_pembayaran untuk lnKode ini
-            $bayarStatusVal = 0; // default not paid
-            try {
-                if (!empty($row->lnKode)) {
-                    $db = \Config\Database::connect();
-                    $pay = $db->table('simlab_t_pembayaran')
-                              ->select('bayarStatus')
-                              ->where('bayarLnKode', $row->lnKode)
-                              ->orderBy('bayarKode', 'DESC')
-                              ->limit(1)
-                              ->get()
-                              ->getRow();
-
-                    if ($pay && isset($pay->bayarStatus)) {
-                        $bayarStatusVal = (int) $pay->bayarStatus;
-                    }
-                }
-            } catch (\Throwable $e) {
-                // jika error DB, anggap belum dibayar (aman)
-                $bayarStatusVal = 0;
-            }
-
-            // Allow accept hanya jika kuisioner == 1 AND bayarStatus == 1
-            $allowAccept = ($kuisionerVal === 1 && $bayarStatusVal === 1);
-
-            // Kolom Aksi (kirim flag $allowAccept)
-            $response[] = $this->aksiButton($id, $row->lnStatus, $allowAccept);
-
-            $data[] = $response;
-        }
-
-        return $this->response->setJSON(["items" => $data]);
-    }
-
-
-    public function detailList($id)
 {
-    // tolerant decrypt (id dikirim sebagai hex dari client)
-    try {
-        $lnKode = $this->encrypter->decrypt(hex2bin($id));
-    } catch (\Throwable $e) {
-        // coba decrypt langsung (jika tidak hex)
-        try {
-            $lnKode = $this->encrypter->decrypt($id);
-        } catch (\Throwable $e2) {
-            return $this->response->setJSON([
-                'items' => [],
-                'error' => 'Invalid ID'
-            ]);
+    $model = new MyModel($this->table);
+    $data  = [];
+
+    $list = $model->getAllDataWithOrder(['lnTgl' => 'DESC']);
+
+    if (empty($list)) {
+        return $this->response->setJSON(["items" => []]);
+    }
+
+    // kumpulkan user_id untuk fetch nama & identity sekaligus
+    $userIds = [];
+    foreach ($list as $r) {
+        if (isset($r->user_id) && $r->user_id) {
+            $userIds[] = $r->user_id;
+        }
+    }
+    $userMap = [];
+    if (!empty($userIds)) {
+        $db = \Config\Database::connect();
+        $users = $db->table('simlab_account_users')
+                    ->select('user_id, user_name, user_identity, user_email')
+                    ->whereIn('user_id', array_values(array_unique($userIds)))
+                    ->get()
+                    ->getResult();
+
+        foreach ($users as $u) {
+            $userMap[$u->user_id] = $u;
         }
     }
 
-    // Ambil detil layanan sesuai detLnKode
-    $model = new MyModel('simlab_t_layanan_detil d');
-    $joins = [
-        'simlab_r_layanan_pengujian lp' => 'lp.ujiKode = d.detUjiKode',
-        'simlab_r_parameter p'          => 'p.paraKode = lp.ujiParaKode',
-        'simlab_r_alat a'               => 'a.alatKode = lp.ujiAlatKode',
-    ];
-    $where = ['d.detLnKode' => $lnKode];
-
-    $select = "
-        d.detUjiKode,
-        lp.ujiLayanan,
-        p.paraNama,
-        a.alatNama,
-        d.detBiaya,
-        d.detKeterangan
-    ";
-
-    try {
-        $list = $model->getAllDataWithJoinWhereOrder($joins, $where, ['d.detUjiKode' => 'ASC'], $select);
-    } catch (\Throwable $e) {
-        // jika query error, kembalikan array kosong
-        return $this->response->setJSON(['items' => []]);
-    }
-
-    $data = [];
-    $no = 1;
     foreach ($list as $row) {
-        $layanan = isset($row->ujiLayanan) ? $row->ujiLayanan : '-';
-        if (isset($row->paraNama) && !empty($row->paraNama)) {
-            $layanan .= ' (' . $row->paraNama . ')';
+        // hanya tampilkan status >= 6
+        if ((int) $row->lnStatus < 6) {
+            continue;
         }
 
-        $biaya = isset($row->detBiaya) ? 'Rp ' . number_format($row->detBiaya, 0, ',', '.') : '-';
-        $ket   = isset($row->detKeterangan) && !empty($row->detKeterangan) ? $row->detKeterangan : '-';
-
+        $id = bin2hex($this->encrypter->encrypt($row->lnKode));
         $response = [];
-        $response[] = $no++;
-        $response[] = $layanan;
-        $response[] = $biaya;
-        $response[] = $ket;
+
+        // detail layanan
+        $modelDet = new MyModel('simlab_t_layanan_detil');
+        $detil = $modelDet->getAllDataById(['detLnKode' => $row->lnKode]);
+
+        $items = [];
+        foreach ($detil as $d) {
+            $items[] = $d->detLayanan ?? $d->detJenKode ?? '-';
+        }
+        $itemList = !empty($items) ? implode(', ', $items) : '-';
+
+        // --- Kolom 1: Nama pemesan (besar) + tanggal | tipe (identity) ---
+        $pemesanNama = '-';
+        $tipe = '-';
+        $tanggal = '-';
+
+        // coba ambil dari userMap dulu
+        if (isset($row->user_id) && isset($userMap[$row->user_id])) {
+            $u = $userMap[$row->user_id];
+            $pemesanNama = !empty($u->user_name) ? $u->user_name : ($row->lnOrangNama ?? '-');
+            $tipe = !empty($u->user_identity) ? $u->user_identity : '-';
+        } else {
+            // fallback ke lnOrangNama atau field lain
+            $pemesanNama = !empty($row->lnOrangNama) ? $row->lnOrangNama : ($row->lnPemesanNama ?? '-');
+            // jika ada field pemesan identity di row
+            $tipe = !empty($row->lnPemesanIdentity) ? $row->lnPemesanIdentity : ($row->lnJenisPemesan ?? '-');
+        }
+
+        if (!empty($row->lnTgl)) {
+            $tanggal = date('d-m-Y H:i', strtotime($row->lnTgl));
+        }
+
+        $col1 = '
+            <div style="line-height:1.3;">
+                <span style="font-size:1rem; font-weight:600;">' . esc($pemesanNama) . '</span><br>
+                <span style="font-size:0.9rem; color:#555;">' . esc($tanggal) . ' | ' . esc($tipe) . '</span>
+            </div>';
+        $response[] = $col1;
+
+        // --- Kolom 2: Nama layanan (kamu sebelumnya menempatkan ini di kolom 2/3; aku simpan sebagai kolom layanan) ---
+        $lihatDetailBtn = '<button type="button" class="btn btn-sm btn-info" title="Lihat Detail Item Layanan" onclick="loadDetail(\'' . $id . '\')">'
+                    . '<i class="bi bi-eye"></i> Lihat </button>';
+        // jika ingin menampilkan ringkasan nama layanan di samping tombol, bisa tambahkan $itemList
+        $response[] = $lihatDetailBtn;
+
+        // --- Kolom 3 : Nama orang (tetap disediakan jika kamu butuh) ---
+
+
+        // ------------------ Kolom LHUS (lihat) ------------------
+        // $lhusInfo = $this->detectLhusFile($row);
+        // if ($lhusInfo['has']) {
+        //     $response[] = '<button class="btn btn-sm btn-outline-primary" onclick="window.open(\'' . esc($lhusInfo['url']) . '\', \'_blank\')">'
+        //                 . '<i class="bi bi-eye"></i> Lihat</button>';
+        // } else {
+        //     $response[] = '<button class="btn btn-sm btn-secondary" disabled>'
+        //                 . '<i class="bi bi-file-earmark-text"></i> Lihat</button>';
+        // }
+
+        // Deteksi file LHU (detil_LHU)
+        $lhuInfo = $this->detectLhuFile($row);
+
+        // Tombol lihat LHU (jika ada)
+        if ($lhuInfo['has']) {
+            $btnViewLhu = '<button class="btn btn-sm btn-outline-primary me-1" onclick="window.open(\'' . esc($lhuInfo['url']) . '\', \'_blank\')">'
+                        . '<i class="bi bi-eye"></i> Lihat</button>';
+        } else {
+            $btnViewLhu = '<button class="btn btn-sm btn-secondary me-1" disabled><i class="bi bi-eye"></i> Lihat</button>';
+        }
+
+        // Tombol upload: pastikan modal mendapatkan URL LHU (bukan LHUS)
+        $uploadOnclick = "openUploadModal('{$id}', '" . ($lhuInfo['has'] ? esc($lhuInfo['url']) : '#') . "')";
+        $btnUpload = '<button class="btn btn-sm btn-outline-primary" onclick="' . $uploadOnclick . '">'
+                   . '<i class="bi bi-upload"></i> Upload</button>';
+
+        $response[] = '<div class="d-flex align-items-center">' . $btnUpload . '</div>';
+
+        // Kolom Status
+        $response[] = $this->formatStatus($row->lnStatus);
+
+        // ====== NEW: determine if accept/proses button should be allowed ======
+        $kuisionerVal = null;
+        if (isset($row->kuisioner)) {
+            $kuisionerVal = (int) $row->kuisioner;
+        } else {
+            $kuFields = ['kuisioner', 'lnKuisioner', 'ln_kuisioner'];
+            foreach ($kuFields as $kf) {
+                if (isset($row->{$kf})) {
+                    $kuisionerVal = (int) $row->{$kf};
+                    break;
+                }
+            }
+        }
+
+        // Ambil status pembayaran terbaru dari tabel simlab_t_pembayaran untuk lnKode ini
+        $bayarStatusVal = 0; // default not paid
+        try {
+            if (!empty($row->lnKode)) {
+                $db = \Config\Database::connect();
+                $pay = $db->table('simlab_t_pembayaran')
+                          ->select('bayarStatus')
+                          ->where('bayarLnKode', $row->lnKode)
+                          ->orderBy('bayarKode', 'DESC')
+                          ->limit(1)
+                          ->get()
+                          ->getRow();
+
+                if ($pay && isset($pay->bayarStatus)) {
+                    $bayarStatusVal = (int) $pay->bayarStatus;
+                }
+            }
+        } catch (\Throwable $e) {
+            $bayarStatusVal = 0;
+        }
+
+        $allowAccept = ($kuisionerVal === 1 && $bayarStatusVal === 1);
+
+        // Kolom Aksi (kirim flag $allowAccept)
+        $response[] = $this->aksiButton($id, $row->lnStatus, $allowAccept);
 
         $data[] = $response;
     }
 
-    return $this->response->setJSON(['items' => $data]);
+    return $this->response->setJSON(["items" => $data]);
 }
+
+
+
+   public function detailList($id = null)
+{
+    if (!$id) {
+        return $this->response->setJSON(['items' => []]);
+    }
+
+    // decrypt tolerant (hex or raw)
+    try {
+        $lnKode = $this->encrypter->decrypt(hex2bin($id));
+    } catch (\Throwable $e) {
+        try {
+            $lnKode = $this->encrypter->decrypt($id);
+        } catch (\Throwable $e2) {
+            return $this->response->setJSON(['items' => []]);
+        }
+    }
+
+    $db = \Config\Database::connect();
+
+    // Ambil semua detil untuk detLnKode ini — gunakan hanya kolom yang ada
+    $builder = $db->table('simlab_t_layanan_detil as d')
+                  ->select('d.detKode, d.detUjiKode, d.detLayanan, d.detJumlah, d.detKeterangan, d.detil_LHUS, d.detil_LHU, d.detKetLn, d.detKetLhus')
+                  ->where('d.detLnKode', $lnKode)
+                  ->orderBy('d.detKode', 'ASC');
+
+    $rows = $builder->get()->getResult();
+
+    if (empty($rows)) {
+        return $this->response->setJSON(['items' => []]);
+    }
+
+    // Prefetch ujiLayanan untuk detUjiKode yang ada (opsional)
+    $ujiMap = [];
+    $ujiKodeList = [];
+    foreach ($rows as $r) {
+        if (!empty($r->detUjiKode)) $ujiKodeList[] = $r->detUjiKode;
+    }
+    $ujiKodeList = array_values(array_unique($ujiKodeList));
+    if (!empty($ujiKodeList)) {
+        $ujis = $db->table('simlab_r_layanan_pengujian')
+                   ->select('ujiKode, ujiLayanan')
+                   ->whereIn('ujiKode', $ujiKodeList)
+                   ->get()
+                   ->getResult();
+        foreach ($ujis as $u) $ujiMap[$u->ujiKode] = $u->ujiLayanan;
+    }
+
+    $items = [];
+    $no = 1;
+    foreach ($rows as $row) {
+        // Layanan: prefer detLayanan, fallback to uji map
+        $layanan = '-';
+        if (!empty($row->detLayanan)) {
+            $layanan = $row->detLayanan;
+        } elseif (!empty($row->detUjiKode) && isset($ujiMap[$row->detUjiKode])) {
+            $layanan = $ujiMap[$row->detUjiKode];
+        }
+
+        $jumlah = isset($row->detJumlah) ? (int)$row->detJumlah : 0;
+        $ket = !empty($row->detKeterangan) ? esc($row->detKeterangan) : '-';
+
+        // Deteksi file: hanya untuk tombol "Lihat" (jika ada)
+        $fileUrl = null;
+        $candidates = ['detil_LHUS', 'detil_LHU', 'detKetLhus', 'detKetLn'];
+        foreach ($candidates as $cf) {
+            if (isset($row->{$cf}) && trim((string)$row->{$cf}) !== '') {
+                $val = trim((string)$row->{$cf});
+                // multiple parts separated by ';;' -> check each
+                if (strpos($val, ';;') !== false) {
+                    $parts = array_filter(array_map('trim', explode(';;', $val)));
+                    foreach ($parts as $p) {
+                        if (preg_match('/^https?:\/\//i', $p)) { $fileUrl = $p; break 3; }
+                        $p1 = FCPATH . 'uploads/lhus/' . ltrim($p, '/');
+                        $p2 = FCPATH . 'uploads/lhu/' . ltrim($p, '/');
+                        if (is_file($p1)) { $fileUrl = base_url('uploads/lhus/' . ltrim($p, '/')); break 3; }
+                        if (is_file($p2)) { $fileUrl = base_url('uploads/lhu/' . ltrim($p, '/')); break 3; }
+                    }
+                } else {
+                    if (preg_match('/^https?:\/\//i', $val)) { $fileUrl = $val; break; }
+                    $p1 = FCPATH . 'uploads/lhus/' . ltrim($val, '/');
+                    $p2 = FCPATH . 'uploads/lhu/' . ltrim($val, '/');
+                    if (is_file($p1)) { $fileUrl = base_url('uploads/lhus/' . ltrim($val, '/')); break; }
+                    if (is_file($p2)) { $fileUrl = base_url('uploads/lhu/' . ltrim($val, '/')); break; }
+                }
+            }
+        }
+
+        // Build "Lihat" button only (no status badge)
+        if ($fileUrl) {
+            $viewHtml = '<button class="btn btn-sm btn-outline-primary" onclick="window.open(\'' . esc($fileUrl) . '\', \'_blank\')"><i class="bi bi-eye"></i></button>';
+        } else {
+            $viewHtml = '<button class="btn btn-sm btn-secondary" disabled><i class="bi bi-file-earmark-text"></i> Lihat</button>';
+        }
+
+        // Items: No, Layanan, Jumlah, Keterangan, Lihat
+        $items[] = [
+            $no++,
+            $layanan,
+            $jumlah,
+            $ket,
+            $viewHtml
+        ];
+    }
+
+    return $this->response->setJSON(['items' => $items]);
+}
+
+
 
     public function upload()
     {

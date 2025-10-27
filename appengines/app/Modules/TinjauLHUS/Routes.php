@@ -6,17 +6,15 @@ if (!isset($routes)) {
 
 $routes->group('tinjaulhus', ['namespace' => 'Modules\TinjauLHUS\Controllers'], function ($subroutes) {
 
-    // 🔹 Halaman utama
     $subroutes->get('/', 'TinjauLHUS::index');
-
-    // 🔹 Load data untuk datatable (GET)
     $subroutes->get('datalist', 'TinjauLHUS::dataList');
-
-    // 🔹 Detail item layanan (GET dengan parameter ID terenkripsi)
     $subroutes->get('detaillist/(:any)', 'TinjauLHUS::detailList/$1');
 
-    // 🔹 Proses LHUS (diterima / ditolak) → wajib POST
-    // Format URL: tinjaulhus/proses/{id terenkripsi}/{aksi}
-    // Contoh: tinjaulhus/proses/a1b2c3d4/terima
+    // route untuk aksi parent (sudah benar)
     $subroutes->post('proses/(:any)/(:any)', 'TinjauLHUS::proses/$1/$2');
+
+    // <-- perbaiki kedua route berikut: jangan duplikasi "tinjaulhus/"
+    $subroutes->post('savedetketlhus', 'TinjauLHUS::saveDetKetLhus');
+    $subroutes->post('prosesdetaillhus', 'TinjauLHUS::prosesDetailLhus');
+
 });

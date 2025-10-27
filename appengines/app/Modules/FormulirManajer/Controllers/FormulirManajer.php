@@ -217,9 +217,10 @@ class FormulirManajer extends BaseController
         $response[] = $textarea;
         
         $aksiHtml = '<div class="d-flex justify-content-center gap-2 align-items-center">';
-        $aksiHtml .= '<span class="text-success btn-action" title="Setujui" data-ln="' . $encLnForBtn . '" data-uji="' . $ujiKodeInt . '" onclick="confirmApproveDetail(event)"><i class="bi bi-check-circle"></i></span> ';
-        $aksiHtml .= '<span class="text-warning btn-action" title="Tolak" data-ln="' . $encLnForBtn . '" data-uji="' . $ujiKodeInt . '" onclick="confirmRejectDetail(event)"><i class="bi bi-x-circle"></i></span>';
+        $aksiHtml .= '<span class="text-success btn-action btn-accept-manager" title="Setujui" data-ln="' . $encLnForBtn . '" data-uji="' . $ujiKodeInt . '"><i class="bi bi-check-circle"></i></span> ';
+        $aksiHtml .= '<span class="text-warning btn-action btn-reject-manager" title="Tolak" data-ln="' . $encLnForBtn . '" data-uji="' . $ujiKodeInt . '"><i class="bi bi-x-circle"></i></span>';
         $aksiHtml .= '</div>';
+
         $response[] = $aksiHtml;
 
         $data[] = $response;

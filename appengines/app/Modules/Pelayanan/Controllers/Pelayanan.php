@@ -10,6 +10,7 @@ class Pelayanan extends BaseController
     private $table = 'simlab_t_layanan';
     private $id    = 'lnKode';
     protected $encrypter;
+    private $sessionKey = 'keranjang';
 
     public function __construct()
     {
@@ -339,5 +340,384 @@ class Pelayanan extends BaseController
 
         return ['has' => false, 'url' => '#'];
     }
+
+    // =============================================
+    // KERANJANG METHODS - START
+    // =============================================
+
+    public function keranjang()
+    {
+        $session = session();
+        $user_id = $session->get('id_user');
+
+        $modelUser = new MyModel('simlab_account_users');
+        $model     = new MyModel('simlab_r_layanan_pengujian');
+
+        $joins = [
+            'simlab_r_parameter p' => 'p.paraKode = simlab_r_layanan_pengujian.ujiParaKode',
+            'simlab_r_alat a'      => 'a.alatKode = simlab_r_layanan_pengujian.ujiAlatKode'
+        ];
+
+        $select = '
+            simlab_r_layanan_pengujian.ujiKode,
+            simlab_r_layanan_pengujian.ujiBiaya,
+            simlab_r_layanan_pengujian.ujiInstansi,
+            simlab_r_layanan_pengujian.ujiDiskon,
+            simlab_r_layanan_pengujian.ujiLayanan,
+            p.paraNama,
+            a.alatNama
+        ';
+
+        $listUji = $model->getAllDataWithJoinWhereOrder($joins, [], ['ujiKode' => 'ASC'], $select, 'left');
+
+        $data = [
+            'title'   => 'Keranjang Layanan',
+            'user'    => $modelUser->getDataById('user_id', $user_id),
+            'listUji' => $listUji
+        ];
+
+        return view('Modules\Pelayanan\Views\v_keranjang', $data);
+    }
+
+    public function keranjangDataList()
+    {
+        $session   = session();
+        $keranjang = $session->get($this->sessionKey) ?? [];
+        $data      = array();
+
+        foreach ($keranjang as $idx => $row) {
+            $response   = array();
+
+            $layanan    = isset($row['layanan']) ? esc($row['layanan']) : '-';
+            $jumlah     = isset($row['jumlah']) ? (int)$row['jumlah'] : 0;
+            $keterangan = isset($row['keterangan']) ? esc($row['keterangan']) : '';
+            $diskon     = isset($row['diskon']) ? (float)$row['diskon'] : 0;
+
+            $biayaAsli  = isset($row['biaya_asli']) ? (float)$row['biaya_asli'] : 0;
+            $biayaTotal = isset($row['biaya']) ? (float)$row['biaya'] : 0;
+
+            $response[] = '<span class="badge bg-primary">' . $layanan . '</span>';
+
+            if ($diskon > 0) {
+                $hargaDiskon = $biayaAsli - ($biayaAsli * ($diskon / 100));
+                $biayaTampil = '<span style="color:red;text-decoration:line-through;">Rp ' . number_format($biayaAsli, 0, ',', '.') . '</span><br>';
+                $biayaTampil .= 'Rp ' . number_format($hargaDiskon, 0, ',', '.');
+            } else {
+                $biayaTampil = 'Rp ' . number_format($biayaAsli, 0, ',', '.');
+            }
+            $response[] = $biayaTampil;
+
+            $response[] = $jumlah;
+            $response[] = $diskon > 0 ? $diskon . '%' : '-';
+            $response[] = 'Rp ' . number_format($biayaTotal, 0, ',', '.');
+            $response[] = $keterangan;
+            $response[] = $this->aksiKeranjang($idx);
+
+            $data[] = $response;
+        }
+
+        $output = array("items" => $data);
+        return $this->response->setJSON($output);
+    }
+
+    public function keranjangFormTambah()
+    {
+        $model = new MyModel('simlab_r_layanan_pengujian');
+
+        $joins = [
+            'simlab_r_parameter p' => 'p.paraKode = simlab_r_layanan_pengujian.ujiParaKode',
+            'simlab_r_alat a'      => 'a.alatKode = simlab_r_layanan_pengujian.ujiAlatKode'
+        ];
+
+        $select = '
+            simlab_r_layanan_pengujian.ujiKode,
+            simlab_r_layanan_pengujian.ujiBiaya,
+            simlab_r_layanan_pengujian.ujiInstansi,
+            simlab_r_layanan_pengujian.ujiDiskon,
+            simlab_r_layanan_pengujian.ujiLayanan,
+            p.paraNama,
+            a.alatNama
+        ';
+
+        $listUji = $model->getAllDataWithJoinWhereOrder(
+            $joins,
+            [],
+            ['ujiKode' => 'ASC'],
+            $select,
+            'left'
+        );
+
+        return view('Modules\Pelayanan\Views\v_keranjang_form', [
+            'listUji' => $listUji
+        ]);
+    }
+
+   
+
+    public function keranjangCheckout()
+    {
+        $session = session();
+        $user_id = $session->get('id_user');
+
+        $modelUser = new MyModel('simlab_account_users');
+        $userRow   = $modelUser->getDataById('user_id', $user_id);
+
+        $emailFromDB = $userRow->user_email ?? $session->get('username');
+        $nameFromDB  = $userRow->user_name ?? $session->get('nama');
+        $identity    = $userRow->user_identity ?? null;
+
+        $keranjang = $session->get($this->sessionKey) ?? [];
+        if (empty($keranjang)) {
+            return $this->response->setJSON([
+                'res' => false,
+                'msg' => 'Keranjang masih kosong.',
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        }
+
+        $totalBiaya = array_sum(array_column($keranjang, 'biaya'));
+
+        $modelPembayaran = new MyModel('simlab_t_pembayaran');
+        $modelLayanan    = new MyModel('simlab_t_layanan');
+        $modelDetil      = new MyModel('simlab_t_layanan_detil');
+
+        $db = \Config\Database::connect();
+
+        // Gunakan transaction untuk atomicity
+        $db->transStart();
+
+        try {
+            // 1) Insert ke simlab_t_layanan dulu (tanpa lnNoTransaksi)
+            $insertLayananId = $modelLayanan->insertData([
+                'user_id'       => $user_id,
+                'lnAccEmail'    => $emailFromDB,
+                'lnNoTransaksi' => null,
+                'lnTgl'         => date('Y-m-d H:i:s'),
+                'lnStatus'      => 1,
+                'kuisioner'     => 0
+            ], true);
+
+            // Pastikan kita punya lnKode (primary key) yang valid
+            if (!$insertLayananId) {
+                $insertLayananId = $db->insertID();
+            }
+
+            if (!$insertLayananId) {
+                $db->transRollback();
+                return $this->response->setJSON([
+                    'res' => false,
+                    'msg' => 'Gagal membuat record layanan (lnKode tidak tersedia).',
+                    'xname' => csrf_token(),
+                    'xhash' => csrf_hash()
+                ]);
+            }
+
+            $lnKode = (int)$insertLayananId;
+
+            // 2) Sekarang insert pembayaran yang merujuk ke lnKode yang sudah ada
+            $today = date('Y-m-d');
+            $insertPembayaranId = $modelPembayaran->insertData([
+                'bayarLnKode'     => $lnKode,
+                'bayarTotalBiaya' => $totalBiaya,
+                'bayarStatus'     => 0,
+                'bayarInvoiceNo'  => null,
+                'bayarInvoiceTgl' => $today,
+                'bayarBuktiFile'  => 'by_admin'
+            ], true);
+
+            if (!$insertPembayaranId) {
+                $db->transRollback();
+                return $this->response->setJSON([
+                    'res' => false,
+                    'msg' => 'Gagal simpan pembayaran.',
+                    'xname' => csrf_token(),
+                    'xhash' => csrf_hash()
+                ]);
+            }
+
+            // 3) Simpan detail layanan (detLnKode -> lnKode)
+            foreach ($keranjang as $item) {
+                $detil = [
+                    'detLnKode'         => $lnKode,
+                    'detUjiKode'        => $item['kode'] ?? null,
+                    'detBiaya'          => $item['biaya'] ?? null,
+                    'detJumlah'         => $item['jumlah'] ?? 1,
+                    'detKeterangan'     => $item['keterangan'] ?? null,
+                    'detLayanan'        => $item['layanan'] ?? null,
+                    'detStatus'         => 0,
+                    'detJenKode'        => null,
+                    'detPenyelia'       => $item['ujiPenyelia'] ?? null,
+                    'detManajerTeknis'  => $item['ujiManajerTeknis'] ?? null,
+                ];
+
+                $res = $modelDetil->insertData($detil);
+                if (!$res) {
+                    $error = $modelDetil->db->error();
+                    log_message('error', ' Insert gagal ke simlab_t_layanan_detil. Data: ' . json_encode($detil));
+                    log_message('error', ' DB Error: ' . json_encode($error));
+
+                    $db->transRollback();
+
+                    return $this->response->setJSON([
+                        'res' => false,
+                        'msg' => 'Checkout gagal saat simpan detail: ' . ($error['message'] ?? 'Unknown error'),
+                        'xname' => csrf_token(),
+                        'xhash' => csrf_hash()
+                    ]);
+                }
+            }
+
+            // jika semua sukses, commit
+            $db->transComplete();
+
+            // kosongkan keranjang
+            $session->remove($this->sessionKey);
+
+            return $this->response->setJSON([
+                'res' => true,
+                'msg' => 'Checkout berhasil! ', 
+                'lnKode' => $lnKode,
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        } catch (\Exception $e) {
+            if ($db->transStatus() === FALSE) {
+                $db->transRollback();
+            }
+
+            log_message('error', 'Checkout exception: ' . $e->getMessage() . ' Trace: ' . $e->getTraceAsString());
+
+            return $this->response->setJSON([
+                'res' => false,
+                'msg' => 'Checkout gagal: ' . $e->getMessage(),
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        }
+    }
+
+    public function keranjangDelete($id)
+    {
+        $session   = session();
+        $keranjang = $session->get($this->sessionKey) ?? [];
+
+        if (!isset($keranjang[$id])) {
+            return $this->response->setJSON([
+                'res'   => false,
+                'msg'   => 'Item tidak ditemukan.',
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        }
+
+        unset($keranjang[$id]);
+        $keranjang = array_values($keranjang);
+        $session->set($this->sessionKey, $keranjang);
+
+        return $this->response->setJSON([
+            'res'   => true,
+            'msg'   => 'Item berhasil dihapus.',
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
+        ]);
+    }
+
+    public function keranjangDataListLayanan()
+    {
+        $model = new MyModel('simlab_r_layanan_pengujian');
+        
+        $joins = [
+            'simlab_r_parameter p' => 'p.paraKode = simlab_r_layanan_pengujian.ujiParaKode',
+            'simlab_r_alat a'      => 'a.alatKode = simlab_r_layanan_pengujian.ujiAlatKode'
+        ];
+        
+        $select = '
+            simlab_r_layanan_pengujian.ujiKode,
+            simlab_r_layanan_pengujian.ujiBiaya,
+            simlab_r_layanan_pengujian.ujiInstansi,
+            simlab_r_layanan_pengujian.ujiDiskon,
+            simlab_r_layanan_pengujian.ujiLayanan,
+            p.paraNama,
+            a.alatNama
+        ';
+        
+        $listUji = $model->getAllDataWithJoinWhereOrder(
+            $joins, 
+            [], 
+            ['ujiKode' => 'ASC'], 
+            $select, 
+            'left'
+        );
+        
+        $data = array();
+        $no = 1;
+        
+        foreach ($listUji as $row) {
+            $response = array();
+            
+            // Parameter
+            $response[] = esc($row->paraNama);
+            
+            // Instrumen/Alat
+            $response[] = esc($row->alatNama);
+            
+            // Biaya (dengan diskon jika ada)
+            $biaya = 'Rp ' . number_format($row->ujiBiaya, 0, ',', '.');
+            if (!empty($row->ujiDiskon) && $row->ujiDiskon > 0) {
+                $biaya .= ' <span class="text-danger fw-bold">- ' . $row->ujiDiskon . '%</span>';
+            }
+            $response[] = $biaya;
+            
+            // Input Jumlah (tanpa tombol + / -)
+            $inputJumlah = '
+                <input type="number" class="form-control form-control-sm text-center jumlah" value="1" min="1" style="width:100px;">
+            ';
+            $response[] = $inputJumlah;
+            
+            // Input Keterangan
+            $response[] = '<input type="text" class="form-control form-control-sm keterangan" placeholder="Keterangan...">';
+            
+            // Tombol Aksi
+            $btnMasukkan = '
+                <button type="button" 
+                        class="btn btn-success btn-sm btnMasukkan" 
+                        data-kode="' . esc($row->ujiKode) . '" 
+                        data-alat="' . esc($row->alatNama) . '" 
+                        data-biaya="' . $row->ujiBiaya . '" 
+                        data-parameter="' . esc($row->paraNama) . '"
+                        data-diskon="' . ($row->ujiDiskon ?? 0) . '" 
+                        data-instansi="' . esc($row->ujiInstansi) . '" 
+                        title="Masukkan ke keranjang">
+                    <i class="bi bi-cart-plus"></i>
+                </button>
+            ';
+            $response[] = $btnMasukkan;
+            
+            $data[] = $response;
+        }
+        
+        $output = array("items" => $data);
+        return $this->response->setJSON($output);
+    }
+
+    private function aksiKeranjang($id, $isPreview = false)
+    {
+        $functionName = $isPreview ? 'deleteItemFromPreview' : 'deleteItem';
+        
+        return '<div id="item-' . $id . '" class="text-center">
+            <span data-index="' . $id . '" 
+                class="text-danger btn-action btn-delete-item" 
+                style="cursor: pointer;"
+                title="Hapus" 
+                onclick="' . $functionName . '(event)">
+                <i class="bi bi-trash"></i>
+            </span>
+        </div>';
+    }
+
+    // =============================================
+    // KERANJANG METHODS - END
+    // =============================================
 
 }

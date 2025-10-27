@@ -516,4 +516,94 @@ function confirmRejectDetail(e) {
     });
 }
 
+
+document.addEventListener('click', function(e) {
+    // ACCEPT
+    const acceptEl = e.target.closest ? e.target.closest('.btn-accept-manager') : null;
+    if (acceptEl) {
+        e.preventDefault();
+        handleApproveReject(acceptEl, true);
+        return;
+    }
+
+    // REJECT
+    const rejectEl = e.target.closest ? e.target.closest('.btn-reject-manager') : null;
+    if (rejectEl) {
+        e.preventDefault();
+        handleApproveReject(rejectEl, false);
+        return;
+    }
+});
+
+async function handleApproveReject(el, isAccept) {
+    if (!el) return;
+
+    // ambil data
+    const ln = el.dataset.ln;
+    const uji = el.dataset.uji;
+    if (!ln || (uji === undefined || uji === null)) {
+        console.warn('handleApproveReject: missing ln or uji', ln, uji);
+        return;
+    }
+
+    // prevent double click
+    if (el.dataset.sending === '1') return;
+    el.dataset.sending = '1';
+    el.style.pointerEvents = 'none';
+
+    try {
+        // Simpan komentar di modal (jika ada) tapi jangan trigger click pada tombol lain
+        // saveKomentarAsync sudah melakukan fetch dan mengupdate token
+        try {
+            const komentarResult = await saveKomentarAsync();
+            // jika gagal penyimpanan, lanjutkan juga (sesuai kebijakan silent)
+            if (!komentarResult.ok && !komentarResult.skipped) {
+                console.warn('Penyimpanan komentar bermasalah (melanjutkan):', komentarResult);
+            }
+        } catch (err) {
+            console.error('saveKomentarAsync error (ignored):', err);
+        }
+
+        // persiapkan request ke server
+        const csrfToken = _getCsrf();
+        const formData = new FormData();
+        formData.append('ln', ln);
+        formData.append('uji', uji);
+
+        const url = isAccept
+            ? '<?php echo site_url("formulirmanajer/approveDetail") ?>'
+            : '<?php echo site_url("formulirmanajer/rejectDetail") ?>';
+
+        const res = await fetch(url, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': csrfToken
+            }
+        });
+
+        const data = await res.json();
+
+        // update CSRF token jika server mengembalikan
+        if (data.xname && data.xhash) {
+            document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => input.value = data.xhash);
+        }
+
+        if (data.res) {
+            // reload detail & tabel (silent)
+            try { loadDetail(ln); } catch (err) { console.error('loadDetail error', err); }
+            if (typeof table !== 'undefined') table.fetchData({ reload: true });
+        } else {
+            // gagal — log saja (sesuai pola silent)
+            console.warn((isAccept ? 'Gagal menyetujui' : 'Gagal menolak'), data.msg || null);
+        }
+    } catch (err) {
+        console.error('Error saat handleApproveReject:', err);
+    } finally {
+        el.dataset.sending = '0';
+        el.style.pointerEvents = 'auto';
+    }
+}
+
 </script>

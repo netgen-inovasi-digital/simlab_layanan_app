@@ -9,9 +9,8 @@
                     <thead>
                         <tr>
                             <th show width="5%">No.</th>
-                            <th show width="15%">No. Invoice & Tanggal</th>  
-                            <th show width="10%">Pemesan</th>
-                            <th show width="25%">Item Layanan</th>
+                            <th show width="35%">Pemesan</th>
+                            <!-- <th show width="15%">Detail Layanan</th> -->
                             <th show width="10%">LHUS </th>
                             <th show width="15%">LHU</th>
                             <th show width="10%">Status</th>
@@ -191,54 +190,55 @@
     }
 
    
-    // 🔹 Tombol Lihat Detail
-    function loadDetail(id) {
-        const url = '<?php echo site_url("hasilpengujian/detaillist/") ?>' + id;
-        const tbody = document.querySelector('#detail-body');
+   // 🔹 Tombol Lihat Detail
+function loadDetail(id) {
+    const url = '<?php echo site_url("pelaksanaan/detaillist/") ?>' + id;
+    const tbody = document.querySelector('#detail-body');
 
-        // tampilkan loading
-        tbody.innerHTML = '<tr><td colspan="4" class="text-center">Loading...</td></tr>';
+    // tampilkan loading
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center">Loading...</td></tr>';
 
-        fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-            .then(response => {
-                if (!response.ok) {
-                    return response.text().then(t => { throw new Error('HTTP ' + response.status + ': ' + t); });
-                }
-                return response.json();
-            })
-            .then(data => {
-                tbody.innerHTML = '';
-                if (data.items && data.items.length > 0) {
-                    data.items.forEach(function(row) {
-                        let tr = '<tr>';
-                        row.forEach(function(col) { tr += '<td>' + col + '</td>'; });
-                        tr += '</tr>';
-                        tbody.innerHTML += tr;
-                    });
-                } else {
-                    tbody.innerHTML = '<tr><td colspan="4" class="text-center">Tidak ada data</td></tr>';
-                }
-                // tampilkan modal
-                if (typeof bootstrap !== 'undefined') {
-                    const modalEl = document.getElementById('modalDetail');
-                    const modal = new bootstrap.Modal(modalEl);
-                    modal.show();
-                } else {
-                    $('#modalDetail').modal('show');
-                }
-            })
-            .catch(error => {
-                console.error('loadDetail error:', error);
-                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Error load data</td></tr>';
-                if (typeof bootstrap !== 'undefined') {
-                    const modalEl = document.getElementById('modalDetail');
-                    const modal = new bootstrap.Modal(modalEl);
-                    modal.show();
-                } else {
-                    $('#modalDetail').modal('show');
-                }
-            });
-    }
+    fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(response => {
+            if (!response.ok) {
+                return response.text().then(t => { throw new Error('HTTP ' + response.status + ': ' + t); });
+            }
+            return response.json();
+        })
+        .then(data => {
+            tbody.innerHTML = '';
+            if (data.items && data.items.length > 0) {
+                data.items.forEach(function(row) {
+                    let tr = '<tr>';
+                    row.forEach(function(col) { tr += '<td>' + col + '</td>'; });
+                    tr += '</tr>';
+                    tbody.innerHTML += tr;
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center">Tidak ada data</td></tr>';
+            }
+            // tampilkan modal
+            if (typeof bootstrap !== 'undefined') {
+                const modalEl = document.getElementById('modalDetail');
+                const modal = new bootstrap.Modal(modalEl);
+                modal.show();
+            } else {
+                $('#modalDetail').modal('show');
+            }
+        })
+        .catch(error => {
+            console.error('loadDetail error:', error);
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error load data</td></tr>';
+            if (typeof bootstrap !== 'undefined') {
+                const modalEl = document.getElementById('modalDetail');
+                const modal = new bootstrap.Modal(modalEl);
+                modal.show();
+            } else {
+                $('#modalDetail').modal('show');
+            }
+        });
+}
+
 
     /* ------------------ Upload LHU modal integration ------------------ */
     function openUploadModal(encId, fileUrl = '#', detKode = '') {
@@ -389,16 +389,17 @@
         <table class="table table-bordered">
           <thead>
             <tr>
-              <th width="5%">No</th>
-              <!-- <th width="15%">Kode</th> -->
-              <th width="40%">Layanan</th>
-              <th width="20%">Biaya</th>
-              <th width="20%">Keterangan</th>
+                <th width="5%">No</th>
+                <th width="45%">Layanan</th>
+                <th width="10%">Jumlah</th>
+                <th width="30%">Keterangan</th>
+                <th width="15%">File LHUS</th>
             </tr>
-          </thead>
-          <tbody id="detail-body">
-            <tr><td colspan="5" class="text-center">Loading...</td></tr>
-          </tbody>
+            </thead>
+            <tbody id="detail-body">
+               <tr><td colspan="5" class="text-center">Loading...</td></tr>
+            </tbody>
+
         </table>
       </div>
       <div class="modal-footer">

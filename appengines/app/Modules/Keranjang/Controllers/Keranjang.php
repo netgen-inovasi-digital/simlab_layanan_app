@@ -383,7 +383,7 @@ class Keranjang extends BaseController
         ]);
     }
 
-    private function aksi($id)
+    private function aksi1($id)
     {
         return '<div id="item-' . $id . '" class="float-end">
             <span data-index="' . $id . '" 
@@ -394,4 +394,114 @@ class Keranjang extends BaseController
             </span>
         </div>';
     }
+
+    /**
+ * Method baru untuk menampilkan daftar layanan di modal
+ * Tambahkan method ini di class Keranjang Controller
+ */
+/**
+ * Method baru untuk menampilkan daftar layanan di modal
+ * Tambahkan method ini di class Keranjang Controller
+ */
+public function dataListLayanan()
+{
+    $model = new MyModel('simlab_r_layanan_pengujian');
+    
+    $joins = [
+        'simlab_r_parameter p' => 'p.paraKode = simlab_r_layanan_pengujian.ujiParaKode',
+        'simlab_r_alat a'      => 'a.alatKode = simlab_r_layanan_pengujian.ujiAlatKode'
+    ];
+    
+    $select = '
+        simlab_r_layanan_pengujian.ujiKode,
+        simlab_r_layanan_pengujian.ujiBiaya,
+        simlab_r_layanan_pengujian.ujiInstansi,
+        simlab_r_layanan_pengujian.ujiDiskon,
+        simlab_r_layanan_pengujian.ujiLayanan,
+        p.paraNama,
+        a.alatNama
+    ';
+    
+    $listUji = $model->getAllDataWithJoinWhereOrder(
+        $joins, 
+        [], 
+        ['ujiKode' => 'ASC'], 
+        $select, 
+        'left'
+    );
+    
+    $data = array();
+    $no = 1;
+    
+    foreach ($listUji as $row) {
+        $response = array();
+        
+        // Nomor urut
+        
+        
+        // Parameter
+        $response[] = esc($row->paraNama);
+        
+        // Instrumen/Alat
+        $response[] = esc($row->alatNama);
+        
+        // Biaya (dengan diskon jika ada)
+        $biaya = 'Rp ' . number_format($row->ujiBiaya, 0, ',', '.');
+        if (!empty($row->ujiDiskon) && $row->ujiDiskon > 0) {
+            $biaya .= ' <span class="text-danger fw-bold">- ' . $row->ujiDiskon . '%</span>';
+        }
+        $response[] = $biaya;
+        
+       // Input Jumlah (tanpa tombol + / -)
+        $inputJumlah = '
+            <input type="number" class="form-control form-control-sm text-center jumlah" value="1" min="1" style="width:100px;">
+        ';
+        $response[] = $inputJumlah;
+
+        
+        // Input Keterangan
+        $response[] = '<input type="text" class="form-control form-control-sm keterangan" placeholder="Keterangan...">';
+        
+        // Tombol Aksi
+        $btnMasukkan = '
+            <button type="button" 
+                    class="btn btn-success btn-sm btnMasukkan" 
+                    data-kode="' . esc($row->ujiKode) . '" 
+                    data-alat="' . esc($row->alatNama) . '" 
+                    data-biaya="' . $row->ujiBiaya . '" 
+                    data-parameter="' . esc($row->paraNama) . '"
+                    data-diskon="' . ($row->ujiDiskon ?? 0) . '" 
+                    data-instansi="' . esc($row->ujiInstansi) . '" 
+                    title="Masukkan ke keranjang">
+                <i class="bi bi-cart-plus"></i>
+            </button>
+        ';
+        $response[] = $btnMasukkan;
+        
+        $data[] = $response;
+    }
+    
+    $output = array("items" => $data);
+    return $this->response->setJSON($output);
+}
+
+/**
+ * Method untuk generate tombol aksi preview (digunakan di modal preview)
+ * Update method aksi() yang sudah ada menjadi seperti ini
+ */
+private function aksi($id, $isPreview = false)
+{
+    $functionName = $isPreview ? 'deleteItemFromPreview' : 'deleteItem';
+    
+    return '<div id="item-' . $id . '" class="text-center">
+        <span data-index="' . $id . '" 
+            class="text-danger btn-action btn-delete-item" 
+            style="cursor: pointer;"
+            title="Hapus" 
+            onclick="' . $functionName . '(event)">
+            <i class="bi bi-trash"></i>
+        </span>
+    </div>';
+}
+
 }
