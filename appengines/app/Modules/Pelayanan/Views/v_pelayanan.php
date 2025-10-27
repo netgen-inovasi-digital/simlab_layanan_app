@@ -41,7 +41,7 @@
                     <thead>
                         <tr>
                             <th width="5%">No</th>
-                            <th width="30%">Layanan</th>
+                            <th width="30%">Parameter</th>
                             <th width="20%">Biaya</th>
                             <th width="15%">Jumlah</th>
                             <th width="15%">Keterangan</th>
@@ -83,12 +83,12 @@
                     <table id="layanan-table" class="saytable border-top-bottom">
                         <thead>
                             <tr>
-                                <th style="width:5%">No</th>
-                                <th style="width:15%">Parameter</th>
-                                <th style="width:15%">Instrumen/Alat/Tempat</th>
-                                <th style="width:12%">Biaya</th>
-                                <th style="width:12%">Jumlah</th>
-                                <th style="width:18%">Keterangan</th>
+                                <th width="5%">No</th>
+                                <th width="25%">Parameter</th>
+                                <th width="25%">Instrumen/Alat/Tempat</th>
+                                <th width="15%">Biaya</th>
+                                <th width="5%">Jumlah</th>
+                                <th width="20%">Keterangan</th>
                                 <th style="width:5%" class="text-center">Aksi</th>
                             </tr>
                         </thead>
@@ -105,9 +105,9 @@
                             <i class="bi bi-cart3"></i> Keranjang Anda 
                             (<span id="jumlahItemKeranjang">0</span> Item)
                         </h6>
-                        <button type="button" id="btnRefreshKeranjang" class="btn btn-sm btn-outline-secondary">
+                        <!-- <button type="button" id="btnRefreshKeranjang" class="btn btn-sm btn-outline-secondary">
                             <i class="bi bi-arrow-clockwise"></i> Refresh
-                        </button>
+                        </button> -->
                     </div>
 
                     <div id="keranjangKosong" class="alert alert-warning text-center" style="display:none;">
@@ -117,24 +117,30 @@
                     <table id="preview-keranjang-table" class="saytable border-top-bottom">
                         <thead>
                             <tr>
-                                <th style="width:5%">No</th>
-                                <th style="width:20%">Layanan</th>
-                                <th style="width:12%">Biaya Satuan</th>
-                                <th style="width:8%">Jumlah</th>
-                                <th style="width:10%">Diskon (%)</th>
-                                <th style="width:15%">Total</th>
-                                <th style="width:20%">Keterangan</th>
+                                <th width="5%">No</th>
+                                <th width="22%">Parameter</th>
+                                <th width="22%">Instrumen/Alat/Tempat</th>
+                                <th width="10%">Diskon</th>
+                                <th width="15%">Biaya</th>
+                                <th width="5%">Jumlah</th>
+                                <th width="25%">Keterangan</th>
                                 <th style="width:10%" class="text-center">Aksi</th>
                             </tr>
                         </thead>
                         <tbody id="preview-keranjang-table-body"></tbody>
-                        <tfoot>
-                            <tr class="table-active">
-                                <td colspan="5" class="text-end fw-bold">TOTAL KESELURUHAN:</td>
-                                <td id="grandTotal" class="fw-bold text-primary fs-5">Rp 0</td>
-                                <td colspan="2"></td>
-                            </tr>
-                        </tfoot>
+                    <tfoot>
+                        <tr class="table-active align-middle">
+                            <td colspan="8">
+                                <div class="d-flex justify-content-end">
+                                    <div class="fw-bold fs-5">
+                                        TOTAL KESELURUHAN:
+                                        <span id="grandTotal" class="text-primary">Rp 0</span>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    </tfoot>
+    
                     </table>
                 </div>
             </div>
@@ -332,31 +338,27 @@
     document.getElementById('modalForm').addEventListener('shown.bs.modal', function () {
         if (!layananTable) {
             layananTable = createModal({
-                apiUrl: '<?= site_url("keranjang/dataListLayanan") ?>',
+                apiUrl: '<?= site_url("pelayanan/keranjang/dataListLayanan") ?>',
                 tableId: 'layanan-table',
-                showFilter: true,
-                treeview: false,
-                numbering: true,
-                itemsPerPage: 10
             });
         } else {
             layananTable.fetchData({ reload: true });
         }
 
-        if (!previewKeranjangTable) {
+       if (!previewKeranjangTable) {
             previewKeranjangTable = createModal({
-                apiUrl: '<?= site_url("keranjang/datalist") ?>',
+                apiUrl: '<?= site_url("pelayanan/keranjang/datalist") ?>',
                 tableId: 'preview-keranjang-table',
                 showFilter: false,
-                treeview: false,
+                treeview: true,
                 numbering: true,
-                itemsPerPage: 100
+                itemsPerPage: 10
             });
         } else {
             previewKeranjangTable.fetchData({ reload: true });
         }
+
         
-        // Update counter dan grand total
         setTimeout(function() {
             updateKeranjangCounter();
             calculateGrandTotal();
@@ -365,7 +367,7 @@
 
     // Fungsi untuk update jumlah item di badge
     function updateKeranjangCounter() {
-        fetch('<?= site_url("keranjang/datalist") ?>')
+        fetch('<?= site_url("pelayanan/keranjang/datalist") ?>')
             .then(res => res.json())
             .then(data => {
                 const jumlahItem = data.items ? data.items.length : 0;
@@ -392,31 +394,59 @@
 
     // Fungsi untuk menghitung grand total
     function calculateGrandTotal() {
-        fetch('<?= site_url("keranjang/datalist") ?>')
-            .then(res => res.json())
-            .then(data => {
-                if (data.items && data.items.length > 0) {
-                    let grandTotal = 0;
-                    data.items.forEach(item => {
-                        const totalStr = item[4]; // Kolom Total (index 5)
-                        if (totalStr) {
-                            const totalNum = parseFloat(totalStr.replace(/[^0-9,-]/g, '').replace(',', '.'));
-                            if (!isNaN(totalNum)) {
-                                grandTotal += totalNum;
+    fetch('<?= site_url("pelayanan/keranjang/datalist") ?>')
+        .then(res => res.json())
+        .then(data => {
+            if (data.items && data.items.length > 0) {
+                let grandTotal = 0;
+
+                data.items.forEach(item => {
+                    // item adalah array kolom; kolom aksi berisi hidden span .row-total
+                    // jadi kita cari elemen yang mengandung "row-total" dengan cara parsing HTML
+                    let totalStr = null;
+                    for (let i = 0; i < item.length; i++) {
+                        if (typeof item[i] === 'string' && item[i].indexOf('row-total') !== -1) {
+                            const tmp = document.createElement('div');
+                            tmp.innerHTML = item[i];
+                            const rt = tmp.querySelector('.row-total');
+                            if (rt) {
+                                totalStr = rt.textContent || rt.innerText || null;
+                                break;
                             }
                         }
-                    });
-                    
-                    document.getElementById('grandTotal').textContent = 
-                        'Rp ' + new Intl.NumberFormat('id-ID').format(grandTotal);
-                } else {
-                    document.getElementById('grandTotal').textContent = 'Rp 0';
-                }
-            })
-            .catch(err => {
-                console.error('Error calculating grand total:', err);
-            });
-    }
+                    }
+
+                    // fallback: kalau tidak ketemu row-total, cari kolom terakhir yang memiliki 'Rp'
+                    if (!totalStr) {
+                        for (let i = item.length - 1; i >= 0; i--) {
+                            if (typeof item[i] === 'string' && item[i].indexOf('Rp') !== -1) {
+                                const tmp2 = document.createElement('div');
+                                tmp2.innerHTML = item[i];
+                                totalStr = (tmp2.textContent || tmp2.innerText || '').trim();
+                                break;
+                            }
+                        }
+                    }
+
+                    if (totalStr) {
+                        let cleaned = totalStr.replace(/[^0-9,.-]/g, '');
+                        cleaned = cleaned.replace(/\./g, '').replace(/,/g, '.');
+                        const totalNum = parseFloat(cleaned);
+                        if (!isNaN(totalNum)) grandTotal += totalNum;
+                    }
+                });
+
+                document.getElementById('grandTotal').textContent =
+                    'Rp ' + new Intl.NumberFormat('id-ID').format(grandTotal);
+            } else {
+                document.getElementById('grandTotal').textContent = 'Rp 0';
+            }
+        })
+        .catch(err => {
+            console.error('Error calculating grand total:', err);
+        });
+}
+
 
     // Event delegation untuk tombol-tombol di dalam modal
     document.addEventListener('click', function(e) {
@@ -473,7 +503,7 @@
 
             // AJAX untuk simpan ke keranjang
             saveData({
-                url: "<?= site_url('keranjang/submit') ?>",
+                   url: "<?= site_url('pelayanan/keranjang/submit') ?>",
                 formData: formData,
                 onSuccess: function(res) {
                     if (res.xname && res.xhash) {
@@ -511,17 +541,7 @@
             });
         }
         
-        // Tombol Refresh Keranjang
-        if (e.target.closest('#btnRefreshKeranjang')) {
-            e.preventDefault();
-            if (previewKeranjangTable) {
-                previewKeranjangTable.fetchData({ reload: true });
-                setTimeout(function() {
-                    updateKeranjangCounter();
-                    calculateGrandTotal();
-                }, 500);
-            }
-        }
+      
         
         // Tombol Checkout dari Modal
         if (e.target.closest('#btnCheckoutFromModal')) {
@@ -533,44 +553,68 @@
         }
     });
 
-    // Fungsi untuk hapus item dari preview keranjang
-    function deleteItemFromPreview(e) {
-        e.preventDefault();
-        let idx = e.currentTarget.getAttribute("data-index");
-
-        if (!confirm("Apakah Anda yakin ingin menghapus item ini dari keranjang?")) return;
-
-        fetch("<?= site_url('keranjang/delete/') ?>" + idx)
-            .then(res => res.json())
-            .then(data => {
-                if (data.xname && data.xhash) {
-                    document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => {
-                        input.value = data.xhash;
-                    });
-                }
-
-                if (data.res === true) {
-                    if (typeof table !== 'undefined') {
-                        table.fetchData({ reload: true });
-                    }
-                    
-                    if (previewKeranjangTable) {
-                        previewKeranjangTable.fetchData({ reload: true });
-                        setTimeout(function() {
-                            updateKeranjangCounter();
-                            calculateGrandTotal();
-                        }, 500);
-                    }
-                    
-                    sayAlert('successModal', 'Sukses', data.msg, 'success');
-                } else {
-                    sayAlert('errorModal', 'Gagal', data.msg ?? 'Hapus item gagal.', 'error');
-                }
-            })
-            .catch(err => {
-                sayAlert('errorModal', 'Error', 'Terjadi kesalahan koneksi ke server.', 'error');
-            });
+   // Fungsi untuk hapus item dari preview keranjang — robust terhadap event atau element
+function deleteItemFromPreview(eOrEl) {
+    // jika pemanggilan lewat onclick="deleteItemFromPreview(this)" maka eOrEl adalah elemen
+    // jika lewat onclick="deleteItemFromPreview(event)" atau addEventListener, maka eOrEl instanceof Event
+    let el;
+    if (eOrEl instanceof Event) {
+        eOrEl.preventDefault();
+        // prefer currentTarget, fallback ke target
+        el = eOrEl.currentTarget || eOrEl.target;
+    } else {
+        // dianggap elemen DOM
+        el = eOrEl;
     }
+
+    // jika elemen adalah ikon <i> atau anak, cari parent dengan data-index
+    if (el && !el.hasAttribute('data-index')) {
+        el = el.closest('[data-index]');
+    }
+
+    if (!el) {
+        console.warn('Element untuk delete tidak ditemukan.');
+        return;
+    }
+
+    const idx = el.getAttribute('data-index');
+    if (!idx) {
+        console.warn('Data-index tidak ditemukan pada element hapus.');
+        return;
+    }
+
+    fetch("<?= site_url('pelayanan/keranjang/delete/') ?>" + idx)
+        .then(res => res.json())
+        .then(data => {
+            if (data.xname && data.xhash) {
+                document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => {
+                    input.value = data.xhash;
+                });
+            }
+
+            if (data.res === true) {
+                if (typeof table !== 'undefined') {
+                    table.fetchData({ reload: true });
+                }
+
+                if (previewKeranjangTable) {
+                    previewKeranjangTable.fetchData({ reload: true });
+                    setTimeout(function() {
+                        updateKeranjangCounter();
+                        calculateGrandTotal();
+                    }, 500);
+                }
+
+                sayAlert('successModal', 'Sukses', data.msg, 'success');
+            } else {
+                sayAlert('errorModal', 'Gagal', data.msg ?? 'Hapus item gagal.', 'error');
+            }
+        })
+        .catch(err => {
+            sayAlert('errorModal', 'Error', 'Terjadi kesalahan koneksi ke server.', 'error');
+        });
+}
+
 
     // Helper function untuk checkout
     function doCheckout() {
@@ -580,7 +624,7 @@
             formData.append('<?= csrf_token() ?>', csrfInput.value);
         }
 
-        fetch('<?= site_url("keranjang/checkout") ?>', {
+        fetch('<?= site_url("pelayanan/keranjang/checkout") ?>',{
             method: 'POST',
             body: formData
         })

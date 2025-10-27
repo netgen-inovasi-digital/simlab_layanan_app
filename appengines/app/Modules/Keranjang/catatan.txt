@@ -1,6 +1,0 @@
->>Delete error
->>Fitur searching di ajax
->>Fitur filtering berdasarkan jenis di ajax
->>Button checkout untuk diskon belum
->>Integrasi jika admin yang memakai modules
->>Satukan modules formulir masuk dan pembayaran itu

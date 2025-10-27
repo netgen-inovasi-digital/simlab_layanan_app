@@ -341,10 +341,6 @@ class Pelayanan extends BaseController
         return ['has' => false, 'url' => '#'];
     }
 
-    // =============================================
-    // KERANJANG METHODS - START
-    // =============================================
-
     public function keranjang()
     {
         $session = session();
@@ -379,78 +375,135 @@ class Pelayanan extends BaseController
         return view('Modules\Pelayanan\Views\v_keranjang', $data);
     }
 
-    public function keranjangDataList()
-    {
-        $session   = session();
-        $keranjang = $session->get($this->sessionKey) ?? [];
-        $data      = array();
+   public function keranjangDataList()
+{
+    $session   = session();
+    $keranjang = $session->get($this->sessionKey) ?? [];
+    $data      = array();
 
-        foreach ($keranjang as $idx => $row) {
-            $response   = array();
+    foreach ($keranjang as $idx => $row) {
+        $response   = array();
 
-            $layanan    = isset($row['layanan']) ? esc($row['layanan']) : '-';
-            $jumlah     = isset($row['jumlah']) ? (int)$row['jumlah'] : 0;
-            $keterangan = isset($row['keterangan']) ? esc($row['keterangan']) : '';
-            $diskon     = isset($row['diskon']) ? (float)$row['diskon'] : 0;
+        // ambil fields
+        $parameter  = isset($row['layanan']) ? $row['layanan'] : '-';
+        $alat       = isset($row['alat']) ? $row['alat'] : '-';
+        $jumlah     = isset($row['jumlah']) ? (int)$row['jumlah'] : 0;
+        $keterangan = isset($row['keterangan']) ? $row['keterangan'] : '';
+        $diskon     = isset($row['diskon']) ? (float)$row['diskon'] : 0;
 
-            $biayaAsli  = isset($row['biaya_asli']) ? (float)$row['biaya_asli'] : 0;
-            $biayaTotal = isset($row['biaya']) ? (float)$row['biaya'] : 0;
+        $biayaAsli  = isset($row['biaya_asli']) ? (float)$row['biaya_asli'] : 0;
+        $biayaTotal = isset($row['biaya']) ? (float)$row['biaya'] : 0; // total after discount * jumlah
 
-            $response[] = '<span class="badge bg-primary">' . $layanan . '</span>';
+        // 1) Parameter
+        $response[] = esc($parameter);
 
-            if ($diskon > 0) {
-                $hargaDiskon = $biayaAsli - ($biayaAsli * ($diskon / 100));
-                $biayaTampil = '<span style="color:red;text-decoration:line-through;">Rp ' . number_format($biayaAsli, 0, ',', '.') . '</span><br>';
-                $biayaTampil .= 'Rp ' . number_format($hargaDiskon, 0, ',', '.');
-            } else {
-                $biayaTampil = 'Rp ' . number_format($biayaAsli, 0, ',', '.');
-            }
-            $response[] = $biayaTampil;
+        // 2) Instrumen / Alat / Tempat
+        $response[] = esc($alat);
 
-            $response[] = $jumlah;
-            $response[] = $diskon > 0 ? $diskon . '%' : '-';
-            $response[] = 'Rp ' . number_format($biayaTotal, 0, ',', '.');
-            $response[] = $keterangan;
-            $response[] = $this->aksiKeranjang($idx);
+        // 3) Diskon %
+        $response[] = $diskon > 0 ? $diskon . '%' : '-';
 
-            $data[] = $response;
+        // 4) Biaya satuan (tampilkan original + harga setelah diskon jika ada)
+        if ($diskon > 0) {
+            $hargaDiskon = $biayaAsli - ($biayaAsli * ($diskon / 100));
+            $biayaTampil = '<span style="color:red;text-decoration:line-through;">Rp ' . number_format($biayaAsli, 0, ',', '.') . '</span><br>';
+            $biayaTampil .= 'Rp ' . number_format($hargaDiskon, 0, ',', '.');
+        } else {
+            $biayaTampil = 'Rp ' . number_format($biayaAsli, 0, ',', '.');
         }
+        $response[] = $biayaTampil;
 
-        $output = array("items" => $data);
-        return $this->response->setJSON($output);
+        // 5) Jumlah
+        $response[] = $jumlah;
+
+        // 6) Keterangan
+        $response[] = esc($keterangan);
+
+        // 7) Aksi (hapus) + sisipkan hidden total agar JS bisa hitung grand total
+        $hiddenTotal = '<span class="d-none row-total">Rp ' . number_format($biayaTotal, 0, ',', '.') . '</span>';
+        $response[] = $this->aksiKeranjang($idx, true) . $hiddenTotal;
+
+        $data[] = $response;
     }
 
-    public function keranjangFormTambah()
-    {
-        $model = new MyModel('simlab_r_layanan_pengujian');
+    $output = array("items" => $data);
+    return $this->response->setJSON($output);
+}
 
-        $joins = [
-            'simlab_r_parameter p' => 'p.paraKode = simlab_r_layanan_pengujian.ujiParaKode',
-            'simlab_r_alat a'      => 'a.alatKode = simlab_r_layanan_pengujian.ujiAlatKode'
-        ];
 
-        $select = '
-            simlab_r_layanan_pengujian.ujiKode,
-            simlab_r_layanan_pengujian.ujiBiaya,
-            simlab_r_layanan_pengujian.ujiInstansi,
-            simlab_r_layanan_pengujian.ujiDiskon,
-            simlab_r_layanan_pengujian.ujiLayanan,
-            p.paraNama,
-            a.alatNama
-        ';
 
-        $listUji = $model->getAllDataWithJoinWhereOrder(
-            $joins,
-            [],
-            ['ujiKode' => 'ASC'],
-            $select,
-            'left'
-        );
+   public function keranjangSubmit()
+{
+    $session = session();
+    $post = $this->request->getPost();
 
-        return view('Modules\Pelayanan\Views\v_keranjang_form', [
-            'listUji' => $listUji
+    // Ambil input yang dikirim dari JS
+    $detUjiKode   = $post['detUjiKode']   ?? null;
+    $detAlat      = $post['detAlat']      ?? null; // <- ambil alat/instrumen
+    $detBiaya     = isset($post['detBiaya']) ? (float)$post['detBiaya'] : 0;
+    $detParameter = $post['detParameter'] ?? null;
+    $detDiskon    = isset($post['detDiskon']) ? (float)$post['detDiskon'] : 0;
+    $detInstansi  = $post['detInstansi']  ?? null;
+    $detJumlah    = isset($post['detJumlah']) ? (int)$post['detJumlah'] : 1;
+    $detKeterangan= $post['detKeterangan'] ?? '';
+
+    if (empty($detUjiKode)) {
+        return $this->response->setJSON([
+            'res' => false,
+            'msg' => 'Kode uji tidak valid.',
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
         ]);
     }
+
+    // Ambil user identity dari session
+    $user_id = session()->get('id_user');
+    $modelUser = new MyModel('simlab_account_users');
+    $user = $modelUser->getDataById('user_id', $user_id);
+    $userIdentity = '';
+    if ($user && isset($user->user_identity)) {
+        $userIdentity = strtoupper(trim($user->user_identity));
+    }
+
+    // Tentukan diskon yang boleh diterapkan: hanya jika user_identity === 'ULM'
+    $appliedDiskon = 0;
+    if ($userIdentity === 'ULM') {
+        $appliedDiskon = max(0, $detDiskon);
+    }
+
+    // Hitung ulang di server
+    $jumlah = max(1, (int)$detJumlah);
+    $biayaPerItem = max(0, (float)$detBiaya);
+    $biayaSetelahDiskon = $biayaPerItem * (1 - ($appliedDiskon / 100));
+    $biayaTotal = $biayaSetelahDiskon * $jumlah;
+
+    // Siapkan item — tambahkan 'alat' field agar tampil di preview
+    $item = [
+        'kode'        => $detUjiKode,
+        'layanan'     => $detParameter ?? 'Layanan', // parameter / nama layanan
+        'alat'        => $detAlat ?? '',             // <-- baru: instrumen/alat/tempat
+        'biaya_asli'  => $detBiaya,
+        'diskon'      => $appliedDiskon,
+        'jumlah'      => $jumlah,
+        'keterangan'  => $detKeterangan,
+        'biaya'       => $biayaTotal,
+        'ujiPenyelia' => $post['ujiPenyelia'] ?? null,
+        'ujiManajerTeknis' => $post['ujiManajerTeknis'] ?? null,
+    ];
+
+    $keranjang = $session->get($this->sessionKey) ?? [];
+    $keranjang[] = $item;
+    $session->set($this->sessionKey, $keranjang);
+
+    return $this->response->setJSON([
+        'res' => true,
+        'msg' => 'Item berhasil ditambahkan ke keranjang.',
+        'xname' => csrf_token(),
+        'xhash' => csrf_hash(),
+        'items_count' => count($keranjang)
+    ]);
+}
+
 
    
 
@@ -523,7 +576,7 @@ class Pelayanan extends BaseController
                 'bayarStatus'     => 0,
                 'bayarInvoiceNo'  => null,
                 'bayarInvoiceTgl' => $today,
-                'bayarBuktiFile'  => 'by_admin'
+                'bayarBuktiFile'  => null
             ], true);
 
             if (!$insertPembayaranId) {
@@ -597,127 +650,182 @@ class Pelayanan extends BaseController
         }
     }
 
-    public function keranjangDelete($id)
+        public function keranjangDelete($id)
     {
         $session   = session();
         $keranjang = $session->get($this->sessionKey) ?? [];
 
-        if (!isset($keranjang[$id])) {
+        // Jika index valid dan ada, hapus. Jika tidak ada, tetap dianggap sukses (tanpa validasi).
+        if (isset($keranjang[$id])) {
+            unset($keranjang[$id]);
+            // reset index agar berurutan kembali
+            $keranjang = array_values($keranjang);
+            $session->set($this->sessionKey, $keranjang);
+
             return $this->response->setJSON([
-                'res'   => false,
-                'msg'   => 'Item tidak ditemukan.',
+                'res'   => true,
+                'msg'   => 'Item berhasil dihapus.',
                 'xname' => csrf_token(),
                 'xhash' => csrf_hash()
             ]);
         }
 
-        unset($keranjang[$id]);
-        $keranjang = array_values($keranjang);
-        $session->set($this->sessionKey, $keranjang);
+        // Kalau index tidak ditemukan, jangan error — kembalikan sukses juga.
+        // (Opsional: bisa tetap set session jika keranjang kosong)
+        if (empty($keranjang)) {
+            $session->remove($this->sessionKey);
+        } else {
+            // tidak ditemukan, tetap simpan keranjang apa adanya (no-op)
+            $session->set($this->sessionKey, $keranjang);
+        }
 
         return $this->response->setJSON([
             'res'   => true,
-            'msg'   => 'Item berhasil dihapus.',
+            'msg'   => 'Item tidak ditemukan di keranjang, namun operasi hapus dianggap berhasil.',
             'xname' => csrf_token(),
             'xhash' => csrf_hash()
         ]);
     }
 
-    public function keranjangDataListLayanan()
-    {
-        $model = new MyModel('simlab_r_layanan_pengujian');
-        
-        $joins = [
-            'simlab_r_parameter p' => 'p.paraKode = simlab_r_layanan_pengujian.ujiParaKode',
-            'simlab_r_alat a'      => 'a.alatKode = simlab_r_layanan_pengujian.ujiAlatKode'
-        ];
-        
-        $select = '
-            simlab_r_layanan_pengujian.ujiKode,
-            simlab_r_layanan_pengujian.ujiBiaya,
-            simlab_r_layanan_pengujian.ujiInstansi,
-            simlab_r_layanan_pengujian.ujiDiskon,
-            simlab_r_layanan_pengujian.ujiLayanan,
-            p.paraNama,
-            a.alatNama
-        ';
-        
-        $listUji = $model->getAllDataWithJoinWhereOrder(
-            $joins, 
-            [], 
-            ['ujiKode' => 'ASC'], 
-            $select, 
-            'left'
-        );
-        
-        $data = array();
-        $no = 1;
-        
-        foreach ($listUji as $row) {
-            $response = array();
-            
-            // Parameter
-            $response[] = esc($row->paraNama);
-            
-            // Instrumen/Alat
-            $response[] = esc($row->alatNama);
-            
-            // Biaya (dengan diskon jika ada)
-            $biaya = 'Rp ' . number_format($row->ujiBiaya, 0, ',', '.');
-            if (!empty($row->ujiDiskon) && $row->ujiDiskon > 0) {
-                $biaya .= ' <span class="text-danger fw-bold">- ' . $row->ujiDiskon . '%</span>';
-            }
-            $response[] = $biaya;
-            
-            // Input Jumlah (tanpa tombol + / -)
-            $inputJumlah = '
-                <input type="number" class="form-control form-control-sm text-center jumlah" value="1" min="1" style="width:100px;">
-            ';
-            $response[] = $inputJumlah;
-            
-            // Input Keterangan
-            $response[] = '<input type="text" class="form-control form-control-sm keterangan" placeholder="Keterangan...">';
-            
-            // Tombol Aksi
-            $btnMasukkan = '
-                <button type="button" 
-                        class="btn btn-success btn-sm btnMasukkan" 
-                        data-kode="' . esc($row->ujiKode) . '" 
-                        data-alat="' . esc($row->alatNama) . '" 
-                        data-biaya="' . $row->ujiBiaya . '" 
-                        data-parameter="' . esc($row->paraNama) . '"
-                        data-diskon="' . ($row->ujiDiskon ?? 0) . '" 
-                        data-instansi="' . esc($row->ujiInstansi) . '" 
-                        title="Masukkan ke keranjang">
-                    <i class="bi bi-cart-plus"></i>
-                </button>
-            ';
-            $response[] = $btnMasukkan;
-            
-            $data[] = $response;
-        }
-        
-        $output = array("items" => $data);
-        return $this->response->setJSON($output);
+
+   
+
+   public function keranjangDataListLayanan()
+{
+    $session = session();
+    $user_id = $session->get('id_user');
+
+    // ambil info user (jika ada) untuk cek user_identity
+    $modelUser = new MyModel('simlab_account_users');
+    $user = $modelUser->getDataById('user_id', $user_id);
+    $userIdentity = '';
+    if ($user && isset($user->user_identity)) {
+        $userIdentity = strtoupper(trim($user->user_identity));
     }
+
+    $model = new MyModel('simlab_r_layanan_pengujian');
+
+    $joins = [
+        'simlab_r_parameter p' => 'p.paraKode = simlab_r_layanan_pengujian.ujiParaKode',
+        'simlab_r_alat a'      => 'a.alatKode = simlab_r_layanan_pengujian.ujiAlatKode'
+    ];
+
+    $select = '
+        simlab_r_layanan_pengujian.ujiKode,
+        simlab_r_layanan_pengujian.ujiBiaya,
+        simlab_r_layanan_pengujian.ujiInstansi,
+        simlab_r_layanan_pengujian.ujiDiskon,
+        simlab_r_layanan_pengujian.ujiLayanan,
+        p.paraNama,
+        a.alatNama
+    ';
+
+    $listUji = $model->getAllDataWithJoinWhereOrder(
+        $joins, 
+        [], 
+        ['ujiKode' => 'ASC'], 
+        $select, 
+        'left'
+    );
+
+    // Baca query pencarian (compatibel q atau search)
+    $qRaw = trim((string) ($this->request->getGet('q') ?? $this->request->getGet('search') ?? ''));
+    $q = $qRaw !== '' ? mb_strtolower($qRaw, 'UTF-8') : '';
+
+    // Jika ada query, lakukan filter pada array $listUji
+    if ($q !== '') {
+        $filtered = [];
+        foreach ($listUji as $row) {
+            $fields = [
+                isset($row->paraNama) ? mb_strtolower($row->paraNama, 'UTF-8') : '',
+                isset($row->alatNama) ? mb_strtolower($row->alatNama, 'UTF-8') : '',
+                isset($row->ujiLayanan) ? mb_strtolower($row->ujiLayanan, 'UTF-8') : '',
+                isset($row->ujiKode) ? (string)$row->ujiKode : ''
+            ];
+
+            foreach ($fields as $f) {
+                if ($f !== '' && mb_stripos($f, $q, 0, 'UTF-8') !== false) {
+                    $filtered[] = $row;
+                    break;
+                }
+            }
+        }
+        $listUji = $filtered;
+    }
+
+    $data = array();
+    $no = 1;
+
+    foreach ($listUji as $row) {
+        $response = array();
+
+        // Parameter
+        $response[] = esc($row->paraNama);
+
+        // Instrumen/Alat
+        $response[] = esc($row->alatNama);
+
+        // Tentukan apakah diskon boleh diterapkan untuk user saat ini
+        $allowedDiskon = 0;
+        if (!empty($row->ujiDiskon) && $row->ujiDiskon > 0 && $userIdentity === 'ULM') {
+            $allowedDiskon = (float)$row->ujiDiskon;
+        }
+
+        // Biaya (tampilkan badge diskon hanya jika allowedDiskon > 0)
+        $biaya = 'Rp ' . number_format($row->ujiBiaya, 0, ',', '.');
+        if ($allowedDiskon > 0) {
+            $biaya .= ' <span class="text-danger fw-bold">- ' . $allowedDiskon . '%</span>';
+        }
+        $response[] = $biaya;
+
+        // Input Jumlah (tanpa tombol + / -)
+        $inputJumlah = '
+            <input type="number" class="form-control form-control-sm text-center jumlah" value="1" min="1" style="width:100px;">
+        ';
+        $response[] = $inputJumlah;
+
+        // Input Keterangan
+        $response[] = '<input type="text" class="form-control form-control-sm keterangan" placeholder="Keterangan...">';
+
+        // Tombol Aksi (data-diskon = allowedDiskon, bukan nilai DB langsung)
+        $btnMasukkan = '
+            <button type="button" 
+                    class="btn btn-success btn-sm btnMasukkan" 
+                    data-kode="' . esc($row->ujiKode) . '" 
+                    data-alat="' . esc($row->alatNama) . '" 
+                    data-biaya="' . $row->ujiBiaya . '" 
+                    data-parameter="' . esc($row->paraNama) . '"
+                    data-diskon="' . $allowedDiskon . '" 
+                    data-instansi="' . esc($row->ujiInstansi) . '" 
+                    title="Masukkan ke keranjang">
+                <i class="bi bi-cart-plus"></i>
+            </button>
+        ';
+        $response[] = $btnMasukkan;
+
+        $data[] = $response;
+    }
+
+    $output = array("items" => $data);
+    return $this->response->setJSON($output);
+}
+
+
 
     private function aksiKeranjang($id, $isPreview = false)
-    {
-        $functionName = $isPreview ? 'deleteItemFromPreview' : 'deleteItem';
-        
-        return '<div id="item-' . $id . '" class="text-center">
-            <span data-index="' . $id . '" 
-                class="text-danger btn-action btn-delete-item" 
-                style="cursor: pointer;"
-                title="Hapus" 
-                onclick="' . $functionName . '(event)">
-                <i class="bi bi-trash"></i>
-            </span>
-        </div>';
-    }
+{
+    $functionName = $isPreview ? 'deleteItemFromPreview' : 'deleteItem';
+    
+    return '<div id="item-' . $id . '" class="text-center">
+        <span data-index="' . $id . '" 
+            class="text-danger btn-action btn-delete-item" 
+            style="cursor: pointer;"
+            title="Hapus" 
+            onclick="' . $functionName . '(event)">
+            <i class="bi bi-trash"></i>
+        </span>
+    </div>';
+}
 
-    // =============================================
-    // KERANJANG METHODS - END
-    // =============================================
 
 }
