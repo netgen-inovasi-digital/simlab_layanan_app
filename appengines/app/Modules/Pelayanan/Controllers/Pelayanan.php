@@ -35,29 +35,55 @@ class Pelayanan extends BaseController
    public function dataList()
 {
     $session   = session();
-    $user_id   = $session->get('id_user');
+    $user_id   = (int)$session->get('id_user');
 
-    // Ambil user dari tabel simlab_account_users
+    // Ambil user login (opsional buat cek kuisioner fallback)
     $modelUser = new MyModel('simlab_account_users');
     $user      = $modelUser->getDataById('user_id', $user_id);
 
-    // Jika user tidak ditemukan, kembalikan data kosong
-    if (!$user) {
+    if (!$user || !$user_id) {
         return $this->response->setJSON(["items" => []]);
     }
 
     $model = new MyModel($this->table);
     $data  = [];
 
-    // Filter data pelayanan berdasarkan email login
-    $where = ['lnAccEmail' => $user->user_email];
+    // ✅ Filter utama: milik user yang sedang login
+    $where = ['user_id' => $user_id];
     $list  = $model->getAllDataById($where, ['lnTgl' => 'DESC']);
 
-    foreach ($list as $index => $row) {
+    if (empty($list)) {
+        return $this->response->setJSON(["items" => []]);
+    }
+
+    // --- Siapkan map pembayaran terakhir per lnKode (satu query) ---
+    $db = \Config\Database::connect();
+    $lnKodes = array_map(fn($r) => (int)$r->lnKode, $list);
+
+    $payRows = $db->table('simlab_t_pembayaran')
+                  ->select('bayarLnKode, bayarStatus, bayarInvoiceNo, MAX(bayarKode) AS lastKode')
+                  ->whereIn('bayarLnKode', $lnKodes)
+                  ->groupBy('bayarLnKode, bayarStatus, bayarInvoiceNo')
+                  ->orderBy('lastKode','DESC')
+                  ->get()->getResult();
+
+    // Simpan yang terbaru per lnKode
+    $payMap = [];
+    foreach ($payRows as $p) {
+        $ln = (int)$p->bayarLnKode;
+        if (!isset($payMap[$ln])) {
+            $payMap[$ln] = [
+                'status' => (int)$p->bayarStatus,
+                'inv'    => $p->bayarInvoiceNo ?? null,
+            ];
+        }
+    }
+
+    foreach ($list as $row) {
         $id = bin2hex($this->encrypter->encrypt($row->lnKode));
         $response = [];
 
-        // Jika lnNoTransaksi kosong/null/trim = tampilkan "Belum tersedia"
+        // No Transaksi + Tanggal
         $noTransaksi = (isset($row->lnNoTransaksi) && trim((string)$row->lnNoTransaksi) !== '')
                         ? $row->lnNoTransaksi
                         : 'Belum tersedia';
@@ -65,96 +91,67 @@ class Pelayanan extends BaseController
         $tanggal     = !empty($row->lnTgl) ? date('d-m-Y', strtotime($row->lnTgl)) : '-';
         $response[]  = '<div>' . esc($noTransaksi) . '<br><small>' . esc($tanggal) . '</small></div>';
 
-        // Status transaksi layanan
-        $response[] = $this->statusBadge($row->lnStatus);
+        // Status layanan
+        $response[] = $this->statusBadge((int)($row->lnStatus ?? 0));
 
-        // cek kuisioner 
+        // Kuisioner (ambil dari row dulu, kalau kosong fallback dari user)
         $kuisionerVal = 0;
         if (isset($row->kuisioner) && $row->kuisioner !== '') {
-            $kuisionerVal = (int) $row->kuisioner;
+            $kuisionerVal = (int)$row->kuisioner;
         } else {
             $kuFields = ['kuisioner', 'user_kuisioner', 'lnKuisioner', 'ln_kuisioner', 'kuisioner_user'];
             foreach ($kuFields as $kf) {
                 if (isset($user->{$kf}) && $user->{$kf} !== '') {
-                    $kuisionerVal = (int) $user->{$kf};
+                    $kuisionerVal = (int)$user->{$kf};
                     break;
                 }
             }
         }
 
-        // ambil status pembayaran terakhir untuk lnKode ini
-        $bayarStatusVal = 0;
-        $bayarInvoiceNo = null;
-        try {
-            if (!empty($row->lnKode)) {
-                $db = \Config\Database::connect();
-                $pay = $db->table('simlab_t_pembayaran')
-                          ->select('bayarStatus, bayarInvoiceNo')
-                          ->where('bayarLnKode', $row->lnKode)
-                          ->orderBy('bayarKode', 'DESC')
-                          ->limit(1)
-                          ->get()
-                          ->getRow();
+        // Pembayaran terakhir untuk lnKode ini (pakai map hasil query)
+        $lnKodeInt = (int)$row->lnKode;
+        $bayarStatusVal = isset($payMap[$lnKodeInt]) ? $payMap[$lnKodeInt]['status'] : 0;
+        $bayarInvoiceNo = isset($payMap[$lnKodeInt]) ? $payMap[$lnKodeInt]['inv']    : null;
 
-                if ($pay && isset($pay->bayarStatus)) {
-                    $bayarStatusVal = (int) $pay->bayarStatus;
-                }
-                if ($pay && isset($pay->bayarInvoiceNo)) {
-                    $bayarInvoiceNo = $pay->bayarInvoiceNo;
-                }
-            }
-        } catch (\Throwable $e) {
-            $bayarStatusVal = 0;
-        }
-
-        // statusBayar: 1 = sudah bayar, 0 = lakukan pembayaran
-        $statusBayar = ($bayarStatusVal === 1) ? 1 : 0;
-
-        // status pembayaran
-       if ($statusBayar === 1) {
-            $response[] = '<button class="btn btn-sm btn-success" >'
-                        . '<i class="bi bi-credit-card"></i> Sudah Bayar</button>';
+        // statusBayar: 1 = sudah bayar, 0 = belum
+        if ($bayarStatusVal === 1) {
+            $response[] = '<button class="btn btn-sm btn-success"><i class="bi bi-credit-card"></i> Sudah Bayar</button>';
         } else {
-            $response[] = '<button class="btn btn-sm btn-danger" onclick="lokasiPembayaran(' . (int)$row->lnKode . ')">'
-                        . '<i class="bi bi-credit-card"></i> Belum Bayar</button>';
+            $response[] = '<button class="btn btn-sm btn-danger" onclick="lokasiPembayaran(' . $lnKodeInt . ')"><i class="bi bi-credit-card"></i> Belum Bayar</button>';
         }
 
-
-        // logic file LHU 
-        $lnStatusVal = isset($row->lnStatus) ? (int) $row->lnStatus : 0;
-        $canViewLhu = ($kuisionerVal === 1 && $bayarStatusVal === 1 && in_array($lnStatusVal, [7, 8], true));
-        $lhuInfo = $this->detectLhuFile($row);
+        // Akses LHU
+        $lnStatusVal = (int)($row->lnStatus ?? 0);
+        $canViewLhu  = ($kuisionerVal === 1 && $bayarStatusVal === 1 && in_array($lnStatusVal, [7, 8], true));
+        $lhuInfo     = $this->detectLhuFile($row);
 
         if ($lhuInfo['has'] && $canViewLhu) {
-            $response[] = '<button class="btn btn-sm btn-outline-primary" onclick="window.open(\'' . esc($lhuInfo['url']) . '\', \'_blank\')" title="Buka LHU">'
-                        . '<i class="bi bi-eye"></i> Lihat File LHU</button>';
+            $response[] = '<button class="btn btn-sm btn-outline-primary" onclick="window.open(\'' . esc($lhuInfo['url']) . '\', \'_blank\')" title="Buka LHU"><i class="bi bi-eye"></i> Lihat File LHU</button>';
         } else {
             $reason = 'File LHU tidak dapat diakses.';
             if ($lhuInfo['has'] && !$canViewLhu) {
                 if ($kuisionerVal !== 1) {
-                    $reason = 'Isi kuisioner ';
+                    $reason = 'Isi kuisioner';
                 } elseif ($bayarStatusVal !== 1) {
-                    $reason = 'belum bayar';
-                } elseif (!in_array($lnStatusVal, [7,8], true)) {
+                    $reason = 'Belum bayar';
+                } elseif (!in_array($lnStatusVal, [7, 8], true)) {
                     $reason = 'LHU diproses';
                 }
             } elseif (!$lhuInfo['has']) {
                 $reason = 'LHU diproses';
             }
-
-            $response[] = '<button class="btn btn-sm btn-secondary" disabled>'
-                        . '<i class="bi bi-eye-slash"></i> ' . esc($reason) . '</button>';
+            $response[] = '<button class="btn btn-sm btn-secondary" disabled><i class="bi bi-eye-slash"></i> ' . esc($reason) . '</button>';
         }
 
-
+        // Aksi detail (masking lnKode via enkripsi)
         $response[] = '<a href="javascript:void(0)" onclick="loadDetail(\'' . $id . '\')" class="btn btn-sm btn-info">Lihat pesanan</a>';
-
 
         $data[] = $response;
     }
 
     return $this->response->setJSON(["items" => $data]);
 }
+
 
 
     private function statusBadge($status)
