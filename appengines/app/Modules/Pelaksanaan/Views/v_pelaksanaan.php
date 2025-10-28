@@ -118,76 +118,100 @@
     }
 
     /**
-     * 🔹 Tombol Proses (status 7 → LHU disetujui)
+     *  Tombol Proses (status 7 → LHU disetujui)
      */
     function prosesItem(e) {
         e.preventDefault();
-        let id = e.currentTarget.closest('div').id;
+
+        const trigger = e.currentTarget;
+        const wrapper = trigger && trigger.closest ? trigger.closest('div') : null;
+        const id = wrapper && wrapper.id ? wrapper.id : null;
         if (!id) return;
 
-        if (confirm('Yakin ingin memproses data ini?')) {
-            const csrfInput = document.querySelector('[name="<?= csrf_token() ?>"]');
-            const csrfToken = csrfInput ? csrfInput.value : '';
+        // hindari double submit
+        if (trigger.dataset.sending === '1') return;
 
-            fetch('<?php echo site_url("pelaksanaan/proses/") ?>' + id, {
-                method: 'POST',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': csrfToken
-                }
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.res) {
-                    if (typeof table !== 'undefined') table.fetchData({ reload: true });
-                    sayAlert('successModal', 'Berhasil', 'Data berhasil diproses', 'success');
-                } else {
-                    sayAlert('errorModal', 'Gagal', data.msg || 'Proses gagal dilakukan', 'warning');
-                }
+        sayConfirm(
+            'Konfirmasi',
+            'Kirim LHU ini?',
+            async () => {
+                try {
+                    trigger.dataset.sending = '1';
+                    trigger.disabled = true;
 
-                if (data.xname && data.xhash) {
-                    document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => input.value = data.xhash);
+                    const csrfInput = document.querySelector('[name="<?= csrf_token() ?>"]');
+                    const csrfToken = csrfInput ? csrfInput.value : '';
+
+                    const res = await fetch('<?php echo site_url("pelaksanaan/proses/") ?>' + id, {
+                        method: 'POST',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': csrfToken
+                        }
+                    });
+
+                    const data = await res.json();
+
+                    // update CSRF jika ada
+                    if (data.xname && data.xhash) {
+                        document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => input.value = data.xhash);
+                    }
+
+                    if (data.res) {
+                        if (typeof table !== 'undefined') table.fetchData({ reload: true });
+                        sayAlert('successModal', 'Berhasil', data.msg || 'Data berhasil diproses', 'success');
+                    } else {
+                        sayAlert('errorModal', 'Gagal', data.msg || 'Proses gagal dilakukan', 'warning');
+                    }
+                } catch (err) {
+                    sayAlert('errorModal', 'Error', 'Terjadi kesalahan sistem', 'warning');
+                } finally {
+                    trigger.dataset.sending = '0';
+                    trigger.disabled = false;
                 }
-            })
-            .catch(err => sayAlert('errorModal', 'Error', 'Terjadi kesalahan sistem', 'warning'));
-        }
+            },
+            'success',   // style tombol utama
+            'Kirim',   // label tombol konfirmasi
+            'Batal'     // label batal
+        );
     }
+
 
     /**
-     * 🔹 Tombol Hapus
+     *  Tombol Hapus
      */
-    function deleteItem(e) {
-        e.preventDefault();
-        let id = e.currentTarget.closest('div').id;
-        if (!id) return;
+    // function deleteItem(e) {
+    //     e.preventDefault();
+    //     let id = e.currentTarget.closest('div').id;
+    //     if (!id) return;
 
-        if (confirm('Yakin ingin menghapus data ini?')) {
-            const csrfInput = document.querySelector('[name="<?= csrf_token() ?>"]');
-            const csrfToken = csrfInput ? csrfInput.value : '';
+    //     if (confirm('Yakin ingin menghapus data ini?')) {
+    //         const csrfInput = document.querySelector('[name="<?= csrf_token() ?>"]');
+    //         const csrfToken = csrfInput ? csrfInput.value : '';
 
-            fetch('<?php echo site_url("pelaksanaan/delete/") ?>' + id, {
-                method: 'POST',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': csrfToken
-                }
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.res) {
-                    if (typeof table !== 'undefined') table.fetchData({ reload: true });
-                    sayAlert('successModal', 'Berhasil', 'Data berhasil dihapus', 'success');
-                } else {
-                    sayAlert('errorModal', 'Gagal', data.msg || 'Hapus gagal dilakukan', 'warning');
-                }
+    //         fetch('<?php echo site_url("pelaksanaan/delete/") ?>' + id, {
+    //             method: 'POST',
+    //             headers: {
+    //                 'X-Requested-With': 'XMLHttpRequest',
+    //                 'X-CSRF-TOKEN': csrfToken
+    //             }
+    //         })
+    //         .then(res => res.json())
+    //         .then(data => {
+    //             if (data.res) {
+    //                 if (typeof table !== 'undefined') table.fetchData({ reload: true });
+    //                 sayAlert('successModal', 'Berhasil', 'Data berhasil dihapus', 'success');
+    //             } else {
+    //                 sayAlert('errorModal', 'Gagal', data.msg || 'Hapus gagal dilakukan', 'warning');
+    //             }
 
-                if (data.xname && data.xhash) {
-                    document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => input.value = data.xhash);
-                }
-            })
-            .catch(err => sayAlert('errorModal', 'Error', 'Terjadi kesalahan sistem', 'warning'));
-        }
-    }
+    //             if (data.xname && data.xhash) {
+    //                 document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => input.value = data.xhash);
+    //             }
+    //         })
+    //         .catch(err => sayAlert('errorModal', 'Error', 'Terjadi kesalahan sistem', 'warning'));
+    //     }
+    // }
 
    
    // 🔹 Tombol Lihat Detail

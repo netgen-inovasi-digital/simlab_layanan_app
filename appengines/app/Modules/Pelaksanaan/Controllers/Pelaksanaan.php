@@ -679,11 +679,11 @@ class Pelaksanaan extends BaseController
     }
 
     // tombol hapus selalu ada
-    $btn .= '<span class="text-danger btn-action" title="Hapus" onclick="deleteItem(event)">'
-         . '<i class="bi bi-trash"></i>'
-         . '</span>';
+    // $btn .= '<span class="text-danger btn-action" title="Hapus" onclick="deleteItem(event)">'
+    //      . '<i class="bi bi-trash"></i>'
+    //      . '</span>';
 
-    $btn .= '</div>';
+    // $btn .= '</div>';
     return $btn;
 }
 

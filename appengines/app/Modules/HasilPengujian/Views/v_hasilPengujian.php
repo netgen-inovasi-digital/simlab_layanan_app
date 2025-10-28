@@ -233,10 +233,20 @@
                 newBtn.addEventListener('click', function(ev) {
                     ev.preventDefault();
                     const enc = this.getAttribute('data-enc') || '';
-                    if (!enc) { sayAlert('errorModal','Error','ID tidak ditemukan.','warning'); return; }
-                    if (!confirm('Yakin ingin mengirim file LHUS untuk semua item ini?')) return;
-                    doSendLhus(enc);
+                    if (!enc) { 
+                        sayAlert('errorModal','Error','ID tidak ditemukan.','warning'); 
+                        return; 
+                    }
+                    sayConfirm(
+                        'Konfirmasi',
+                        'Yakin ingin mengirim file LHUS untuk semua item ini?',
+                        () => { doSendLhus(enc); },
+                        'success',
+                        'Kirim',
+                        'Batal'
+                    );
                 });
+
             }
 
             // show modal - only show if it's not already visible to avoid stacking backdrops
@@ -589,9 +599,14 @@ if (typeof window.confirmApprove === 'function') {
 window.confirmApprove = function(e, encId) {
     if (typeof encId !== 'undefined' && encId) {
         e.preventDefault();
-        if (!confirm('Yakin ingin mengirim file LHUS untuk data ini?')) return;
-        doSendLhus(encId);
-        return;
+        return sayConfirm(
+            'Konfirmasi',
+            'Yakin ingin mengirim file LHUS untuk data ini?',
+            () => { doSendLhus(encId); },
+            'success',
+            'Kirim',
+            'Batal'
+        );
     }
     if (typeof window._orig_confirmApprove === 'function') {
         return window._orig_confirmApprove(e);
@@ -600,8 +615,14 @@ window.confirmApprove = function(e, encId) {
         e.preventDefault();
         let id = e.currentTarget && e.currentTarget.closest ? e.currentTarget.closest('div').id : null;
         if (!id) return;
-        if (!confirm('Yakin ingin mengirim file LHUS untuk data ini?')) return;
-        doSendLhus(id);
+            return sayConfirm(
+                'Konfirmasi',
+                'Yakin ingin mengirim file LHUS untuk data ini?',
+                () => { doSendLhus(id); },
+                'success',
+                'Kirim',
+                'Batal'
+            );
     } catch (err) { console.warn('confirmApprove fallback error:', err); }
     return;
 };

@@ -197,7 +197,8 @@ document.addEventListener('click', function(e) {
         return csrfInput ? csrfInput.value : '';
     }
 
-    // Tombol Kirim: gunakan flag sending dan disabled (tidak hanya pointerEvents)
+  
+   // Tombol Kirim: gunakan flag sending dan disabled (tidak hanya pointerEvents)
     document.querySelector('#btnKirimDetail')?.addEventListener('click', async function(e) {
         e.preventDefault();
 
@@ -209,69 +210,75 @@ document.addEventListener('click', function(e) {
         }
 
         if (btn.dataset.sending === '1') return; // sudah dalam proses
-        if (!confirm('Kirim semua item pada layanan ini? Pastikan semua item sudah disetujui/ditolak.')) return;
 
-        btn.dataset.sending = '1';
-        btn.disabled = true;
+        sayConfirm(
+            'Konfirmasi',
+            'Setujui layanan ini?<br>Pastikan untuk cek kembali ketersediaan barang.',
+            async () => {
 
-        // Simpan komentar dulu (kalau ada). Jika gagal penyimpanan, kita log tapi tetap lanjut.
-        try {
-            const komentarResult = await saveKomentarAsync();
-            if (!komentarResult.ok && !komentarResult.skipped) {
-                // tidak fatal — beri peringatan ringan di console saja (sesuai kebijakan silent Anda),
-                // jika Anda ingin membatalkan kirim saat komentar gagal, ubah logika di sini.
-                console.warn('Penyimpanan komentar bermasalah, melanjutkan kirim:', komentarResult);
-            }
-        } catch (err) {
-            console.error('saveKomentarAsync error (ignored, proceeding):', err);
-        }
+                btn.dataset.sending = '1';
+                btn.disabled = true;
 
-        const csrfToken = _getCsrf();
-
-        const formData = new FormData();
-        formData.append('ln', ln);
-
-        try {
-            const res = await fetch('<?php echo site_url("formulirmanajer/kirim") ?>', {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': csrfToken
-                }
-            });
-
-            const data = await res.json();
-
-            // update token jika dikembalikan
-            if (data.xname && data.xhash) {
-                document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => input.value = data.xhash);
-            }
-
-            if (data.res) {
-                // sukses
-                sayAlert('successModal', 'Berhasil', data.msg || 'Layanan berhasil dikirim', 'success');
-                // reload detail & tabel utama
-                // loadDetail(ln);
-                if (typeof table !== 'undefined') table.fetchData({ reload: true });
-                // tutup modal jika mau: gunakan instance agar backdrop tidak menumpuk
+                // Simpan komentar dulu (tidak blocking error)
                 try {
-                    if (_modalDetailInstance) _modalDetailInstance.hide();
-                    else if (typeof $ === 'function') $('#modalDetail').modal('hide');
-                } catch (err) { /* ignore */ }
-            } else {
-                // gagal (mungkin ada pending)
-                const msg = data.msg || 'Gagal mengirim layanan';
-                sayAlert('errorModal', 'Gagal', msg, 'warning');
-            }
-        } catch (err) {
-            console.error(err);
-            sayAlert('errorModal', 'Error', 'Terjadi kesalahan sistem saat mengirim', 'warning');
-        } finally {
-            btn.dataset.sending = '0';
-            btn.disabled = false;
-        }
+                    const komentarResult = await saveKomentarAsync();
+                    if (!komentarResult.ok && !komentarResult.skipped) {
+                        console.warn('Komentar bermasalah (ignored):', komentarResult);
+                    }
+                } catch (err) {
+                    console.error('saveKomentarAsync error (ignored):', err);
+                }
+
+                const csrfToken = _getCsrf();
+                const formData = new FormData();
+                formData.append('ln', ln);
+
+                try {
+                    const res = await fetch('<?php echo site_url("formulirmanajer/kirim") ?>', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': csrfToken
+                        }
+                    });
+
+                    const data = await res.json();
+
+                    if (data.xname && data.xhash) {
+                        document
+                            .querySelectorAll('[name="' + data.xname + '"]')
+                            .forEach(input => input.value = data.xhash);
+                    }
+
+                    if (data.res) {
+                        sayAlert('successModal', 'Berhasil', data.msg || 'Layanan berhasil dikirim', 'success');
+
+                        if (typeof table !== 'undefined') table.fetchData({ reload: true });
+
+                        try {
+                            if (_modalDetailInstance) _modalDetailInstance.hide();
+                            else if (typeof $ === 'function') $('#modalDetail').modal('hide');
+                        } catch (_) {}
+                    } else {
+                        sayAlert('errorModal', 'Gagal', data.msg || 'Gagal mengirim layanan', 'warning');
+                    }
+
+                } catch (err) {
+                    console.error(err);
+                    sayAlert('errorModal', 'Error', 'Terjadi kesalahan sistem saat mengirim', 'warning');
+
+                } finally {
+                    btn.dataset.sending = '0';
+                    btn.disabled = false;
+                }
+            }, 
+            'success', // Warna tombol utama
+            'Kirim',  // Label tombol konfirmasi
+            'Batal'  // Label tombol batal
+        );
     });
+
 
     
 
