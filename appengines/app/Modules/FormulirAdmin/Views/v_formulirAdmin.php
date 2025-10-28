@@ -82,29 +82,30 @@
                         </div>
                     </div>
 
-                    <!-- Pelanggan -->
+                <!-- Pelanggan -->
                     <div class="col-md-4 d-flex flex-column justify-content-end" style="padding-left: 20px;">
-                        <label class="form-label mb-1 fw-semibold">Pelanggan</label>
-                        <div class="d-flex justify-content-end align-items-center gap-2">
-                            <select id="ker_pelanggan_select" class="form-select form-select-sm"
-                                style="max-width:400px;">
-                                <option value="">-- Pilih Pelanggan --</option>
-                                <?php if (!empty($users) && is_array($users)): ?>
-                                    <?php foreach ($users as $u):
-                                        $status = (isset($u->user_identity) && strtoupper($u->user_identity) === 'ULM') ? 'ULM' : 'NON ULM';
-                                    ?>
-                                        <option value="<?= esc($u->user_id) ?>"
-                                            data-email="<?= esc($u->user_email) ?>"
-                                            data-status="<?= esc($status) ?>"
-                                            data-name="<?= esc($u->user_name) ?>">
-                                            <?= esc($u->user_name) ?> — <?= esc($u->user_email) ?> — <?= esc($status) ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                <?php endif; ?>
-                            </select>
-                        </div>
+                    <label class="form-label mb-1 fw-semibold">Pelanggan</label>
+                    <div class="d-flex justify-content-end align-items-center gap-2">
+                        <select id="ker_pelanggan_select" class="form-select form-select-sm" style="max-width:400px;">
+                        <!-- placeholder kosong (tidak menampilkan teks) -->
+                        <option value=""></option>
+
+                        <?php if (!empty($users) && is_array($users)): ?>
+                            <?php foreach ($users as $u):
+                            $status = (isset($u->user_identity) && strtoupper($u->user_identity) === 'ULM') ? 'ULM' : 'NON ULM';
+                            ?>
+                            <option value="<?= esc($u->user_id) ?>"
+                                data-email="<?= esc($u->user_email) ?>"
+                                data-status="<?= esc($status) ?>"
+                                data-name="<?= esc($u->user_name) ?>">
+                                <?= esc($u->user_name) ?> — <?= esc($u->user_email) ?> — <?= esc($status) ?>
+                            </option>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                        </select>
                     </div>
-                </div>
+                    </div>
+
 
                 <!-- CSRF Token -->
                 <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" />
@@ -780,11 +781,6 @@ function getCsrfTokenFromPage() {
     return null;
 }
 
-/* ======= saat user mengganti pelanggan di modal, simpan ke session via endpoint ======= */
-// robust pelanggan listener (singkat)
-/* ======= saat user mengganti pelanggan di modal, simpan ke session via endpoint ======= */
-/* ======= saat user mengganti pelanggan di modal, simpan ke session via endpoint (tanpa konfirmasi, tapi refresh tabel) ======= */
-/* ======= saat user mengganti pelanggan di modal, simpan ke session via endpoint (tanpa konfirmasi, tapi refresh tabel preview + keranjang layanan) ======= */
 (function(){
   const sel = document.getElementById('ker_pelanggan_select');
   if (!sel) return;
@@ -888,8 +884,6 @@ function getCsrfTokenFromPage() {
   sel.addEventListener('input', sendAndRefresh);
   document.addEventListener('select2:select', sendAndRefresh); // Select2 fallback
 })();
-
-
 
 
     // ======= update counter & tampilkan pelanggan jika ada =======
@@ -1233,7 +1227,7 @@ function ker_calculateGrandTotal() {
       const wrapper = sel.parentElement ? sel.parentElement.querySelector('.selected') : null;
       if (wrapper) {
         const opt = sel.options[sel.selectedIndex];
-        wrapper.textContent = (opt && opt.value) ? opt.text : '-- pilih data --';
+        wrapper.textContent = (opt && opt.value) ? opt.text : '-- pilih pelanggan --';
       }
     } catch (err) {
       console.warn('applyOnce error for', selector, err);
