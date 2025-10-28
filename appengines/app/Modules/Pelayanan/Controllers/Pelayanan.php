@@ -1,4 +1,4 @@
-<?php
+<?php 
 
 namespace Modules\Pelayanan\Controllers;
 
@@ -342,162 +342,226 @@ class Pelayanan extends BaseController
     }
 
     public function keranjang()
-    {
-        $session = session();
-        $user_id = $session->get('id_user');
+{
+    $session = session();
+    $user_id = $session->get('id_user');
+    $modelUser = new MyModel('simlab_account_users');
 
-        $modelUser = new MyModel('simlab_account_users');
-        $model     = new MyModel('simlab_r_layanan_pengujian');
+    // Ambil daftar kategori yang BENAR-BENAR ada di data pengujian
+    $db = \Config\Database::connect();
+    $builder = $db->table('simlab_r_layanan_pengujian as lp');
+    
+    // Query untuk mendapatkan kategori yang benar-benar digunakan
+    $builder->select('
+        DISTINCT TRIM(LEFT(lp.ujiJenKode, 2)) as jenKode,
+        j.jenNama
+    ');
+    $builder->join('simlab_r_jenis j', 'j.jenKode = TRIM(LEFT(lp.ujiJenKode, 2))', 'left');
+    $builder->where('lp.ujiJenKode IS NOT NULL');
+    $builder->where('lp.ujiJenKode !=', '');
+    $builder->orderBy('j.jenNama', 'ASC');
+    
+    $categories = $builder->get()->getResult();
+    
+    // NORMALISASI: pastikan jenNama selalu ada (fallback ke jenKode)
+    $normalized = [];
+    if (!empty($categories)) {
+        foreach ($categories as $c) {
+            $kode = isset($c->jenKode) ? trim((string)$c->jenKode) : '';
+            $nama = (isset($c->jenNama) && trim((string)$c->jenNama) !== '') ? trim((string)$c->jenNama) : $kode;
 
-        $joins = [
-            'simlab_r_parameter p' => 'p.paraKode = simlab_r_layanan_pengujian.ujiParaKode',
-            'simlab_r_alat a'      => 'a.alatKode = simlab_r_layanan_pengujian.ujiAlatKode'
-        ];
-
-        $select = '
-            simlab_r_layanan_pengujian.ujiKode,
-            simlab_r_layanan_pengujian.ujiBiaya,
-            simlab_r_layanan_pengujian.ujiInstansi,
-            simlab_r_layanan_pengujian.ujiDiskon,
-            simlab_r_layanan_pengujian.ujiLayanan,
-            p.paraNama,
-            a.alatNama
-        ';
-
-        $listUji = $model->getAllDataWithJoinWhereOrder($joins, [], ['ujiKode' => 'ASC'], $select, 'left');
-
-        $data = [
-            'title'   => 'Keranjang Layanan',
-            'user'    => $modelUser->getDataById('user_id', $user_id),
-            'listUji' => $listUji
-        ];
-
-        return view('Modules\Pelayanan\Views\v_keranjang', $data);
+            if ($kode !== '') {
+                // buat object seragam supaya view bisa mengakses ->jenKode / ->jenNama
+                $normalized[] = (object)[
+                    'jenKode' => $kode,
+                    'jenNama' => $nama
+                ];
+            }
+        }
     }
 
-   public function keranjangDataList()
+    // Re-index array; jika tetap kosong, kirim array kosong (view akan fallback via AJAX)
+    $categories = array_values($normalized);
+
+    $data = [
+        'title'      => 'Keranjang Layanan',
+        'user'       => $modelUser->getDataById('user_id', $user_id),
+        'categories' => $categories,
+    ];
+
+    return view('Modules\Pelayanan\Views\v_keranjang', $data);
+}
+
+
+  public function keranjangDataList()
 {
     $session   = session();
     $keranjang = $session->get($this->sessionKey) ?? [];
     $data      = array();
 
-    foreach ($keranjang as $idx => $row) {
+    // 🧹 Hapus duplikat berdasarkan kombinasi kode + alat + keterangan
+    $unique = [];
+    $cleanedKeranjang = [];
+
+    foreach ($keranjang as $row) {
+        $kode = isset($row['kode']) ? trim((string)$row['kode']) : '';
+        $alat = isset($row['alat']) ? trim((string)$row['alat']) : '';
+        $ket  = isset($row['keterangan']) ? trim((string)$row['keterangan']) : '';
+        $key  = md5($kode . '|' . $alat . '|' . $ket);
+
+        if (!isset($unique[$key])) {
+            $unique[$key] = true;
+            $cleanedKeranjang[] = $row;
+        }
+    }
+
+    // 🔁 Simpan hasil pembersihan ke session lagi
+    $session->set($this->sessionKey, $cleanedKeranjang);
+
+    // 📦 Build data untuk output
+    foreach ($cleanedKeranjang as $idx => $row) {
         $response   = array();
 
-        // ambil fields
-        $parameter  = isset($row['layanan']) ? $row['layanan'] : '-';
-        $alat       = isset($row['alat']) ? $row['alat'] : '-';
-        $jumlah     = isset($row['jumlah']) ? (int)$row['jumlah'] : 0;
-        $keterangan = isset($row['keterangan']) ? $row['keterangan'] : '';
-        $diskon     = isset($row['diskon']) ? (float)$row['diskon'] : 0;
+        $parameter  = $row['layanan'] ?? '-';
+        $alat       = $row['alat'] ?? '-';
+        $jumlah     = (int)($row['jumlah'] ?? 0);
+        $keterangan = $row['keterangan'] ?? '';
+        $diskon     = (float)($row['diskon'] ?? 0);
+        $biayaAsli  = (float)($row['biaya_asli'] ?? 0);
+        $biayaTotal = (float)($row['biaya'] ?? 0);
 
-        $biayaAsli  = isset($row['biaya_asli']) ? (float)$row['biaya_asli'] : 0;
-        $biayaTotal = isset($row['biaya']) ? (float)$row['biaya'] : 0; // total after discount * jumlah
-
-        // 1) Parameter
+        // 1️⃣ Parameter
         $response[] = esc($parameter);
 
-        // 2) Instrumen / Alat / Tempat
+        // 2️⃣ Instrumen / Alat / Tempat
         $response[] = esc($alat);
 
-        // 3) Diskon %
+        // 3️⃣ Diskon
         $response[] = $diskon > 0 ? $diskon . '%' : '-';
 
-        // 4) Biaya satuan (tampilkan original + harga setelah diskon jika ada)
+        // 4️⃣ Biaya satuan
         if ($diskon > 0) {
             $hargaDiskon = $biayaAsli - ($biayaAsli * ($diskon / 100));
-            $biayaTampil = '<span style="color:red;text-decoration:line-through;">Rp ' . number_format($biayaAsli, 0, ',', '.') . '</span><br>';
+            $biayaTampil  = '<span style="color:red;text-decoration:line-through;">Rp ' 
+                          . number_format($biayaAsli, 0, ',', '.') . '</span><br>';
             $biayaTampil .= 'Rp ' . number_format($hargaDiskon, 0, ',', '.');
         } else {
             $biayaTampil = 'Rp ' . number_format($biayaAsli, 0, ',', '.');
         }
         $response[] = $biayaTampil;
 
-        // 5) Jumlah
+        // 5️⃣ Jumlah
         $response[] = $jumlah;
 
-        // 6) Keterangan
+        // 6️⃣ Keterangan
         $response[] = esc($keterangan);
 
-        // 7) Aksi (hapus) + sisipkan hidden total agar JS bisa hitung grand total
+        // 7️⃣ Aksi + total hidden
         $hiddenTotal = '<span class="d-none row-total">Rp ' . number_format($biayaTotal, 0, ',', '.') . '</span>';
-        $response[] = $this->aksiKeranjang($idx, true) . $hiddenTotal;
+        $response[]  = $this->aksiKeranjang($idx, true) . $hiddenTotal;
 
         $data[] = $response;
     }
 
-    $output = array("items" => $data);
-    return $this->response->setJSON($output);
+    return $this->response->setJSON(['items' => $data]);
 }
 
 
-
-   public function keranjangSubmit()
+    public function keranjangSubmit()
 {
     $session = session();
     $post = $this->request->getPost();
 
-    // Ambil input yang dikirim dari JS
-    $detUjiKode   = $post['detUjiKode']   ?? null;
-    $detAlat      = $post['detAlat']      ?? null; // <- ambil alat/instrumen
-    $detBiaya     = isset($post['detBiaya']) ? (float)$post['detBiaya'] : 0;
-    $detParameter = $post['detParameter'] ?? null;
-    $detDiskon    = isset($post['detDiskon']) ? (float)$post['detDiskon'] : 0;
-    $detInstansi  = $post['detInstansi']  ?? null;
-    $detJumlah    = isset($post['detJumlah']) ? (int)$post['detJumlah'] : 1;
-    $detKeterangan= $post['detKeterangan'] ?? '';
+    // Ambil input
+    $detUjiKode    = $post['detUjiKode']   ?? null;
+    $detAlat       = $post['detAlat']      ?? null;
+    $detBiaya      = isset($post['detBiaya']) ? (float)$post['detBiaya'] : 0;
+    $detParameter  = $post['detParameter'] ?? null;
+    $detDiskon     = isset($post['detDiskon']) ? (float)$post['detDiskon'] : 0;
+    $detJumlah     = isset($post['detJumlah']) ? (int)$post['detJumlah'] : 1;
+    $detKeterangan = trim($post['detKeterangan'] ?? '');
 
     if (empty($detUjiKode)) {
         return $this->response->setJSON([
-            'res' => false,
-            'msg' => 'Kode uji tidak valid.',
+            'res'   => false,
+            'msg'   => 'Kode uji tidak valid.',
             'xname' => csrf_token(),
             'xhash' => csrf_hash()
         ]);
     }
 
-    // Ambil user identity dari session
+    // Ambil user identity (untuk diskon)
     $user_id = session()->get('id_user');
     $modelUser = new MyModel('simlab_account_users');
     $user = $modelUser->getDataById('user_id', $user_id);
-    $userIdentity = '';
-    if ($user && isset($user->user_identity)) {
-        $userIdentity = strtoupper(trim($user->user_identity));
-    }
+    $userIdentity = $user && isset($user->user_identity) ? strtoupper(trim($user->user_identity)) : '';
 
-    // Tentukan diskon yang boleh diterapkan: hanya jika user_identity === 'ULM'
-    $appliedDiskon = 0;
-    if ($userIdentity === 'ULM') {
-        $appliedDiskon = max(0, $detDiskon);
-    }
+    $appliedDiskon = ($userIdentity === 'ULM') ? max(0, $detDiskon) : 0;
 
-    // Hitung ulang di server
-    $jumlah = max(1, (int)$detJumlah);
-    $biayaPerItem = max(0, (float)$detBiaya);
+    // Hitung biaya item baru
+    $jumlah = max(1, $detJumlah);
+    $biayaPerItem = max(0, $detBiaya);
     $biayaSetelahDiskon = $biayaPerItem * (1 - ($appliedDiskon / 100));
-    $biayaTotal = $biayaSetelahDiskon * $jumlah;
+    $biayaTotalBaru = $biayaSetelahDiskon * $jumlah;
 
-    // Siapkan item — tambahkan 'alat' field agar tampil di preview
-    $item = [
-        'kode'        => $detUjiKode,
-        'layanan'     => $detParameter ?? 'Layanan', // parameter / nama layanan
-        'alat'        => $detAlat ?? '',             // <-- baru: instrumen/alat/tempat
-        'biaya_asli'  => $detBiaya,
-        'diskon'      => $appliedDiskon,
-        'jumlah'      => $jumlah,
-        'keterangan'  => $detKeterangan,
-        'biaya'       => $biayaTotal,
-        'ujiPenyelia' => $post['ujiPenyelia'] ?? null,
-        'ujiManajerTeknis' => $post['ujiManajerTeknis'] ?? null,
-    ];
-
+    // Ambil keranjang lama
     $keranjang = $session->get($this->sessionKey) ?? [];
-    $keranjang[] = $item;
+
+    // Cari item dengan kode & alat yang sama
+    $found = false;
+    foreach ($keranjang as $idx => $item) {
+        $sameKode = isset($item['kode']) && (string)$item['kode'] === (string)$detUjiKode;
+        $sameAlat = (isset($item['alat']) ? trim((string)$item['alat']) : '') === trim((string)$detAlat);
+
+        if ($sameKode && $sameAlat) {
+            // 🔹 Tambah jumlah
+            $keranjang[$idx]['jumlah'] = (int)($item['jumlah'] ?? 0) + $jumlah;
+
+            // 🔹 Ganti keterangan (bukan gabung)
+            $keranjang[$idx]['keterangan'] = $detKeterangan;
+
+            // 🔹 Pastikan biaya asli & diskon tetap
+            $biayaAsli = isset($item['biaya_asli']) ? (float)$item['biaya_asli'] : $biayaPerItem;
+            $disk = isset($item['diskon']) ? (float)$item['diskon'] : $appliedDiskon;
+
+            // 🔹 Hitung ulang total biaya baru
+            $jumlahBaru = (int)$keranjang[$idx]['jumlah'];
+            $keranjang[$idx]['biaya'] = ($biayaAsli * $jumlahBaru) * (1 - ($disk / 100));
+            $keranjang[$idx]['biaya_asli'] = $biayaAsli;
+            $keranjang[$idx]['diskon'] = $disk;
+
+            $found = true;
+            break;
+        }
+    }
+
+    $penyelia = isset($post['ujiPenyelia']) && is_numeric($post['ujiPenyelia']) ? (int)$post['ujiPenyelia'] : null;
+    $manajer  = isset($post['ujiManajerTeknis']) && is_numeric($post['ujiManajerTeknis']) ? (int)$post['ujiManajerTeknis'] : null;
+
+    // Jika belum ada item sejenis, tambahkan item baru
+    if (!$found) {
+        $keranjang[] = [
+            'kode'        => $detUjiKode,
+            'layanan'     => $detParameter ?? 'Layanan',
+            'alat'        => $detAlat ?? '',
+            'biaya_asli'  => $biayaPerItem,
+            'diskon'      => $appliedDiskon,
+            'jumlah'      => $jumlah,
+            'keterangan'  => $detKeterangan,
+            'biaya'       => $biayaTotalBaru,
+            'ujiPenyelia' => $post['ujiPenyelia'] ?? null,
+            'ujiManajerTeknis' => $post['ujiManajerTeknis'] ?? null,
+        ];
+    }
+
+    // Simpan kembali ke session
     $session->set($this->sessionKey, $keranjang);
 
     return $this->response->setJSON([
         'res' => true,
-        'msg' => 'Item berhasil ditambahkan ke keranjang.',
+        'msg' => $found
+            ? 'Item berhasil ditambahkan di keranjang.'
+            : 'Item baru berhasil ditambahkan ke keranjang.',
         'xname' => csrf_token(),
         'xhash' => csrf_hash(),
         'items_count' => count($keranjang)
@@ -505,150 +569,217 @@ class Pelayanan extends BaseController
 }
 
 
-   
 
     public function keranjangCheckout()
-    {
-        $session = session();
-        $user_id = $session->get('id_user');
+{
+    $session = session();
+    $user_id = $session->get('id_user');
 
-        $modelUser = new MyModel('simlab_account_users');
-        $userRow   = $modelUser->getDataById('user_id', $user_id);
+    $modelUser = new MyModel('simlab_account_users');
+    $userRow   = $modelUser->getDataById('user_id', $user_id);
 
-        $emailFromDB = $userRow->user_email ?? $session->get('username');
-        $nameFromDB  = $userRow->user_name ?? $session->get('nama');
-        $identity    = $userRow->user_identity ?? null;
+    $emailFromDB = $userRow->user_email ?? $session->get('username');
+    $nameFromDB  = $userRow->user_name ?? $session->get('nama');
+    $identity    = $userRow->user_identity ?? null;
 
-        $keranjang = $session->get($this->sessionKey) ?? [];
-        if (empty($keranjang)) {
+    $keranjang = $session->get($this->sessionKey) ?? [];
+    if (empty($keranjang)) {
+        return $this->response->setJSON([
+            'res' => false,
+            'msg' => 'Keranjang masih kosong.',
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
+        ]);
+    }
+
+    $totalBiaya = array_sum(array_column($keranjang, 'biaya'));
+
+    $modelPembayaran = new MyModel('simlab_t_pembayaran');
+    $modelLayanan    = new MyModel('simlab_t_layanan');
+    $modelDetil      = new MyModel('simlab_t_layanan_detil');
+    $modelAccount    = new MyModel('simlab_account');
+    $db = \Config\Database::connect();
+
+    $db->transStart();
+
+    try {
+        // === 1) Simpan data utama layanan ===
+        $insertLayananId = $modelLayanan->insertData([
+            'user_id'       => $user_id,
+            'lnAccEmail'    => $emailFromDB,
+            'lnNoTransaksi' => null,
+            'lnTgl'         => date('Y-m-d H:i:s'),
+            'lnStatus'      => 1,
+            'kuisioner'     => 0
+        ], true);
+
+        if (!$insertLayananId) {
+            $insertLayananId = $db->insertID();
+        }
+
+        if (!$insertLayananId) {
+            $db->transRollback();
             return $this->response->setJSON([
                 'res' => false,
-                'msg' => 'Keranjang masih kosong.',
+                'msg' => 'Gagal membuat record layanan (lnKode tidak tersedia).',
                 'xname' => csrf_token(),
                 'xhash' => csrf_hash()
             ]);
         }
 
-        $totalBiaya = array_sum(array_column($keranjang, 'biaya'));
+        $lnKode = (int)$insertLayananId;
 
-        $modelPembayaran = new MyModel('simlab_t_pembayaran');
-        $modelLayanan    = new MyModel('simlab_t_layanan');
-        $modelDetil      = new MyModel('simlab_t_layanan_detil');
+        // === 2) Simpan data pembayaran ===
+        $today = date('Y-m-d');
+        $insertPembayaranId = $modelPembayaran->insertData([
+            'bayarLnKode'     => $lnKode,
+            'bayarTotalBiaya' => $totalBiaya,
+            'bayarStatus'     => 0,
+            'bayarInvoiceNo'  => null,
+            'bayarInvoiceTgl' => $today,
+            'bayarBuktiFile'  => null
+        ], true);
 
-        $db = \Config\Database::connect();
+        if (!$insertPembayaranId) {
+            $db->transRollback();
+            return $this->response->setJSON([
+                'res' => false,
+                'msg' => 'Gagal simpan pembayaran.',
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        }
 
-        // Gunakan transaction untuk atomicity
-        $db->transStart();
+        // === 3) Simpan detail layanan ===
+        foreach ($keranjang as $i => $item) {
+            $penyeliaCand = isset($item['ujiPenyelia']) && is_numeric($item['ujiPenyelia']) ? (int)$item['ujiPenyelia'] : null;
+            $manajerCand  = isset($item['ujiManajerTeknis']) && is_numeric($item['ujiManajerTeknis']) ? (int)$item['ujiManajerTeknis'] : null;
+            $jenKodeCand  = isset($item['jenKode']) && trim($item['jenKode']) !== '' ? trim($item['jenKode']) : null;
 
-        try {
-            // 1) Insert ke simlab_t_layanan dulu (tanpa lnNoTransaksi)
-            $insertLayananId = $modelLayanan->insertData([
-                'user_id'       => $user_id,
-                'lnAccEmail'    => $emailFromDB,
-                'lnNoTransaksi' => null,
-                'lnTgl'         => date('Y-m-d H:i:s'),
-                'lnStatus'      => 1,
-                'kuisioner'     => 0
-            ], true);
+            $validPenyelia = null;
+            $validManajer  = null;
+            $validJenKode  = null;
 
-            // Pastikan kita punya lnKode (primary key) yang valid
-            if (!$insertLayananId) {
-                $insertLayananId = $db->insertID();
+            // --- validasi user id ---
+            try {
+                if ($penyeliaCand) {
+                    $acc = $modelAccount->getDataById('user_id', $penyeliaCand);
+                    $validPenyelia = $acc ? $penyeliaCand : null;
+                }
+                if ($manajerCand) {
+                    $acc2 = $modelAccount->getDataById('user_id', $manajerCand);
+                    $validManajer = $acc2 ? $manajerCand : null;
+                }
+            } catch (\Throwable $e) {
+                $validPenyelia = null;
+                $validManajer  = null;
             }
 
-            if (!$insertLayananId) {
-                $db->transRollback();
-                return $this->response->setJSON([
-                    'res' => false,
-                    'msg' => 'Gagal membuat record layanan (lnKode tidak tersedia).',
-                    'xname' => csrf_token(),
-                    'xhash' => csrf_hash()
-                ]);
-            }
+            // --- ambil dari tabel pengujian jika belum valid ---
+            if (($validPenyelia === null || $validManajer === null || $validJenKode === null) && !empty($item['kode'])) {
+                try {
+                    $row = $db->table('simlab_r_layanan_pengujian')
+                              ->select('ujiPenyelia, ujiManajerTeknis, ujiJenKode')
+                              ->where('ujiKode', $item['kode'])
+                              ->get()
+                              ->getRow();
 
-            $lnKode = (int)$insertLayananId;
+                    if ($row) {
+                        if ($validPenyelia === null && isset($row->ujiPenyelia) && is_numeric($row->ujiPenyelia)) {
+                            $acc3 = $modelAccount->getDataById('user_id', (int)$row->ujiPenyelia);
+                            if ($acc3) $validPenyelia = (int)$row->ujiPenyelia;
+                        }
 
-            // 2) Sekarang insert pembayaran yang merujuk ke lnKode yang sudah ada
-            $today = date('Y-m-d');
-            $insertPembayaranId = $modelPembayaran->insertData([
-                'bayarLnKode'     => $lnKode,
-                'bayarTotalBiaya' => $totalBiaya,
-                'bayarStatus'     => 0,
-                'bayarInvoiceNo'  => null,
-                'bayarInvoiceTgl' => $today,
-                'bayarBuktiFile'  => null
-            ], true);
+                        if ($validManajer === null && isset($row->ujiManajerTeknis) && is_numeric($row->ujiManajerTeknis)) {
+                            $acc4 = $modelAccount->getDataById('user_id', (int)$row->ujiManajerTeknis);
+                            if ($acc4) $validManajer = (int)$row->ujiManajerTeknis;
+                        }
 
-            if (!$insertPembayaranId) {
-                $db->transRollback();
-                return $this->response->setJSON([
-                    'res' => false,
-                    'msg' => 'Gagal simpan pembayaran.',
-                    'xname' => csrf_token(),
-                    'xhash' => csrf_hash()
-                ]);
-            }
-
-            // 3) Simpan detail layanan (detLnKode -> lnKode)
-            foreach ($keranjang as $item) {
-                $detil = [
-                    'detLnKode'         => $lnKode,
-                    'detUjiKode'        => $item['kode'] ?? null,
-                    'detBiaya'          => $item['biaya'] ?? null,
-                    'detJumlah'         => $item['jumlah'] ?? 1,
-                    'detKeterangan'     => $item['keterangan'] ?? null,
-                    'detLayanan'        => $item['layanan'] ?? null,
-                    'detStatus'         => 0,
-                    'detJenKode'        => null,
-                    'detPenyelia'       => $item['ujiPenyelia'] ?? null,
-                    'detManajerTeknis'  => $item['ujiManajerTeknis'] ?? null,
-                ];
-
-                $res = $modelDetil->insertData($detil);
-                if (!$res) {
-                    $error = $modelDetil->db->error();
-                    log_message('error', ' Insert gagal ke simlab_t_layanan_detil. Data: ' . json_encode($detil));
-                    log_message('error', ' DB Error: ' . json_encode($error));
-
-                    $db->transRollback();
-
-                    return $this->response->setJSON([
-                        'res' => false,
-                        'msg' => 'Checkout gagal saat simpan detail: ' . ($error['message'] ?? 'Unknown error'),
-                        'xname' => csrf_token(),
-                        'xhash' => csrf_hash()
-                    ]);
+                        if ($validJenKode === null && !empty($row->ujiJenKode)) {
+                            $validJenKode = substr(trim($row->ujiJenKode), 0, 2);
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    // fallback silent
                 }
             }
 
-            // jika semua sukses, commit
-            $db->transComplete();
-
-            // kosongkan keranjang
-            $session->remove($this->sessionKey);
-
-            return $this->response->setJSON([
-                'res' => true,
-                'msg' => 'Checkout berhasil! ', 
-                'lnKode' => $lnKode,
-                'xname' => csrf_token(),
-                'xhash' => csrf_hash()
-            ]);
-        } catch (\Exception $e) {
-            if ($db->transStatus() === FALSE) {
-                $db->transRollback();
+            // --- sanitasi jenKode ---
+            if ($validJenKode === null && $jenKodeCand !== null) {
+                $validJenKode = substr(preg_replace('/[^A-Za-z0-9]/', '', $jenKodeCand), 0, 2);
             }
 
-            log_message('error', 'Checkout exception: ' . $e->getMessage() . ' Trace: ' . $e->getTraceAsString());
+            // --- logging bila invalid ---
+            if ($penyeliaCand && $validPenyelia === null) {
+                log_message('warning', "Checkout Warning: Penyelia ID {$penyeliaCand} tidak valid, set NULL (item ke-{$i}).");
+            }
+            if ($manajerCand && $validManajer === null) {
+                log_message('warning', "Checkout Warning: ManajerTeknis ID {$manajerCand} tidak valid, set NULL (item ke-{$i}).");
+            }
+            if ($jenKodeCand && $validJenKode === null) {
+                log_message('warning', "Checkout Warning: JenKode '{$jenKodeCand}' tidak valid atau tidak ditemukan, set NULL (item ke-{$i}).");
+            }
 
-            return $this->response->setJSON([
-                'res' => false,
-                'msg' => 'Checkout gagal: ' . $e->getMessage(),
-                'xname' => csrf_token(),
-                'xhash' => csrf_hash()
-            ]);
+            // --- build data detil ---
+            $detil = [
+                'detLnKode'         => $lnKode,
+                'detUjiKode'        => $item['kode'] ?? null,
+                'detBiaya'          => $item['biaya'] ?? null,
+                'detJumlah'         => $item['jumlah'] ?? 1,
+                'detKeterangan'     => $item['keterangan'] ?? null,
+                'detLayanan'        => $item['layanan'] ?? null,
+                'detStatus'         => 0,
+                'detJenKode'        => $validJenKode,
+                'detPenyelia'       => $validPenyelia,
+                'detManajerTeknis'  => $validManajer,
+            ];
+
+            // --- insert ke tabel detil ---
+            $res = $modelDetil->insertData($detil);
+            if (!$res) {
+                $error = $modelDetil->db->error();
+                log_message('error', 'Insert gagal ke simlab_t_layanan_detil. Data: ' . json_encode($detil));
+                log_message('error', 'DB Error: ' . json_encode($error));
+
+                $db->transRollback();
+
+                return $this->response->setJSON([
+                    'res' => false,
+                    'msg' => 'Checkout gagal saat simpan detail: ' . ($error['message'] ?? 'Unknown error'),
+                    'xname' => csrf_token(),
+                    'xhash' => csrf_hash()
+                ]);
+            }
         }
+
+        // === 4) Commit dan bersihkan keranjang ===
+        $db->transComplete();
+        $session->remove($this->sessionKey);
+
+        return $this->response->setJSON([
+            'res' => true,
+            'msg' => 'Checkout berhasil!',
+            'lnKode' => $lnKode,
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
+        ]);
+    } catch (\Exception $e) {
+        if ($db->transStatus() === FALSE) {
+            $db->transRollback();
+        }
+
+        log_message('error', 'Checkout exception: ' . $e->getMessage() . ' Trace: ' . $e->getTraceAsString());
+
+        return $this->response->setJSON([
+            'res' => false,
+            'msg' => 'Checkout gagal: ' . $e->getMessage(),
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
+        ]);
     }
+}
+
+
 
         public function keranjangDelete($id)
     {
@@ -690,12 +821,13 @@ class Pelayanan extends BaseController
 
    
 
-   public function keranjangDataListLayanan()
+
+ public function keranjangDataListLayanan()
 {
     $session = session();
     $user_id = $session->get('id_user');
-
-    // ambil info user (jika ada) untuk cek user_identity
+    
+    // Ambil info user untuk cek user_identity
     $modelUser = new MyModel('simlab_account_users');
     $user = $modelUser->getDataById('user_id', $user_id);
     $userIdentity = '';
@@ -703,36 +835,66 @@ class Pelayanan extends BaseController
         $userIdentity = strtoupper(trim($user->user_identity));
     }
 
-    $model = new MyModel('simlab_r_layanan_pengujian');
-
-    $joins = [
-        'simlab_r_parameter p' => 'p.paraKode = simlab_r_layanan_pengujian.ujiParaKode',
-        'simlab_r_alat a'      => 'a.alatKode = simlab_r_layanan_pengujian.ujiAlatKode'
-    ];
-
-    $select = '
-        simlab_r_layanan_pengujian.ujiKode,
-        simlab_r_layanan_pengujian.ujiBiaya,
-        simlab_r_layanan_pengujian.ujiInstansi,
-        simlab_r_layanan_pengujian.ujiDiskon,
-        simlab_r_layanan_pengujian.ujiLayanan,
-        p.paraNama,
-        a.alatNama
-    ';
-
-    $listUji = $model->getAllDataWithJoinWhereOrder(
-        $joins, 
-        [], 
-        ['ujiKode' => 'ASC'], 
-        $select, 
-        'left'
-    );
-
-    // Baca query pencarian (compatibel q atau search)
+    // Baca parameter filter dari GET request
     $qRaw = trim((string) ($this->request->getGet('q') ?? $this->request->getGet('search') ?? ''));
     $q = $qRaw !== '' ? mb_strtolower($qRaw, 'UTF-8') : '';
+    
+    // PERBAIKAN: Baca jenKode sebagai filter kategori
+    $jenKodeFilter = trim((string) ($this->request->getGet('jenKode') ?? ''));
 
-    // Jika ada query, lakukan filter pada array $listUji
+    // SANITASI tambahan: jika client keliru mengirim sesuatu seperti "A?page=1" atau "A&page=1",
+    // kita buang sisa setelah '?' atau '&' dan ambil hanya token jenKode yang relevan.
+    if ($jenKodeFilter !== '') {
+        // decode dulu untuk menghindari encoding oddities
+        $jenKodeFilter = rawurldecode($jenKodeFilter);
+        // hapus bagian query yang tersisa jika ada
+        $jenKodeFilter = preg_replace('/[?&].*$/', '', $jenKodeFilter);
+        // jika ada tanda sama dengan (mis-sent key=value), ambil bagian nilai/atau kunci tergantung struktur.
+        if (strpos($jenKodeFilter, '=') !== false) {
+            // bisa jadi bentuk "jenKode=A" atau "A=page=1"; ambil bagian sebelum '=' kecuali kosong
+            $parts = explode('=', $jenKodeFilter, 2);
+            if ($parts[0] === '') {
+                $jenKodeFilter = $parts[1];
+            } else {
+                $jenKodeFilter = $parts[0];
+            }
+        }
+        // batasi ke karakter alfanumerik dan ambil maksimal 2 char (format jenKode di DB)
+        $jenKodeFilter = preg_replace('/[^A-Za-z0-9]/', '', $jenKodeFilter);
+        $jenKodeFilter = substr($jenKodeFilter, 0, 2);
+        $jenKodeFilter = trim($jenKodeFilter);
+    }
+    
+    // Query menggunakan Query Builder untuk lebih fleksibel
+    $db = \Config\Database::connect();
+    $builder = $db->table('simlab_r_layanan_pengujian as lp');
+    
+    $builder->select('
+        lp.ujiKode,
+        lp.ujiBiaya,
+        lp.ujiInstansi,
+        lp.ujiDiskon,
+        lp.ujiLayanan,
+        lp.ujiJenKode,
+        p.paraNama,
+        a.alatNama,
+        j.jenNama
+    ');
+    
+    $builder->join('simlab_r_parameter p', 'p.paraKode = lp.ujiParaKode', 'left');
+    $builder->join('simlab_r_alat a', 'a.alatKode = lp.ujiAlatKode', 'left');
+    $builder->join('simlab_r_jenis j', 'j.jenKode = lp.ujiJenKode', 'left');
+    
+    // Filter kategori: EXACT MATCH atau LEFT() untuk VARCHAR yang lebih panjang
+    if ($jenKodeFilter !== '') {
+        $builder->where("TRIM(LEFT(lp.ujiJenKode, 2))", $jenKodeFilter);
+    }
+    
+    $builder->orderBy('lp.ujiKode', 'ASC');
+    
+    $listUji = $builder->get()->getResult();
+
+    // Filter tambahan untuk search query (free text)
     if ($q !== '') {
         $filtered = [];
         foreach ($listUji as $row) {
@@ -740,74 +902,92 @@ class Pelayanan extends BaseController
                 isset($row->paraNama) ? mb_strtolower($row->paraNama, 'UTF-8') : '',
                 isset($row->alatNama) ? mb_strtolower($row->alatNama, 'UTF-8') : '',
                 isset($row->ujiLayanan) ? mb_strtolower($row->ujiLayanan, 'UTF-8') : '',
+                isset($row->jenNama) ? mb_strtolower($row->jenNama, 'UTF-8') : '',
                 isset($row->ujiKode) ? (string)$row->ujiKode : ''
             ];
-
+            
+            $matchQ = false;
             foreach ($fields as $f) {
                 if ($f !== '' && mb_stripos($f, $q, 0, 'UTF-8') !== false) {
-                    $filtered[] = $row;
+                    $matchQ = true;
                     break;
                 }
+            }
+            
+            if ($matchQ) {
+                $filtered[] = $row;
             }
         }
         $listUji = $filtered;
     }
 
+    // Build response data
     $data = array();
     $no = 1;
-
+    
     foreach ($listUji as $row) {
         $response = array();
-
+         
+        
         // Parameter
-        $response[] = esc($row->paraNama);
-
+        $response[] = esc($row->paraNama ?? '-');
+        
         // Instrumen/Alat
-        $response[] = esc($row->alatNama);
-
-        // Tentukan apakah diskon boleh diterapkan untuk user saat ini
+        $response[] = esc($row->alatNama ?? '-');
+        
+        // Tentukan diskon yang diperbolehkan
         $allowedDiskon = 0;
         if (!empty($row->ujiDiskon) && $row->ujiDiskon > 0 && $userIdentity === 'ULM') {
             $allowedDiskon = (float)$row->ujiDiskon;
         }
-
-        // Biaya (tampilkan badge diskon hanya jika allowedDiskon > 0)
+        
+        // Biaya
         $biaya = 'Rp ' . number_format($row->ujiBiaya, 0, ',', '.');
         if ($allowedDiskon > 0) {
-            $biaya .= ' <span class="text-danger fw-bold">- ' . $allowedDiskon . '%</span>';
+            $biaya .= ' <span class="badge bg-danger ms-1">-' . $allowedDiskon . '%</span>';
         }
         $response[] = $biaya;
-
-        // Input Jumlah (tanpa tombol + / -)
-        $inputJumlah = '
-            <input type="number" class="form-control form-control-sm text-center jumlah" value="1" min="1" style="width:100px;">
-        ';
+        
+        // Input Jumlah
+        $inputJumlah = '<input type="number" class="form-control form-control-sm text-center jumlah" value="1" min="1" style="width:80px;">';
         $response[] = $inputJumlah;
-
+        
         // Input Keterangan
         $response[] = '<input type="text" class="form-control form-control-sm keterangan" placeholder="Keterangan...">';
-
-        // Tombol Aksi (data-diskon = allowedDiskon, bukan nilai DB langsung)
+        
+        // Tombol Aksi
+        $jenKodeClean = isset($row->ujiJenKode) ? trim(substr($row->ujiJenKode, 0, 2)) : '';
+        
         $btnMasukkan = '
             <button type="button" 
                     class="btn btn-success btn-sm btnMasukkan" 
                     data-kode="' . esc($row->ujiKode) . '" 
-                    data-alat="' . esc($row->alatNama) . '" 
+                    data-alat="' . esc($row->alatNama ?? '') . '" 
                     data-biaya="' . $row->ujiBiaya . '" 
-                    data-parameter="' . esc($row->paraNama) . '"
+                    data-parameter="' . esc($row->paraNama ?? '') . '"
                     data-diskon="' . $allowedDiskon . '" 
-                    data-instansi="' . esc($row->ujiInstansi) . '" 
+                    data-instansi="' . esc($row->ujiInstansi ?? '') . '"
+                    data-jenKode="' . esc($jenKodeClean) . '"
+                    data-jenNama="' . esc($row->jenNama ?? '') . '"
+                    data-ujiPenyelia="' . (isset($row->ujiPenyelia) ? (int)$row->ujiPenyelia : '') . '"
+                    data-ujiManajerTeknis="' . (isset($row->ujiManajerTeknis) ? (int)$row->ujiManajerTeknis : '') . '"
                     title="Masukkan ke keranjang">
                 <i class="bi bi-cart-plus"></i>
             </button>
         ';
         $response[] = $btnMasukkan;
-
+        
         $data[] = $response;
     }
 
-    $output = array("items" => $data);
-    return $this->response->setJSON($output);
+    return $this->response->setJSON([
+        "items" => $data,
+        "debug" => [
+            "total_items" => count($data),
+            "filter_jenKode" => $jenKodeFilter,
+            "search_query" => $q
+        ]
+    ]);
 }
 
 
@@ -825,6 +1005,34 @@ class Pelayanan extends BaseController
             <i class="bi bi-trash"></i>
         </span>
     </div>';
+}
+
+public function kategoriList()
+{
+    $db = \Config\Database::connect();
+    $builder = $db->table('simlab_r_layanan_pengujian as lp');
+    
+    // PERBAIKAN: gunakan LEFT() untuk matching
+    $builder->select('
+        DISTINCT TRIM(LEFT(lp.ujiJenKode, 2)) as jenKode,
+        j.jenNama
+    ');
+    $builder->join('simlab_r_jenis j', 'j.jenKode = TRIM(LEFT(lp.ujiJenKode, 2))', 'left');
+    $builder->where('lp.ujiJenKode IS NOT NULL');
+    $builder->where('lp.ujiJenKode !=', '');
+    $builder->orderBy('j.jenNama', 'ASC');
+
+    $categories = $builder->get()->getResult();
+    
+    // Filter out null/empty
+    $categories = array_filter($categories, function($cat) {
+        return !empty($cat->jenKode) && !empty($cat->jenNama);
+    });
+
+    return $this->response->setJSON([
+        'success' => true,
+        'categories' => array_values($categories)
+    ]);
 }
 
 
