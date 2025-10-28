@@ -41,6 +41,7 @@
 </div>
 
 <!-- ======= MODAL KERANJANG ======= -->
+<!-- ======= MODAL KERANJANG ======= -->
 <div class="modal fade" id="modalKeranjang" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
     aria-labelledby="staticBackdropLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl" role="document" style="margin: 2% auto">
@@ -51,45 +52,65 @@
             </div>
 
             <div class="modal-body">
-                <!-- PEMILIH PELANGGAN DI DALAM MODAL -->
+                <!-- ======= Header Daftar Layanan ======= -->
                 <div class="mb-3">
-                    <label class="form-label fw-semibold">Pelanggan</label>
-                    <div class="d-flex" style="gap:8px; align-items:center;">
-                        <select id="ker_pelanggan_select" class="form-select form-select-sm" style="min-width:320px;">
-                            <option value="">-- Pilih Pelanggan (Nama — email — ULM/NON ULM) --</option>
-                            <?php if (!empty($users) && is_array($users)): ?>
-                                <?php foreach ($users as $u):
-                                    $status = (isset($u->user_identity) && strtoupper($u->user_identity) === 'ULM') ? 'ULM' : 'NON ULM';
-                                ?>
-                                    <option value="<?= esc($u->user_id) ?>"
+                    <h6 class="fw-bold text-primary mb-0">
+                        <i class="bi bi-list-check"></i> Daftar Layanan Tersedia
+                    </h6>
+                </div>
+
+                <hr class="my-3">
+
+                <!-- ======= Row: Kategori (kiri) + Pelanggan (kanan, sedikit ke kanan) ======= -->
+                <div class="row mb-4 align-items-end">
+                    <!-- Kategori -->
+                    <div class="col-md-8">
+                        <label class="form-label mb-1 fw-semibold">Kategori</label>
+                        <div class="d-flex gap-2 align-items-center">
+                            <select id="jenFilter" class="form-select form-select-sm" style="max-width:60px;">
+                                <option value="">— Semua —</option>
+                                <?php if (!empty($categories) && (is_array($categories) || is_object($categories))): ?>
+                                    <?php foreach ($categories as $c): ?>
+                                        <?php
+                                            $kode = isset($c->jenKode) ? $c->jenKode : (isset($c['jenKode']) ? $c['jenKode'] : '');
+                                            $nama = isset($c->jenNama) && trim((string)$c->jenNama) !== '' ? $c->jenNama : $kode;
+                                        ?>
+                                        <option value="<?= esc($kode) ?>"><?= esc($nama) ?></option>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Pelanggan -->
+                    <div class="col-md-4 d-flex flex-column justify-content-end" style="padding-left: 20px;">
+                        <label class="form-label mb-1 fw-semibold">Pelanggan</label>
+                        <div class="d-flex justify-content-end align-items-center gap-2">
+                            <select id="ker_pelanggan_select" class="form-select form-select-sm"
+                                style="max-width:400px;">
+                                <option value="">-- Pilih Pelanggan --</option>
+                                <?php if (!empty($users) && is_array($users)): ?>
+                                    <?php foreach ($users as $u):
+                                        $status = (isset($u->user_identity) && strtoupper($u->user_identity) === 'ULM') ? 'ULM' : 'NON ULM';
+                                    ?>
+                                        <option value="<?= esc($u->user_id) ?>"
                                             data-email="<?= esc($u->user_email) ?>"
                                             data-status="<?= esc($status) ?>"
                                             data-name="<?= esc($u->user_name) ?>">
-                                        <?= esc($u->user_name) ?> — <?= esc($u->user_email) ?> — <?= esc($status) ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                        </select>
-
-                        <div id="ker_pelanggan_badge" style="font-weight:600; font-size:0.95rem; margin-left:8px;">
-                            <!-- info singkat pelanggan disini setelah dipilih -->
+                                            <?= esc($u->user_name) ?> — <?= esc($u->user_email) ?> — <?= esc($status) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </select>
                         </div>
                     </div>
                 </div>
 
-                <!-- Tampilkan info pelanggan yang dipilih (redundan) -->
-                <div id="ker_modalPelangganInfo" class="mb-3" style="font-weight:600; font-size:0.95rem; display:none;">
-                    <!-- akan diisi oleh JS: "Untuk pelanggan: Nama — email — ULM" -->
-                </div>
-
                 <!-- CSRF Token -->
                 <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" />
-                
-                <!-- Tabel Pilih Layanan -->
+
+                <!-- ======= Tabel Layanan ======= -->
                 <div class="mb-4">
-                    <h6 class="fw-bold text-primary mb-3">
-                        <i class="bi bi-list-check"></i> Daftar Layanan Tersedia
-                    </h6>
                     <table id="ker_layanan-table" class="saytable border-top-bottom">
                         <thead>
                             <tr>
@@ -108,16 +129,13 @@
 
                 <hr class="my-4">
 
-                <!-- Tabel Preview Keranjang -->
+                <!-- ======= Tabel Keranjang ======= -->
                 <div>
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h6 class="fw-bold text-success mb-0">
                             <i class="bi bi-cart3"></i> Keranjang Anda 
                             (<span id="ker_jumlahItemKeranjang">0</span> Item)
                         </h6>
-                        <button type="button" id="ker_btnRefreshKeranjang" class="btn btn-sm btn-outline-secondary">
-                            <i class="bi bi-arrow-clockwise"></i> Refresh
-                        </button>
                     </div>
 
                     <div id="ker_keranjangKosong" class="alert alert-warning text-center" style="display:none;">
@@ -128,7 +146,8 @@
                         <thead>
                             <tr>
                                 <th style="width:5%">No</th>
-                                <th style="width:20%">Layanan</th>
+                                <th style="width=22%">Parameter</th>
+                                <th style="width=22%">Instrumen/Alat/Tempat</th>
                                 <th style="width:12%">Biaya Satuan</th>
                                 <th style="width:8%">Jumlah</th>
                                 <th style="width:10%">Diskon (%)</th>
@@ -139,15 +158,21 @@
                         </thead>
                         <tbody id="ker_preview-keranjang-table-body"></tbody>
                         <tfoot>
-                            <tr class="table-active">
-                                <td colspan="5" class="text-end fw-bold">TOTAL KESELURUHAN:</td>
-                                <td id="ker_grandTotal" class="fw-bold text-primary fs-5">Rp 0</td>
-                                <td colspan="2"></td>
+                            <tr class="table-active align-middle">
+                                <td colspan="8">
+                                    <div class="d-flex justify-content-end">
+                                        <div class="fw-bold fs-5">
+                                            TOTAL KESELURUHAN:
+                                            <span id="grandTotal" class="text-primary">Rp 0</span>
+                                        </div>
+                                    </div>
+                                </td>
                             </tr>
                         </tfoot>
                     </table>
                 </div>
             </div>
+
             <div class="modal-footer">
                 <button class="btn btn-light" type="button" data-bs-dismiss="modal">
                     <i class="bi bi-x-circle"></i> Tutup
@@ -160,29 +185,30 @@
     </div>
 </div>
 
-<!-- ======= MODAL DETAIL ======= -->
-<div class="modal fade" id="modalDetail" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+<!-- Modal detail Pesanan -->
+<div class="modal fade" id="modalDetail" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl" role="document" style="margin: 2% auto">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Detail Layanan</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                </button>
             </div>
             <div class="modal-body">
                 <table class="table table-bordered">
                     <thead>
                         <tr>
                             <th width="5%">No</th>
-                            <th width="30%">Layanan</th>
-                            <th width="10%">Biaya</th>
-                            <th width="5%">Jumlah</th>
-                            <th width="20%">Keterangan</th>
-                            <th width="10%">Status</th>
-                            <th width="20%">Keterangan Manajer</th>
+                            <th width="30%">Parameter</th>
+                            <th width="20%">Biaya</th>
+                            <th width="15%">Jumlah</th>
+                            <th width="15%">Keterangan</th>
+                            <th width="15%">Status</th>
+                            <th width="15%">Keterangan Manajer</th>
                         </tr>
                     </thead>
                     <tbody id="detail-body">
-                        <tr><td colspan="7" class="text-center">Loading...</td></tr>
+                        <tr><td colspan="6" class="text-center">Loading...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -195,16 +221,127 @@
     </div>
 </div>
 
+
+
+
 <!-- ======= SCRIPTS ======= -->
 <script>
+    /************************************************************************
+     * Utility: buildApiUrlWithOptionalParam & normalizeDoubleQuestion
+     * - mencegah pembentukan URL seperti "...?A?page=1"
+     ************************************************************************/
+    function buildApiUrlWithOptionalParam(path, key, value) {
+        try {
+            const u = new URL(path, window.location.origin);
+            const params = new URLSearchParams(u.search);
+
+            if (typeof key === 'string' && key !== '' && typeof value !== 'undefined' && value !== null && String(value) !== '') {
+                params.set(key, String(value));
+            } else {
+                if (typeof key === 'string' && key !== '') params.delete(key);
+            }
+
+            const s = params.toString();
+            // gunakan pathname agar sesuai helper createTable yang biasanya memakai path relatif
+            return u.pathname + (s ? '?' + s : '');
+        } catch (e) {
+            if (typeof key === 'string' && key !== '' && typeof value !== 'undefined' && value !== null && String(value) !== '') {
+                return path + '?' + encodeURIComponent(key) + '=' + encodeURIComponent(String(value));
+            }
+            return path;
+        }
+    }
+
+    function normalizeDoubleQuestion(url) {
+        if (typeof url !== 'string') return url;
+        // Replace occurrences of '?...?' to '?...&' and collapse duplicate &.
+        // First, replace any '?...?' pattern
+        url = url.replace(/\?([^?]*)\?/, '?$1&');
+        // remove duplicate ampersands
+        url = url.replace(/&{2,}/g, '&');
+        // fix any trailing & or ? if needed
+        url = url.replace(/\?&/, '?');
+        if (url.endsWith('&')) url = url.slice(0, -1);
+        return url;
+    }
+
+    function buildKerLayananUrl(jen) {
+    var base = '<?= site_url("formuliradmin/keranjangDataListLayanan") ?>';
+    return buildApiUrlWithOptionalParam(base, (jen && jen !== '') ? 'jenKode' : '', jen || '');
+}
+
+function createOrRefreshKerLayananTable(jen) {
+    const api = normalizeDoubleQuestion(buildKerLayananUrl(jen || ''));
+
+    if (typeof ker_layananTable !== 'undefined' && ker_layananTable && typeof ker_layananTable.getConfig === 'function') {
+        try {
+            const cfg = ker_layananTable.getConfig();
+            if (cfg && typeof cfg === 'object') cfg.apiUrl = api;
+            if (typeof ker_layananTable.fetchData === 'function') { ker_layananTable.fetchData({ reload: true }); return; }
+        } catch (err) {
+            try { if (typeof ker_layananTable.destroy === 'function') ker_layananTable.destroy(); } catch(e){}
+            ker_layananTable = null;
+        }
+    }
+
+    ker_layananTable = createModal({
+        apiUrl: api,
+        tableId: 'ker_layanan-table',
+        showFilter: true,
+        treeview: true,
+        numbering: true,
+        itemsPerPage: 10,
+        preserveQuery: true
+    });
+
+    if (ker_layananTable && typeof ker_layananTable.fetchData === 'function' && typeof ker_layananTable.getConfig === 'function') {
+        const orig = ker_layananTable.fetchData.bind(ker_layananTable);
+        ker_layananTable.fetchData = function(opts = {}) {
+            try {
+                const cfg = ker_layananTable.getConfig();
+                if (cfg && cfg.apiUrl && typeof cfg.apiUrl === 'string') cfg.apiUrl = normalizeDoubleQuestion(cfg.apiUrl);
+            } catch (err) { console.warn('Normalization (ker_layananTable) failed:', err); }
+            return orig(opts);
+        };
+    }
+}
+
+function applyJenFilter() {
+    try {
+        const sel = document.getElementById('jenFilter');
+        if (!sel) return;
+        const jen = (sel.value || '').toString().trim();
+
+        // update modal layanan
+        createOrRefreshKerLayananTable(jen);
+
+        // opsional: update main table juga
+        try {
+            if (typeof table !== 'undefined' && table && typeof table.getConfig === 'function') {
+                const cfg = table.getConfig();
+                cfg.apiUrl = buildApiUrlWithOptionalParam('<?php echo site_url("formuliradmin/datalist") ?>', (jen !== '') ? 'jenKode' : '', jen);
+                cfg.apiUrl = normalizeDoubleQuestion(cfg.apiUrl);
+                if (typeof table.fetchData === 'function') table.fetchData({ reload: true });
+            }
+        } catch (err) { console.warn('Failed to update main table with jen filter:', err); }
+    } catch (e) { console.warn('applyJenFilter error', e); }
+}
+
+(function attachJenFilterListener(){
+    const sel = document.getElementById('jenFilter');
+    if (!sel) return;
+    sel.addEventListener('change', function() { applyJenFilter(); });
+})();
+
     // ambil parameter URL
     var urlParams = new URLSearchParams(window.location.search);
     var kategoriFromUrl = urlParams.get('kategoriLayanan');
 
-    // Base API URL
+    // Base API URL (normalisasi)
     var baseApiUrl = '<?php echo site_url("formuliradmin/datalist") ?>';
     if (kategoriFromUrl) {
-        baseApiUrl += '?kategoriLayanan=' + kategoriFromUrl;
+        baseApiUrl = buildApiUrlWithOptionalParam(baseApiUrl, 'kategoriLayanan', kategoriFromUrl);
+        baseApiUrl = normalizeDoubleQuestion(baseApiUrl);
     }
 
     // Inisialisasi table (fungsi createTable diasumsikan sudah ada di project)
@@ -212,6 +349,20 @@
         apiUrl: baseApiUrl,
         dataSrc: 'items'
     });
+
+    // Patch table.fetchData untuk menormalisasi apiUrl bila helper createTable menambahkan '?ganda'
+    if (table && typeof table.getConfig === 'function' && typeof table.fetchData === 'function') {
+        const origFetch = table.fetchData.bind(table);
+        table.fetchData = function(opts = {}) {
+            try {
+                const cfg = table.getConfig();
+                if (cfg && cfg.apiUrl && typeof cfg.apiUrl === 'string') {
+                    cfg.apiUrl = normalizeDoubleQuestion(cfg.apiUrl);
+                }
+            } catch (err) { console.warn('Normalization (table) failed:', err); }
+            return origFetch(opts);
+        };
+    }
 
     // Set dropdown sesuai parameter URL
     if (kategoriFromUrl) {
@@ -232,8 +383,9 @@
             if (selectedValue === 'all') {
                 tableConfig.apiUrl = '<?php echo site_url("formuliradmin/datalist") ?>';
             } else {
-                tableConfig.apiUrl = '<?php echo site_url("formuliradmin/datalist") ?>?kategoriLayanan=' + selectedValue;
+                tableConfig.apiUrl = buildApiUrlWithOptionalParam('<?php echo site_url("formuliradmin/datalist") ?>', 'kategoriLayanan', selectedValue);
             }
+            tableConfig.apiUrl = normalizeDoubleQuestion(tableConfig.apiUrl);
 
             tableConfig.currentPage = 1;
             table.fetchData({ page: 1, reload: true });
@@ -299,23 +451,44 @@
         });
     }
 
-    // ======= Aksi approve/delete/loadDetail (lengkap) =======
     function confirmApprove(e) {
-        e.preventDefault();
-        let id = e.currentTarget.closest('div').id;
+    try {
+        if (e && typeof e.preventDefault === 'function') e.preventDefault();
+        // dapatkan id dari elemen pembungkus (div#<id>)
+        const el = (e && e.currentTarget) ? e.currentTarget : (e && e.target) ? e.target : null;
+        let id = null;
+        if (el && typeof el.closest === 'function') {
+            const div = el.closest('div[id]');
+            if (div) id = div.id;
+        }
+        // fallback: cari terdekat dengan attribute id pada parent
+        if (!id && e && e.target) {
+            const maybe = e.target.closest && e.target.closest('div') ? e.target.closest('div').id : null;
+            if (maybe) id = maybe;
+        }
         if (!id) return;
 
-        if (confirm('Yakin ingin approve data ini?')) {
-            const csrfInput = document.querySelector('[name="<?= csrf_token() ?>"]');
-            const csrfToken = csrfInput ? csrfInput.value : '';
+        // gunakan sayConfirm jika tersedia (konsisten dengan UI)
+        const doApprove = function() {
+            const csrf = getCsrfTokenFromPage();
+const headers = { 'X-Requested-With': 'XMLHttpRequest' };
 
-            fetch('<?php echo site_url("formuliradmin/approve/") ?>' + id, {
-                method: 'POST',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': csrfToken
-                }
-            })
+// set header menggunakan nama token dinamis jika tersedia
+if (csrf && csrf.name && csrf.value) {
+    headers[csrf.name] = csrf.value;
+}
+
+// jika server mengharuskan token di body, gunakan FormData
+const body = new FormData();
+// tambahkan token juga ke body agar kompatibel
+if (csrf && csrf.name && csrf.value) body.append(csrf.name, csrf.value);
+
+fetch('<?= site_url("formuliradmin/approve/") ?>' + id, {
+    method: 'POST',
+    headers: headers,
+    body: body
+})
+
             .then(res => res.json())
             .then(data => {
                 if (data.res) {
@@ -330,83 +503,90 @@
                 }
             })
             .catch(err => sayAlert('errorModal', 'Error', 'Terjadi kesalahan sistem', 'warning'));
+        };
+
+        if (typeof sayConfirm === 'function') {
+            sayConfirm('Konfirmasi Setujui', 'Yakin ingin approve data ini?', function() {
+                doApprove();
+            }, 'primary', 'Setujui');
+           
+        } else {
+            // fallback ke native confirm jika sayConfirm tidak tersedia
+            if (confirm('Yakin ingin approve data ini?')) {
+                doApprove();
+            }
         }
+    } catch (err) {
+        console.error('confirmApprove error', err);
     }
+}
 
-    function deleteItem(e) {
-        e.preventDefault();
-        let id = e.currentTarget.closest('div').id;
-        if (!id) return;
+    /* deleteItemFromPreview */
+function deleteItemFromPreview(eOrEl) {
+    let el;
+    if (eOrEl instanceof Event) { eOrEl.preventDefault(); el = eOrEl.currentTarget || eOrEl.target; }
+    else el = eOrEl;
 
-        if (confirm('Yakin ingin menghapus data ini?')) {
-            const csrfInput = document.querySelector('[name="<?= csrf_token() ?>"]');
-            const csrfToken = csrfInput ? csrfInput.value : '';
+    if (el && !el.hasAttribute('data-index')) el = el.closest('[data-index]');
+    if (!el) { console.warn('Element untuk delete tidak ditemukan.'); return; }
 
-            fetch('<?php echo site_url("formuliradmin/delete/") ?>' + id, {
-                method: 'POST',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': csrfToken
+    const idx = el.getAttribute('data-index');
+    if (!idx) { console.warn('Data-index tidak ditemukan pada element hapus.'); return; }
+
+    fetch("<?= site_url('formuliradmin/keranjang/delete/') ?>" + idx)
+        .then(res => res.json())
+        .then(data => {
+            if (data.xname && data.xhash) {
+                document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => input.value = data.xhash);
+            }
+            if (data.res === true) {
+                if (typeof table !== 'undefined' && typeof table.fetchData === 'function') table.fetchData({ reload: true });
+                if (previewKeranjangTable && typeof previewKeranjangTable.fetchData === 'function') {
+                    previewKeranjangTable.fetchData({ reload: true });
+                    setTimeout(function() { updateKeranjangCounter(); calculateGrandTotal(); }, 400);
                 }
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.res) {
-                    if (typeof table !== 'undefined') table.fetchData({ reload: true });
-                    sayAlert('successModal', 'Berhasil', 'Data berhasil dihapus', 'success');
-                } else {
-                    sayAlert('errorModal', 'Gagal', data.msg || 'Hapus gagal dilakukan', 'warning');
-                }
+                sayAlert('successModal', 'Sukses', data.msg, 'success');
+            } else {
+                sayAlert('errorModal', 'Gagal', data.msg ?? 'Hapus item gagal.', 'error');
+            }
+        })
+        .catch(err => {
+            sayAlert('errorModal', 'Error', 'Terjadi kesalahan koneksi ke server.', 'error');
+        });
+}
 
-                if (data.xname && data.xhash) {
-                    document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => input.value = data.xhash);
-                }
-            })
-            .catch(err => sayAlert('errorModal', 'Error', 'Terjadi kesalahan sistem', 'warning'));
-        }
-    }
 
-    function loadDetail(id) {
-        const url = '<?php echo site_url("formuliradmin/detaillist/") ?>' + id;
-        const tbody = document.querySelector('#detail-body');
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center">Loading...</td></tr>';
+    /* loadDetail (sama seperti implementasi kamu) */
+function loadDetail(id) {
+    const url = '<?php echo site_url("formuliradmin/detaillist/") ?>' + id;
+    const tbody = document.querySelector('#detail-body');
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center">Loading...</td></tr>';
 
-        fetch(url)
-            .then(response => response.json())
-            .then(data => {
-                tbody.innerHTML = '';
-                if (data.items && data.items.length > 0) {
-                    data.items.forEach(function(row) {
-                        let tr = '<tr>';
-                        row.forEach(function(col) {
-                            tr += '<td>' + col + '</td>';
-                        });
-                        tr += '</tr>';
-                        tbody.innerHTML += tr;
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            tbody.innerHTML = '';
+            if (data.items && data.items.length > 0) {
+                data.items.forEach(function(row) {
+                    let tr = '<tr>';
+                    row.forEach(function(col) {
+                        tr += '<td>' + col + '</td>';
                     });
-                } else {
-                    tbody.innerHTML = '<tr><td colspan="7" class="text-center">Tidak ada data</td></tr>';
-                }
-                if (typeof bootstrap !== 'undefined') {
-                    const modalEl = document.getElementById('modalDetail');
-                    const modal = new bootstrap.Modal(modalEl);
-                    modal.show();
-                } else {
-                    $('#modalDetail').modal('show');
-                }
-            })
-            .catch(error => {
-                console.error(error);
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error load data</td></tr>';
-                if (typeof bootstrap !== 'undefined') {
-                    const modalEl = document.getElementById('modalDetail');
-                    const modal = new bootstrap.Modal(modalEl);
-                    modal.show();
-                } else {
-                    $('#modalDetail').modal('show');
-                }
-            });
-    }
+                    tr += '</tr>';
+                    tbody.innerHTML += tr;
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center">Tidak ada data</td></tr>';
+            }
+            $('#modalDetail').modal('show');
+        })
+        .catch(error => {
+            console.error(error);
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error load data</td></tr>';
+            $('#modalDetail').modal('show');
+        });
+}
+
 
     // ======= Pastiin #add membuka modalKeranjang (pelanggan ada di modal) =======
     (function(){
@@ -442,90 +622,218 @@
     if (modalKeranjangEl) {
         modalKeranjangEl.addEventListener('shown.bs.modal', function () {
             // init layanan table
+            const layananApi = buildApiUrlWithOptionalParam('<?= site_url("formuliradmin/keranjangDataListLayanan") ?>', '', '');
             if (!ker_layananTable) {
                 ker_layananTable = createModal({
-                    apiUrl: '<?= site_url("formuliradmin/keranjangDataListLayanan") ?>',
+                    apiUrl: normalizeDoubleQuestion(layananApi),
                     tableId: 'ker_layanan-table',
                     showFilter: true,
-                    treeview: false,
+                    treeview: true,
                     numbering: true,
                     itemsPerPage: 10
                 });
+                // patch fetchData untuk normalize api url
+                if (ker_layananTable && typeof ker_layananTable.fetchData === 'function' && typeof ker_layananTable.getConfig === 'function') {
+                    const orig = ker_layananTable.fetchData.bind(ker_layananTable);
+                    ker_layananTable.fetchData = function(opts = {}) {
+                        try {
+                            const cfg = ker_layananTable.getConfig();
+                            if (cfg && cfg.apiUrl && typeof cfg.apiUrl === 'string') {
+                                cfg.apiUrl = normalizeDoubleQuestion(cfg.apiUrl);
+                            }
+                        } catch (err) { console.warn('Normalization (ker_layananTable) failed:', err); }
+                        return orig(opts);
+                    };
+                }
             } else {
-                ker_layananTable.fetchData({ reload: true });
+                try { ker_layananTable.fetchData({ reload: true }); } catch(e){}
             }
 
             // init preview keranjang
+            const previewApi = '<?= site_url("formuliradmin/keranjangDatalist") ?>';
             if (!ker_previewKeranjangTable) {
                 ker_previewKeranjangTable = createModal({
-                    apiUrl: '<?= site_url("formuliradmin/keranjangDatalist") ?>',
+                    apiUrl: normalizeDoubleQuestion(previewApi),
                     tableId: 'ker_preview-keranjang-table',
                     showFilter: false,
                     treeview: false,
                     numbering: true,
-                    itemsPerPage: 100
+                    itemsPerPage: 100,
+                    // hook supaya tidak menumpuk
+                    onData: function(items) {
+                        const tbody = document.querySelector('#ker_preview-keranjang-table-body');
+                        if (tbody) tbody.innerHTML = ''; // clear sebelum isi ulang
+                    }
                 });
+
+                // force reload behavior (no append)
+                if (ker_previewKeranjangTable && typeof ker_previewKeranjangTable.fetchData === 'function') {
+                    const orig = ker_previewKeranjangTable.fetchData.bind(ker_previewKeranjangTable);
+                    ker_previewKeranjangTable.fetchData = function(opts = {}) {
+                        return orig(Object.assign({}, opts, { reload: true }));
+                    };
+                }
             } else {
-                ker_previewKeranjangTable.fetchData({ reload: true });
+                try { ker_previewKeranjangTable.fetchData({ reload: true }); } catch(e){}
             }
             
+            // bersihkan preview tbody sebelum render baru (defensive)
+            const previewBody = document.getElementById('ker_preview-keranjang-table-body');
+            if (previewBody) previewBody.innerHTML = '';
+
             setTimeout(function() {
                 ker_updateKeranjangCounter();
                 ker_calculateGrandTotal();
-            }, 500);
+            }, 400);
+        });
+
+        // saat modal hide -> bersihkan instance preview agar tidak menyimpan state yang aneh
+        modalKeranjangEl.addEventListener('hidden.bs.modal', function() {
+            // optional: destroy instances if helper memberi method destroy
+            try {
+                if (ker_layananTable && typeof ker_layananTable.destroy === 'function') { ker_layananTable.destroy(); ker_layananTable = null; }
+            } catch(e){}
+            try {
+                if (ker_previewKeranjangTable && typeof ker_previewKeranjangTable.destroy === 'function') { ker_previewKeranjangTable.destroy(); ker_previewKeranjangTable = null; }
+            } catch(e){}
         });
     }
 
-    // ======= saat user mengganti pelanggan di modal, simpan ke session via endpoint =======
-    document.addEventListener('change', function(e) {
-        if (e.target && e.target.id === 'ker_pelanggan_select') {
-            const sel = e.target;
-            const selected = sel.options[sel.selectedIndex];
-            // jika tidak ada value, kita tidak memanggil endpoint (biarkan kosong)
-            if (!selected || !selected.value) {
-                // optional: hapus session pelanggan via endpoint jika diperlukan
-                return;
+    /**
+ * Ambil CSRF token dari input hidden di halaman (nama token dinamis)
+ * Return { name: string, value: string } or null
+ */
+function getCsrfTokenFromPage() {
+    try {
+        // Cari input hidden yang berisi token (nama dinamis)
+        const inputs = document.querySelectorAll('input[type="hidden"]');
+        for (let i = 0; i < inputs.length; i++) {
+            const inp = inputs[i];
+            // heuristik: nama token di CI biasanya panjang & acak, tapi value mengandung hash -> gunakan token config
+            // Kita cek apakah nama input bukan "_method" dan value panjang > 8
+            if (!inp.name) continue;
+            if (inp.name.toLowerCase() === '_method') continue;
+            if ((inp.value || '').toString().length > 8) {
+                return { name: inp.name, value: inp.value };
             }
-
-            const form = new FormData();
-            form.append('selectedUserId', selected.value);
-            form.append('name', selected.dataset.name || '');
-            form.append('email', selected.dataset.email || '');
-            form.append('status', selected.dataset.status || '');
-
-            fetch('<?= site_url("formuliradmin/keranjangSetPelanggan") ?>', {
-                method: 'POST',
-                body: form
-            })
-            .then(res => res.json())
-            .then(json => {
-                if (json.xname && json.xhash) {
-                    document.querySelectorAll('[name="' + json.xname + '"]').forEach(inp => inp.value = json.xhash);
-                }
-                // update badge/info
-                const badge = document.getElementById('ker_pelanggan_badge');
-                const info = document.getElementById('ker_modalPelangganInfo');
-                if (json.pelanggan) {
-                    if (badge) badge.textContent = (json.pelanggan.name || '-') + ' — ' + (json.pelanggan.email || '-');
-                    if (info) {
-                        info.style.display = 'block';
-                        info.textContent = 'Untuk pelanggan: ' + (json.pelanggan.name || '-') + ' — ' + (json.pelanggan.email || '-') + ' — ' + (json.pelanggan.status || '-');
-                    }
-                }
-                // refresh preview keranjang (agar tombol checkout diperiksa kembali)
-                if (typeof ker_previewKeranjangTable !== 'undefined' && ker_previewKeranjangTable) {
-                    ker_previewKeranjangTable.fetchData({ reload: true });
-                    setTimeout(function() {
-                        ker_updateKeranjangCounter();
-                        ker_calculateGrandTotal();
-                    }, 400);
-                }
-            })
-            .catch(err => {
-                console.warn('Gagal set pelanggan ke session:', err);
-            });
         }
-    });
+    } catch (err) {
+        console.warn('getCsrfTokenFromPage error', err);
+    }
+    return null;
+}
+
+/* ======= saat user mengganti pelanggan di modal, simpan ke session via endpoint ======= */
+// robust pelanggan listener (singkat)
+/* ======= saat user mengganti pelanggan di modal, simpan ke session via endpoint ======= */
+/* ======= saat user mengganti pelanggan di modal, simpan ke session via endpoint (tanpa konfirmasi, tapi refresh tabel) ======= */
+/* ======= saat user mengganti pelanggan di modal, simpan ke session via endpoint (tanpa konfirmasi, tapi refresh tabel preview + keranjang layanan) ======= */
+(function(){
+  const sel = document.getElementById('ker_pelanggan_select');
+  if (!sel) return;
+
+  async function sendAndRefresh() {
+    const opt = sel.options[sel.selectedIndex];
+    const val = sel.value || '';
+    if (!val) return;
+
+    const form = new FormData();
+    form.append('selectedUserId', val);
+    form.append('name', opt?.dataset?.name || '');
+    form.append('email', opt?.dataset?.email || '');
+    form.append('status', opt?.dataset?.status || '');
+
+    // CSRF jika ada
+    const csrf = getCsrfTokenFromPage();
+    if (csrf && csrf.name && csrf.value) form.append(csrf.name, csrf.value);
+
+    try {
+      const res = await fetch('<?= site_url("formuliradmin/keranjangSetPelanggan") ?>', {
+        method: 'POST',
+        body: form,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      });
+      const j = await res.json();
+
+      // update CSRF token jika server kembalikan
+      if (j.xname && j.xhash) {
+        let f = document.querySelector('input[name="'+j.xname+'"]');
+        if (f) f.value = j.xhash;
+        else { let h=document.createElement('input'); h.type='hidden'; h.name=j.xname; h.value=j.xhash; document.body.appendChild(h); }
+      }
+
+      // update info pelanggan di modal (jika elemen tersedia)
+      const infoEl = document.getElementById('ker_modalPelangganInfo');
+      if (infoEl && j.pelanggan) {
+        infoEl.style.display = 'block';
+        infoEl.textContent = 'Untuk pelanggan: ' + (j.pelanggan.name || '-') + ' — ' + (j.pelanggan.email || '-') + ' — ' + (j.pelanggan.status || '-');
+      }
+
+      // Refresh preview keranjang (prioritas)
+      if (typeof ker_previewKeranjangTable !== 'undefined' && ker_previewKeranjangTable && typeof ker_previewKeranjangTable.fetchData === 'function') {
+        ker_previewKeranjangTable.fetchData({ reload: true });
+      } else {
+        ker_updateKeranjangCounter();
+        ker_calculateGrandTotal();
+      }
+
+      // *** tambahan: Refresh daftar layanan di modal (ker_layananTable) ***
+      if (typeof ker_layananTable !== 'undefined' && ker_layananTable && typeof ker_layananTable.fetchData === 'function') {
+        try {
+          // jika ada filter kategori aktif, pastikan apiUrl konsisten lalu reload
+          const cfg = (typeof ker_layananTable.getConfig === 'function') ? ker_layananTable.getConfig() : null;
+          if (cfg && cfg.apiUrl && typeof cfg.apiUrl === 'string') {
+            cfg.apiUrl = normalizeDoubleQuestion(cfg.apiUrl);
+          }
+        } catch (err) { /* ignore */ }
+        ker_layananTable.fetchData({ reload: true });
+      }
+
+      // Refresh main table (jika ada)
+      if (typeof table !== 'undefined' && table && typeof table.fetchData === 'function') {
+        table.fetchData({ reload: true });
+      }
+
+      // update grand total langsung dari response jika tersedia
+      if (typeof j.grand_total !== 'undefined') {
+        const el = document.getElementById('ker_grandTotal') || document.getElementById('grandTotal');
+        if (el) el.textContent = 'Rp ' + new Intl.NumberFormat('id-ID').format(j.grand_total);
+      }
+
+      // update tombol checkout
+      const btnCheckout = document.getElementById('ker_btnCheckoutFromModal');
+      if (btnCheckout) {
+        if ((j.items_count || 0) > 0 && j.pelanggan && j.pelanggan.user_id) btnCheckout.disabled = false;
+        else btnCheckout.disabled = true;
+      }
+    } catch (err) {
+      console.error('set pelanggan error', err);
+      // Pastikan tabel tetap di-refresh walau request gagal
+      if (typeof ker_previewKeranjangTable !== 'undefined' && ker_previewKeranjangTable && typeof ker_previewKeranjangTable.fetchData === 'function') {
+        ker_previewKeranjangTable.fetchData({ reload: true });
+      } else {
+        ker_updateKeranjangCounter();
+        ker_calculateGrandTotal();
+      }
+
+      // Pastikan juga daftar layanan direfresh walau server keranjangSetPelanggan error
+      if (typeof ker_layananTable !== 'undefined' && ker_layananTable && typeof ker_layananTable.fetchData === 'function') {
+        try { ker_layananTable.fetchData({ reload: true }); } catch(e){/* ignore */ }
+      }
+
+      if (typeof table !== 'undefined' && table && typeof table.fetchData === 'function') {
+        table.fetchData({ reload: true });
+      }
+    }
+  }
+
+  sel.addEventListener('change', sendAndRefresh);
+  sel.addEventListener('input', sendAndRefresh);
+  document.addEventListener('select2:select', sendAndRefresh); // Select2 fallback
+})();
+
+
+
 
     // ======= update counter & tampilkan pelanggan jika ada =======
     function ker_updateKeranjangCounter() {
@@ -545,7 +853,8 @@
                     if (previewTable) previewTable.style.display = 'none';
                     if (btnCheckout) btnCheckout.disabled = true;
                 } else {
-                    if (keranjangKosong) keranjangKosong.style.display = 'none';
+                    if (keranjangKosong) 
+                        keranjangKosong.style.display = 'none';
                     if (previewTable) previewTable.style.display = 'table';
                     // tombol checkout aktif hanya jika pelanggan telah dipilih
                     if (data.pelanggan && data.pelanggan.user_id) {
@@ -578,41 +887,49 @@
             });
     }
 
-    // ======= hitung grand total =======
-    function ker_calculateGrandTotal() {
-        fetch('<?= site_url("formuliradmin/keranjangDatalist") ?>')
-            .then(res => res.json())
-            .then(data => {
-                if (data.items && data.items.length > 0) {
-                    let grandTotal = 0;
-                    data.items.forEach(item => {
-                        const totalStr = item[4]; // kolom Total di output keranjang
-                        if (totalStr) {
-                            // ekstrak angka dari string "Rp 1.234.567"
-                            const digits = totalStr.replace(/[^0-9]/g, '');
-                            const totalNum = parseInt(digits || '0', 10);
-                            if (!isNaN(totalNum)) {
-                                grandTotal += totalNum;
-                            }
-                        }
-                    });
-                    
-                    const el = document.getElementById('ker_grandTotal');
-                    if (el) el.textContent = 'Rp ' + new Intl.NumberFormat('id-ID').format(grandTotal);
-                } else {
-                    const el = document.getElementById('ker_grandTotal');
-                    if (el) el.textContent = 'Rp 0';
-                }
-            })
-            .catch(err => {
-                console.error('Error calculating grand total:', err);
-            });
-    }
+    // ======= hitung grand total (patch) =======
+function ker_calculateGrandTotal() {
+    fetch('<?= site_url("formuliradmin/keranjangDatalist") ?>')
+        .then(res => res.json())
+        .then(data => {
+            // Cari elemen total; dukung dua id (backwards compatibility)
+            let el = document.getElementById('ker_grandTotal') || document.getElementById('grandTotal');
+            if (!el) {
+                // kalau elemen tidak ada, coba cari span di footer lain
+                el = document.querySelector('#ker_grandTotal, #grandTotal');
+            }
+
+            if (data.items && data.items.length > 0) {
+                let grandTotal = 0;
+                data.items.forEach(item => {
+                    // Struktur item: [layanan, alat, biayaTampil, jumlah, diskon, total, keterangan, aksi]
+                    const totalCell = item[5]; // <-- kolom 'Total' ada di index 5
+                    if (!totalCell) return;
+
+                    // totalCell bisa berisi HTML seperti "Rp 1.000.000" atau "<span>Rp 1.000</span>"
+                    // ekstrak angka
+                    const text = String(totalCell).replace(/<[^>]*>/g, ''); // hapus tag HTML
+                    const digits = text.replace(/[^0-9]/g, '');
+                    const totalNum = parseInt(digits || '0', 10);
+                    if (!isNaN(totalNum) && totalNum > 0) grandTotal += totalNum;
+                });
+
+                const formatted = 'Rp ' + new Intl.NumberFormat('id-ID').format(grandTotal);
+                if (el) el.textContent = formatted;
+            } else {
+                if (el) el.textContent = 'Rp 0';
+            }
+        })
+        .catch(err => {
+            console.error('Error calculating grand total:', err);
+        });
+}
+
 
     // ======= Delegated click handlers (Masukkan, Refresh, Hapus, Checkout) =======
     document.addEventListener('click', function(e) {
         // Tombol masukkan (.btnMasukkan)
-        if (e.target.closest('.btnMasukkan')) {
+        if (e.target.closest && e.target.closest('.btnMasukkan')) {
             let btn = e.target.closest('.btnMasukkan');
             let tr = btn.closest('tr');
 
@@ -666,6 +983,10 @@
             let csrfInput = document.querySelector('input[name="<?= csrf_token() ?>"]');
             if (csrfInput) {
                 formData.append('<?= csrf_token() ?>', csrfInput.value);
+            } else {
+                // fallback: ambil token dinamis jika nama berubah
+                const csrf = getCsrfTokenFromPage();
+                if (csrf && csrf.name && csrf.value) formData.append(csrf.name, csrf.value);
             }
 
             fetch('<?= site_url("formuliradmin/keranjangSubmit") ?>', {
@@ -678,6 +999,14 @@
                     let csrfField = document.querySelector('input[name="' + res.xname + '"]');
                     if (csrfField) {
                         csrfField.value = res.xhash;
+                    } else {
+                        // jika tidak ada, tambahkan supaya request berikutnya valid
+                        const hid = document.createElement('input');
+                        hid.type = 'hidden';
+                        hid.name = res.xname;
+                        hid.value = res.xhash;
+                        hid.style.display = 'none';
+                        document.body.appendChild(hid);
                     }
                 }
 
@@ -706,7 +1035,7 @@
         }
 
         // Tombol Refresh Keranjang
-        if (e.target.closest('#ker_btnRefreshKeranjang')) {
+        if (e.target.closest && e.target.closest('#ker_btnRefreshKeranjang')) {
             e.preventDefault();
             if (ker_previewKeranjangTable) {
                 ker_previewKeranjangTable.fetchData({ reload: true });
@@ -718,86 +1047,38 @@
         }
 
         // Hapus item dari preview
-        if (e.target.closest('.btn-delete-item')) {
+        if (e.target.closest && e.target.closest('.btn-delete-item')) {
             e.preventDefault();
             keranjangDeleteItem(e);
         }
         
         // Tombol Checkout dari Modal
-        if (e.target.closest('#ker_btnCheckoutFromModal')) {
+        if (e.target.closest && e.target.closest('#ker_btnCheckoutFromModal')) {
             e.preventDefault();
             
-            if (confirm('Apakah Anda yakin ingin melakukan checkout?')) {
-                ker_doCheckout();
+            // gunakan confirm custom jika sayConfirm tersedia (lebih konsisten UI)
+            if (typeof sayConfirm === 'function') {
+              sayConfirm('Konfirmasi Checkout', 'Apakah Anda yakin ingin melakukan checkout?', function() {
+                    ker_doCheckout();
+                }, 'primary', 'Checkout');
+            } else {
+                if (confirm('Apakah Anda yakin ingin melakukan checkout?')) {
+                    ker_doCheckout();
+                }
             }
         }
     });
 
-    // ======= Delete item dari keranjang =======
-    function keranjangDeleteItem(e) {
-        e.preventDefault();
-        let idx = e.target.closest('[data-index]') ? e.target.closest('[data-index]').getAttribute('data-index') : null;
-        if (!idx) {
-            idx = e.target.closest('.btn-delete-item') ? e.target.closest('.btn-delete-item').getAttribute('data-index') : null;
-        }
-        if (!idx) {
-            idx = e.currentTarget && e.currentTarget.dataset && e.currentTarget.dataset.index ? e.currentTarget.dataset.index : null;
-        }
-
-        if (!idx && e.currentTarget) {
-            idx = e.currentTarget.getAttribute('data-index') || null;
-        }
-
-        if (!idx) {
-            const span = e.target.closest('span[data-index]');
-            if (span) idx = span.getAttribute('data-index');
-        }
-
-        if (!idx) return;
-
-        if (!confirm("Apakah Anda yakin ingin menghapus item ini dari keranjang?")) return;
-
-        fetch('<?= site_url("formuliradmin/keranjangDelete/") ?>' + idx, {
-            method: 'POST',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.xname && data.xhash) {
-                document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => {
-                    input.value = data.xhash;
-                });
-            }
-
-            if (data.res === true) {
-                if (typeof table !== 'undefined') table.fetchData({ reload: true });
-                
-                if (ker_previewKeranjangTable) {
-                    ker_previewKeranjangTable.fetchData({ reload: true });
-                    setTimeout(function() {
-                        ker_updateKeranjangCounter();
-                        ker_calculateGrandTotal();
-                    }, 500);
-                }
-                
-                sayAlert('successModal', 'Sukses', data.msg, 'success');
-            } else {
-                sayAlert('errorModal', 'Gagal', data.msg ?? 'Hapus item gagal.', 'error');
-            }
-        })
-        .catch(err => {
-            sayAlert('errorModal', 'Error', 'Terjadi kesalahan koneksi ke server.', 'error');
-        });
-    }
-
+    
     // ======= Checkout =======
     function ker_doCheckout() {
         const formData = new FormData();
         const csrfInput = document.querySelector('input[name="<?= csrf_token() ?>"]');
         if (csrfInput) {
             formData.append('<?= csrf_token() ?>', csrfInput.value);
+        } else {
+            const csrf = getCsrfTokenFromPage();
+            if (csrf && csrf.name && csrf.value) formData.append(csrf.name, csrf.value);
         }
 
         // ambil selected user id dari select di modal (bukan di header)
@@ -853,4 +1134,70 @@
             sayAlert('errorModal', 'Error', 'Terjadi kesalahan koneksi ke server.', 'error');
         });
     }
+
+    
+/* populate jenFilter via AJAX fallback */
+(function populateJenFilterFallback(){
+    const select = document.getElementById('jenFilter');
+    if (!select) return;
+
+    if (select.options.length <= 1) {
+        fetch('<?= site_url("formuliradmin/kategoriList") ?>', { method: 'GET', headers: { 'Accept': 'application/json' } })
+        .then(r => r.json())
+        .then(resp => {
+            if (!resp || !resp.categories) return;
+            while (select.options.length > 1) select.remove(1);
+            resp.categories.forEach(c => {
+                const kode = (c.jenKode ?? '').toString().trim();
+                const nama = (c.jenNama && c.jenNama.toString().trim() !== '') ? c.jenNama : kode;
+                if (!kode) return;
+                const opt = document.createElement('option');
+                opt.value = kode;
+                opt.textContent = nama;
+                select.appendChild(opt);
+            });
+            if (typeof applyJenFilter === 'function') applyJenFilter();
+        })
+        .catch(err => { console.warn('Gagal load kategori via AJAX:', err); });
+    } else {
+        if (typeof applyJenFilter === 'function') applyJenFilter();
+    }
+})();
+
+(function(){
+  function applyOnce(selector) {
+    const sel = document.querySelector(selector);
+    if (!sel) return;
+    if (sel.dataset.searchinit === '1') return;
+    try {
+      selectSearch(selector);
+      sel.dataset.searchinit = '1';
+      // set wrapper text bila ada value awal
+      const wrapper = sel.parentElement ? sel.parentElement.querySelector('.selected') : null;
+      if (wrapper) {
+        const opt = sel.options[sel.selectedIndex];
+        wrapper.textContent = (opt && opt.value) ? opt.text : '-- pilih data --';
+      }
+    } catch (err) {
+      console.warn('applyOnce error for', selector, err);
+    }
+  }
+
+  // apply pada DOM ready
+  document.addEventListener('DOMContentLoaded', function() {
+    applyOnce('#ker_pelanggan_select');
+    applyOnce('#jenFilter');
+  });
+
+  // juga apply lagi saat modalKeranjang terbuka (untuk kasus option di-render dinamis)
+  const modal = document.getElementById('modalKeranjang');
+  if (modal) {
+    modal.addEventListener('shown.bs.modal', function() {
+      setTimeout(function() {
+        applyOnce('#ker_pelanggan_select');
+        applyOnce('#jenFilter');
+      }, 30);
+    });
+  }
+})();
 </script>
