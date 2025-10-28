@@ -951,5 +951,4 @@ private function doUpload(\CodeIgniter\HTTP\Files\UploadedFile $file)
     return $this->formatStatus((int)$lnStatus);
 }
 
-
 }
