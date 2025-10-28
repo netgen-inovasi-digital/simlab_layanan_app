@@ -5,18 +5,14 @@ if (!isset($routes)) {
 }
 
 $routes->group('formuliradmin', ['namespace' => 'Modules\FormulirAdmin\Controllers'], function ($subroutes) {
-// ======= UTAMA =======
     $subroutes->get('/', 'FormulirAdmin::index', ['as' => 'formuliradmin.index']);
     $subroutes->get('datalist', 'FormulirAdmin::datalist', ['as' => 'formuliradmin.datalist']);
     $subroutes->get('detaillist/(:any)', 'FormulirAdmin::detaillist/$1', ['as' => 'formuliradmin.detaillist']);
-    
     $subroutes->post('submit', 'FormulirAdmin::submit', ['as' => 'formuliradmin.submit']);
     $subroutes->post('delete/(:any)', 'FormulirAdmin::delete/$1', ['as' => 'formuliradmin.delete']);
     $subroutes->post('upload', 'FormulirAdmin::upload', ['as' => 'formuliradmin.upload']);
     $subroutes->post('approve/(:any)', 'FormulirAdmin::approve/$1', ['as' => 'formuliradmin.approve']);
     $subroutes->get('keranjang/delete/(:any)', 'FormulirAdmin::keranjangDelete/$1');
-
-    
     $subroutes->get('keranjangDataListLayanan', 'FormulirAdmin::keranjangDataListLayanan', ['as' => 'formuliradmin.keranjangDataListLayanan']);
     $subroutes->get('keranjangDatalist', 'FormulirAdmin::keranjangDatalist', ['as' => 'formuliradmin.keranjangDatalist']);
     $subroutes->post('keranjangSubmit', 'FormulirAdmin::keranjangSubmit', ['as' => 'formuliradmin.keranjangSubmit']);

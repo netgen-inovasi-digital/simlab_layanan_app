@@ -227,6 +227,8 @@ class FormulirAdmin extends BaseController
                 $personName = $row->lnAccEmail ?? '-';
             }
 
+            
+
             // Gunakan lnNoTransaksi hanya untuk ditampilkan, bukan dasar sorting
             $invoiceNo = !empty($row->lnNoTransaksi) ? $row->lnNoTransaksi : 'Belum tersedia';
 
@@ -337,15 +339,96 @@ class FormulirAdmin extends BaseController
 
     private function aksi($id, $status)
     {
-        $btn = '<div id="' . $id . '" class="float-end">';
+        $btn = '<div id="' . $id . '" class="float-end d-flex align-items-center" style="gap:6px;">';
+
+        // tombol Approve (sesuai kondisi Anda) — tampil seperti sekarang
         if ($status == 3) {
-            $btn .= '<span class="text-success btn-action" title="Setujui" onclick="confirmApprove(event)">
-                        <i class="bi bi-check-circle"></i></span> ';
-            $btn .= '<label class="divider">|</label> ';
+            $btn .= '<span class="text-success btn-action" title="Setujui" onclick="confirmApprove(event)" style="display:inline-flex;align-items:center;justify-content:center;width:25px;height:25px;border-radius:6px;">'
+                . '<i class="bi bi-check-circle"></i></span>';
+            // divider kecil (opsional)
+            $btn .= '<span class="text-muted" style="margin-left:4px;margin-right:4px;">|</span>';
         }
-        
+
+        // --- tambahkan tombol WhatsApp di samping approve jika nomor tersedia (berbentuk kotak) ---
+        try {
+            // decrypt id (lnKode)
+            $lnKode = null;
+            try {
+                $lnKode = $this->encrypter->decrypt(hex2bin($id));
+            } catch (\Exception $e) {
+                $lnKode = null;
+            }
+
+            if ($lnKode !== null) {
+                // ambil header layanan untuk menemukan user_id / lnAccEmail
+                $db = \Config\Database::connect();
+                $row = $db->table($this->table)
+                        ->select('user_id, lnAccEmail')
+                        ->where($this->id, $lnKode)
+                        ->get()
+                        ->getRow();
+
+                $phoneRaw = '';
+                $userObj  = null;
+
+                if ($row) {
+                    $modelUser = new MyModel('simlab_account_users');
+
+                    // 1) coba dari user_id FK
+                    if (!empty($row->user_id)) {
+                        $userObj = $modelUser->getDataById('user_id', $row->user_id);
+                    }
+
+                    // 2) jika belum ada, coba cari berdasarkan lnAccEmail
+                    if (!$userObj && !empty($row->lnAccEmail)) {
+                        $users = $modelUser->getAllDataById(['user_email' => $row->lnAccEmail]);
+                        if (!empty($users)) $userObj = is_array($users) ? $users[0] : $users;
+                    }
+
+                    // Ambil field telepon dari objek user (cek beberapa nama kolom umum)
+                    if ($userObj) {
+                        if (isset($userObj->user_phone) && !empty($userObj->user_phone)) $phoneRaw = $userObj->user_phone;
+                        elseif (isset($userObj->user_telpon) && !empty($userObj->user_telpon)) $phoneRaw = $userObj->user_telpon;
+                        elseif (isset($userObj->user_telp) && !empty($userObj->user_telp)) $phoneRaw = $userObj->user_telp;
+                        elseif (isset($userObj->phone) && !empty($userObj->phone)) $phoneRaw = $userObj->phone;
+                        // tambahkan nama kolom lain jika DB anda memakai nama berbeda
+                    }
+                }
+
+                // normalisasi nomor
+                if (!empty($phoneRaw)) {
+                    $waDigits = $this->normalize_phone_for_whatsapp($phoneRaw);
+                    if ($waDigits !== '') {
+                        $displayName = $userObj->user_name ?? null;
+
+                        // buat pesan pembuka (encoded)
+                        $message = $displayName ? "Halo " . $displayName . ", saya ingin bertanya tentang layanan." : "Halo, saya ingin bertanya tentang layanan.";
+                        $msgEncoded = rawurlencode($message);
+
+                        $waUrl = "https://wa.me/" . $waDigits . "?text=" . $msgEncoded;
+
+                        // Tombol WA bergaya kotak, mirip accept — gunakan onclick membuka tab baru
+                        $btn .= '<span class="text-success btn-action" title="Chat via WhatsApp" '
+                            . 'style="display:inline-flex;align-items:center;justify-content:center;width:25px;height:25px;border:1px solid #28a745;border-radius:6px;cursor:pointer;background:#ffffff;" '
+                            . 'onclick="window.open(\'' . esc($waUrl) . '\', \'_blank\', \'noopener\')">'
+                            . '<i class="bi bi-whatsapp"></i>'
+                            . '</span>';
+                        // optional small divider after WA
+                        $btn .= '<span class="text-muted" style="margin-left:4px;margin-right:2px;">|</span>';
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            // jangan ganggu rendering tabel bila terjadi error; bisa di-log bila perlu
+            // log_message('warning', 'aksi() WA button error: ' . $e->getMessage());
+        }
+
+        // tutup wrapper
+        $btn .= '</div>';
         return $btn;
     }
+
+
 
     private function formatStatus($status)
     {
@@ -428,6 +511,46 @@ public function approve($encId = null)
 
     return $this->response->setJSON($response);
 }
+
+
+    // --- MULAI: WhatsApp button helper (paste sebelum pembuatan $combined) ---
+    /**
+     * Ambil nomor telepon user dari object $u (bisa user_phone, user_telpon, user_telp, dsb.)
+     * Normalisasi: hapus semua selain digit, ubah leading 0 -> 62 (Indonesia) jika perlu.
+     * Jika kosong / tidak valid -> return empty string.
+     */
+    public function normalize_phone_for_whatsapp($rawPhone) {
+        if (empty($rawPhone)) return '';
+        // keep digits only
+        $digits = preg_replace('/\D+/', '', (string)$rawPhone);
+        if ($digits === '') return '';
+        // jika mulai dengan 0 -> ganti 0 dengan 62 (Indonesia)
+        if (strpos($digits, '0') === 0) {
+            $digits = '62' . substr($digits, 1);
+        }
+        // jika mulai dengan 62 sudah ok; jika mulai dengan +62 (already removed +), ok
+        // jika panjang terlalu pendek, bail out
+        if (strlen($digits) < 8) return '';
+        return $digits;
+    }
+
+    /**
+     * Buat tombol HTML untuk membuka WhatsApp (wa.me). Aman untuk output view.
+     * $name digunakan untuk pesan pembuka (opsional).
+     */
+    public function whatsapp_button_html($phoneDigits, $name = null) {
+        if (empty($phoneDigits)) return '';
+        $text = $name ? "Halo%20" . rawurlencode($name) . "%2C%20saya%20ingin%20bertanya%20tentang%20layanan." : "Halo%2C%20saya%20ingin%20bertanya%20tentang%20layanan.";
+        $url = "https://wa.me/" . $phoneDigits . "?text=" . $text;
+        // tombol kecil dengan icon bootstrap (bi bi-whatsapp)
+        return '<a href="' . esc($url) . '" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-success ms-1" title="Chat via WhatsApp">'
+            . '<i class="bi bi-whatsapp"></i>'
+            . '</a>';
+    }
+
+  
+
+
 
    //keranjang layanan
 
@@ -525,13 +648,13 @@ public function approve($encId = null)
             $biayaAsli  = isset($row['biaya_asli']) ? (float)$row['biaya_asli'] : 0;
             $biayaTotal = isset($row['biaya']) ? (float)$row['biaya'] : 0;
 
-            // 1️⃣ Parameter (tanpa warna / badge)
+            // 1️ Parameter (tanpa warna / badge)
             $response[] = $layanan;
 
-            // 2️⃣ Instrumen / Alat / Tempat
+            // 2️ Instrumen / Alat / Tempat
             $response[] = $alat;
 
-            // 3️⃣ Biaya satuan
+            // 3️ Biaya satuan
             if ($diskon > 0) {
                 $hargaDiskon = $biayaAsli - ($biayaAsli * ($diskon / 100));
                 $biayaTampil = '<span style="text-decoration:line-through;">Rp ' . number_format($biayaAsli, 0, ',', '.') . '</span><br>';
@@ -541,19 +664,19 @@ public function approve($encId = null)
             }
             $response[] = $biayaTampil;
 
-            // 4️⃣ Jumlah
+            // 4️ Jumlah
             $response[] = $jumlah;
 
-            // 5️⃣ Diskon
+            // 5️ Diskon
             $response[] = $diskon > 0 ? $diskon . '%' : '-';
 
-            // 6️⃣ Total
+            // 6️ Total
             $response[] = 'Rp ' . number_format($biayaTotal, 0, ',', '.');
 
-            // 7️⃣ Keterangan
+            // 7️ Keterangan
             $response[] = $keterangan;
 
-            // 8️⃣ Aksi
+            // 8️ Aksi
             $response[] = $this->aksiKeranjang($idx);
 
             $data[] = $response;

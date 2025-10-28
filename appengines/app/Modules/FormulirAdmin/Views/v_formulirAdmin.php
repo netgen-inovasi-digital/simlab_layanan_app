@@ -1,3 +1,4 @@
+<!-- modal tabel utama -->
 <div class="row">
     <div class="col-md-12">
         <div class="card">
@@ -8,7 +9,7 @@
 
                 <div>
                     <button id="add" class="btn btn-primary">
-                        <i class="bi bi-plus-circle-dotted"></i> Pesan Layanan Baru
+                        <i class="bi bi-plus-circle-dotted"></i> Pesan Layanan
                     </button>
                 </div>
             </div>
@@ -40,8 +41,8 @@
     </div>
 </div>
 
-<!-- ======= MODAL KERANJANG ======= -->
-<!-- ======= MODAL KERANJANG ======= -->
+
+<!-- modal keranjang layanan -->
 <div class="modal fade" id="modalKeranjang" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
     aria-labelledby="staticBackdropLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl" role="document" style="margin: 2% auto">
@@ -52,7 +53,6 @@
             </div>
 
             <div class="modal-body">
-                <!-- ======= Header Daftar Layanan ======= -->
                 <div class="mb-3">
                     <h6 class="fw-bold text-primary mb-0">
                         <i class="bi bi-list-check"></i> Daftar Layanan Tersedia
@@ -61,7 +61,7 @@
 
                 <hr class="my-3">
 
-                <!-- ======= Row: Kategori (kiri) + Pelanggan (kanan, sedikit ke kanan) ======= -->
+                <!-- pilih kategori -->
                 <div class="row mb-4 align-items-end">
                     <!-- Kategori -->
                     <div class="col-md-8">
@@ -82,14 +82,13 @@
                         </div>
                     </div>
 
-                <!-- Pelanggan -->
+                   <!-- Pelanggan -->
                     <div class="col-md-4 d-flex flex-column justify-content-end" style="padding-left: 20px;">
                     <label class="form-label mb-1 fw-semibold">Pelanggan</label>
+                    <!-- pilih searching -->
                     <div class="d-flex justify-content-end align-items-center gap-2">
                         <select id="ker_pelanggan_select" class="form-select form-select-sm" style="max-width:400px;">
-                        <!-- placeholder kosong (tidak menampilkan teks) -->
                         <option value=""></option>
-
                         <?php if (!empty($users) && is_array($users)): ?>
                             <?php foreach ($users as $u):
                             $status = (isset($u->user_identity) && strtoupper($u->user_identity) === 'ULM') ? 'ULM' : 'NON ULM';
@@ -106,11 +105,12 @@
                     </div>
                     </div>
 
+                </div>
 
                 <!-- CSRF Token -->
                 <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" />
 
-                <!-- ======= Tabel Layanan ======= -->
+                <!-- tabel keranjang pilih layanan -->
                 <div class="mb-4">
                     <table id="ker_layanan-table" class="saytable border-top-bottom">
                         <thead>
@@ -130,7 +130,7 @@
 
                 <hr class="my-4">
 
-                <!-- ======= Tabel Keranjang ======= -->
+                <!-- tabel keranjang preview layanan -->
                 <div>
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h6 class="fw-bold text-success mb-0">
@@ -224,13 +224,9 @@
 
 
 
-
-<!-- ======= SCRIPTS ======= -->
 <script>
-    /************************************************************************
-     * Utility: buildApiUrlWithOptionalParam & normalizeDoubleQuestion
-     * - mencegah pembentukan URL seperti "...?A?page=1"
-     ************************************************************************/
+    //   Utility: buildApiUrlWithOptionalParam & normalizeDoubleQuestion
+    //   - mencegah pembentukan URL seperti "...?A?page=1"
     function buildApiUrlWithOptionalParam(path, key, value) {
         try {
             const u = new URL(path, window.location.origin);
@@ -507,7 +503,7 @@ fetch('<?= site_url("formuliradmin/approve/") ?>' + id, {
         };
 
         if (typeof sayConfirm === 'function') {
-            sayConfirm('Konfirmasi Setujui', 'Yakin ingin approve data ini?', function() {
+            sayConfirm('Konfirmasi ', 'Setujui transaksi ini?', function() {
                 doApprove();
             }, 'primary', 'Setujui');
            
@@ -1109,7 +1105,7 @@ function ker_calculateGrandTotal() {
             
             // gunakan confirm custom jika sayConfirm tersedia (lebih konsisten UI)
             if (typeof sayConfirm === 'function') {
-              sayConfirm('Konfirmasi Checkout', 'Apakah Anda yakin ingin melakukan checkout?', function() {
+              sayConfirm('Konfirmasi', 'Apakah anda yakin ingin melakukan checkout?', function() {
                     ker_doCheckout();
                 }, 'primary', 'Checkout');
             } else {
