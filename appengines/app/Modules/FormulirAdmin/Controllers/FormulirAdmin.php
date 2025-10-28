@@ -717,43 +717,23 @@ public function approve($encId = null)
     ]);
 }
 
+public function keranjangDelete($id) { $session = session(); $keranjang = $session->get($this->sessionKey) ?? []; 
+    // Jika index valid dan ada, hapus. Jika tidak ada, tetap dianggap sukses (tanpa validasi). 
+    if (isset($keranjang[$id])) { unset($keranjang[$id]); 
+        // reset index agar berurutan kembali 
+        $keranjang = array_values($keranjang); $session->set($this->sessionKey, $keranjang); 
+        return $this->response->setJSON([ 'res' => true, 'msg' => 'Item berhasil dihapus.', 'xname' => csrf_token(), 'xhash' => csrf_hash() ]); } 
+        // Kalau index tidak ditemukan, jangan error — kembalikan sukses juga. // (Opsional: bisa tetap set session jika keranjang kosong) 
+        if (empty($keranjang)) { $session->remove($this->sessionKey); } else { 
+            // tidak ditemukan, tetap simpan keranjang apa adanya (no-op) 
+            $session->set($this->sessionKey, $keranjang); } 
+            
+            
+            return $this->response->setJSON([ 'res' => true, 'msg' => 'Item tidak ditemukan di keranjang, namun operasi hapus dianggap berhasil.', 'xname' => csrf_token(), 'xhash' => csrf_hash() ]);
+         }
 
-    public function keranjangDelete($id)
-{
-    $session   = session();
-    $keranjang = $session->get($this->sessionKey) ?? [];
 
-    // Jika index valid dan ada, hapus. Jika tidak ada, tetap dianggap sukses (tanpa validasi).
-    if (isset($keranjang[$id])) {
-        unset($keranjang[$id]);
-        // reset index agar berurutan kembali
-        $keranjang = array_values($keranjang);
-        $session->set($this->sessionKey, $keranjang);
-
-        return $this->response->setJSON([
-            'res'   => true,
-            'msg'   => 'Item berhasil dihapus.',
-            'xname' => csrf_token(),
-            'xhash' => csrf_hash()
-        ]);
-    }
-
-    // Kalau index tidak ditemukan, jangan error — kembalikan sukses juga.
-    // (Opsional: bisa tetap set session jika keranjang kosong)
-    if (empty($keranjang)) {
-        $session->remove($this->sessionKey);
-    } else {
-        // tidak ditemukan, tetap simpan keranjang apa adanya (no-op)
-        $session->set($this->sessionKey, $keranjang);
-    }
-
-    return $this->response->setJSON([
-        'res'   => true,
-        'msg'   => 'Item tidak ditemukan di keranjang, namun operasi hapus dianggap berhasil.',
-        'xname' => csrf_token(),
-        'xhash' => csrf_hash()
-    ]);
-}
+   
 
     public function keranjangDataListLayanan()
 {
@@ -1257,19 +1237,19 @@ public function keranjangSetPelanggan()
 }
 
 
-   private function aksiKeranjang($id, $isPreview = false)
+private function aksiKeranjang($id, $isPreview = false)
 {
-    $functionName = $isPreview ? 'deleteItemFromPreview' : 'deleteItem';
-    
-    return '<div id="item-' . $id . '" class="text-center">
-        <span data-index="' . $id . '" 
-            class="text-danger btn-action btn-delete-item" 
-            style="cursor: pointer;"
-            title="Hapus" 
-            onclick="' . $functionName . '(event)">
-            <i class="bi bi-trash"></i>
-        </span>
-    </div>';
+        // selalu panggil deleteItemFromPreview agar front-end konsisten
+        $functionName = 'deleteItemFromPreview';
+        return '<div id="item-' . $id . '" class="text-center">'
+        . '<span data-index="' . $id . '" '
+        . 'class="text-danger btn-action btn-delete-item" '
+        . 'style="cursor: pointer;" '
+        . 'title="Hapus" '
+        . 'onclick="' . $functionName . '(event)">'
+        . '<i class="bi bi-trash"></i>'
+        . '</span>'
+        . '</div>';
 }
 
     

@@ -522,38 +522,95 @@ fetch('<?= site_url("formuliradmin/approve/") ?>' + id, {
 }
 
     /* deleteItemFromPreview */
+/* deleteItemFromPreview */
+/* ganti fungsi lama dengan ini */
 function deleteItemFromPreview(eOrEl) {
     let el;
-    if (eOrEl instanceof Event) { eOrEl.preventDefault(); el = eOrEl.currentTarget || eOrEl.target; }
-    else el = eOrEl;
+    if (eOrEl instanceof Event) {
+        eOrEl.preventDefault();
+        el = eOrEl.currentTarget || eOrEl.target;
+    } else el = eOrEl;
 
     if (el && !el.hasAttribute('data-index')) el = el.closest('[data-index]');
-    if (!el) { console.warn('Element untuk delete tidak ditemukan.'); return; }
+    if (!el) {
+        console.warn('Element untuk delete tidak ditemukan.');
+        return;
+    }
 
-    const idx = el.getAttribute('data-index');
-    if (!idx) { console.warn('Data-index tidak ditemukan pada element hapus.'); return; }
+    let idx = el.getAttribute('data-index') || '';
+    if (!idx) {
+        console.warn('Data-index tidak ditemukan pada element hapus.');
+        return;
+    }
 
-    fetch("<?= site_url('formuliradmin/keranjang/delete/') ?>" + idx)
-        .then(res => res.json())
-        .then(data => {
-            if (data.xname && data.xhash) {
-                document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => input.value = data.xhash);
-            }
-            if (data.res === true) {
-                if (typeof table !== 'undefined' && typeof table.fetchData === 'function') table.fetchData({ reload: true });
-                if (previewKeranjangTable && typeof previewKeranjangTable.fetchData === 'function') {
-                    previewKeranjangTable.fetchData({ reload: true });
-                    setTimeout(function() { updateKeranjangCounter(); calculateGrandTotal(); }, 400);
-                }
-                sayAlert('successModal', 'Sukses', data.msg, 'success');
+    // Normalisasi: jika idx berisi prefix "item-0" -> ambil angka di belakangnya
+    if (typeof idx === 'string' && idx.indexOf('item-') === 0) {
+        idx = idx.replace(/^item-/, '');
+    }
+
+    // Pastikan idx aman untuk URL
+    idx = encodeURIComponent(String(idx));
+
+    // Siapkan CSRF jika ada
+    const csrfInput = document.querySelector('input[name="<?= csrf_token() ?>"]');
+    const form = new FormData();
+
+    if (csrfInput) {
+        form.append('<?= csrf_token() ?>', csrfInput.value);
+    } else {
+        // fallback ke token dinamis
+        const csrf = getCsrfTokenFromPage();
+        if (csrf && csrf.name && csrf.value)
+            form.append(csrf.name, csrf.value);
+    }
+
+    // Kirim POST ke endpoint keranjangDelete (sesuai routes yang ada)
+    fetch('<?= site_url("formuliradmin/keranjangDelete/") ?>' + idx, {
+        method: 'POST',
+        body: form,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(res => res.json())
+    .then(data => {
+        // update CSRF token jika server mengembalikan
+        if (data.xname && data.xhash) {
+            document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => input.value = data.xhash);
+        }
+
+        if (data.res === true) {
+            if (typeof table !== 'undefined' && typeof table.fetchData === 'function')
+                table.fetchData({ reload: true });
+
+            if (typeof ker_previewKeranjangTable !== 'undefined' &&
+                ker_previewKeranjangTable &&
+                typeof ker_previewKeranjangTable.fetchData === 'function') {
+
+                ker_previewKeranjangTable.fetchData({ reload: true });
+
+                setTimeout(function() {
+                    ker_updateKeranjangCounter();
+                    ker_calculateGrandTotal();
+                }, 400);
             } else {
-                sayAlert('errorModal', 'Gagal', data.msg ?? 'Hapus item gagal.', 'error');
+                // fallback manual update
+                ker_updateKeranjangCounter();
+                ker_calculateGrandTotal();
             }
-        })
-        .catch(err => {
+
+            if (typeof sayAlert === 'function')
+                sayAlert('successModal', 'Sukses', data.msg || 'Item berhasil dihapus.', 'success');
+        } else {
+            if (typeof sayAlert === 'function')
+                sayAlert('errorModal', 'Gagal', data.msg || 'Hapus item gagal.', 'warning');
+        }
+    })
+    .catch(err => {
+        console.error('deleteItemFromPreview error', err);
+        if (typeof sayAlert === 'function')
             sayAlert('errorModal', 'Error', 'Terjadi kesalahan koneksi ke server.', 'error');
-        });
+    });
 }
+
 
 
     /* loadDetail (sama seperti implementasi kamu) */
