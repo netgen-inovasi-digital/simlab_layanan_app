@@ -147,8 +147,8 @@
                         <thead>
                             <tr>
                                 <th style="width:5%">No</th>
-                                <th style="width=22%">Parameter</th>
-                                <th style="width=22%">Instrumen/Alat/Tempat</th>
+                                <th style="width:22%">Parameter</th>
+                                <th style="width:22%">Instrumen/Alat/Tempat</th>
                                 <th style="width:12%">Biaya Satuan</th>
                                 <th style="width:8%">Jumlah</th>
                                 <th style="width:10%">Diskon (%)</th>
