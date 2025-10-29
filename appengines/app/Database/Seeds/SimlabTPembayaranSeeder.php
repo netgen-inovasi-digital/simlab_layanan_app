@@ -199,6 +199,17 @@ class SimlabTPembayaranSeeder extends Seeder
                 'bayarInvoiceNo'  => 'ULM2024090002',
                 'bayarInvoiceTgl' => '2024-09-07'
             ],
+
+            [
+                'bayarKode'       => 360,
+                'bayarLnKode'     => 438,
+                'bayarTotalBiaya' => 81000,
+                'bayarInvoiceFile'=> 'netx/assets/img/hero5.jpg',
+                'bayarStatus'     => 1,
+                'bayarBuktiFile'  => 'netx/assets/img/hero5.jpg',
+                'bayarInvoiceNo'  => 'ULM2025090002',
+                'bayarInvoiceTgl' => '2025-09-18'
+            ],
             // Tambahkan data berikutnya sesuai file SQL
         ];
 

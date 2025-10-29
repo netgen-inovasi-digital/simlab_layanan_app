@@ -54,6 +54,22 @@ class SimlabTLayananSeeder extends Seeder
                 'lnNoUrut'        => null,
                 'lnPosting'       => null,
             ],
+
+            [
+                'lnKode'          => 438,
+                'lnAccEmail'      => 'admin',
+                'lnNoTransaksi'   => 'ULM2025090002',
+                'lnTgl'           => '2025-09-18 15:22:00',
+                'lnTipe'          => 'ULM',
+                'lnOrangNama'     => 'Zidan Raitomi',
+                'lnOrangIdentitas'=> null,
+                'lnOrangTelp'     => '081234567890',
+                'lnOrangEmail'    => 'siti.fatimah@example.com',
+                'lnInstansi'      => null,
+                'lnStatus'        => 4,
+                'lnNoUrut'        => null,
+                'lnPosting'       => null,
+            ],
             // Tambahkan data lainnya sesuai file layanan.txt
         ];
 
