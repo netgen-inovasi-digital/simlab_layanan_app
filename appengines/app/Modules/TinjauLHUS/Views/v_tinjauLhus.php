@@ -17,7 +17,6 @@
                             <th show width="40%">Pemesan</th>
                             <th show width="25%">Status</th>
                             <th show width="15%">LHUS</th>
-                            <!-- <th show width="20%" class="action text-end">Aksi</th> -->
                         </tr>
                     </thead>
                     <tbody id="table-body"></tbody>
@@ -26,7 +25,6 @@
         </div>
     </div>
 </div>
-
 
 <!--  Modal Detail -->
 <div class="modal fade" id="modalDetail" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
@@ -38,7 +36,6 @@
       </div>
 
       <div class="modal-body">
-        <!-- responsive wrapper: jika tabel lebar maka muncul scroll -->
         <div class="table-responsive">
           <table class="table table-bordered align-middle">
             <thead>
@@ -61,20 +58,14 @@
       </div>
 
       <div class="modal-footer">
-        <button id="btnKirimDetail" class="btn btn-success" type="button" title="Kirim semua item (approve)">
-          <i class="bi bi-send"></i> Kirim
-        </button>
-        <!-- <button class="btn btn-light" type="button" data-bs-dismiss="modal">
-          <i class="bi bi-x-circle"></i> Tutup
-        </button> -->
+        <!-- Tidak ada tombol “Kirim” sesuai permintaan -->
       </div>
     </div>
   </div>
 </div>
 
-
 <script>
-    // Init table
+    // Init table utama
     table = createTable({
         apiUrl: '<?php echo site_url("tinjaulhus/datalist") ?>',
         dataSrc: 'items'
@@ -87,10 +78,7 @@
         return csrfInput ? csrfInput.value : '';
     }
 
-    /**
-     * Proses LHUS (terima / tolak) untuk LN (parent)
-     * NOTE: sudah diubah -> langsung eksekusi tanpa confirm
-     */
+    // Proses LN parent (tetap tersedia bila diperlukan dari kode lain)
     function prosesLhus(id, aksi) {
         if (!id || !aksi) return;
 
@@ -103,9 +91,7 @@
 
         fetch('<?php echo site_url("tinjaulhus/proses/") ?>' + id + '/' + aksi, {
             method: 'POST',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            },
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
             body: formData
         })
         .then(res => res.json())
@@ -125,159 +111,64 @@
         });
     }
 
-function toggleKirimButton(modalEl) {
-    const btn = document.getElementById('btnKirimDetail');
-    if (!btn || !modalEl) return;
+    // Load detail LN -> tampilkan modal
+    function loadDetail(id) {
+        const url = '<?php echo site_url("tinjaulhus/detaillist/") ?>' + id;
+        const tbody = document.querySelector('#detail-body');
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center">Loading...</td></tr>';
 
-    // Cari badge "Belum Diproses" -> server meng-output '<span class="badge bg-secondary">Belum Diproses</span>'
-    const pending = modalEl.querySelectorAll('.badge.bg-secondary').length > 0;
-
-    if (pending) {
-        // non-aktifkan tombol (greyed-out, tidak bisa diklik) — gaya konsisten dengan ikon action
-        btn.style.opacity = '0.5';
-        btn.style.pointerEvents = 'none';
-        btn.classList.add('disabled');
-        btn.setAttribute('aria-disabled', 'true');
-        btn.title = 'Masih ada item yang belum diproses';
-    } else {
-        // aktifkan kembali
-        btn.style.opacity = '';
-        btn.style.pointerEvents = '';
-        btn.classList.remove('disabled');
-        btn.removeAttribute('aria-disabled');
-        btn.title = 'Kirim semua item (approve)';
-    }
-}
-
-/* Load detail LN => tampilkan modal (versi yang memanggil toggleKirimButton) */
-function loadDetail(id) {
-    const url = '<?php echo site_url("tinjaulhus/detaillist/") ?>' + id;
-    const tbody = document.querySelector('#detail-body');
-    // table punya 8 kolom, jadi colspan 8
-    tbody.innerHTML = '<tr><td colspan="8" class="text-center">Loading...</td></tr>';
-
-    fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-        .then(response => {
-            if (!response.ok) {
-                return response.text().then(t => { throw new Error('HTTP ' + response.status + ': ' + t); });
-            }
-            return response.json();
-        })
-        .then(data => {
-            tbody.innerHTML = '';
-            if (data.items && data.items.length > 0) {
-                data.items.forEach(function(row) {
-                    let tr = '<tr>';
-                    row.forEach(function(col) { tr += '<td>' + col + '</td>'; });
-                    tr += '</tr>';
-                    tbody.innerHTML += tr;
-                });
-            } else {
-                tbody.innerHTML = '<tr><td colspan="8" class="text-center">Tidak ada data</td></tr>';
-            }
-
-            const modalEl = document.getElementById('modalDetail');
-            if (modalEl) {
-                if (data.encLn) modalEl.dataset.encLn = data.encLn;
-                else modalEl.dataset.encLn = id;
-
-                // PENTING: evaluasi apakah tombol Kirim harus disembunyikan
-                try {
-                    toggleKirimButton(modalEl);
-                } catch (err) { console.warn('toggleKirimButton error', err); }
-            }
-
-            try {
-                if (typeof bootstrap !== 'undefined') {
-                    // Reuse modal instance jika sudah ada agar backdrop tidak menumpuk
-                    let modalInstance = bootstrap.Modal.getInstance(modalEl);
-                    if (!modalInstance) {
-                        modalInstance = new bootstrap.Modal(modalEl);
-                    }
-                    // Tampilkan modal hanya jika belum tampil
-                    if (!modalEl.classList.contains('show')) {
-                        modalInstance.show();
-                    }
-                } else if (typeof $ === 'function') {
-                    // jQuery/Bootstrap v4 fallback: cek apakah sudah terbuka
-                    if (!$('#modalDetail').hasClass('show')) {
-                        $('#modalDetail').modal('show');
-                    }
+        fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(t => { throw new Error('HTTP ' + response.status + ': ' + t); });
                 }
-            } catch (err) {
-                console.warn('Modal show error', err);
-            }
-        })
-        .catch(error => {
-            console.error('loadDetail error:', error);
-            tbody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error load data</td></tr>';
-            try {
+                return response.json();
+            })
+            .then(data => {
+                tbody.innerHTML = '';
+                if (data.items && data.items.length > 0) {
+                    data.items.forEach(function(row) {
+                        let tr = '<tr>';
+                        row.forEach(function(col) { tr += '<td>' + col + '</td>'; });
+                        tr += '</tr>';
+                        tbody.innerHTML += tr;
+                    });
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="8" class="text-center">Tidak ada data</td></tr>';
+                }
+
                 const modalEl = document.getElementById('modalDetail');
-                if (modalEl) {
-                    // pastikan tombol kirim tersembunyi kalau gagal load (aman)
-                    toggleKirimButton(modalEl);
+                if (modalEl) modalEl.dataset.encLn = data.encLn || id;
+
+                try {
+                    if (typeof bootstrap !== 'undefined') {
+                        let modalInstance = bootstrap.Modal.getInstance(modalEl);
+                        if (!modalInstance) modalInstance = new bootstrap.Modal(modalEl);
+                        if (!modalEl.classList.contains('show')) modalInstance.show();
+                    } else if (typeof $ === 'function') {
+                        if (!$('#modalDetail').hasClass('show')) $('#modalDetail').modal('show');
+                    }
+                } catch (err) {
+                    console.warn('Modal show error', err);
                 }
-                if (typeof bootstrap !== 'undefined') {
-                    let modalInstance = bootstrap.Modal.getInstance(modalEl);
-                    if (!modalInstance) modalInstance = new bootstrap.Modal(modalEl);
-                    if (!modalEl.classList.contains('show')) modalInstance.show();
-                } else if (typeof $ === 'function') {
-                    if (!$('#modalDetail').hasClass('show')) $('#modalDetail').modal('show');
-                }
-            } catch (e) {}
-        });
-}
-
-    // --- Handler tombol Kirim (approve seluruh LN) ---
-document.addEventListener('click', function (e) {
-    const btn = e.target.closest('#btnKirimDetail');
-    if (!btn) return;
-
-    e.preventDefault();
-    const modalEl = document.getElementById('modalDetail');
-    if (!modalEl) {
-        console.warn('ModalDetail tidak ditemukan');
-        return;
+            })
+            .catch(error => {
+                console.error('loadDetail error:', error);
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error load data</td></tr>';
+                try {
+                    const modalEl = document.getElementById('modalDetail');
+                    if (typeof bootstrap !== 'undefined') {
+                        let modalInstance = bootstrap.Modal.getInstance(modalEl);
+                        if (!modalInstance) modalInstance = new bootstrap.Modal(modalEl);
+                        if (!modalEl.classList.contains('show')) modalInstance.show();
+                    } else if (typeof $ === 'function') {
+                        if (!$('#modalDetail').hasClass('show')) $('#modalDetail').modal('show');
+                    }
+                } catch (e) {}
+            });
     }
 
-    // ambil encLn (diset saat loadDetail)
-    const encLn = modalEl.dataset.encLn || null;
-    if (!encLn) {
-        sayAlert('errorModal', 'Gagal', 'ID LN tidak ditemukan. Muat ulang dan coba lagi.', 'warning');
-        return;
-    }
-
-    // disable tombol sementara
-    btn.disabled = true;
-    btn.classList.add('disabled');
-
-    // langsung pakai helper prosesLhus jika tersedia
-    try {
-        // jika Anda ingin tampilkan notifikasi/konfirmasi lokal, bisa di sini
-        prosesLhus(encLn, 'terima');
-        // setelah prosesLhus selesai, fungsi itu sendiri akan me-refresh table.
-        // kita re-enable tombol setelah sedikit delay untuk keamanan (atau bergantung pada response CSRF update)
-        setTimeout(() => { btn.disabled = false; btn.classList.remove('disabled'); }, 1200);
-        // tutup modal (opsional) — hanya jika proses sukses, prosesLhus akan mereload table
-        try {
-            if (typeof bootstrap !== 'undefined') {
-                const instance = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
-                instance.hide();
-            } else if (typeof $ === 'function') {
-                $('#modalDetail').modal('hide');
-            }
-        } catch (err) { /* ignore modal hide error */ }
-    } catch (err) {
-        console.error('Kirim error', err);
-        sayAlert('errorModal', 'Error', 'Gagal melakukan proses kirim', 'warning');
-        btn.disabled = false;
-        btn.classList.remove('disabled');
-    }
-});
-
-
-
-    // Handler: Simpan keterangan LHUS (per baris)
+    // Handler: Simpan keterangan LHUS per baris (manual)
     document.addEventListener('click', function(e) {
         const btnSave = e.target.closest('.btn-save-detketlhus');
         if (!btnSave) return;
@@ -285,8 +176,16 @@ document.addEventListener('click', function (e) {
         e.preventDefault();
         const det = btnSave.dataset.det;
         if (!det) return;
+
         const textarea = document.getElementById('detketlhus_' + det);
         const ket = textarea ? textarea.value : '';
+        const st  = textarea ? parseInt(textarea.getAttribute('data-statuslhus') || '0', 10) : 0;
+
+        // Simpan hanya jika status != 0 (sudah diproses: diterima/ditolak)
+        if (st === 0) {
+            sayAlert('errorModal', 'Tidak Bisa Disimpan', 'Komentar hanya disimpan untuk item yang sudah diproses (Diterima/Ditolak).', 'warning');
+            return;
+        }
 
         btnSave.disabled = true;
         const csrfToken = _getCsrf();
@@ -318,8 +217,7 @@ document.addEventListener('click', function (e) {
         .finally(() => { btnSave.disabled = false; });
     });
 
-    // Handler: Accept / Reject per det (per baris)
-    // NOTE: diubah -> langsung proses tanpa konfirmasi
+    // Handler: Terima / Tolak per det (langsung tanpa konfirmasi)
     document.addEventListener('click', function(e) {
         const btnAccept = e.target.closest('.btn-accept-lhus');
         const btnReject = e.target.closest('.btn-reject-lhus');
@@ -331,7 +229,6 @@ document.addEventListener('click', function (e) {
         const det = el.dataset.det;
         if (!det) return;
 
-        // langsung eksekusi tanpa konfirmasi pengguna
         el.disabled = true;
         const formData = new FormData();
         formData.append('detKode', det);
@@ -353,7 +250,6 @@ document.addEventListener('click', function (e) {
             if (data.res) {
                 const modalEl = document.getElementById('modalDetail');
                 const encLn = modalEl ? modalEl.dataset.encLn : null;
-
                 if (encLn) {
                     try { loadDetail(encLn); } catch (err) { if (typeof table !== 'undefined') table.fetchData({ reload: true }); }
                 } else {
@@ -367,14 +263,11 @@ document.addEventListener('click', function (e) {
             console.error(err);
             sayAlert('errorModal', 'Error', 'Terjadi kesalahan sistem', 'warning');
         })
-        .finally(() => {
-            el.disabled = false;
-        });
+        .finally(() => { el.disabled = false; });
     });
 
     (function(){
     const SAVE_URL = '<?php echo site_url("tinjaulhus/savedetketlhus") ?>';
-    const CSRF_NAME = '<?= csrf_token() ?>';
 
     // Debounce helper
     function debounce(fn, wait) {
@@ -386,14 +279,14 @@ document.addEventListener('click', function (e) {
     }
 
     // Ambil token CSRF sekarang
-    function _getCsrf() {
+    function _getCsrfLocal() {
         const csrfInput = document.querySelector('[name="<?= csrf_token() ?>"]');
         return csrfInput ? csrfInput.value : '';
     }
 
-    // Simpan satu det (mengembalikan promise)
+    // Simpan satu det (promise). HANYA dipanggil jika status != 0
     function saveSingleDet(detKode, ket) {
-        const csrfToken = _getCsrf();
+        const csrfToken = _getCsrfLocal();
         return fetch(SAVE_URL, {
             method: 'POST',
             headers: {
@@ -405,7 +298,6 @@ document.addEventListener('click', function (e) {
         })
         .then(res => res.json())
         .then(data => {
-            // update token jika server mengembalikan
             if (data && data.xname && data.xhash) {
                 document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => input.value = data.xhash);
             }
@@ -417,7 +309,7 @@ document.addEventListener('click', function (e) {
         });
     }
 
-    // Simpan semua textarea di modal (mengembalikan promise all)
+    // Simpan semua textarea yang statusnya != 0
     function saveAllDetKetLhus() {
         const modalEl = document.getElementById('modalDetail');
         if (!modalEl) return Promise.resolve({ ok: false, msg: 'Modal tidak ditemukan' });
@@ -426,114 +318,96 @@ document.addEventListener('click', function (e) {
         const promises = [];
         inputs.forEach(input => {
             const det = input.getAttribute('data-det');
-            const val = input.value;
-            if (det) {
-                promises.push(saveSingleDet(det, val));
+            const st  = parseInt(input.getAttribute('data-statuslhus') || '0', 10);
+            if (det && st !== 0) {
+                promises.push(saveSingleDet(det, input.value));
             }
         });
 
         if (promises.length === 0) return Promise.resolve({ ok: true, skipped: true });
 
         return Promise.all(promises).then(results => {
-            // tentukan apakah mayoritas sukses
             const successCount = results.filter(r => r && r.res).length;
             return { ok: successCount === results.length, results: results, saved: successCount };
         });
     }
 
-    // Debounced single-input saver (dipakai saat user mengetik)
+    // Debounced saver on typing — hanya untuk status != 0
     const debouncedSave = debounce(function(input) {
         const det = input.getAttribute('data-det');
-        if (!det) return;
-        // visual: disable tombol simpan pada baris terkait bila ada (opsional)
+        const st  = parseInt(input.getAttribute('data-statuslhus') || '0', 10);
+        if (!det || st === 0) return;
         const saveBtn = input.closest('td, tr')?.querySelector('.btn-save-detketlhus');
         if (saveBtn) saveBtn.disabled = true;
         saveSingleDet(det, input.value).then(() => { if (saveBtn) saveBtn.disabled = false; });
     }, 800);
 
-    // Hook: autosave saat textarea berubah / blur
+    // Autosave saat input (hanya status != 0)
     document.addEventListener('input', function(e) {
         const t = e.target;
         if (!t || !t.classList) return;
         if (t.classList.contains('detketlhus-input')) {
-            // autosave debounced
-            debouncedSave(t);
+            const st = parseInt(t.getAttribute('data-statuslhus') || '0', 10);
+            if (st !== 0) debouncedSave(t);
         }
     });
 
-    // Optional: juga simpan on blur (lebih agresif)
+    // Simpan on blur (lebih agresif, hanya status != 0)
     document.addEventListener('blur', function(e) {
         const t = e.target;
         if (!t || !t.classList) return;
         if (t.classList.contains('detketlhus-input')) {
-            // segera simpan
             const det = t.getAttribute('data-det');
-            if (det) {
+            const st  = parseInt(t.getAttribute('data-statuslhus') || '0', 10);
+            if (det && st !== 0) {
                 const saveBtn = t.closest('td, tr')?.querySelector('.btn-save-detketlhus');
                 if (saveBtn) saveBtn.disabled = true;
                 saveSingleDet(det, t.value).finally(() => { if (saveBtn) saveBtn.disabled = false; });
             }
         }
-    }, true); // useCapture true untuk tangkap blur yang tidak bubble
+    }, true);
 
-    // Saat tombol "Simpan" baris ditekan — tetap panggil saveSingleDet agar konsisten
-    document.addEventListener('click', function(e) {
-        const btnSave = e.target.closest('.btn-save-detketlhus');
-        if (!btnSave) return;
-        e.preventDefault();
-        const det = btnSave.dataset.det;
-        const textarea = document.getElementById('detketlhus_' + det);
-        const val = textarea ? textarea.value : '';
-        btnSave.disabled = true;
-        saveSingleDet(det, val).then(data => {
-            if (data && data.res) {
-                sayAlert('successModal', 'Tersimpan', data.msg || 'Keterangan disimpan', 'success');
-            } else {
-                sayAlert('errorModal', 'Gagal', data.msg || 'Gagal menyimpan', 'warning');
-            }
-        }).finally(() => btnSave.disabled = false);
-    });
-
-    // Saat modal akan ditutup -> simpan semua (Bootstrap 5 event)
-    (function attachModalHide() {
+    // Saat modal akan / selesai ditutup -> simpan komentar yang eligible dan refresh table utama
+    (function attachModalCloseHandlers() {
         const modalEl = document.getElementById('modalDetail');
         if (!modalEl) return;
 
-        // Bootstrap 5: 'hide.bs.modal'
+        function refreshMainTable() {
+            try { if (typeof table !== 'undefined') table.fetchData({ reload: true }); } catch(e) {}
+        }
+
         try {
             if (typeof bootstrap !== 'undefined') {
-                modalEl.addEventListener('hide.bs.modal', function (evt) {
-                    // blokir close sementara: tidak menutup (tidak mengubah UI) — kita simpan async tapi tidak mencegah close
-                    // simpan secara silent sebelum modal benar-benar hilang
-                    saveAllDetKetLhus().then(result => {
-                        if (result && result.ok) {
-                            // silent success
-                        } else {
-                            // jika gagal sebagian, tulis ke console — tetap izinkan modal tutup
-                            console.warn('saveAllDetKetLhus result', result);
-                        }
-                    }).catch(err => console.error(err));
+                modalEl.addEventListener('hide.bs.modal', function () {
+                    saveAllDetKetLhus().catch(err => console.error(err));
+                });
+                modalEl.addEventListener('hidden.bs.modal', function () {
+                    // Pastikan refresh setelah benar-benar tertutup
+                    refreshMainTable();
                 });
             } else if (typeof $ === 'function') {
-                // jQuery/Bootstrap v4: 'hide.bs.modal'
                 $(modalEl).on('hide.bs.modal', function () {
                     saveAllDetKetLhus().catch(err => console.error(err));
                 });
+                $(modalEl).on('hidden.bs.modal', function () {
+                    refreshMainTable();
+                });
             } else {
-                // fallback: simpan saat tombol Tutup diklik (data-bs-dismiss)
+                // fallback click dismiss
                 modalEl.addEventListener('click', function(ev) {
                     const btn = ev.target.closest('[data-bs-dismiss="modal"]');
                     if (btn) {
                         saveAllDetKetLhus().catch(err => console.error(err));
+                        setTimeout(refreshMainTable, 300);
                     }
                 });
             }
         } catch (err) {
-            console.warn('attachModalHide error', err);
+            console.warn('attachModalCloseHandlers error', err);
         }
     })();
 
-    // Expose helper (opsional) untuk panggil manual jika mau
+    // Expose helper (opsional)
     window.saveAllDetKetLhus = saveAllDetKetLhus;
 })();
 </script>
