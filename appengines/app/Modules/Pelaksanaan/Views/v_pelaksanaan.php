@@ -346,58 +346,91 @@ function loadDetail(id) {
     })();
 
     document.getElementById('btnUploadLhu')?.addEventListener('click', function(e) {
-        e.preventDefault();
-        const form = document.getElementById('formUploadLhu');
-        const formData = new FormData(form);
-        const url = form.getAttribute('action');
-        const csrfInput = document.querySelector('[name="<?= csrf_token() ?>"]');
-        const csrfToken = csrfInput ? csrfInput.value : '';
+    e.preventDefault();
+    const form = document.getElementById('formUploadLhu');
+    const formData = new FormData(form);
+    const url = form.getAttribute('action');
+    const csrfInput = document.querySelector('[name="<?= csrf_token() ?>"]');
+    const csrfToken = csrfInput ? csrfInput.value : '';
 
-        // pastikan file dipilih
-        const fileField = formData.get('lhu_file');
-        if (!fileField || (fileField && fileField.size === 0)) {
-            if (typeof sayAlert === 'function') sayAlert('errorModal', 'Error', 'Pilih file terlebih dahulu.', 'warning');
-            else alert('Pilih file terlebih dahulu.');
-            return;
+    // pastikan file dipilih
+    const fileField = formData.get('lhu_file');
+    if (!fileField || (fileField && fileField.size === 0)) {
+        if (typeof sayAlert === 'function') sayAlert('errorModal', 'Error', 'Pilih file terlebih dahulu.', 'warning');
+        else alert('Pilih file terlebih dahulu.');
+        return;
+    }
+
+    showLoading();
+
+    fetch(url, {
+        method: 'POST',
+        body: formData,
+        headers: { 'X-CSRF-TOKEN': csrfToken }
+    })
+    .then(res => res.json())
+    .then(data => {
+        // update CSRF
+        if (data.xname && data.xhash) {
+        document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => input.value = data.xhash);
         }
 
-        showLoading();
+        if (data.res === true) {
+        // alert sukses
+        if (typeof sayAlert === 'function') sayAlert('successModal', 'Berhasil', data.msg || 'File berhasil diunggah.', 'success');
 
-        fetch(url, {
-            method: 'POST',
-            body: formData,
-            headers: { 'X-CSRF-TOKEN': csrfToken }
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.xname && data.xhash) {
-                document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => input.value = data.xhash);
+        // tutup modal upload
+        if (typeof bootstrap !== 'undefined') {
+            const modalEl = document.getElementById('modalUploadLhu');
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            if (modal) modal.hide();
+        } else {
+            $('#modalUploadLhu').modal('hide');
+        }
+
+        // ---- REFRESH TABEL UTAMA ----
+        if (typeof table !== 'undefined') table.fetchData({ reload: true });
+
+        // ---- UPDATE TOMBOL DI BARIS TERKAIT (ubah label & onclick) ----
+        const encId = document.getElementById('upload_lhu_id')?.value || '';
+        if (encId) {
+            // cari tombol yang memanggil openUploadModal untuk encId ini
+            const selector = 'button[onclick^="openUploadModal(\\\'' + encId + '\\\'"]';
+            const btn = document.querySelector(selector);
+            if (btn) {
+            // set label jadi "Lihat file"
+            btn.innerHTML = '<i class="bi bi-upload"></i> Lihat file';
+            // perbarui parameter url di onclick
+            const safeUrl = (data.url && typeof data.url === 'string') ? data.url.replace(/'/g, "\\'") : '#';
+            btn.setAttribute('onclick', "openUploadModal('" + encId + "', '" + safeUrl + "')");
             }
-            if (data.res === true) {
-                if (typeof sayAlert === 'function') sayAlert('successModal', 'Berhasil', data.msg || 'File berhasil diunggah.', 'success');
-                // hide modal
-                if (typeof bootstrap !== 'undefined') {
-                    const modalEl = document.getElementById('modalUploadLhu');
-                    const modal = bootstrap.Modal.getInstance(modalEl);
-                    if (modal) modal.hide();
-                } else {
-                    $('#modalUploadLhu').modal('hide');
-                }
-                if (typeof table !== 'undefined') table.fetchData({ reload: true });
-            } else {
-                if (typeof sayAlert === 'function') sayAlert('errorModal', 'Gagal', data.msg || 'Upload gagal.', 'warning');
-                else alert(data.msg || 'Upload gagal.');
-            }
-        })
-        .catch(err => {
-            console.error(err);
-            if (typeof sayAlert === 'function') sayAlert('errorModal', 'Error', 'Terjadi kesalahan saat upload.', 'warning');
-            else alert('Terjadi kesalahan saat upload.');
-        })
-        .finally(() => {
-            hideLoading();
-        });
+        }
+
+        // ---- REFRESH MODAL DETAIL BILA SEDANG TERBUKA ----
+        const isDetailOpen = (
+            (typeof bootstrap !== 'undefined' && document.getElementById('modalDetail')?.classList.contains('show')) ||
+            (typeof $ !== 'undefined' && $('#modalDetail').hasClass('show'))
+        );
+        if (isDetailOpen && encId) {
+            // muat ulang isi detail untuk ln yang sama
+            loadDetail(encId);
+        }
+
+        } else {
+        if (typeof sayAlert === 'function') sayAlert('errorModal', 'Gagal', data.msg || 'Upload gagal.', 'warning');
+        else alert(data.msg || 'Upload gagal.');
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        if (typeof sayAlert === 'function') sayAlert('errorModal', 'Error', 'Terjadi kesalahan saat upload.', 'warning');
+        else alert('Terjadi kesalahan saat upload.');
+    })
+    .finally(() => {
+        hideLoading();
     });
+    });
+
 
 </script>
 

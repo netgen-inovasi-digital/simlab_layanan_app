@@ -135,12 +135,15 @@ class Pelaksanaan extends BaseController
             $btnViewLhu = '<button class="btn btn-sm btn-secondary me-1" disabled><i class="bi bi-eye"></i> Lihat</button>';
         }
 
-        // Tombol upload: pastikan modal mendapatkan URL LHU (bukan LHUS)
+       // Tombol upload: jika sudah ada file LHU, ubah label jadi "Lihat file" (onclick tetap sama)
         $uploadOnclick = "openUploadModal('{$id}', '" . ($lhuInfo['has'] ? esc($lhuInfo['url']) : '#') . "')";
+        $uploadLabel   = $lhuInfo['has'] ? 'Lihat file' : 'Upload';
+
         $btnUpload = '<button class="btn btn-sm btn-outline-primary" onclick="' . $uploadOnclick . '">'
-                   . '<i class="bi bi-upload"></i> Upload</button>';
+                . '<i class="bi bi-upload"></i> ' . $uploadLabel . '</button>';
 
         $response[] = '<div class="d-flex align-items-center">' . $btnUpload . '</div>';
+
 
         // Kolom Status
         $response[] = $this->formatStatus($row->lnStatus);
@@ -212,10 +215,11 @@ class Pelaksanaan extends BaseController
 
     $db = \Config\Database::connect();
 
-    // Ambil semua detil untuk detLnKode ini — gunakan hanya kolom yang ada
+    // HANYA ambil detil dengan detStatus = 1
     $builder = $db->table('simlab_t_layanan_detil as d')
-                  ->select('d.detKode, d.detUjiKode, d.detLayanan, d.detJumlah, d.detKeterangan, d.detil_LHUS, d.detil_LHU, d.detKetLn, d.detKetLhus')
+                  ->select('d.detKode, d.detUjiKode, d.detLayanan, d.detJumlah, d.detKeterangan, d.detil_LHUS, d.detil_LHU, d.detKetLn, d.detKetLhus, d.detStatus')
                   ->where('d.detLnKode', $lnKode)
+                  ->where('d.detStatus', 1)
                   ->orderBy('d.detKode', 'ASC');
 
     $rows = $builder->get()->getResult();
@@ -243,7 +247,10 @@ class Pelaksanaan extends BaseController
     $items = [];
     $no = 1;
     foreach ($rows as $row) {
-        // Layanan: prefer detLayanan, fallback to uji map
+        // (Safety net) Skip jika bukan status 1 — mestinya tidak terjadi karena sudah difilter di query
+        if ((int)($row->detStatus ?? 0) !== 1) continue;
+
+        // Layanan: prefer detLayanan, fallback ke ujiMap
         $layanan = '-';
         if (!empty($row->detLayanan)) {
             $layanan = $row->detLayanan;
@@ -260,7 +267,6 @@ class Pelaksanaan extends BaseController
         foreach ($candidates as $cf) {
             if (isset($row->{$cf}) && trim((string)$row->{$cf}) !== '') {
                 $val = trim((string)$row->{$cf});
-                // multiple parts separated by ';;' -> check each
                 if (strpos($val, ';;') !== false) {
                     $parts = array_filter(array_map('trim', explode(';;', $val)));
                     foreach ($parts as $p) {
@@ -280,12 +286,9 @@ class Pelaksanaan extends BaseController
             }
         }
 
-        // Build "Lihat" button only (no status badge)
-        if ($fileUrl) {
-            $viewHtml = '<button class="btn btn-sm btn-outline-primary" onclick="window.open(\'' . esc($fileUrl) . '\', \'_blank\')"><i class="bi bi-eye"></i></button>';
-        } else {
-            $viewHtml = '<button class="btn btn-sm btn-secondary" disabled><i class="bi bi-file-earmark-text"></i> Lihat</button>';
-        }
+        $viewHtml = $fileUrl
+            ? '<button class="btn btn-sm btn-outline-primary" onclick="window.open(\'' . esc($fileUrl) . '\', \'_blank\')"><i class="bi bi-eye"></i></button>'
+            : '<button class="btn btn-sm btn-secondary" disabled><i class="bi bi-file-earmark-text"></i> Lihat</button>';
 
         // Items: No, Layanan, Jumlah, Keterangan, Lihat
         $items[] = [

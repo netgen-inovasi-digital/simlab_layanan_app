@@ -1,8 +1,18 @@
-<div class="row">
+<div class="row"> 
     <div class="col-md-12">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <label class="card-title mb-0"><?php echo $title ?></label>
+
+                <!-- Kategori Status (LnStatus) -->
+                <div class="d-flex align-items-center" style="gap:8px;">
+                    <label class="mb-0 small text-muted">Status:</label>
+                    <select id="statusFilter" class="form-select form-select-sm" style="width:240px;">
+                        <option value="">— Semua status —</option>
+                        <option value="1">Layanan belum direview</option>
+                        <option value="3">Layanan terkirim ke admin</option>
+                    </select>
+                </div>
             </div>
             <div class="card-body">
                 <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>">
@@ -54,7 +64,6 @@
       </div>
 
       <div class="modal-footer">
-
          <button id="btnKirimDetail" class="btn btn-success" type="button" title="Kirim semua item (approve)">
           <i class="bi bi-send"></i> Kirim
         </button>
@@ -65,11 +74,72 @@
 
 
 <script>
+    // Helpers URL
+    function buildApiUrlWithOptionalParam(path, key, value) {
+        try {
+            const u = new URL(path, window.location.origin);
+            const params = new URLSearchParams(u.search);
+            if (key && String(key) !== '') {
+                if (typeof value !== 'undefined' && value !== null && String(value) !== '') {
+                    params.set(key, String(value));
+                } else {
+                    params.delete(key);
+                }
+            }
+            const s = params.toString();
+            return u.pathname + (s ? '?' + s : '');
+        } catch(e) {
+            if (key && String(key) !== '' && value !== null && String(value) !== '') {
+                return path + (path.includes('?') ? '&' : '?') + encodeURIComponent(key) + '=' + encodeURIComponent(String(value));
+            }
+            return path;
+        }
+    }
+    function normalizeDoubleQuestion(url) {
+        if (typeof url !== 'string') return url;
+        url = url.replace(/\?([^?]*)\?/, '?$1&');
+        url = url.replace(/&{2,}/g, '&');
+        url = url.replace(/\?&/, '?');
+        if (url.endsWith('&')) url = url.slice(0, -1);
+        return url;
+    }
+
+    // Tabel utama
     table = createTable({
         apiUrl: '<?php echo site_url("formulirmanajer/datalist") ?>',
         dataSrc: 'items'
     });
     addAction();
+
+    // Patch normalize apiUrl saat reload
+    if (typeof table !== 'undefined' && table && typeof table.getConfig === 'function' && typeof table.fetchData === 'function') {
+        const _origFetch = table.fetchData.bind(table);
+        table.fetchData = function(opts = {}) {
+            try {
+                const cfg = table.getConfig();
+                if (cfg && cfg.apiUrl && typeof cfg.apiUrl === 'string') {
+                    cfg.apiUrl = normalizeDoubleQuestion(cfg.apiUrl);
+                }
+            } catch (err) {}
+            return _origFetch(opts);
+        };
+    }
+
+    // Wiring dropdown Status -> filter lnStatus
+    (function attachStatusFilter(){
+        const sel = document.getElementById('statusFilter');
+        if (!sel) return;
+
+        sel.addEventListener('change', function(){
+            const val = (this.value || '').toString().trim();
+            if (typeof table !== 'undefined' && table && typeof table.getConfig === 'function') {
+                const cfg = table.getConfig();
+                cfg.apiUrl = buildApiUrlWithOptionalParam('<?= site_url("formulirmanajer/datalist") ?>', (val !== '' ? 'lnStatus' : ''), val);
+                cfg.apiUrl = normalizeDoubleQuestion(cfg.apiUrl);
+                if (typeof table.fetchData === 'function') table.fetchData({ reload: true, page: 1 });
+            }
+        });
+    })();
 
     document.querySelector('#btnSimpan')?.addEventListener('click', function(e) {
         e.preventDefault(); 
@@ -170,16 +240,13 @@ document.addEventListener('click', function(e) {
     if (!e.target.matches('#btnSaveKomentar') && !e.target.closest('#btnSaveKomentar')) return;
     e.preventDefault();
 
-    // panggil fungsi async (tetap mempertahankan perilaku silent/tenang seperti sebelumnya)
-    saveKomentarAsync().then(result => {
-        // silent: tidak tampilkan alert kecuali mau
-        // jika ingin menampilkan notif: cek result.ok dan result.skipped
-    });
+    // panggil fungsi async (silent)
+    saveKomentarAsync().then(() => {});
 });
 
 
 
-    // Buat satu instance modal (Bootstrap 5) jika tersedia, agar tidak membuat banyak backdrop
+    // Bootstrap Modal instance
     const _modalDetailEl = document.getElementById('modalDetail');
     let _modalDetailInstance = null;
     try {
@@ -187,18 +254,17 @@ document.addEventListener('click', function(e) {
             _modalDetailInstance = new bootstrap.Modal(_modalDetailEl);
         }
     } catch (err) {
-        // jika bootstrap belum tersedia, akan fallback ke jQuery modal show/hide seperti sebelumnya
         _modalDetailInstance = null;
     }
 
-    // Utility: ambil token CSRF saat ini
+    // CSRF util
     function _getCsrf() {
         const csrfInput = document.querySelector('[name="<?= csrf_token() ?>"]');
         return csrfInput ? csrfInput.value : '';
     }
 
   
-   // Tombol Kirim: gunakan flag sending dan disabled (tidak hanya pointerEvents)
+   // Tombol Kirim
     document.querySelector('#btnKirimDetail')?.addEventListener('click', async function(e) {
         e.preventDefault();
 
@@ -209,7 +275,7 @@ document.addEventListener('click', function(e) {
             return;
         }
 
-        if (btn.dataset.sending === '1') return; // sudah dalam proses
+        if (btn.dataset.sending === '1') return;
 
         sayConfirm(
             'Konfirmasi',
@@ -219,7 +285,7 @@ document.addEventListener('click', function(e) {
                 btn.dataset.sending = '1';
                 btn.disabled = true;
 
-                // Simpan komentar dulu (tidak blocking error)
+                // Simpan komentar dulu (silent)
                 try {
                     const komentarResult = await saveKomentarAsync();
                     if (!komentarResult.ok && !komentarResult.skipped) {
@@ -273,13 +339,11 @@ document.addEventListener('click', function(e) {
                     btn.disabled = false;
                 }
             }, 
-            'success', // Warna tombol utama
-            'Kirim',  // Label tombol konfirmasi
-            'Batal'  // Label tombol batal
+            'success',
+            'Kirim',
+            'Batal'
         );
     });
-
-
     
 
     function saveData({ url, formData, onSuccess, onError }) {
@@ -327,7 +391,7 @@ document.addEventListener('click', function(e) {
                     loadContent(data.link);
                     window.open(data.print, "_blank");
                 } else {
-                    sayAlert('errorModal', 'Error', 'Data gagal disimpan.', 'warning');
+                    sayAlert('errorModal', 'Error', 'Terjadi kesalahan pada sistem.', 'warning');
                 }
             })
             .catch(error => {
@@ -346,7 +410,6 @@ document.addEventListener('click', function(e) {
   function loadDetail(id) {
     const url = '<?php echo site_url("formulirmanajer/detailList/") ?>' + id;
     const tbody = document.querySelector('#detail-body');
-    // sesuaikan colspan kalau header punya 8 kolom
     tbody.innerHTML = '<tr><td colspan="8" class="text-center">Loading...</td></tr>';
 
     fetch(url)
@@ -367,23 +430,21 @@ document.addEventListener('click', function(e) {
                 tbody.innerHTML = '<tr><td colspan="8" class="text-center">Tidak ada data</td></tr>';
             }
 
-            // SIMPAN encLn ke modal agar handler lain (saveKomentar) bisa pakai
+            // simpan encLn
             const modalEl = document.getElementById('modalDetail');
             if (modalEl) {
                 if (data.encLn) modalEl.dataset.encLn = data.encLn;
-                else modalEl.dataset.encLn = id; // fallback kalau server tidak mengembalikan encLn
+                else modalEl.dataset.encLn = id;
             }
 
-            // set LN pada tombol Kirim di modal agar handler tahu LN yang sedang ditampilkan
+            // set LN pada tombol Kirim
             const btn = document.getElementById('btnKirimDetail');
             if (btn) btn.dataset.ln = id;
 
-            // show modal menggunakan instance jika ada (mencegah backdrop ganda)
             try {
                 if (_modalDetailInstance) _modalDetailInstance.show();
                 else if (typeof $ === 'function') $('#modalDetail').modal('show');
             } catch (err) {
-                // fallback: tetap coba tampilkan dengan jQuery atau biarkan HTML default
                 if (typeof $ === 'function' && $('#modalDetail').modal) $('#modalDetail').modal('show');
             }
         })
@@ -397,13 +458,12 @@ document.addEventListener('click', function(e) {
         });
 }
 
-// approve detail: silent (tanpa notifikasi), reload detail & tabel utama
+// approve detail: silent
 function confirmApproveDetail(e) {
     e.preventDefault();
 
     document.getElementById('btnSaveKomentar')?.click();
 
-    // cari elemen span.btn-action paling dekat (tahan kasus klik pada <i>)
     const el = (e.currentTarget && e.currentTarget.dataset && e.currentTarget.dataset.ln) 
                 ? e.currentTarget 
                 : (e.target && e.target.closest ? e.target.closest('[data-ln]') : null);
@@ -417,7 +477,6 @@ function confirmApproveDetail(e) {
         return;
     }
 
-    // prevent double click by disabling pointer & using dataset.sending
     if (el.dataset.sending === '1') return;
     el.dataset.sending = '1';
     el.style.pointerEvents = 'none';
@@ -438,17 +497,14 @@ function confirmApproveDetail(e) {
     })
     .then(res => res.json())
     .then(data => {
-        // update token jika dikembalikan
         if (data.xname && data.xhash) {
             document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => input.value = data.xhash);
         }
 
         if (data.res) {
-            // reload detail & tabel utama (silent)
             try { loadDetail(ln); } catch (err) { console.error('loadDetail error', err); }
             if (typeof table !== 'undefined') table.fetchData({ reload: true });
         } else {
-            // gagal: log saja
             console.warn('Gagal menyetujui item:', data.msg || null);
         }
     })
@@ -461,7 +517,7 @@ function confirmApproveDetail(e) {
     });
 }
 
-// reject detail: silent (tanpa notifikasi), reload detail & tabel utama
+// reject detail: silent
 function confirmRejectDetail(e) {
     e.preventDefault();
 
@@ -479,7 +535,6 @@ function confirmRejectDetail(e) {
         return;
     }
 
-    // prevent double click
     if (el.dataset.sending === '1') return;
     el.dataset.sending = '1';
     el.style.pointerEvents = 'none';
@@ -500,7 +555,6 @@ function confirmRejectDetail(e) {
     })
     .then(res => res.json())
     .then(data => {
-        // update token jika dikembalikan
         if (data.xname && data.xhash) {
             document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => input.value = data.xhash);
         }
@@ -508,9 +562,7 @@ function confirmRejectDetail(e) {
         if (data.res) {
             try { loadDetail(ln); } catch (err) { console.error('loadDetail error', err); }
             if (typeof table !== 'undefined') table.fetchData({ reload: true });
-            // no alert shown
         } else {
-            // gagal: log saja
             console.warn('Gagal menolak item:', data.msg || null);
         }
     })
@@ -545,7 +597,6 @@ document.addEventListener('click', function(e) {
 async function handleApproveReject(el, isAccept) {
     if (!el) return;
 
-    // ambil data
     const ln = el.dataset.ln;
     const uji = el.dataset.uji;
     if (!ln || (uji === undefined || uji === null)) {
@@ -553,17 +604,13 @@ async function handleApproveReject(el, isAccept) {
         return;
     }
 
-    // prevent double click
     if (el.dataset.sending === '1') return;
     el.dataset.sending = '1';
     el.style.pointerEvents = 'none';
 
     try {
-        // Simpan komentar di modal (jika ada) tapi jangan trigger click pada tombol lain
-        // saveKomentarAsync sudah melakukan fetch dan mengupdate token
         try {
             const komentarResult = await saveKomentarAsync();
-            // jika gagal penyimpanan, lanjutkan juga (sesuai kebijakan silent)
             if (!komentarResult.ok && !komentarResult.skipped) {
                 console.warn('Penyimpanan komentar bermasalah (melanjutkan):', komentarResult);
             }
@@ -571,7 +618,6 @@ async function handleApproveReject(el, isAccept) {
             console.error('saveKomentarAsync error (ignored):', err);
         }
 
-        // persiapkan request ke server
         const csrfToken = _getCsrf();
         const formData = new FormData();
         formData.append('ln', ln);
@@ -592,17 +638,14 @@ async function handleApproveReject(el, isAccept) {
 
         const data = await res.json();
 
-        // update CSRF token jika server mengembalikan
         if (data.xname && data.xhash) {
             document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => input.value = data.xhash);
         }
 
         if (data.res) {
-            // reload detail & tabel (silent)
             try { loadDetail(ln); } catch (err) { console.error('loadDetail error', err); }
             if (typeof table !== 'undefined') table.fetchData({ reload: true });
         } else {
-            // gagal — log saja (sesuai pola silent)
             console.warn((isAccept ? 'Gagal menyetujui' : 'Gagal menolak'), data.msg || null);
         }
     } catch (err) {
