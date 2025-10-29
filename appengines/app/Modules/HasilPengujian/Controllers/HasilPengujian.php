@@ -585,13 +585,17 @@ class HasilPengujian extends BaseController
         $db = \Config\Database::connect();
         $db->transStart();
 
-        $db->table('simlab_t_layanan_detil')
+       $db->table('simlab_t_layanan_detil')
             ->where('detLnKode', $lnKode)
             ->groupStart()
                 ->where('detPenyelia', $user_id)
                 ->orWhere('detManajerTeknis', $user_id)
             ->groupEnd()
             ->where('detStatus', 1)
+            ->groupStart()
+                ->where('detStatusLHUS IS NULL', null, false)
+                ->orWhereIn('detStatusLHUS', [0, 3]) // yang baru diupload (3) atau belum terkirim (0/NULL)
+            ->groupEnd()
             ->update(['detStatusLHUS' => 0]);
 
         // === STEP 3: cek ulang seluruh detil AKTIF (detStatus = 1) pada LN ini
