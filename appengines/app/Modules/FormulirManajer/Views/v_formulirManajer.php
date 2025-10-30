@@ -63,11 +63,7 @@
         </div>
       </div>
 
-      <div class="modal-footer">
-         <button id="btnKirimDetail" class="btn btn-success" type="button" title="Kirim semua item (approve)">
-          <i class="bi bi-send"></i> Kirim
-        </button>
-      </div>
+      <!-- Modal footer DIHAPUS (tombol Kirim dihapus sesuai permintaan) -->
     </div>
   </div>
 </div>
@@ -112,34 +108,52 @@
     addAction();
 
     // Patch normalize apiUrl saat reload
-    if (typeof table !== 'undefined' && table && typeof table.getConfig === 'function' && typeof table.fetchData === 'function') {
+    if (typeof table !== 'undefined' && table && typeof table.getConfig === 'function' && typeof table.fetchData === 'function' && !table.__fetchPatched) {
         const _origFetch = table.fetchData.bind(table);
+        let _currentAbort = null;
+
         table.fetchData = function(opts = {}) {
             try {
                 const cfg = table.getConfig();
-                if (cfg && cfg.apiUrl && typeof cfg.apiUrl === 'string') {
-                    cfg.apiUrl = normalizeDoubleQuestion(cfg.apiUrl);
+                if (cfg && typeof cfg.apiUrl === 'string') {
+                    const u = new URL(cfg.apiUrl, window.location.origin);
+                    u.searchParams.set('_ts', Date.now().toString()); // cache-buster
+                    cfg.apiUrl = normalizeDoubleQuestion(u.pathname + (u.search ? u.search : ''));
                 }
             } catch (err) {}
+
+            try { if (_currentAbort) _currentAbort.abort(); } catch(e){}
+            try {
+                _currentAbort = new AbortController();
+                opts.signal = _currentAbort.signal;
+            } catch(e){}
+
             return _origFetch(opts);
         };
+        table.__fetchPatched = true; // guard
     }
+
+
 
     // Wiring dropdown Status -> filter lnStatus
     (function attachStatusFilter(){
         const sel = document.getElementById('statusFilter');
-        if (!sel) return;
+        if (!sel || sel.dataset.bound === '1') return; // guard
 
         sel.addEventListener('change', function(){
             const val = (this.value || '').toString().trim();
-            if (typeof table !== 'undefined' && table && typeof table.getConfig === 'function') {
+            if (table?.getConfig) {
                 const cfg = table.getConfig();
-                cfg.apiUrl = buildApiUrlWithOptionalParam('<?= site_url("formulirmanajer/datalist") ?>', (val !== '' ? 'lnStatus' : ''), val);
-                cfg.apiUrl = normalizeDoubleQuestion(cfg.apiUrl);
-                if (typeof table.fetchData === 'function') table.fetchData({ reload: true, page: 1 });
+                cfg.apiUrl = normalizeDoubleQuestion(
+                    buildApiUrlWithOptionalParam('<?= site_url("formulirmanajer/datalist") ?>', 'lnStatus', (val === '' ? null : val))
+                );
+                table.fetchData({ reload: true, page: 1 });
             }
         });
+
+        sel.dataset.bound = '1';
     })();
+
 
     document.querySelector('#btnSimpan')?.addEventListener('click', function(e) {
         e.preventDefault(); 
@@ -155,10 +169,11 @@
             formData: formData,
             onSuccess: function(data) {
                 if (data.res === true) {
-                    if (typeof table !== 'undefined') table.fetchData({ reload: true });
+                    table?.fetchData({ reload: true }); // cukup reload
                     sayAlert('successModal', 'Berhasil', 'Data berhasil disimpan.', 'success');
                     if ($('#modalForm').hasClass('show')) $('#modalForm').modal('hide');
                 }
+
             }
         });
     });
@@ -169,12 +184,8 @@ async function saveKomentarAsync() {
     const modalEl = document.getElementById('modalDetail');
     if (!modalEl) return { ok: false, msg: 'Modal tidak ditemukan' };
 
-    // ambil encLn dari modal atau fallback dari tombol kirim
+    // ambil encLn dari modal (fallback ke tombol Kirim DIHAPUS)
     let encLn = modalEl.dataset.encLn || null;
-    if (!encLn) {
-        const btnKirim = document.getElementById('btnKirimDetail');
-        if (btnKirim && btnKirim.dataset.ln) encLn = btnKirim.dataset.ln;
-    }
     if (!encLn) {
         console.warn('LN tidak ditemukan untuk menyimpan komentar');
         return { ok: false, msg: 'LN tidak ditemukan' };
@@ -246,15 +257,14 @@ document.addEventListener('click', function(e) {
 
 
 
-    // Bootstrap Modal instance
-    const _modalDetailEl = document.getElementById('modalDetail');
-    let _modalDetailInstance = null;
-    try {
-        if (_modalDetailEl) {
-            _modalDetailInstance = new bootstrap.Modal(_modalDetailEl);
+    // Bootstrap Modal instance (idempotent, tidak redeclare)
+    window._modalDetailEl = window._modalDetailEl || document.getElementById('modalDetail');
+    if (typeof window._modalDetailInstance === 'undefined' || window._modalDetailInstance === null) {
+        try {
+            window._modalDetailInstance = window._modalDetailEl ? new bootstrap.Modal(window._modalDetailEl) : null;
+        } catch (err) {
+            window._modalDetailInstance = null;
         }
-    } catch (err) {
-        _modalDetailInstance = null;
     }
 
     // CSRF util
@@ -264,87 +274,8 @@ document.addEventListener('click', function(e) {
     }
 
   
-   // Tombol Kirim
-    document.querySelector('#btnKirimDetail')?.addEventListener('click', async function(e) {
-        e.preventDefault();
+   // Tombol Kirim DIHAPUS (seluruh handler dan konfirmasi terkait #btnKirimDetail dihapus)
 
-        const btn = e.currentTarget;
-        const ln = btn.dataset.ln;
-        if (!ln) {
-            sayAlert('errorModal', 'Gagal', 'LN tidak ditemukan untuk dikirim', 'warning');
-            return;
-        }
-
-        if (btn.dataset.sending === '1') return;
-
-        sayConfirm(
-            'Konfirmasi',
-            'Setujui layanan ini?<br>Pastikan untuk cek kembali ketersediaan barang.',
-            async () => {
-
-                btn.dataset.sending = '1';
-                btn.disabled = true;
-
-                // Simpan komentar dulu (silent)
-                try {
-                    const komentarResult = await saveKomentarAsync();
-                    if (!komentarResult.ok && !komentarResult.skipped) {
-                        console.warn('Komentar bermasalah (ignored):', komentarResult);
-                    }
-                } catch (err) {
-                    console.error('saveKomentarAsync error (ignored):', err);
-                }
-
-                const csrfToken = _getCsrf();
-                const formData = new FormData();
-                formData.append('ln', ln);
-
-                try {
-                    const res = await fetch('<?php echo site_url("formulirmanajer/kirim") ?>', {
-                        method: 'POST',
-                        body: formData,
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest',
-                            'X-CSRF-TOKEN': csrfToken
-                        }
-                    });
-
-                    const data = await res.json();
-
-                    if (data.xname && data.xhash) {
-                        document
-                            .querySelectorAll('[name="' + data.xname + '"]')
-                            .forEach(input => input.value = data.xhash);
-                    }
-
-                    if (data.res) {
-                        sayAlert('successModal', 'Berhasil', data.msg || 'Layanan berhasil dikirim', 'success');
-
-                        if (typeof table !== 'undefined') table.fetchData({ reload: true });
-
-                        try {
-                            if (_modalDetailInstance) _modalDetailInstance.hide();
-                            else if (typeof $ === 'function') $('#modalDetail').modal('hide');
-                        } catch (_) {}
-                    } else {
-                        sayAlert('errorModal', 'Gagal', data.msg || 'Gagal mengirim layanan', 'warning');
-                    }
-
-                } catch (err) {
-                    console.error(err);
-                    sayAlert('errorModal', 'Error', 'Terjadi kesalahan sistem saat mengirim', 'warning');
-
-                } finally {
-                    btn.dataset.sending = '0';
-                    btn.disabled = false;
-                }
-            }, 
-            'success',
-            'Kirim',
-            'Batal'
-        );
-    });
-    
 
     function saveData({ url, formData, onSuccess, onError }) {
         showLoading();
@@ -437,9 +368,7 @@ document.addEventListener('click', function(e) {
                 else modalEl.dataset.encLn = id;
             }
 
-            // set LN pada tombol Kirim
-            const btn = document.getElementById('btnKirimDetail');
-            if (btn) btn.dataset.ln = id;
+            // set LN pada tombol Kirim DIHAPUS (karena tombol Kirim dihapus)
 
             try {
                 if (_modalDetailInstance) _modalDetailInstance.show();

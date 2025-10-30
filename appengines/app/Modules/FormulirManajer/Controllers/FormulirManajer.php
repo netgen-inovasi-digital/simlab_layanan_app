@@ -1,4 +1,4 @@
-<?php  
+<?php   
 
 namespace Modules\FormulirManajer\Controllers;
 
@@ -122,11 +122,13 @@ class FormulirManajer extends BaseController
                         ->where('l.lnStatus', 1)
                         ->where('COALESCE(pm.pending_for_manager,0) >', 0, false)
                     ->groupEnd();
-                } elseif ((int)$st === 3) {
+                  } elseif ((int)$st === 3) {
                     $builder->orGroupStart()
                         ->where('COALESCE(pm.pending_for_manager,0) =', 0, false)
+                        ->where('l.lnStatus !=', 0) // hindari draft jika masih ada
                     ->groupEnd();
-                } elseif ((int)$st === 4) {
+                }
+                elseif ((int)$st === 4) {
                     $builder->orGroupStart()
                         ->where('l.lnStatus', 4)
                     ->groupEnd();
@@ -579,6 +581,7 @@ class FormulirManajer extends BaseController
 
     public function kirim()
     {
+        // Tetap dipertahankan (logic tidak diubah), meski tombol Kirim di UI sudah dihapus
         $lnEnc = $this->request->getPost('ln');
 
         if (empty($lnEnc)) {
