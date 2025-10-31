@@ -283,26 +283,9 @@ $this->db->table('otoritas')->insertBatch([
                 'id_pengumuman' => 2,
                 'user_id' => 1,
                 'judul' => 'Pengumuman Maintenance Sistem Ecomel',
-                'deskripsi' => 'Halo, Sahabat Ecomel!' . "\r\n" . 'Kami akan melakukan maintenance sistem untuk peningkatan layanan pada:' . "\r\n\r\n" . '🗓️ Tanggal: Kamis, 18 Juli 2025' . "\r\n" . '⏰ Waktu: Pukul 23.00 – 03.00 WITA',
                 'status' => 'tampil',
-                'tanggal' => '2025-06-25'
             ],
-            [
-                'id_pengumuman' => 3,
-                'user_id' => 1,
-                'judul' => 'Pemberitahuan Keterlambatan Pengiriman',
-                'deskripsi' => 'Kami informasikan bahwa terjadi gangguan distribusi akibat cuaca ekstrem di beberapa wilayah Kalimantan dan Sulawesi. Hal ini dapat menyebabkan keterlambatan pengiriman 1–3 hari dari estimasi awal.',
-                'status' => 'tampil',
-                'tanggal' => '2025-06-25'
-            ],
-            [
-                'id_pengumuman' => 4,
-                'user_id' => 1,
-                'judul' => 'Promo Khusus Member Baru: Dapatkan Voucher Belanja!',
-                'deskripsi' => 'Kabar baik untuk kamu yang baru bergabung!' . "\r\n" . 'Dapatkan Voucher Belanja Rp25.000 tanpa minimum belanja, khusus untuk pengguna baru yang mendaftar akun Ecomel mulai 15–31 Juli 2025.',
-                'status' => 'tampil',
-                'tanggal' => '2025-08-01'
-            ],
+            
         ]);
 
         // 14. Insert posts data (exact from SQL)

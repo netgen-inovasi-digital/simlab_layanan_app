@@ -54,6 +54,7 @@
 .text-danger {
   color: var(--danger) !important;
 }
+
 .rounded-pill{
     border: none !important;
     height: 45px;
@@ -410,6 +411,7 @@ section {
 .swiper-button-next,
 .swiper-button-prev {
   color: #a1a1a1;
+  display: none !important;
 }
 
 .swiper-button-next:hover,

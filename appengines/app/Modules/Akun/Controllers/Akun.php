@@ -1,4 +1,4 @@
-<?php
+<?php 
 
 namespace Modules\Akun\Controllers;
 
@@ -8,7 +8,7 @@ use App\Models\MyModel;
 class Akun extends BaseController
 {
     private $table = 'simlab_account_users'; 
-    private $id = 'user_id';
+    private $id    = 'user_id';
 
     public function index()
     {
@@ -21,78 +21,143 @@ class Akun extends BaseController
     public function edit($id)
     {
         $idenc = $id;
-        $id = $this->encrypter->decrypt(hex2bin($id));
+        $id    = $this->encrypter->decrypt(hex2bin($id));
 
         $model = new MyModel($this->table);
-        $get = $model->getDataById($this->id, $id);
+        $get   = $model->getDataById($this->id, $id);
 
-        $data[csrf_token()] = csrf_hash();
-        $data['id'] = $idenc;
-        $data['user_name'] = $get->user_name;
-        $data['user_email'] = $get->user_email;
-        $data['status_user'] = $get->status_user;
+        $data[csrf_token()]    = csrf_hash();
+        $data['id']            = $idenc;
+        $data['user_name']     = $get->user_name;
+        $data['user_email']    = $get->user_email;
+        $data['user_telpon']   = $get->user_telpon; 
+        $data['status_user']   = $get->status_user;
         $data['user_identity'] = $get->user_identity;
+        $data['user_instansi'] = $get->user_instansi;
+        $data['bukti']         = $get->bukti ?? null;
+        $data['verifikasi']    = $get->verifikasi ?? 0;
+
+        // generate URL preview kalau ada file
+        if (!empty($get->bukti)) {
+            $data['bukti_url'] = base_url('uploads/bukti/' . $get->bukti);
+        } else {
+            $data['bukti_url'] = null;
+        }
 
         return $this->response->setJSON($data);
     }
 
     public function delete($id)
-	{
-		$id = $this->encrypter->decrypt(hex2bin($id));
+    {
+        $id = $this->encrypter->decrypt(hex2bin($id));
 
-		$model = new MyModel($this->table);
-		$res = $model->deleteData($this->id, $id);
+        $model = new MyModel($this->table);
+        $data  = $model->getDataById($this->id, $id);
 
-		return $this->response->setJSON([
-			'res' => $res,
-			'xname' => csrf_token(),
-			'xhash' => csrf_hash()
-		]);
-	}
+        // hapus file bukti jika ada
+        if (!empty($data->bukti)) {
+            $oldPath = FCPATH . 'uploads/bukti/' . $data->bukti;
+            if (is_file($oldPath) && strpos(realpath($oldPath), realpath(FCPATH . 'uploads/bukti')) === 0) {
+                unlink($oldPath);
+            }
+        }
 
+        $res = $model->deleteData($this->id, $id);
+
+        return $this->response->setJSON([
+            'res'   => $res,
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
+        ]);
+    }
 
     public function submit()
     {
-        $idenc = $this->request->getPost('id');
+        $idenc    = $this->request->getPost('id');
         $username = $this->request->getPost('user_name');
+        $email    = $this->request->getPost('user_email');
+        $telpon   = $this->request->getPost('user_telpon');
+
+        $model = new MyModel($this->table);
 
         $data = [
             'user_name'     => $username,
-            'user_email'    => $this->request->getPost('user_email'),
+            'user_email'    => $email,
+            'user_telpon'   => $telpon, 
             'status_user'   => $this->request->getPost('status_user'),
             'user_identity' => $this->request->getPost('user_identity'),
+            'role_id'       => 2,
         ];
 
-        $password = $this->request->getPost('user_password');
-        if ($password != "") {
-            $data['user_password'] = password_hash($password, PASSWORD_DEFAULT);
+        // simpan instansi hanya jika NON ULM
+        if ($this->request->getPost('user_identity') === 'NON ULM') {
+            $data['user_instansi'] = $this->request->getPost('user_instansi');
+        } else {
+            $data['user_instansi'] = null;
         }
 
-        $model = new MyModel($this->table);
-        $check = $model->getDataById('user_name', $username);
+        // password
+        $password = $this->request->getPost('user_password');
+        if (!empty($password)) {
+            $data['user_password'] = password_hash($password, PASSWORD_DEFAULT);
+        }
+        
+        // Upload Bukti File 
+        $file = $this->request->getFile('bukti_file');
+        if ($file && $file->isValid() && !$file->hasMoved()) {
+            // Jika ini UPDATE, hapus file lama sebelum upload baru
+            if (!empty($idenc)) {
+                $id      = $this->encrypter->decrypt(hex2bin($idenc));
+                $current = $model->getDataById($this->id, $id);
+                if (!empty($current->bukti)) {
+                    $oldPath = FCPATH . 'uploads/bukti/' . $current->bukti;
+                    if (is_file($oldPath) && strpos(realpath($oldPath), realpath(FCPATH . 'uploads/bukti')) === 0) {
+                        unlink($oldPath);
+                    }
+                }
+            }
+
+            // Upload file baru menggunakan doUpload yang disesuaikan
+            $uploadResult = $this->doUpload($file);
+            if (!$uploadResult['status']) {
+                return $this->response->setJSON([
+                    'res'   => 'error',
+                    'msg'   => $uploadResult['msg'],
+                    'xname' => csrf_token(),
+                    'xhash' => csrf_hash()
+                ]);
+            } else {
+                $data['bukti'] = $uploadResult['filename'];
+            }
+        }
+
+        $verifikasi = $this->request->getPost('verifikasi');
+        $data['verifikasi'] = ($verifikasi === '1') ? 1 : 0;
+
+        $check = $model->getDataById('user_email', $email);
 
         if ($idenc == "") {
             if ($check) {
-                $res = 'check';
-                $link = 'Username sudah ada!';
+                $res  = 'check';
+                $link = 'Email sudah ada!';
             } else {
                 $res = $model->insertData($data);
             }
         } else {
-            $id = $this->encrypter->decrypt(hex2bin($idenc));
+            $id      = $this->encrypter->decrypt(hex2bin($idenc));
             $current = $model->getDataById($this->id, $id);
 
-            if ($check && $current->user_name != $username) {
-                $res = 'check';
-                $link = 'Username sudah ada!';
+            if ($check && $current->user_email != $email) {
+                $res  = 'check';
+                $link = 'Email sudah ada!';
             } else {
                 $res = $model->updateData($data, $this->id, $id);
             }
         }
 
         return $this->response->setJSON([
-            'res' => $res,
-            'link' => $link ?? '',
+            'res'   => $res,
+            'link'  => $link ?? '',
             'xname' => csrf_token(),
             'xhash' => csrf_hash()
         ]);
@@ -101,16 +166,34 @@ class Akun extends BaseController
     public function dataList()
     {
         $model = new MyModel($this->table);
-        $data = [];
+        $data  = [];
 
-        $list = $model->getAllData();
+        $list = $model->getAllData('user_id', 'DESC');
         foreach ($list as $row) {
-            $id = bin2hex($this->encrypter->encrypt($row->user_id));
+            $id       = bin2hex($this->encrypter->encrypt($row->user_id));
             $response = [];
 
             $response[] = $row->user_name;
-            $response[] = $row->user_email;
-            $response[] = $row->user_identity;
+
+            $kontak  = "Email : " . $row->user_email;
+            $kontak .= "<br>No. Telepon : " . ($row->user_telpon ?? '-'); 
+            $response[] = $kontak;
+
+            $identity = $row->user_identity;
+
+            if ($row->verifikasi == 1) {
+                $verify = '<span class="badge bg-success">Terverifikasi</span>';
+            } else {
+                $verify = '<span class="badge bg-danger">Belum Terverifikasi</span>';
+            }
+
+            $response[] = $identity . '<br>' . $verify;
+
+            if ($row->user_identity === 'NON ULM') {
+                $response[] = $row->user_instansi ?? '-';
+            } else {
+                $response[] = '-';
+            }
 
             $aktif = '<small><i class="bi bi-check-circle text-primary"></i> Aktif</small>';
             if ($row->status_user == 0) {
@@ -136,5 +219,65 @@ class Akun extends BaseController
             <span class="text-danger btn-action" title="Hapus" onclick="deleteItem(event)">
                 <i class="bi bi-trash"></i></span>
         </div>';
+    }
+
+    
+    private function doUpload($file)
+    {
+        $result = ['status' => false, 'msg' => 'File tidak valid atau sudah dipindahkan', 'filename' => ''];
+
+        if (!($file && $file->isValid() && !$file->hasMoved())) {
+            return $result;
+        }
+
+        $allowedExt  = ['jpg', 'jpeg', 'png'];
+        $allowedMime = ['image/jpeg', 'image/png'];
+
+        $ext  = strtolower($file->getClientExtension());
+
+        $tmpName = $file->getTempName();
+        $detectedMime = null;
+        if (is_file($tmpName)) {
+            if (function_exists('finfo_open')) {
+                $finfo = finfo_open(FILEINFO_MIME_TYPE);
+                $detectedMime = finfo_file($finfo, $tmpName);
+                finfo_close($finfo);
+            } else {
+                $detectedMime = $file->getMimeType();
+            }
+        } else {
+            return ['status' => false, 'msg' => 'File sementara tidak ditemukan', 'filename' => ''];
+        }
+        if (!in_array($ext, $allowedExt) || !in_array($detectedMime, $allowedMime)) {
+            return ['status' => false, 'msg' => 'Format gambar tidak diperbolehkan', 'filename' => ''];
+        }
+
+        if (@getimagesize($tmpName) === false) {
+            return ['status' => false, 'msg' => 'File bukan gambar asli', 'filename' => ''];
+        }
+
+        // Validasi ukuran file (contoh: max 2MB)
+        if ($file->getSize() > 2 * 1024 * 1024) {
+            return ['status' => false, 'msg' => 'Ukuran file maksimal 2MB', 'filename' => ''];
+        }
+
+        try {
+            $filename = time() . bin2hex(random_bytes(5)) . '.' . $ext;
+        } catch (\Exception $e) {
+            $filename = time() . '_' . bin2hex(openssl_random_pseudo_bytes(5)) . '.' . $ext;
+        }
+
+        $path = FCPATH . 'uploads/bukti';
+        if (!is_dir($path)) {
+            @mkdir($path, 0755, true);
+        }
+
+        try {
+            $file->move($path, $filename, true);
+        } catch (\Exception $e) {
+            return ['status' => false, 'msg' => 'Gagal memindahkan file: ' . $e->getMessage(), 'filename' => ''];
+        }
+
+        return ['status' => true, 'msg' => 'OK', 'filename' => $filename];
     }
 }

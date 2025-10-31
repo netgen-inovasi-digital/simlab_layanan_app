@@ -107,9 +107,10 @@
                     </button>
                 </a>
                 <span class="divider vr ms-2 me-2"></span>
-                <a href="profil" class="header-link nav-link" title="Profil">
+                <a href="<?= base_url('profilpw') ?>" class="header-link nav-link" title="Profil">
                     <button aria-label="button" type="button" class="btn btn-icon p-0 text-secondary">
-                        <i class="bi bi-person-fill" style="font-size: 1.3rem;"></i> </button>
+                        <i class="bi bi-person-fill" style="font-size: 1.3rem;"></i>
+                    </button>
                 </a>
                 <span class="divider vr ms-2 me-2"></span>
                 <a href="<?php echo site_url('logout') ?>" class="header-link ms-2" title="Logout">

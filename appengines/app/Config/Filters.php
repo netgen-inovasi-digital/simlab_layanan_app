@@ -34,7 +34,7 @@ class Filters extends BaseFilters
         'forcehttps'    => ForceHTTPS::class,
         'pagecache'     => PageCache::class,
         'performance'   => PerformanceMetrics::class,
-		'auth'          => \App\Filters\AuthFilter::class,
+        'auth'          => \App\Filters\AuthFilter::class,
     ];
 
     /**
@@ -71,7 +71,12 @@ class Filters extends BaseFilters
     public array $globals = [
         'before' => [
             // 'honeypot',
-            'csrf' => ['except' => ['api/*', 'order-status/search', 'checkout/calculateRajaOngkirShipping', 'checkout/getCartWeight']],
+            'csrf' => ['except' => [
+                'api/*',
+                'order-status/search',
+                'checkout/calculateRajaOngkirShipping',
+                'checkout/getCartWeight'
+            ]],
             // 'invalidchars',
         ],
         'after' => [

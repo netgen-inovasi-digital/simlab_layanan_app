@@ -77,8 +77,4 @@ class Profil extends BaseController
 		return $filename;
 	}
 
-	// $file = $this->request->getFile('image');
-	// if ($file->isValid() && in_array($file->getMimeType(), ['image/jpeg', 'image/png', 'application/pdf'])) {
-	// 	// simpan
-	// }
 }

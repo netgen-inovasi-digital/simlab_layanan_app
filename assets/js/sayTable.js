@@ -10,6 +10,7 @@ const defaultConfig = {
     itemsPerPage: 10,showFilter: true, treeview: true, numbering: true,
 };
 
+
 function createTable(customConfig = {}) {
     config = { ...defaultConfig, ...customConfig };
     tables[config.tableId] = { config };
@@ -246,6 +247,7 @@ function populateTable(data) {
     tableBody.appendChild(fragment);
 	attachSortListeners();
 }
+
 function insertPagination() {
     const table = document.getElementById(config.tableId);
     const pagination = document.getElementById(`pagination-${config.tableId}`);
@@ -416,4 +418,307 @@ function adjustTableForMobile() {
         });
     });
 }
+
+function createModal(customConfig = {}) {
+    // ======== CONFIG ========
+    const modalConfig = { ...defaultConfig, ...customConfig };
+    tables[modalConfig.tableId] = { config: modalConfig };
+
+    let modalItems = [], modalItemsSorted = [];
+    let modalSortDirection = 'asc', modalLastSortedColumn = null;
+    let modalSearchTerm = "", modalFirstLoad = true, modalIsLoaded = false;
+    let modalTotalCount = 0;
+
+    // ======== DEBOUNCE ========
+    function debounce(func, delay) {
+        let timer;
+        return function (...args) {
+            clearTimeout(timer);
+            timer = setTimeout(() => func.apply(this, args), delay);
+        };
+    }
+
+    // ======== FETCH DATA ========
+    async function fetchData({ page = modalConfig.currentPage, reload = false } = {}) {
+        modalConfig.currentPage = page;
+        if (modalFirstLoad) loadingTable();
+
+        if (!modalIsLoaded && modalItems.length > 0 && !reload) {
+            displayCachedData(page, modalTotalCount);
+            return;
+        }
+
+        try {
+            let url = `${modalConfig.apiUrl}?page=${page}&limit=${modalConfig.itemsPerPage}`;
+            if (modalSearchTerm) url += `&search=${encodeURIComponent(modalSearchTerm)}`;
+
+            const response = await fetch(url);
+            const data = await response.json();
+
+            if (data.items) {
+                modalItems = data.items;
+                modalTotalCount = data.total ?? modalItems.length;
+                modalIsLoaded = true;
+
+                const dataToUse = modalItemsSorted.length ? modalItemsSorted : modalItems;
+                populateModalTable(dataToUse.slice(
+                    (modalConfig.currentPage - 1) * modalConfig.itemsPerPage,
+                    modalConfig.currentPage * modalConfig.itemsPerPage
+                ));
+
+                if (modalConfig.showFilter) insertModalFilter();
+                if (modalTotalCount > modalConfig.itemsPerPage) {
+                    insertModalPagination();
+                    setupModalPagination(modalTotalCount);
+                } else {
+                    const paging = document.getElementById(`pagination-${modalConfig.tableId}`);
+                    if (paging) paging.remove();
+                }
+            } else throw new Error('Invalid data structure');
+
+        } catch (e) {
+            console.error('Error fetching data (modal):', e);
+        } finally {
+            const tr = document.getElementById(`loading-table-${modalConfig.tableId}`);
+            if (tr) tr.remove();
+            modalFirstLoad = false;
+        }
+    }
+
+    // ======== LOADING ========
+    function loadingTable() {
+        const table = document.getElementById(modalConfig.tableId);
+        const tbody = table.querySelector('tbody');
+        const row = document.createElement('tr');
+        row.id = `loading-table-${modalConfig.tableId}`;
+        const cell = document.createElement('td');
+        cell.colSpan = table.querySelectorAll('th').length;
+        cell.style.height = '70px';
+        cell.innerHTML = '<div class="spinner-table"></div><em>Loading, silahkan tunggu...</em>';
+        row.appendChild(cell);
+        tbody.appendChild(row);
+    }
+
+    // ======== FILTER ========
+    function createModalFilter() {
+        const container = document.createElement("div");
+        container.id = `filter-container-${modalConfig.tableId}`;
+        container.className = "d-flex justify-content-between align-items-center mb-2";
+        container.innerHTML = `
+            <div>
+                <label>Show:</label>
+                <select id="items-per-page-${modalConfig.tableId}">
+                    <option value="10">10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                </select>
+            </div>
+            <div>
+                <input type="text" id="search-input-${modalConfig.tableId}" placeholder="Search..." />
+            </div>
+        `;
+        return container;
+    }
+
+    function insertModalFilter() {
+        const table = document.getElementById(modalConfig.tableId);
+        if (!table || document.getElementById(`filter-container-${modalConfig.tableId}`)) return;
+
+        const filter = createModalFilter();
+        table.parentNode.insertBefore(filter, table);
+
+        document.getElementById(`items-per-page-${modalConfig.tableId}`)
+            .addEventListener('change', e => {
+                modalConfig.itemsPerPage = parseInt(e.target.value);
+                modalConfig.currentPage = 1;
+                fetchData({ page: 1 });
+            });
+
+        document.getElementById(`search-input-${modalConfig.tableId}`)
+            .addEventListener('input', debounce(e => {
+                modalSearchTerm = e.target.value.toLowerCase();
+                modalConfig.currentPage = 1;
+                fetchData({ page: 1 });
+            }, 300));
+    }
+
+    // ======== POPULATE TABLE ========
+    function populateModalTable(data) {
+        const table = document.getElementById(modalConfig.tableId);
+        const tbody = table.querySelector('tbody');
+        tbody.innerHTML = '';
+
+        const headers = Array.from(table.querySelectorAll('th'));
+        if (!data || !data.length) {
+            const row = document.createElement('tr');
+            const cell = document.createElement('td');
+            cell.colSpan = headers.length;
+            cell.textContent = 'No data available';
+            row.appendChild(cell);
+            tbody.appendChild(row);
+            return;
+        }
+
+        const offset = (modalConfig.currentPage - 1) * modalConfig.itemsPerPage;
+
+        data.forEach((item, index) => {
+            const row = document.createElement('tr');
+            let toggleIcon;
+
+            if (modalConfig.numbering) {
+                const numCell = document.createElement('td');
+                numCell.textContent = `${offset + index + 1}.`;
+                if (modalConfig.treeview) {
+                    numCell.innerHTML = '';
+                    toggleIcon = document.createElement('span');
+                    toggleIcon.className = 'treeview-icon';
+                    toggleIcon.textContent = '▶';
+                    numCell.appendChild(toggleIcon);
+                    numCell.append(` ${offset + index + 1}.`);
+                }
+                row.appendChild(numCell);
+            }
+
+            Object.keys(item).forEach((key, cellIndex) => {
+                const cell = document.createElement('td');
+                const value = item[key];
+                const isHTML = /<[^>]+>/.test(value);
+                cell.innerHTML = (typeof value === 'string' && isHTML) ? value : (value ?? '');
+                if (modalConfig.treeview && !modalConfig.numbering && cellIndex === 0) {
+                    toggleIcon = document.createElement('span');
+                    toggleIcon.className = 'treeview-icon';
+                    toggleIcon.textContent = '▶';
+                    cell.prepend(toggleIcon);
+                }
+                row.appendChild(cell);
+            });
+
+            tbody.appendChild(row);
+
+            // TREEVIEW DETAIL
+            if (modalConfig.treeview) {
+                const hiddenRow = document.createElement('tr');
+                const hiddenCell = document.createElement('td');
+                hiddenCell.colSpan = headers.length + ((modalConfig.numbering || modalConfig.treeview) ? 1 : 0);
+                const detailList = document.createElement('ul');
+                hiddenCell.appendChild(detailList);
+                hiddenRow.appendChild(hiddenCell);
+                hiddenRow.className = 'treeview-row';
+                hiddenRow.style.display = 'none';
+
+                Object.keys(item).forEach((key, cellIndex) => {
+                    const headerIndex = modalConfig.numbering ? cellIndex + 1 : cellIndex;
+                    const header = headers[headerIndex];
+                    if (!header || header.hasAttribute('show')) return;
+                    const li = document.createElement('li');
+                    li.innerHTML = `${header.textContent}: ${item[key] ?? ''}`;
+                    detailList.appendChild(li);
+                });
+
+                if (toggleIcon) toggleIcon.addEventListener('click', () => {
+                    const isVisible = hiddenRow.style.display === 'table-row';
+                    hiddenRow.style.display = isVisible ? 'none' : 'table-row';
+                    toggleIcon.textContent = isVisible ? '▶' : '▼';
+                });
+
+                tbody.appendChild(hiddenRow);
+            }
+        });
+
+        attachModalSortListeners();
+    }
+
+    // ======== SORT ========
+    function sortModalTable(columnIndex) {
+        if (modalConfig.numbering) columnIndex -= 1;
+        const columnKey = Object.keys(modalItems[0])[columnIndex];
+        if (modalLastSortedColumn === columnIndex) modalSortDirection = modalSortDirection === 'asc' ? 'desc' : 'asc';
+        else modalSortDirection = 'asc';
+
+        modalItemsSorted = [...modalItems].sort((a, b) => {
+            const aText = String(a[columnKey]).replace(/<\/?[^>]+(>|$)/g, '').trim();
+            const bText = String(b[columnKey]).replace(/<\/?[^>]+(>|$)/g, '').trim();
+            let compareValue = !isNaN(aText) && !isNaN(bText) ? parseFloat(aText) - parseFloat(bText) : aText.localeCompare(bText);
+            return modalSortDirection === 'asc' ? compareValue : -compareValue;
+        });
+
+        modalLastSortedColumn = columnIndex;
+
+        const dataToShow = modalItemsSorted.slice(
+            (modalConfig.currentPage - 1) * modalConfig.itemsPerPage,
+            modalConfig.currentPage * modalConfig.itemsPerPage
+        );
+        populateModalTable(dataToShow);
+    }
+
+    function attachModalSortListeners() {
+        const table = document.getElementById(modalConfig.tableId);
+        const headers = table.querySelectorAll('th');
+        headers.forEach((header, index) => {
+            if (!header.hasAttribute('data-listener')) {
+                if (header.textContent !== "No.") {
+                    header.style.cursor = 'pointer';
+                    header.addEventListener('click', () => sortModalTable(index));
+                }
+                header.setAttribute('data-listener', 'true');
+            }
+        });
+    }
+
+    // ======== PAGINATION ========
+    function insertModalPagination() {
+        const table = document.getElementById(modalConfig.tableId);
+        if (document.getElementById(`pagination-${modalConfig.tableId}`)) return;
+
+        const pagination = document.createElement('div');
+        pagination.id = `pagination-${modalConfig.tableId}`;
+        pagination.className = 'paging';
+        pagination.innerHTML = `
+            <button class="btn btn-sm prev" id="prev-${modalConfig.tableId}">Prev</button>
+            <div class="page-buttons" id="page-buttons-${modalConfig.tableId}"></div>
+            <button class="btn btn-sm next" id="next-${modalConfig.tableId}">Next</button>`;
+        table.insertAdjacentElement('afterEnd', pagination);
+    }
+
+    function setupModalPagination(totalItems) {
+        const totalPages = Math.ceil(totalItems / modalConfig.itemsPerPage);
+        const prev = document.getElementById(`prev-${modalConfig.tableId}`);
+        const next = document.getElementById(`next-${modalConfig.tableId}`);
+        const pages = document.getElementById(`page-buttons-${modalConfig.tableId}`);
+        pages.innerHTML = '';
+
+        const maxVisibleButtons = 5;
+        const sideButtons = Math.floor(maxVisibleButtons / 2);
+        let startPage = Math.max(1, modalConfig.currentPage - sideButtons);
+        let endPage = Math.min(totalPages, modalConfig.currentPage + sideButtons);
+        if (endPage - startPage + 1 < maxVisibleButtons) {
+            if (modalConfig.currentPage <= sideButtons) endPage = Math.min(totalPages, startPage + maxVisibleButtons - 1);
+            else if (modalConfig.currentPage + sideButtons >= totalPages) startPage = Math.max(1, endPage - maxVisibleButtons + 1);
+        }
+
+        // First, middle, last buttons
+        for (let i = startPage; i <= endPage; i++) {
+            const btn = document.createElement('button');
+            btn.textContent = i;
+            btn.className = i === modalConfig.currentPage ? 'btn btn-sm active' : 'btn btn-sm';
+            btn.onclick = () => { modalConfig.currentPage = i; fetchData({ page: i }); };
+            pages.appendChild(btn);
+        }
+
+        prev.disabled = modalConfig.currentPage === 1;
+        next.disabled = modalConfig.currentPage === totalPages;
+        prev.onclick = () => { if (modalConfig.currentPage > 1) fetchData({ page: --modalConfig.currentPage }); };
+        next.onclick = () => { if (modalConfig.currentPage < totalPages) fetchData({ page: ++modalConfig.currentPage }); };
+    }
+
+    fetchData();
+
+    return {
+        refresh: (newConfig = {}) => { Object.assign(modalConfig, newConfig); fetchData(); },
+        fetchData,
+        getConfig: () => modalConfig
+    };
+}
+
+
 window.addEventListener('resize', adjustTableForMobile);

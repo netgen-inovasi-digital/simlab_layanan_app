@@ -1,9 +1,3 @@
-<style>
-    .status-toggle {
-        cursor: pointer;
-    }
-</style>
-
 <div class="row">
     <div class="col-md-12">
         <div class="card">
@@ -18,19 +12,18 @@
                     <thead>
                         <tr>
                             <th show width="8%">No.</th>
-                            <th show>Pengumuman</th>
+                            <th show>Judul Pengumuman</th>
+                            <th>File</th>
                             <th>Status</th>
-                            <th show class="action text-end">Aksi<i class="bi bi-code sort-icon"></i></th>
+                            <th show class="action text-end">Aksi</th>
                         </tr>
                     </thead>
-                    <tbody id="table-body">
-                    </tbody>
+                    <tbody id="table-body"></tbody>
                 </table>
             </div>
         </div>
     </div>
 </div>
-
 
 <script>
     table = createTable({
@@ -38,200 +31,104 @@
     });
     addAction();
 
-    document.querySelector('#btnSimpan').addEventListener('click', function(e) {
-        e.preventDefault(); // Hindari submit default
+    var modal = document.getElementById('modalForm');
+    modal.addEventListener('shown.bs.modal', function (e) {
+        const id = document.querySelector('[name="id"]').value;
+        const fileInput = document.querySelector('[name="file"]');
+        fileInput.removeAttribute('required');
+        if (id == "") fileInput.setAttribute('required', true);
+    });
+    async function editItem(e) {
+    const id = e.target.closest('div').id;
+    const csrfName = document.querySelector('[name="<?php echo csrf_token() ?>"]').getAttribute('name');
+    const csrfHash = document.querySelector('[name="<?php echo csrf_token() ?>"]').value;
 
-        const form = document.querySelector('#myform');
-        const formData = new FormData(form);
-        const actionUrl = form.getAttribute('action');
+    const formData = new URLSearchParams();
+    formData.append('id', id);
+    formData.append(csrfName, csrfHash);
 
-        saveDataPengumuman({
-            url: actionUrl,
-            formData: formData,
-            onSuccess: function(data) {
-                if (data.res === 'limit') {
-                    sayAlert('errorModal', 'Batas Tercapai', 'Maksimal hanya 3 pengumuman yang bisa ditampilkan.', 'warning');
-                    return;
-                }
-
-                if (data.res === true) {
-                    if (typeof table !== 'undefined') table.fetchData({
-                        reload: true
-                    });
-                    sayAlert('successModal', 'Berhasil', 'Data berhasil disimpan.', 'success');
-                    if ($('#modalForm').hasClass('show')) $('#modalForm').modal('hide');
-                }
-            }
-        });
+    const response = await fetch("<?php echo site_url('pengumuman/edit') ?>", {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: formData
     });
 
-    function saveDataPengumuman({
-        url,
-        formData,
-        onSuccess,
-        onError
-    }) {
-        showLoading();
-
-        const csrfInput = document.querySelector('[name="<?= csrf_token() ?>"]');
-        const csrfToken = csrfInput ? csrfInput.value : '';
-
-        fetch(url, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                // Update token
-                if (data.xname && data.xhash) {
-                    document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => {
-                        input.value = data.xhash;
-                    });
-                }
-
-                if (typeof onSuccess === 'function') {
-                    onSuccess(data);
-                    return;
-                }
-
-                if ($('#modalForm').hasClass('show')) $('#modalForm').modal('hide');
-
-                if (data.res === true) {
-                    if (typeof table !== 'undefined') table.fetchData({
-                        reload: true
-                    });
-                    sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
-                } else if (data.res === 'limit') {
-                    sayAlert('errorModal', 'Batas Tercapai', data.message, 'warning');
-                } else if (data.res === 'reload') {
-                    sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
-                } else if (data.res === 'refresh') {
-                    loadContent(data.link);
-                    sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
-                } else if (data.res === 'redirect') {
-                    window.location.href = data.link;
-                } else if (data.res === 'check') {
-                    sayAlert('errorModal', 'Error', data.link, 'warning');
-                } else if (data.res === 'refresh-print') {
-                    loadContent(data.link);
-                    window.open(data.print, "_blank");
-                } else {
-                    sayAlert('errorModal', 'Error', 'Data gagal disimpan.', 'warning');
-                }
-            })
-            .catch(error => {
-                if (typeof onError === 'function') {
-                    onError(error);
-                } else {
-                    sayAlert('errorModal', 'Error', 'Terjadi kesalahan pada sistem.', 'warning');
-                }
-            })
-            .finally(() => {
-                hideLoading();
-            });
+    if (!response.ok) {
+        alert("Gagal menghubungi server. (" + response.status + ")");
+        return;
     }
 
-    if (!window.statusToggleBound) {
-        document.addEventListener('change', function(e) {
-            const target = e.target;
-            if (target.classList.contains('status-toggle-pengumuman')) {
-                const id = target.dataset.id;
-                const status = target.checked ? 'tampil' : 'tersembunyi';
-                const tokenName = "<?= csrf_token() ?>";
-                const tokenInput = document.querySelector(`[name="${tokenName}"]`);
-                const tokenValue = tokenInput ? tokenInput.value : '';
+    const data = await response.json();
 
-                const formData = new FormData();
-                formData.append('id', id);
-                formData.append('status', status);
-                formData.append(tokenName, tokenValue);
+    document.querySelector('[name="<?php echo csrf_token() ?>"]').value = data["<?php echo csrf_token() ?>"];
 
-                fetch('./pengumuman/toggle', {
-                        method: 'POST',
-                        body: formData
-                    })
-                    .then(res => res.json())
-                    .then(data => {
-                        if (data.xhash) tokenInput.value = data.xhash;
-                        if (data.res === 'limit') {
-                            sayAlert('errorModal', 'Batas Tercapai', 'Maksimal hanya 3 pengumuman yang bisa ditampilkan.', 'warning');
-                            target.checked = false;
-                        }
-                    })
-                    .catch(err => {
-                        console.error('Gagal toggle:', err);
-                        target.checked = !target.checked;
-                    });
-            }
-        });
-
-        // ===== tooltip ===== //
-        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-        tooltipTriggerList.forEach(function (tooltipTriggerEl) {
-            new bootstrap.Tooltip(tooltipTriggerEl)
-        })
-
-        window.statusToggleBound = true; // Cegah event listener ganda
+    if (data.res === 'error') {
+        alert(data.msg);
+        return;
     }
+
+    const form = document.getElementById('myform');
+    form.reset();
+
+    document.querySelector('[name="id"]').value = data.id;
+    document.querySelector('[name="judul"]').value = data.judul ?? '';
+    document.querySelector('[name="status"]').checked = data.status === 'tampil';
+
+    const modal = new bootstrap.Modal(document.getElementById('modalForm'));
+    modal.show();
+}
 </script>
 
-
+<!-- Modal Form -->
 <div class="modal fade" id="modalForm" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document" style="margin: 2% auto">
+    <div class="modal-dialog" role="document" style="margin: 2% auto">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Modal title</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
-                </button>
+                <h5 class="modal-title">Data Pengumuman</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <?php echo form_open('pengumuman/submit', array('id' => 'myform', 'novalidate' => '')) ?>
-            <div class="modal-body">
-                <input type="hidden" value="" name="id" />
-                <input name="slug" type="text" class="form-control bg-light" value="" hidden>
-                <div class="row mb-2">
-                    <div class="col">
-                        <label class="col-md-3 col-form-label">Judul</label>
-                        <input name="judul" type="text" class="form-control" required placeholder="Masukkan judul pengumuman">
-                    </div>
-                </div>
-                <div class="row mb-2">
-                    <div class="col">
-                        <label for="deskripsi" class="col-md-3 col-form-label">Deskripsi</label>
-                        <textarea name="deskripsi" class="form-control" id="deskripsi" placeholder="masukkan deskripsi pengumuman"></textarea>
-                    </div>
-                </div>
-                <div class="row mb-2">
-                    <div class="col">
-                        <label class="col-md-3 col-form-label">Tanggal</label>
-                        <input name="tanggal" id="tanggal-input" type="date" class="form-control"
-                            value="<?= esc(date('Y-m-d')) ?>" required>
-                    </div>
-                    <div class="col">
-                        <label class="col-md-2 col-form-label">Author</label>
-                        <input name="nama" type="text" value="<?= $user->nama ?>" class="form-control bg-light" required readonly>
-                        <input name="user_id" type="text" value="<?= $user->id_user ?>" class="form-control" required hidden>
-                    </div>
-                    <div class="col">
-                        <div class="mb-3">
-                            <label class="form-label d-block">Status</label>
-                            <div class="btn-group" role="group" aria-label="Status pilihan">
-                                <input type="radio" class="btn-check" name="status" id="status-tersembunyi" value="tersembunyi" autocomplete="off" checked>
-                                <label class="btn btn-outline-secondary me-1" for="status-tersembunyi">Tersembunyi</label>
 
-                                <input type="radio" class="btn-check" name="status" id="status-tampil" value="tampil" autocomplete="off">
-                                <label class="btn btn-outline-success" for="status-tampil">Tampil</label>
+            <?php echo form_open_multipart('pengumuman/submit', array('id' => 'myform', 'novalidate' => '')) ?>
+                <div class="modal-body">
+                    <input type="hidden" name="id" value="">
+
+                    <!-- Judul -->
+                    <div class="row mb-2">
+                        <label class="col-md-4 col-form-label">Judul Pengumuman</label>
+                        <div class="col">
+                            <input type="text" class="form-control" name="judul" required>
+                        </div>
+                    </div>
+
+                    <!-- File -->
+                    <div class="row mb-2">
+                        <label class="col-md-4 col-form-label">File Pengumuman</label>
+                        <div class="col">
+                            <input type="file" class="form-control" name="file" accept=".png,.jpg,.jpeg">
+                            <small class="text-muted">Kosongkan jika tidak mengganti file.</small>
+                        </div>
+                    </div>
+
+                    <!-- Status -->
+                    <div class="row mb-2">
+                        <label class="col-md-4 col-form-label">Status</label>
+                        <div class="col mt-2">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="status" id="status" checked>
+                                <label class="form-check-label" for="status">Tampilkan di halaman depan</label>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-light" type="button" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i> Batal</button>
-                <button class="btn btn-success" id="btnSimpan" type="submit"><i class="bi bi-check2-circle"></i> Simpan</button>
-            </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-light" type="button" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Batal
+                    </button>
+                    <button class="btn btn-success" type="submit">
+                        <i class="bi bi-check2-circle"></i> Simpan
+                    </button>
+                </div>
             </form>
         </div>
     </div>
