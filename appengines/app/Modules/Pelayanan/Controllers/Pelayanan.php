@@ -338,6 +338,71 @@ class Pelayanan extends BaseController
         return ['has' => false, 'url' => '#'];
     }
 
+    public function kuesioner($id)
+    {
+         $idenc = $id;
+        try { $lnKode = $this->encrypter->decrypt(hex2bin($idenc)); }
+        catch (\Exception $e) { throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound(); }
+
+        $modelPertanyaan = new MyModel('simlab_t_kuesioner');
+        $pertanyaan = $modelPertanyaan->getAllDataWithJoinWhereOrder([], [], ['kuesioner_id' => 'ASC']);
+
+        $data = [
+            'title' => 'Kuesioner Kepuasan Pelanggan',
+            'pertanyaan' => $pertanyaan,
+            'idenc' => $idenc,
+        ];
+        return view('Modules\Pelayanan\Views\v_kuesioner_form_user', $data);
+    }
+
+    public function submit_kuesioner()
+    {
+        $session = session();
+        $user_id = $session->get('id_user');
+        $idenc   = $this->request->getPost('idenc');
+
+        try { $lnKode = $this->encrypter->decrypt(hex2bin($idenc)); }
+        catch (\Exception $e) {
+             return $this->response->setJSON([ 'res' => false, 'msg' => 'ID Layanan tidak valid.', 'xname' => csrf_token(), 'xhash' => csrf_hash() ]);
+        }
+
+        $jawaban_array = $this->request->getPost('jawaban');
+        if (empty($jawaban_array)) {
+            return $this->response->setJSON([ 'res' => false, 'msg' => 'Tidak ada jawaban yang dikirim.', 'xname' => csrf_token(), 'xhash' => csrf_hash() ]);
+        }
+
+        $modelJawaban = new MyModel('simlab_t_kuesioner_jawaban');
+        $modelLayanan = new MyModel($this->table);
+        $db = \Config\Database::connect();
+
+        $db->transStart();
+
+        foreach ($jawaban_array as $id_pertanyaan => $jawaban) {
+            $existingAnswer = $modelJawaban->getWhere(['id_pertanyaan' => $id_pertanyaan, 'user_id' => $user_id])->getRow();
+            if (!$existingAnswer) {
+                $dataJawaban = [
+                    'id_pertanyaan' => $id_pertanyaan, 'user_id' => $user_id,
+                    'jawaban' => $jawaban, 'created_at' => date('Y-m-d H:i:s') ];
+                $modelJawaban->insertData($dataJawaban);
+            }
+        }
+
+        $modelLayanan->updateData(['kuisioner' => 1, 'lnStatus' => 8], $this->id, $lnKode);
+
+        $db->transComplete();
+
+        if ($db->transStatus() === false) {
+            return $this->response->setJSON([ 'res' => false, 'msg' => 'Terjadi kegagalan saat menyimpan data.', 'xname' => csrf_token(), 'xhash' => csrf_hash() ]);
+        }
+
+        return $this->response->setJSON([
+            'res'   => 'refresh',
+            'link'  => site_url('pelayanan'),
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
+        ]);
+    }
+
     public function keranjang()
 {
     $session = session();
@@ -1031,6 +1096,8 @@ public function kategoriList()
         'categories' => array_values($categories)
     ]);
 }
+
+
 
 
 }

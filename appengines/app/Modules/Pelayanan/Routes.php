@@ -12,6 +12,10 @@ $routes->group('pelayanan', ['namespace' => 'Modules\Pelayanan\Controllers'], fu
     $subroutes->get('detail/(:any)', 'Pelayanan::detail/$1');
     $subroutes->get('checkVerified', 'Pelayanan::checkVerified');
 
+    $subroutes->get('datalist2/(:any)', 'Pelayanan::dataList2/$1');
+    $subroutes->get('kuesioner/(:any)', 'Pelayanan::kuesioner/$1');
+    $subroutes->post('submit_kuesioner', 'Pelayanan::submit_kuesioner');
+
     $subroutes->get('keranjang', 'Pelayanan::keranjang');                  
     $subroutes->get('keranjang/datalist', 'Pelayanan::keranjangDataList');   
     $subroutes->get('keranjang/dataListLayanan', 'Pelayanan::keranjangDataListLayanan');
