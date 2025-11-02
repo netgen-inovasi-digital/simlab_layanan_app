@@ -206,6 +206,7 @@
                             <th width="15%">Keterangan</th>
                             <th width="15%">Status</th>
                             <th width="15%">Keterangan Manajer</th>
+                            <th width="10%">Acc</th>
                         </tr>
                     </thead>
                     <tbody id="detail-body">

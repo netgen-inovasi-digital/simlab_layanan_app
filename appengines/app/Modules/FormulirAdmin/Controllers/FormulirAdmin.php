@@ -260,82 +260,95 @@ class FormulirAdmin extends BaseController
         return $this->response->setJSON(['items' => $data]);
     }
 
-    public function detaillist($id = null)
-    {
-        if (!$id) {
-            return $this->response->setJSON(['items' => []]);
-        }
-
-        try {
-            $kode = $this->encrypter->decrypt(hex2bin($id));
-        } catch (\Exception $e) {
-            return $this->response->setJSON(['items' => []]);
-        }
-
-        // Encrypted hex parent
-        $encLnId = bin2hex($this->encrypter->encrypt($kode));
-
-        $db = \Config\Database::connect();
-        $builder = $db->table('simlab_t_layanan_detil as d');
-
-        $builder->select("
-            d.detUjiKode,
-            d.detLnKode,
-            d.detLayanan,
-            d.detJenKode,
-            GROUP_CONCAT(DISTINCT d.detKeterangan SEPARATOR ' | ') AS detKet,
-            GROUP_CONCAT(DISTINCT d.detKetLn SEPARATOR ' | ') AS detKetLn,
-            SUM(d.detJumlah) AS jumlah,
-            SUM(d.detBiaya) AS detBiaya,
-            MAX(d.detStatus) AS detStatusGroup
-        ");
-        $builder->where('d.detLnKode', $kode);
-        $builder->groupBy('d.detUjiKode, d.detLnKode, d.detLayanan, d.detJenKode');
-        $rows = $builder->get()->getResult();
-
-        $data = [];
-        $no = 1;
-
-        foreach ($rows as $row) {
-            $response = [];
-            $response[] = $no++;
-            $response[] = $row->detLayanan ?? '-';
-            $response[] = isset($row->detBiaya) ? number_format($row->detBiaya, 0, ',', '.') : '-';
-            $response[] = isset($row->jumlah) ? (int)$row->jumlah : 0;
-            $response[] = '<div 
-                        style="display:block; max-width:240px; min-width:160px; width:100%;
-                            max-height:120px; min-height:48px; overflow-y:auto; overflow-x:hidden;
-                            padding:4px 6px; border:1px solid #ddd; border-radius:4px; background:#f9f9f9;
-                            white-space:pre-wrap; word-break:break-word; font-size:0.9rem;">'
-                        . htmlspecialchars($row->detKet ?? '', ENT_QUOTES, 'UTF-8') .
-                        '</div>';
-
-            // Ambil status grouping (1 = diterima, 2 = ditolak, lainnya = belum diproses)
-            $statusGroup = isset($row->detStatusGroup) ? (int)$row->detStatusGroup : null;
-
-            if ($statusGroup === 1) {
-                $statusHtml = '<span class="badge bg-success">Diterima</span>';
-            } elseif ($statusGroup === 2) {
-                $statusHtml = '<span class="badge bg-danger">Ditolak</span>';
-            } else {
-                $statusHtml = '<span class="badge bg-secondary">Pending</span>';
-            }
-            $response[] = $statusHtml;
-
-            // tambahkan detKetLn dari detail
-            $response[] = '<div 
-                        style="display:block; max-width:240px; min-width:160px; width:100%;
-                            max-height:120px; min-height:48px; overflow-y:auto; overflow-x:hidden;
-                            padding:4px 6px; border:1px solid #ddd; border-radius:4px; background:#f9f9f9;
-                            white-space:pre-wrap; word-break:break-word; font-size:0.9rem;">'
-                        . htmlspecialchars($row->detKetLn ?? '', ENT_QUOTES, 'UTF-8') .
-                        '</div>';
-
-            $data[] = $response;
-        }
-
-        return $this->response->setJSON(['items' => $data]);
+   public function detaillist($id = null)
+{
+    if (!$id) {
+        return $this->response->setJSON(['items' => []]);
     }
+
+    try {
+        $kode = $this->encrypter->decrypt(hex2bin($id));
+    } catch (\Exception $e) {
+        return $this->response->setJSON(['items' => []]);
+    }
+
+    // Encrypted hex parent (disimpan jika perlu dipakai di tempat lain)
+    $encLnId = bin2hex($this->encrypter->encrypt($kode));
+
+    $db = \Config\Database::connect();
+    $builder = $db->table('simlab_t_layanan_detil as d');
+
+    $builder->select("
+        d.detUjiKode,
+        d.detLnKode,
+        d.detLayanan,
+        d.detJenKode,
+        GROUP_CONCAT(DISTINCT d.detKeterangan SEPARATOR ' | ') AS detKet,
+        GROUP_CONCAT(DISTINCT d.detKetLn SEPARATOR ' | ') AS detKetLn,
+        SUM(d.detJumlah) AS jumlah,
+        SUM(d.detBiaya) AS detBiaya,
+        MAX(d.detStatus) AS detStatusGroup,
+        GROUP_CONCAT(DISTINCT acc.username SEPARATOR ' | ') AS accUsernames
+    ");
+
+    // join untuk ambil username dari detAccLayanan
+    $builder->join('simlab_account acc', 'acc.user_id = d.detAccLayanan', 'left');
+
+    $builder->where('d.detLnKode', $kode);
+    $builder->groupBy('d.detUjiKode, d.detLnKode, d.detLayanan, d.detJenKode');
+
+    $rows = $builder->get()->getResult();
+
+    $data = [];
+    $no = 1;
+
+    foreach ($rows as $row) {
+        $response   = [];
+        $response[] = $no++;
+        $response[] = $row->detLayanan ?? '-';
+        $response[] = isset($row->detBiaya) ? number_format($row->detBiaya, 0, ',', '.') : '-';
+        $response[] = isset($row->jumlah) ? (int)$row->jumlah : 0;
+
+        // detKet (keterangan item)
+        $response[] = '<div 
+                style="display:block; max-width:240px; min-width:160px; width:100%;
+                    max-height:120px; min-height:48px; overflow-y:auto; overflow-x:hidden;
+                    padding:4px 6px; border:1px solid #ddd; border-radius:4px; background:#f9f9f9;
+                    white-space:pre-wrap; word-break:break-word; font-size:0.9rem;">'
+                . htmlspecialchars($row->detKet ?? '', ENT_QUOTES, 'UTF-8') .
+                '</div>';
+
+        // status hasil grouping (1 = diterima, 2 = ditolak, lainnya = pending)
+        $statusGroup = isset($row->detStatusGroup) ? (int)$row->detStatusGroup : null;
+        if ($statusGroup === 1) {
+            $statusHtml = '<span class="badge bg-success">Diterima</span>';
+        } elseif ($statusGroup === 2) {
+            $statusHtml = '<span class="badge bg-danger">Ditolak</span>';
+        } else {
+            $statusHtml = '<span class="badge bg-secondary">Pending</span>';
+        }
+        $response[] = $statusHtml;
+        
+        // detKetLn (keterangan level layanan)
+        $response[] = '<div 
+        style="display:block; max-width:240px; min-width:160px; width:100%;
+        max-height:120px; min-height:48px; overflow-y:auto; overflow-x:hidden;
+        padding:4px 6px; border:1px solid #ddd; border-radius:4px; background:#f9f9f9;
+        white-space:pre-wrap; word-break:break-word; font-size:0.9rem;">'
+        . htmlspecialchars($row->detKetLn ?? '', ENT_QUOTES, 'UTF-8') .
+        '</div>';
+        
+        
+                // Username yang melakukan accept layanan (bisa >1 username bila multi-row dalam satu grup)
+                $accUsernames = trim((string)($row->accUsernames ?? ''));
+                $response[] = $accUsernames !== '' ? htmlspecialchars($accUsernames, ENT_QUOTES, 'UTF-8') : '-';
+                $data[] = $response;
+    }
+
+    return $this->response->setJSON(['items' => $data]);
+}
+
+
 
     private function aksi($id, $status)
     {
