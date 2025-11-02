@@ -55,6 +55,7 @@
                   <th style="min-width:200px; width:5%;" class="text-center">Status File</th>
                   <th style="min-width:110px; width:5%;" class="text-center">LHUS</th>
                   <th style="min-width:300px; width:20%;" class="text-center">keterangan Manajer</th>
+                  <th style="min-width:300px; width:5%;" class="text-center">Acc Manajer</th>
               </tr>
             </thead>
             <tbody id="detail-body">

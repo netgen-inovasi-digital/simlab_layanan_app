@@ -195,232 +195,243 @@ class HasilPengujian extends BaseController
 
 
     public function detailList($id = null)
-    {
-        if (!$id) {
-            return $this->response->setJSON(['items' => []]);
-        }
+{
+    if (!$id) {
+        return $this->response->setJSON(['items' => []]);
+    }
 
-        $session = session();
-        $user_id = $session->get('id_user');
+    $session = session();
+    $user_id = $session->get('id_user');
 
-        try {
-            $kode = $this->encrypter->decrypt(hex2bin($id));
-        } catch (\Exception $e) {
-            return $this->response->setJSON(['items' => []]);
-        }
+    try {
+        $kode = $this->encrypter->decrypt(hex2bin($id));
+    } catch (\Exception $e) {
+        return $this->response->setJSON(['items' => []]);
+    }
 
-        // cek user sebagai manajer teknis/penyelia untuk Ln ini
-        $db = \Config\Database::connect();
-        $checkBuilder = $db->table('simlab_t_layanan_detil as d');
-        $checkBuilder->select('1');
-        $checkBuilder->where('d.detLnKode', $kode);
-        $checkBuilder->groupStart();
+    // cek user sebagai manajer teknis/penyelia untuk Ln ini
+    $db = \Config\Database::connect();
+    $checkBuilder = $db->table('simlab_t_layanan_detil as d');
+    $checkBuilder->select('1');
+    $checkBuilder->where('d.detLnKode', $kode);
+    $checkBuilder->groupStart();
         $checkBuilder->where('d.detPenyelia', $user_id);
         $checkBuilder->orWhere('d.detManajerTeknis', $user_id);
-        $checkBuilder->groupEnd();
-        $checkBuilder->where('d.detStatus', 1);
-        $exists = $checkBuilder->limit(1)->get()->getRow();
+    $checkBuilder->groupEnd();
+    $checkBuilder->where('d.detStatus', 1);
+    $exists = $checkBuilder->limit(1)->get()->getRow();
 
-        if (!$exists) {
-            return $this->response->setJSON(['items' => []]);
-        }
+    if (!$exists) {
+        return $this->response->setJSON(['items' => []]);
+    }
 
-        // Encrypted ln
-        $encLnId = bin2hex($this->encrypter->encrypt($kode));
+    // Encrypted ln
+    $encLnId = bin2hex($this->encrypter->encrypt($kode));
 
-        $builder = $db->table('simlab_t_layanan_detil as d');
+    $builder = $db->table('simlab_t_layanan_detil as d');
 
-        $builder->select("
-            d.detKode,
-            d.detUjiKode,
-            d.detLnKode,
-            d.detLayanan,
-            d.detJenKode,
-            GROUP_CONCAT(DISTINCT d.detKeterangan SEPARATOR ' | ') AS detKet,
-            GROUP_CONCAT(DISTINCT d.detKetLn SEPARATOR ' | ') AS detKetLn,
-            GROUP_CONCAT(DISTINCT d.detKetLhus SEPARATOR ' | ') AS detKetLhus,
-            GROUP_CONCAT(DISTINCT d.detil_LHUS SEPARATOR ';;') AS detLHUS,
-            GROUP_CONCAT(DISTINCT d.detStatusLHUS SEPARATOR ',') AS detStatusLHUSList,
-            MAX(d.detStatusLHUS) AS detStatusLHUSMax,
-            SUM(CASE WHEN d.detStatusLHUS = 2 THEN 1 ELSE 0 END) AS cnt_rejected,
-            SUM(CASE WHEN d.detStatusLHUS = 1 THEN 1 ELSE 0 END) AS cnt_accepted,
-            SUM(d.detJumlah) AS jumlah,
-            SUM(d.detBiaya) AS detBiaya,
-            MAX(d.detStatus) AS detStatusGroup
-        ");
-        $builder->where('d.detLnKode', $kode);
-        $builder->groupStart();
+    $builder->select("
+        d.detKode,
+        d.detUjiKode,
+        d.detLnKode,
+        d.detLayanan,
+        d.detJenKode,
+        GROUP_CONCAT(DISTINCT d.detKeterangan SEPARATOR ' | ') AS detKet,
+        GROUP_CONCAT(DISTINCT d.detKetLn SEPARATOR ' | ') AS detKetLn,
+        GROUP_CONCAT(DISTINCT d.detKetLhus SEPARATOR ' | ') AS detKetLhus,
+        GROUP_CONCAT(DISTINCT d.detil_LHUS SEPARATOR ';;') AS detLHUS,
+        GROUP_CONCAT(DISTINCT d.detStatusLHUS SEPARATOR ',') AS detStatusLHUSList,
+        MAX(d.detStatusLHUS) AS detStatusLHUSMax,
+        SUM(CASE WHEN d.detStatusLHUS = 2 THEN 1 ELSE 0 END) AS cnt_rejected,
+        SUM(CASE WHEN d.detStatusLHUS = 1 THEN 1 ELSE 0 END) AS cnt_accepted,
+        SUM(d.detJumlah) AS jumlah,
+        SUM(d.detBiaya) AS detBiaya,
+        MAX(d.detStatus) AS detStatusGroup,
+        d.detAccLHUS,
+        acc.username AS acc_by
+    ");
+    // >>> join untuk ambil username approver detAccLHUS
+    $builder->join('simlab_account acc', 'acc.user_id = d.detAccLHUS', 'left');
+
+    $builder->where('d.detLnKode', $kode);
+    $builder->groupStart();
         $builder->where('d.detPenyelia', $user_id);
         $builder->orWhere('d.detManajerTeknis', $user_id);
-        $builder->groupEnd();
-        $builder->where('d.detStatus', 1);
-        $builder->groupBy('d.detKode');
-        $rows = $builder->get()->getResult();
+    $builder->groupEnd();
+    $builder->where('d.detStatus', 1);
+    $builder->groupBy('d.detKode');
 
-        $data = [];
-        $no = 1;
+    $rows = $builder->get()->getResult();
 
-        $allUploaded = true;
-        $layananRow = $db->table('simlab_t_layanan')->select('lnStatus')->where('lnKode', $kode)->get()->getRow();
-        $lnStatus = $layananRow->lnStatus ?? null;
+    $data = [];
+    $no = 1;
 
-        foreach ($rows as $row) {
-            $response = [];
+    $allUploaded = true;
+    $layananRow = $db->table('simlab_t_layanan')->select('lnStatus')->where('lnKode', $kode)->get()->getRow();
+    $lnStatus = $layananRow->lnStatus ?? null;
 
-            $response[] = $no++;
-            $response[] = $row->detLayanan ?? '-';
-            $response[] = isset($row->jumlah) ? (int)$row->jumlah : 0;
+    foreach ($rows as $row) {
+        $response = [];
 
-            $keteranganHtml = '<div style="display:block; max-width:260px; min-width:160px; width:100%;'
-                . 'max-height:120px; min-height:48px; overflow-y:auto; overflow-x:hidden;'
-                . 'padding:4px 6px; border:1px solid #ddd; border-radius:4px; background:#f9f9f9;'
-                . 'white-space:pre-wrap; word-break:break-word; font-size:0.9rem;">'
-                . htmlspecialchars($row->detKet ?? '', ENT_QUOTES, 'UTF-8') .
-                '</div>';
-            $response[] = $keteranganHtml;
+        $response[] = $no++;
+        $response[] = $row->detLayanan ?? '-';
+        $response[] = isset($row->jumlah) ? (int)$row->jumlah : 0;
 
-            // --- FILE LHUS per row ---
-            $detLHUSraw = $row->detLHUS ?? '';
-            $detKodesRaw = $row->detKode ?? '';
-            $detKodesAttr = htmlspecialchars($detKodesRaw, ENT_QUOTES, 'UTF-8');
+        $keteranganHtml = '<div style="display:block; max-width:260px; min-width:160px; width:100%;'
+            . 'max-height:120px; min-height:48px; overflow-y:auto; overflow-x:hidden;'
+            . 'padding:4px 6px; border:1px solid #ddd; border-radius:4px; background:#f9f9f9;'
+            . 'white-space:pre-wrap; word-break:break-word; font-size:0.9rem;">'
+            . htmlspecialchars($row->detKet ?? '', ENT_QUOTES, 'UTF-8') .
+            '</div>';
+        $response[] = $keteranganHtml;
 
-            $files = [];
-            if (!empty($detLHUSraw)) {
-                $split = array_filter(array_map('trim', explode(';;', $detLHUSraw)));
-                foreach ($split as $f) {
-                    if (empty($f)) continue;
-                    if (preg_match('/^https?:\/\//i', $f)) {
-                        $files[] = ['label' => $f, 'url' => $f, 'exists' => true];
+        // --- FILE LHUS per row ---
+        $detLHUSraw   = $row->detLHUS ?? '';
+        $detKodesRaw  = $row->detKode ?? '';
+        $detKodesAttr = htmlspecialchars($detKodesRaw, ENT_QUOTES, 'UTF-8');
+
+        $files = [];
+        if (!empty($detLHUSraw)) {
+            $split = array_filter(array_map('trim', explode(';;', $detLHUSraw)));
+            foreach ($split as $f) {
+                if (empty($f)) continue;
+                if (preg_match('/^https?:\/\//i', $f)) {
+                    $files[] = ['label' => $f, 'url' => $f, 'exists' => true];
+                } else {
+                    $possiblePath = FCPATH . 'uploads/lhus/' . ltrim($f, '/');
+                    if (is_file($possiblePath)) {
+                        $url = base_url('uploads/lhus/' . ltrim($f, '/'));
+                        $files[] = ['label' => $f, 'url' => $url, 'exists' => true];
                     } else {
-                        $possiblePath = FCPATH . 'uploads/lhus/' . ltrim($f, '/');
-                        if (is_file($possiblePath)) {
-                            $url = base_url('uploads/lhus/' . ltrim($f, '/'));
-                            $files[] = ['label' => $f, 'url' => $url, 'exists' => true];
-                        } else {
-                            $files[] = ['label' => $f, 'url' => null, 'exists' => false];
-                        }
+                        $files[] = ['label' => $f, 'url' => null, 'exists' => false];
                     }
                 }
             }
+        }
 
-            // Cek file fisik / kolom lain sebagai fallback
-            $rowHasFile = false;
-            if (!empty($files)) {
-                foreach ($files as $fi) {
-                    if ($fi['exists']) { $rowHasFile = true; break; }
+        // Cek file fisik / kolom lain sebagai fallback
+        $rowHasFile = false;
+        if (!empty($files)) {
+            foreach ($files as $fi) {
+                if ($fi['exists']) { $rowHasFile = true; break; }
+            }
+        }
+
+        if (!$rowHasFile) {
+            $detFields = ['detil_LHUS', 'detil_LHU', 'detFile', 'detLhus', 'detFileLhus', 'det_file_lhus'];
+            foreach ($detFields as $df) {
+                if (isset($row->{$df}) && !empty($row->{$df})) {
+                    $raw = $row->{$df};
+                    if (preg_match('/^https?:\/\//i', $raw)) { $rowHasFile = true; break; }
+                    $possiblePath = FCPATH . 'uploads/lhus/' . ltrim($raw, '/');
+                    if (is_file($possiblePath)) { $rowHasFile = true; break; }
                 }
             }
+        }
 
-            if (!$rowHasFile) {
-                $detFields = ['detil_LHUS', 'detil_LHU', 'detFile', 'detLhus', 'detFileLhus', 'det_file_lhus'];
-                foreach ($detFields as $df) {
-                    if (isset($row->{$df}) && !empty($row->{$df})) {
-                        $raw = $row->{$df};
-                        if (preg_match('/^https?:\/\//i', $raw)) { $rowHasFile = true; break; }
-                        $possiblePath = FCPATH . 'uploads/lhus/' . ltrim($raw, '/');
-                        if (is_file($possiblePath)) { $rowHasFile = true; break; }
-                    }
-                }
-            }
-
-            if (!$rowHasFile) {
-                try {
-                    $modelDet = new MyModel('simlab_t_layanan_detil');
-                    $detRows = $modelDet->getAllDataById(['detKode' => $row->detKode ?? null, 'detStatus' => 1]);
-                    foreach ($detRows as $dr) {
-                        foreach (['detil_LHUS','detil_LHU','detFile','detLhus','detFileLhus','det_file_lhus'] as $df) {
-                            if (isset($dr->{$df}) && !empty($dr->{$df})) {
-                                $raw = $dr->{$df};
-                                if (preg_match('/^https?:\/\//i', $raw) || is_file(FCPATH . 'uploads/lhus/' . ltrim($raw, '/'))) {
-                                    $rowHasFile = true;
-                                    break 3;
-                                }
+        if (!$rowHasFile) {
+            try {
+                $modelDet = new MyModel('simlab_t_layanan_detil');
+                $detRows = $modelDet->getAllDataById(['detKode' => $row->detKode ?? null, 'detStatus' => 1]);
+                foreach ($detRows as $dr) {
+                    foreach (['detil_LHUS','detil_LHU','detFile','detLhus','detFileLhus','det_file_lhus'] as $df) {
+                        if (isset($dr->{$df}) && !empty($dr->{$df})) {
+                            $raw = $dr->{$df};
+                            if (preg_match('/^https?:\/\//i', $raw) || is_file(FCPATH . 'uploads/lhus/' . ltrim($raw, '/'))) {
+                                $rowHasFile = true;
+                                break 3;
                             }
                         }
                     }
-                } catch (\Throwable $e) {
-                    // ignore
                 }
+            } catch (\Throwable $e) {
+                // ignore
             }
-
-            if (!$rowHasFile) {
-                $allUploaded = false;
-            }
-
-            $combinedHtml = '<div class="d-flex justify-content-center gap-2 align-items-center">';
-
-            if (!empty($files)) {
-                $firstViewUrl = null;
-                foreach ($files as $fi) {
-                    if ($fi['exists']) { $firstViewUrl = $fi['url']; break; }
-                }
-                if ($firstViewUrl) {
-                    $eyeButton = '<span class="text-primary btn-action" title="Lihat File" onclick="window.open(\'' . esc($firstViewUrl) . '\', \'_blank\')"><i class="bi bi-eye"></i></span>';
-                } else {
-                    $eyeButton = '<span class="text-secondary btn-action" title="File tidak ditemukan"><i class="bi bi-eye"></i></span>';
-                }
-            } else {
-                $eyeButton = '<span class="text-secondary btn-action" title="Belum ada file"><i class="bi bi-eye"></i></span>';
-            }
-
-            $uploadInput = '<label class="mb-0 position-relative" style="cursor:pointer;">'
-                        . '<input type="file" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx" '
-                        . 'data-detlist="' . $detKodesAttr . '" data-detkode="' . htmlspecialchars($row->detKode ?? '', ENT_QUOTES, 'UTF-8') . '" data-ln="' . $encLnId . '" '
-                        . 'class="d-none lhus-uploader-input" onchange="autoUploadFile(this)" />'
-                        . '<span class="text-primary btn-action" title="Unggah / Ubah File LHUS"><i class="bi bi-upload"></i></span>'
-                        . '</label>';
-
-            $combinedHtml .= $eyeButton . $uploadInput . '</div>';
-
-            // Status baris (LHUS)
-            $detStatusLHUS = null;
-            if (isset($row->detStatusLHUSMax) && $row->detStatusLHUSMax !== null) {
-                $detStatusLHUS = (int)$row->detStatusLHUSMax;
-            } elseif (isset($row->detStatusLHUSList) && $row->detStatusLHUSList !== '') {
-                $parts = array_filter(array_map('trim', explode(',', $row->detStatusLHUSList)));
-                if (in_array('2', $parts, true) || in_array(2, array_map('intval', $parts), true)) {
-                    $detStatusLHUS = 2;
-                } elseif (in_array('1', $parts, true) || in_array(1, array_map('intval', $parts), true)) {
-                    $detStatusLHUS = 1;
-                } else {
-                    $detStatusLHUS = 0;
-                }
-            } else {
-                $detStatusLHUS = null;
-            }
-
-            $lnStatusInt = isset($lnStatus) ? (int)$lnStatus : null;
-
-            if ($detStatusLHUS === 2) {
-                $statusHtml = '<div class="text-center"><span class="badge bg-danger">lhus ditolak</span></div>';
-            } elseif ($detStatusLHUS === 3 && $rowHasFile) {
-                $statusHtml = '<div class="text-center"><span class="badge bg-info">lhus ter-unggah</span></div>';
-            } elseif ($detStatusLHUS === 1) {
-                $statusHtml = '<div class="text-center"><span class="badge bg-success">lhus diterima</span></div>';
-            } elseif ($lnStatusInt === 5) {
-                $statusHtml = '<div class="text-center"><span class="badge bg-primary">terkirim</span></div>';
-            } elseif ($rowHasFile) {
-                $statusHtml = '<div class="text-center"><span class="badge bg-success">ter-unggah</span></div>';
-            } else {
-                $statusHtml = '<div class="text-center"><span class="badge bg-warning text-dark">belum upload</span></div>';
-            }
-
-            $response[] = $statusHtml;
-            $response[] = $combinedHtml;
-
-            $keteranganManajerHtml = '<div style="display:block; max-width:260px; min-width:160px; width:100%;'
-                . 'max-height:120px; min-height:48px; overflow-y:auto; overflow-x:hidden;'
-                . 'padding:4px 6px; border:1px solid #e6e6ff; border-radius:4px; background:#fbfbff;'
-                . 'white-space:pre-wrap; word-break:break-word; font-size:0.9rem; color:#333;">'
-                . htmlspecialchars($row->detKetLhus ?? '', ENT_QUOTES, 'UTF-8') .
-                '</div>';
-            $response[] = $keteranganManajerHtml;
-
-            $data[] = $response;
         }
 
-        return $this->response->setJSON(['items' => $data, 'encLn' => $encLnId, 'allFilesUploaded' => $allUploaded]);
+        if (!$rowHasFile) {
+            $allUploaded = false;
+        }
+
+        $combinedHtml = '<div class="d-flex justify-content-center gap-2 align-items-center">';
+
+        if (!empty($files)) {
+            $firstViewUrl = null;
+            foreach ($files as $fi) {
+                if ($fi['exists']) { $firstViewUrl = $fi['url']; break; }
+            }
+            if ($firstViewUrl) {
+                $eyeButton = '<span class="text-primary btn-action" title="Lihat File" onclick="window.open(\'' . esc($firstViewUrl) . '\', \'_blank\')"><i class="bi bi-eye"></i></span>';
+            } else {
+                $eyeButton = '<span class="text-secondary btn-action" title="File tidak ditemukan"><i class="bi bi-eye"></i></span>';
+            }
+        } else {
+            $eyeButton = '<span class="text-secondary btn-action" title="Belum ada file"><i class="bi bi-eye"></i></span>';
+        }
+
+        $uploadInput = '<label class="mb-0 position-relative" style="cursor:pointer;">'
+                    . '<input type="file" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx" '
+                    . 'data-detlist="' . $detKodesAttr . '" data-detkode="' . htmlspecialchars($row->detKode ?? '', ENT_QUOTES, 'UTF-8') . '" data-ln="' . $encLnId . '" '
+                    . 'class="d-none lhus-uploader-input" onchange="autoUploadFile(this)" />'
+                    . '<span class="text-primary btn-action" title="Unggah / Ubah File LHUS"><i class="bi bi-upload"></i></span>'
+                    . '</label>';
+
+        $combinedHtml .= $eyeButton . $uploadInput . '</div>';
+
+        // Status baris (LHUS)
+        $detStatusLHUS = null;
+        if (isset($row->detStatusLHUSMax) && $row->detStatusLHUSMax !== null) {
+            $detStatusLHUS = (int)$row->detStatusLHUSMax;
+        } elseif (isset($row->detStatusLHUSList) && $row->detStatusLHUSList !== '') {
+            $parts = array_filter(array_map('trim', explode(',', $row->detStatusLHUSList)));
+            if (in_array('2', $parts, true) || in_array(2, array_map('intval', $parts), true)) {
+                $detStatusLHUS = 2;
+            } elseif (in_array('1', $parts, true) || in_array(1, array_map('intval', $parts), true)) {
+                $detStatusLHUS = 1;
+            } else {
+                $detStatusLHUS = 0;
+            }
+        } else {
+            $detStatusLHUS = null;
+        }
+
+        $lnStatusInt = isset($lnStatus) ? (int)$lnStatus : null;
+
+        if ($detStatusLHUS === 2) {
+            $statusHtml = '<div class="text-center"><span class="badge bg-danger">lhus ditolak</span></div>';
+        } elseif ($detStatusLHUS === 3 && $rowHasFile) {
+            $statusHtml = '<div class="text-center"><span class="badge bg-info">lhus ter-unggah</span></div>';
+        } elseif ($detStatusLHUS === 1) {
+            $statusHtml = '<div class="text-center"><span class="badge bg-success">lhus diterima</span></div>';
+        } elseif ($lnStatusInt === 5) {
+            $statusHtml = '<div class="text-center"><span class="badge bg-primary">terkirim</span></div>';
+        } elseif ($rowHasFile) {
+            $statusHtml = '<div class="text-center"><span class="badge bg-success">ter-unggah</span></div>';
+        } else {
+            $statusHtml = '<div class="text-center"><span class="badge bg-warning text-dark">belum upload</span></div>';
+        }
+
+        $response[] = $statusHtml;
+        $response[] = $combinedHtml;
+
+        $keteranganManajerHtml = '<div style="display:block; max-width:260px; min-width:160px; width:100%;'
+            . 'max-height:120px; min-height:48px; overflow-y:auto; overflow-x:hidden;'
+            . 'padding:4px 6px; border:1px solid #e6e6ff; border-radius:4px; background:#fbfbff;'
+            . 'white-space:pre-wrap; word-break:break-word; font-size:0.9rem; color:#333;">'
+            . htmlspecialchars($row->detKetLhus ?? '', ENT_QUOTES, 'UTF-8') .
+            '</div>';
+        $response[] = $keteranganManajerHtml;
+
+        // >>> kolom tambahan: username approver detAccLHUS
+        $accBy = !empty($row->acc_by) ? esc($row->acc_by) : '-';
+        $response[] = '<div class="text-center">'.$accBy.'</div>';
+
+        $data[] = $response;
     }
+
+    return $this->response->setJSON(['items' => $data, 'encLn' => $encLnId, 'allFilesUploaded' => $allUploaded]);
+}
+
 
     private function detectLhusFile($row)
     {
