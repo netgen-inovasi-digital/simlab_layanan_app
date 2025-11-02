@@ -1,9 +1,22 @@
-<!-- v_hasilPengujian.php -->
+<!-- v_hasilPengujian.php --> 
 <div class="row">
     <div class="col-md-12">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <label class="card-title mb-0"><?php echo $title ?></label>
+
+                <!-- [ADDED] Filter Status (LnStatus) -->
+                <div class="d-flex align-items-center" style="gap:8px;">
+                    <label class="mb-0 small text-muted">Status:</label>
+                   <select id="statusFilter" class="form-select form-select-sm" style="width:260px;">
+                        <option value="">— Semua status —</option>
+                        <option value="tolak">LHUS ditolak</option> <!-- [NEW] -->
+                        <option value="4">Sedang dalam pengujian</option>
+                        <option value="5">LHUS diverifikasi manajer (terkirim)</option>
+                        <option value="6">LHUS disetujui</option>
+                    </select>
+                </div>
+                <!-- [ADDED] end -->
             </div>
             <div class="card-body">
                 <table id="data-table" class="saytable border-top-bottom">
@@ -165,35 +178,7 @@
         .finally(() => { hideLoading(); });
     }
 
-    //  function confirmApprove(e) {
-    //     e.preventDefault();
-    //     let id = e.currentTarget.closest('div')?.id;
-    //     if (!id) return;
-    //     if (confirm('Yakin ingin approve data ini?')) {
-    //         const csrfInput = document.querySelector('[name="<?= csrf_token() ?>"]');
-    //         const csrfToken = csrfInput ? csrfInput.value : '';
-    //         fetch('<?php echo site_url("hasilpengujian/approve/") ?>' + id, {
-    //             method: 'POST',
-    //             headers: {
-    //                 'X-Requested-With': 'XMLHttpRequest',
-    //                 'X-CSRF-TOKEN': csrfToken
-    //             }
-    //         })
-    //         .then(res => res.json())
-    //         .then(data => {
-    //             if (data.res) {
-    //                 if (typeof table !== 'undefined') table.fetchData({ reload: true });
-    //                 sayAlert('successModal', 'Berhasil', 'Data berhasil diapprove', 'success');
-    //             } else {
-    //                 sayAlert('errorModal', 'Gagal', data.msg || 'Approve gagal dilakukan', 'warning');
-    //             }
-    //             if (data.xname && data.xhash) {
-    //                 document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => input.value = data.xhash);
-    //             }
-    //         })
-    //         .catch(err => sayAlert('errorModal', 'Error', 'Terjadi kesalahan sistem', 'warning'));
-    //     }
-    // }
+    //  function confirmApprove(e) { ... } (tetap dikomentari)
 
     function loadDetail(id) {
     const url = '<?php echo site_url("hasilpengujian/detaillist/") ?>' + id;
@@ -303,7 +288,81 @@
             }
         });
 }
+</script>
 
+<script>
+/* [ADDED] Helpers agar URL filter bersih & fetch cache-busted */
+if (typeof window.buildApiUrlWithOptionalParam !== 'function') {
+  function buildApiUrlWithOptionalParam(path, key, value) {
+      try {
+          const u = new URL(path, window.location.origin);
+          const params = new URLSearchParams(u.search);
+          if (key && String(key) !== '') {
+              if (typeof value !== 'undefined' && value !== null && String(value) !== '') {
+                  params.set(key, String(value));
+              } else {
+                  params.delete(key);
+              }
+          }
+          const s = params.toString();
+          return u.pathname + (s ? '?' + s : '');
+      } catch(e) {
+          if (key && String(key) !== '' && value !== null && String(value) !== '') {
+              return path + (path.includes('?') ? '&' : '?') + encodeURIComponent(key) + '=' + encodeURIComponent(String(value));
+          }
+          return path;
+      }
+  }
+}
+if (typeof window.normalizeDoubleQuestion !== 'function') {
+  function normalizeDoubleQuestion(url) {
+      if (typeof url !== 'string') return url;
+      url = url.replace(/\?([^?]*)\?/, '?$1&');
+      url = url.replace(/&{2,}/g, '&');
+      url = url.replace(/\?&/, '?');
+      if (url.endsWith('&')) url = url.slice(0, -1);
+      return url;
+  }
+}
+
+/* [ADDED] Patch fetchData agar tambahkan cache-buster */
+(function patchFetchData(){
+  if (typeof table !== 'undefined' && table && typeof table.getConfig === 'function' && typeof table.fetchData === 'function' && !table.__fetchPatchedHP) {
+      const _origFetch = table.fetchData.bind(table);
+      let _currentAbort = null;
+      table.fetchData = function(opts = {}) {
+          try {
+              const cfg = table.getConfig();
+              if (cfg && typeof cfg.apiUrl === 'string') {
+                  const u = new URL(cfg.apiUrl, window.location.origin);
+                  u.searchParams.set('_ts', Date.now().toString());
+                  cfg.apiUrl = normalizeDoubleQuestion(u.pathname + (u.search ? u.search : ''));
+              }
+          } catch (err) {}
+          try { if (_currentAbort) _currentAbort.abort(); } catch(e){}
+          try { _currentAbort = new AbortController(); opts.signal = _currentAbort.signal; } catch(e){}
+          return _origFetch(opts);
+      };
+      table.__fetchPatchedHP = true;
+  }
+})();
+
+/* [ADDED] Wiring dropdown Status → param lnStatus */
+(function attachStatusFilter(){
+    const sel = document.getElementById('statusFilter');
+    if (!sel || sel.dataset.bound === '1') return;
+    sel.addEventListener('change', function(){
+        const val = (this.value || '').toString().trim();
+        if (table?.getConfig) {
+            const cfg = table.getConfig();
+            cfg.apiUrl = normalizeDoubleQuestion(
+                buildApiUrlWithOptionalParam('<?php echo site_url("hasilpengujian/datalist") ?>', 'lnStatus', (val === '' ? null : val))
+            );
+            table.fetchData({ reload: true, page: 1 });
+        }
+    });
+    sel.dataset.bound = '1';
+})();
 </script>
 
 <script>
