@@ -123,82 +123,106 @@ class Pelaksanaan extends BaseController
         return $this->response->setJSON(["items" => $data]);
     }
 
+   
     public function detailList($id = null)
-    {
-        if (!$id) return $this->response->setJSON(['items' => []]);
+{
+    if (!$id) return $this->response->setJSON(['items' => []]);
 
-        try { $lnKode = $this->encrypter->decrypt(hex2bin($id)); }
-        catch (\Throwable $e) {
-            try { $lnKode = $this->encrypter->decrypt($id); }
-            catch (\Throwable $e2) { return $this->response->setJSON(['items' => []]); }
-        }
-
-        $db = \Config\Database::connect();
-        $rows = $db->table('simlab_t_layanan_detil as d')
-                   ->select('d.detKode, d.detUjiKode, d.detLayanan, d.detJumlah, d.detKeterangan, d.detil_LHUS, d.detil_LHU, d.detKetLn, d.detKetLhus, d.detStatus')
-                   ->where('d.detLnKode', $lnKode)
-                   ->where('d.detStatus', 1)
-                   ->orderBy('d.detKode', 'ASC')
-                   ->get()->getResult();
-
-        if (empty($rows)) return $this->response->setJSON(['items' => []]);
-
-        // prefetch nama uji
-        $ujiMap=[]; $ujiKodeList=[];
-        foreach ($rows as $r) if (!empty($r->detUjiKode)) $ujiKodeList[] = $r->detUjiKode;
-        $ujiKodeList = array_values(array_unique($ujiKodeList));
-        if (!empty($ujiKodeList)) {
-            $ujis = $db->table('simlab_r_layanan_pengujian')
-                       ->select('ujiKode, ujiLayanan')
-                       ->whereIn('ujiKode', $ujiKodeList)
-                       ->get()->getResult();
-            foreach ($ujis as $u) $ujiMap[$u->ujiKode] = $u->ujiLayanan;
-        }
-
-        $items = []; $no=1;
-        foreach ($rows as $row) {
-            if ((int)($row->detStatus ?? 0) !== 1) continue;
-
-            $layanan = !empty($row->detLayanan) ? $row->detLayanan :
-                       (!empty($row->detUjiKode) && isset($ujiMap[$row->detUjiKode]) ? $ujiMap[$row->detUjiKode] : '-');
-
-            $jumlah = (int)($row->detJumlah ?? 0);
-            $ket    = !empty($row->detKeterangan) ? esc($row->detKeterangan) : '-';
-
-            // cari file untuk tombol lihat
-            $fileUrl = null;
-            $candidates = ['detil_LHUS', 'detil_LHU', 'detKetLhus', 'detKetLn'];
-            foreach ($candidates as $cf) {
-                if (isset($row->{$cf}) && trim((string)$row->{$cf}) !== '') {
-                    $val = trim((string)$row->{$cf});
-                    if (strpos($val, ';;') !== false) {
-                        $parts = array_filter(array_map('trim', explode(';;', $val)));
-                        foreach ($parts as $p) {
-                            if (preg_match('/^https?:\/\//i', $p)) { $fileUrl = $p; break 3; }
-                            $p1 = FCPATH.'uploads/lhus/'.ltrim($p,'/');
-                            $p2 = FCPATH.'uploads/lhu/'.ltrim($p,'/');
-                            if (is_file($p1)) { $fileUrl = base_url('uploads/lhus/'.ltrim($p,'/')); break 3; }
-                            if (is_file($p2)) { $fileUrl = base_url('uploads/lhu/'.ltrim($p,'/')); break 3; }
-                        }
-                    } else {
-                        if (preg_match('/^https?:\/\//i', $val)) { $fileUrl = $val; break; }
-                        $p1 = FCPATH.'uploads/lhus/'.ltrim($val,'/');
-                        $p2 = FCPATH.'uploads/lhu/'.ltrim($val,'/');
-                        if (is_file($p1)) { $fileUrl = base_url('uploads/lhus/'.ltrim($val,'/')); break; }
-                        if (is_file($p2)) { $fileUrl = base_url('uploads/lhu/'.ltrim($val,'/')); break; }
-                    }
-                }
-            }
-
-            $viewHtml = $fileUrl
-                ? '<button class="btn btn-sm btn-outline-primary" onclick="window.open(\'' . esc($fileUrl) . '\', \'_blank\')"><i class="bi bi-eye"></i></button>'
-                : '<button class="btn btn-sm btn-secondary" disabled><i class="bi bi-file-earmark-text"></i> Lihat</button>';
-
-            $items[] = [$no++, $layanan, $jumlah, $ket, $viewHtml];
-        }
-
-        return $this->response->setJSON(['items' => $items]);
+    // decrypt tolerant (hex → raw)
+    try { $lnKode = $this->encrypter->decrypt(hex2bin($id)); }
+    catch (\Throwable $e) {
+        try { $lnKode = $this->encrypter->decrypt($id); }
+        catch (\Throwable $e2) { return $this->response->setJSON(['items' => []]); }
     }
+
+    $db = \Config\Database::connect();
+
+    // ambil detil + JOIN username uploader/approver
+    $rows = $db->table('simlab_t_layanan_detil as d')
+        ->select('
+            d.detKode, d.detUjiKode, d.detLayanan, d.detJumlah, d.detKeterangan,
+            d.detil_LHUS, d.detil_LHU, d.detKetLn, d.detKetLhus, d.detStatus,
+            up.username  AS upload_by,
+            acc.username AS acc_by
+        ')
+        ->join('simlab_account up',  'up.user_id  = d.detUploadLHUS', 'left')
+        ->join('simlab_account acc', 'acc.user_id = d.detAccLHUS',    'left')
+        ->where('d.detLnKode', $lnKode)
+        ->where('d.detStatus', 1)
+        ->orderBy('d.detKode', 'ASC')
+        ->get()->getResult();
+
+    if (empty($rows)) return $this->response->setJSON(['items' => []]);
+
+    // prefetch nama layanan uji (kalau detLayanan kosong)
+    $ujiMap = []; $ujiKodeList = [];
+    foreach ($rows as $r) if (!empty($r->detUjiKode)) $ujiKodeList[] = (int)$r->detUjiKode;
+    $ujiKodeList = array_values(array_unique($ujiKodeList));
+    if (!empty($ujiKodeList)) {
+        $ujis = $db->table('simlab_r_layanan_pengujian')
+                   ->select('ujiKode, ujiLayanan')
+                   ->whereIn('ujiKode', $ujiKodeList)
+                   ->get()->getResult();
+        foreach ($ujis as $u) $ujiMap[$u->ujiKode] = $u->ujiLayanan;
+    }
+
+    $items = []; $no = 1;
+    foreach ($rows as $row) {
+        if ((int)($row->detStatus ?? 0) !== 1) continue;
+
+        $layanan = !empty($row->detLayanan) ? $row->detLayanan
+                  : ((!empty($row->detUjiKode) && isset($ujiMap[$row->detUjiKode])) ? $ujiMap[$row->detUjiKode] : '-');
+
+        $jumlah = (int)($row->detJumlah ?? 0);
+        $ket    = trim((string)($row->detKeterangan ?? ''));
+        $ket    = $ket === '' ? '-' : esc($ket);
+
+        // cari file untuk tombol "Lihat"
+        $fileUrl = null;
+        foreach (['detil_LHUS','detil_LHU','detKetLhus','detKetLn'] as $cf) {
+            if (!isset($row->{$cf}) || trim((string)$row->{$cf}) === '') continue;
+            $val = trim((string)$row->{$cf});
+            if (strpos($val, ';;') !== false) {
+                foreach (array_filter(array_map('trim', explode(';;', $val))) as $p) {
+                    if (preg_match('/^https?:\/\//i', $p)) { $fileUrl = $p; break 2; }
+                    $p1 = FCPATH.'uploads/lhus/'.ltrim($p,'/');
+                    $p2 = FCPATH.'uploads/lhu/'.ltrim($p,'/');
+                    if (is_file($p1)) { $fileUrl = base_url('uploads/lhus/'.ltrim($p,'/')); break 2; }
+                    if (is_file($p2)) { $fileUrl = base_url('uploads/lhu/'.ltrim($p,'/'));  break 2; }
+                }
+            } else {
+                if (preg_match('/^https?:\/\//i', $val)) { $fileUrl = $val; break; }
+                $p1 = FCPATH.'uploads/lhus/'.ltrim($val,'/');
+                $p2 = FCPATH.'uploads/lhu/'.ltrim($val,'/');
+                if (is_file($p1)) { $fileUrl = base_url('uploads/lhus/'.ltrim($val,'/')); break; }
+                if (is_file($p2)) { $fileUrl = base_url('uploads/lhu/'.ltrim($val,'/'));  break; }
+            }
+        }
+
+        $viewHtml = $fileUrl
+            ? '<button class="btn btn-sm btn-outline-primary" onclick="window.open(\'' . esc($fileUrl) . '\', \'_blank\')"><i class="bi bi-eye"></i></button>'
+            : '<button class="btn btn-sm btn-secondary" disabled><i class="bi bi-file-earmark-text"></i> Lihat</button>';
+
+        // username (nickname) dari simlab_account
+        $uploadBy = !empty($row->upload_by) ? esc($row->upload_by) : '-';
+        $accBy    = !empty($row->acc_by)    ? esc($row->acc_by)    : '-';
+
+        // urutan kolom dikembalikan seperti semula + 2 kolom tambahan di akhir
+        $items[] = [
+            $no++,
+            $layanan,
+            $jumlah,
+            $ket,
+            $viewHtml,
+            $uploadBy,   // Upload LHUS (username)
+            $accBy       // Acc LHUS (username)
+        ];
+    }
+
+    return $this->response->setJSON(['items' => $items]);
+}
+
+
 
     public function upload()
     {
