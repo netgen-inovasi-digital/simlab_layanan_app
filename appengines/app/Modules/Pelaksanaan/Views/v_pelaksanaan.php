@@ -51,8 +51,10 @@
                 <th width="5%">No</th>
                 <th width="45%">Layanan</th>
                 <th width="10%">Jumlah</th>
-                <th width="30%">Keterangan</th>
+                <th width="25%">Keterangan</th>
                 <th width="15%">File LHUS</th>
+                <th width="15%">Acc LHUS</th>
+                <th width="15%">Upload LHUS</th>
             </tr>
             </thead>
             <tbody id="detail-body">
