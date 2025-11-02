@@ -475,201 +475,211 @@ class HasilPengujian extends BaseController
     }
 
     public function submit($idParam = null)
-    {
-        $encId = $this->request->getPost('id') ?? $idParam ?? $this->request->uri->getSegment(3);
+{
+    $encId = $this->request->getPost('id') ?? $idParam ?? $this->request->uri->getSegment(3);
 
-        if (empty($encId)) {
-            return $this->response->setJSON([
-                'res' => 'error',
-                'msg' => 'ID missing',
-                'xname' => csrf_token(),
-                'xhash' => csrf_hash()
-            ]);
+    if (empty($encId)) {
+        return $this->response->setJSON([
+            'res' => 'error',
+            'msg' => 'ID missing',
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
+        ]);
+    }
+
+    try {
+        if (preg_match('/^[0-9a-f]+$/i', $encId)) {
+            $lnKode = $this->encrypter->decrypt(hex2bin($encId));
+        } else {
+            $lnKode = $this->encrypter->decrypt($encId);
         }
+    } catch (\Throwable $e) {
+        return $this->response->setJSON([
+            'res' => 'error',
+            'msg' => 'Invalid ID',
+            'debug' => $e->getMessage(),
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
+        ]);
+    }
 
-        try {
-            if (preg_match('/^[0-9a-f]+$/i', $encId)) {
-                $lnKode = $this->encrypter->decrypt(hex2bin($encId));
-            } else {
-                $lnKode = $this->encrypter->decrypt($encId);
-            }
-        } catch (\Throwable $e) {
-            return $this->response->setJSON([
-                'res' => 'error',
-                'msg' => 'Invalid ID',
-                'debug' => $e->getMessage(),
-                'xname' => csrf_token(),
-                'xhash' => csrf_hash()
-            ]);
-        }
+    $session = session();
+    $user_id = (int) ($session->get('id_user') ?? 0);
 
-        $session = session();
-        $user_id = $session->get('id_user');
+    $model = new MyModel($this->table);
+    $row = $model->getDataById($this->id, $lnKode);
+    if (!$row) {
+        return $this->response->setJSON([
+            'res' => 'error',
+            'msg' => 'Record not found',
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
+        ]);
+    }
 
-        $model = new MyModel($this->table);
-        $row = $model->getDataById($this->id, $lnKode);
-        if (!$row) {
-            return $this->response->setJSON([
-                'res' => 'error',
-                'msg' => 'Record not found',
-                'xname' => csrf_token(),
-                'xhash' => csrf_hash()
-            ]);
-        }
+    // --- cek kelengkapan file milik user (tetap) ---
+    try {
+        $db = \Config\Database::connect();
+        $detBuilder = $db->table('simlab_t_layanan_detil as d');
 
-        try {
-            $db = \Config\Database::connect();
-            $detBuilder = $db->table('simlab_t_layanan_detil as d');
+        $detBuilder->select("d.detKode, d.detil_LHUS, d.detil_LHU, d.detKetLhus, d.detKetLn, d.detStatusLHUS, d.detPenyelia, d.detManajerTeknis");
+        $detBuilder->where('d.detLnKode', $lnKode);
+        $detBuilder->groupStart();
+            $detBuilder->where('d.detPenyelia', $user_id);
+            $detBuilder->orWhere('d.detManajerTeknis', $user_id);
+        $detBuilder->groupEnd();
+        $detBuilder->where('d.detStatus', 1);
+        $userDetRows = $detBuilder->get()->getResult();
 
-            $detBuilder->select("d.detKode, d.detil_LHUS, d.detil_LHU, d.detKetLhus, d.detKetLn, d.detStatusLHUS, d.detPenyelia, d.detManajerTeknis");
-            $detBuilder->where('d.detLnKode', $lnKode);
-            $detBuilder->groupStart();
-                $detBuilder->where('d.detPenyelia', $user_id);
-                $detBuilder->orWhere('d.detManajerTeknis', $user_id);
-            $detBuilder->groupEnd();
-            $detBuilder->where('d.detStatus', 1);
-            $userDetRows = $detBuilder->get()->getResult();
+        $missingCount = 0;
+        $missingItems = [];
 
-            $missingCount = 0;
-            $missingItems = [];
+        foreach ($userDetRows as $dr) {
+            $hasFile = false;
 
-            foreach ($userDetRows as $dr) {
-                $hasFile = false;
-
-                $candidates = ['detil_LHUS', 'detil_LHU', 'detKetLhus', 'detKetLn'];
-                foreach ($candidates as $f) {
-                    if (isset($dr->{$f}) && !empty(trim((string)$dr->{$f}))) {
-                        $val = trim((string)$dr->{$f});
-                        if (preg_match('/^https?:\/\//i', $val)) {
-                            $hasFile = true;
-                            break;
-                        }
-                        if (strpos($val, ';;') !== false) {
-                            $parts = array_filter(array_map('trim', explode(';;', $val)));
-                            foreach ($parts as $p) {
-                                if (preg_match('/^https?:\/\//i', $p) || is_file(FCPATH . 'uploads/lhus/' . ltrim($p, '/'))) {
-                                    $hasFile = true;
-                                    break 2;
-                                }
+            $candidates = ['detil_LHUS', 'detil_LHU', 'detKetLhus', 'detKetLn'];
+            foreach ($candidates as $f) {
+                if (isset($dr->{$f}) && !empty(trim((string)$dr->{$f}))) {
+                    $val = trim((string)$dr->{$f});
+                    if (preg_match('/^https?:\/\//i', $val)) { $hasFile = true; break; }
+                    if (strpos($val, ';;') !== false) {
+                        $parts = array_filter(array_map('trim', explode(';;', $val)));
+                        foreach ($parts as $p) {
+                            if (preg_match('/^https?:\/\//i', $p) || is_file(FCPATH . 'uploads/lhus/' . ltrim($p, '/'))) {
+                                $hasFile = true; break 2;
                             }
                         }
-                        $possiblePath = FCPATH . 'uploads/lhus/' . ltrim($val, '/');
-                        if (is_file($possiblePath)) {
-                            $hasFile = true;
-                            break;
-                        }
                     }
-                }
-
-                if (!$hasFile) {
-                    $missingCount++;
-                    $missingItems[] = $dr->detKode ?? null;
+                    $possiblePath = FCPATH . 'uploads/lhus/' . ltrim($val, '/');
+                    if (is_file($possiblePath)) { $hasFile = true; break; }
                 }
             }
 
-            if ($missingCount > 0) {
-                $msg = 'Berhasil dikirim, sisa ' . $missingCount . ' layanan yang perlu diaccc';
-                return $this->response->setJSON([
-                    'res' => true,
-                    'msg' => $msg,
-                    'waiting_others' => true,
-                    'pending_total' => $missingCount,
-                    'missing_detKode' => $missingItems,
-                    'parent_updated' => false,
-                    'xname' => csrf_token(),
-                    'xhash' => csrf_hash()
-                ]);
+            if (!$hasFile) {
+                $missingCount++;
+                $missingItems[] = $dr->detKode ?? null;
             }
-        } catch (\Throwable $e) {
-            return $this->response->setJSON([
-                'res' => 'error',
-                'msg' => 'Error saat memeriksa file detil milik user: ' . $e->getMessage(),
-                'xname' => csrf_token(),
-                'xhash' => csrf_hash()
-            ]);
         }
 
-        try {
-            $db = \Config\Database::connect();
-            $db->transStart();
-
-            $db->table('simlab_t_layanan_detil')
-                ->where('detLnKode', $lnKode)
-                ->groupStart()
-                    ->where('detPenyelia', $user_id)
-                    ->orWhere('detManajerTeknis', $user_id)
-                ->groupEnd()
-                ->where('detStatus', 1)
-                ->groupStart()
-                    ->where('detStatusLHUS IS NULL', null, false)
-                    ->orWhereIn('detStatusLHUS', [0, 3])
-                ->groupEnd()
-                ->update(['detStatusLHUS' => 0]);
-
-            $otherBuilder = $db->table('simlab_t_layanan_detil as d2');
-            $otherBuilder->select('d2.detKode');
-            $otherBuilder->where('d2.detLnKode', $lnKode);
-            $otherBuilder->where('d2.detStatus', 1);
-            $otherBuilder->groupStart();
-                $otherBuilder->where('d2.detil_LHUS IS NULL', null, false);
-                $otherBuilder->orWhere('d2.detil_LHUS', '');
-            $otherBuilder->groupEnd();
-
-            $remainingRows = $otherBuilder->get()->getResult();
-            $remainingCount = is_array($remainingRows) ? count($remainingRows) : 0;
-            $remainingCodes = [];
-            foreach ($remainingRows as $r) {
-                if (isset($r->detKode)) $remainingCodes[] = $r->detKode;
-            }
-
-            if ($remainingCount === 0) {
-                $model->updateData(['lnStatus' => 5], $this->id, $lnKode);
-                $parentUpdated = true;
-            } else {
-                $parentUpdated = false;
-            }
-
-            $db->transComplete();
-
-            if ($db->transStatus() === false) {
-                return $this->response->setJSON([
-                    'res' => 'error',
-                    'msg' => 'Gagal menyimpan status pada detil/parent (transaksi gagal)',
-                    'xname' => csrf_token(),
-                    'xhash' => csrf_hash()
-                ]);
-            }
-
-            if ($remainingCount > 0) {
-                return $this->response->setJSON([
-                    'res' => true,
-                    'msg' => 'Sebagian layanan sudah dikirim, masih ada ' . $remainingCount . ' layanan aktif yang perlu diaccc.',
-                    'waiting_others' => true,
-                    'pending_total' => $remainingCount,
-                    'missing_detKode' => $remainingCodes,
-                    'parent_updated' => false,
-                    'xname' => csrf_token(),
-                    'xhash' => csrf_hash()
-                ]);
-            }
-
+        if ($missingCount > 0) {
+            $msg = 'Berhasil dikirim, sisa ' . $missingCount . ' layanan yang perlu diaccc';
             return $this->response->setJSON([
                 'res' => true,
-                'msg' => 'Lhus terkirim ke manajer',
-                'waiting_others' => false,
-                'parent_updated' => true,
-                'xname' => csrf_token(),
-                'xhash' => csrf_hash()
-            ]);
-        } catch (\Throwable $e) {
-            return $this->response->setJSON([
-                'res' => 'error',
-                'msg' => 'Error saat update: ' . $e->getMessage(),
+                'msg' => $msg,
+                'waiting_others' => true,
+                'pending_total' => $missingCount,
+                'missing_detKode' => $missingItems,
+                'parent_updated' => false,
                 'xname' => csrf_token(),
                 'xhash' => csrf_hash()
             ]);
         }
+    } catch (\Throwable $e) {
+        return $this->response->setJSON([
+            'res' => 'error',
+            'msg' => 'Error saat memeriksa file detil milik user: ' . $e->getMessage(),
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
+        ]);
     }
+
+    // --- kirim & catat penyelia pengirim di detUploadLHUS ---
+    try {
+        $db = \Config\Database::connect();
+        $db->transStart();
+
+        // 1) Tandai detil aktif milik user (penyelia / manajer) sebagai "terkirim" (LHUS -> 0)
+        $db->table('simlab_t_layanan_detil')
+            ->where('detLnKode', $lnKode)
+            ->groupStart()
+                ->where('detPenyelia', $user_id)
+                ->orWhere('detManajerTeknis', $user_id)
+            ->groupEnd()
+            ->where('detStatus', 1)
+            ->groupStart()
+                ->where('detStatusLHUS IS NULL', null, false)
+                ->orWhereIn('detStatusLHUS', [0, 3])
+            ->groupEnd()
+            ->update([
+                'detStatusLHUS' => 0
+            ]);
+
+        // 2) Catat penyelia yang melakukan kirim pada baris-baris miliknya
+        $db->table('simlab_t_layanan_detil')
+            ->where('detLnKode', $lnKode)
+            ->where('detPenyelia', $user_id)      // hanya penyelia aktif
+            ->where('detStatus', 1)
+            ->groupStart()
+                ->where('detStatusLHUS IS NULL', null, false)
+                ->orWhereIn('detStatusLHUS', [0, 3])
+            ->groupEnd()
+            ->update([
+                'detUploadLHUS' => $user_id
+            ]);
+
+        // 3) Cek apakah semua detil aktif sudah punya file → naikkan parent ke status 5
+        $otherBuilder = $db->table('simlab_t_layanan_detil as d2');
+        $otherBuilder->select('d2.detKode');
+        $otherBuilder->where('d2.detLnKode', $lnKode);
+        $otherBuilder->where('d2.detStatus', 1);
+        $otherBuilder->groupStart();
+            $otherBuilder->where('d2.detil_LHUS IS NULL', null, false);
+            $otherBuilder->orWhere('d2.detil_LHUS', '');
+        $otherBuilder->groupEnd();
+
+        $remainingRows  = $otherBuilder->get()->getResult();
+        $remainingCount = is_array($remainingRows) ? count($remainingRows) : 0;
+        $remainingCodes = [];
+        foreach ($remainingRows as $r) { if (isset($r->detKode)) $remainingCodes[] = $r->detKode; }
+
+        $parentUpdated = false;
+        if ($remainingCount === 0) {
+            $model->updateData(['lnStatus' => 5], $this->id, $lnKode);
+            $parentUpdated = true;
+        }
+
+        $db->transComplete();
+
+        if ($db->transStatus() === false) {
+            return $this->response->setJSON([
+                'res' => 'error',
+                'msg' => 'Gagal menyimpan status pada detil/parent (transaksi gagal)',
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        }
+
+        if ($remainingCount > 0) {
+            return $this->response->setJSON([
+                'res' => true,
+                'msg' => 'Sebagian layanan sudah dikirim, masih ada ' . $remainingCount . ' layanan aktif yang perlu diaccc.',
+                'waiting_others' => true,
+                'pending_total' => $remainingCount,
+                'missing_detKode' => $remainingCodes,
+                'parent_updated' => false,
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        }
+
+        return $this->response->setJSON([
+            'res' => true,
+            'msg' => 'Lhus terkirim ke manajer',
+            'waiting_others' => false,
+            'parent_updated' => $parentUpdated,
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
+        ]);
+    } catch (\Throwable $e) {
+        return $this->response->setJSON([
+            'res' => 'error',
+            'msg' => 'Error saat update: ' . $e->getMessage(),
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
+        ]);
+    }
+}
+
 
     private function doUpload(\CodeIgniter\HTTP\Files\UploadedFile $file)
     {
