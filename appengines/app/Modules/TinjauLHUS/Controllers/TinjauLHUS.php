@@ -1,4 +1,4 @@
-<?php
+<?php 
 
 namespace Modules\TinjauLHUS\Controllers;
 
@@ -36,6 +36,25 @@ class TinjauLHUS extends BaseController
     {
         $session = session();
         $user_id = (int)$session->get('id_user');
+
+        // [ADDED] Parse lnStatus filter (?lnStatus=tolak,5,6)
+        $lnStatusParam  = (string) ($this->request->getGet('lnStatus') ?? '');
+        $wantReject     = false;          // token: tolak/reject/ditolak
+        $statusNums     = [];             // angka: 5/6/...
+        if ($lnStatusParam !== '') {
+            foreach (preg_split('/[,\s]+/', $lnStatusParam, -1, PREG_SPLIT_NO_EMPTY) as $p) {
+                $tp = strtolower(trim($p));
+                if (in_array($tp, ['tolak','reject','ditolak'], true)) {
+                    $wantReject = true;
+                    continue;
+                }
+                if ($tp !== '' && is_numeric($tp)) {
+                    $statusNums[] = (int)$tp;
+                }
+            }
+            $statusNums = array_values(array_unique($statusNums));
+        }
+        // [ADDED] end
 
         $db   = \Config\Database::connect();
         $data = [];
@@ -118,23 +137,37 @@ class TinjauLHUS extends BaseController
 
         foreach ($list as $row) {
             $lnKode = (int)$row->lnKode;
-            $derivedStatus = (int)$row->lnStatus;
 
+            // Hitung derivedStatus (tampil) — konsisten dengan view
+            $derivedStatus = (int)$row->lnStatus;
             if (isset($userSummary[$lnKode]) && $userSummary[$lnKode]['total'] > 0) {
                 $su = $userSummary[$lnKode];
                 if ($su['cnt0'] === 0) {
-                    if ($su['cnt1'] === $su['total'])      $derivedStatus = 6;
-                    elseif ($su['cnt2'] > 0)              $derivedStatus = 2;
-                    else                                   $derivedStatus = 5;
-                } else                                     $derivedStatus = 5;
+                    if ($su['cnt1'] === $su['total'])      $derivedStatus = 6; // semua accept
+                    elseif ($su['cnt2'] > 0)               $derivedStatus = 2; // ada tolak
+                    else                                    $derivedStatus = 5; // selesai subset user tapi global belum tentu
+                } else                                      $derivedStatus = 5; // masih pending
             } elseif (isset($statusSummary[$lnKode])) {
                 $s = $statusSummary[$lnKode];
-                if     ($s['cnt0'] > 0)                    $derivedStatus = 5;
-                elseif ($s['total'] > 0 && $s['cnt1'] === $s['total']) $derivedStatus = 6;
-                elseif ($s['cnt2'] > 0)                    $derivedStatus = 2;
-                else                                        $derivedStatus = 5;
+                if     ($s['cnt0'] > 0)                                     $derivedStatus = 5;
+                elseif ($s['total'] > 0 && $s['cnt1'] === $s['total'])      $derivedStatus = 6;
+                elseif ($s['cnt2'] > 0)                                     $derivedStatus = 2;
+                else                                                         $derivedStatus = 5;
             }
 
+            // [ADDED] Terapkan FILTER (?lnStatus=...)
+            if ($wantReject || !empty($statusNums)) {
+                $hasRejectForUser = (isset($userSummary[$lnKode]) && $userSummary[$lnKode]['cnt2'] > 0);
+                $match = false;
+
+                if ($wantReject && $hasRejectForUser) $match = true;
+                if (!$match && !empty($statusNums) && in_array((int)$derivedStatus, $statusNums, true)) $match = true;
+
+                if (!$match) continue; // tidak match filter → skip
+            }
+            // [ADDED] end
+
+            // ===== JSON row (3 kolom) — cocok dengan header Pemesan, Status, LHUS =====
             $pemesanNama = $row->pemesan_name ?: ($row->lnOrangNama ?? '-');
             $tipe        = $row->pemesan_identity ?: ($row->lnOrangJenis ?? ($row->lnOrangTipe ?? '-'));
             $tanggal     = !empty($row->lnTgl) ? date('d-m-Y H:i', strtotime($row->lnTgl)) : '-';
@@ -145,10 +178,14 @@ class TinjauLHUS extends BaseController
                     <span style="font-size:0.9rem; color:#555;">' . esc($tanggal) . ' | ' . esc($tipe) . '</span>
                 </div>';
 
+            $actionBtn = '<a href="javascript:void(0)" onclick="loadDetail(\'' 
+                       . bin2hex($this->encrypter->encrypt($row->lnKode)) 
+                       . '\')" class="btn btn-sm btn-info"><i class="bi bi-gear"></i> Tinjau LHUS</a>';
+
             $data[] = [
                 $combined,
                 $this->formatStatus((int)$derivedStatus),
-                '<a href="javascript:void(0)" onclick="loadDetail(\'' . bin2hex($this->encrypter->encrypt($row->lnKode)) . '\')" class="btn btn-sm btn-info"><i class="bi bi-gear"></i> Tinjau LHUS</a>',
+                $actionBtn,
             ];
         }
 
@@ -230,7 +267,7 @@ class TinjauLHUS extends BaseController
                     if (is_file($possiblePath)) { $hasFile = true; $fileUrl = base_url('uploads/lhus/' . ltrim($raw, '/')); break; }
                 }
             }
-            $latusHtml = $hasFile && $fileUrl
+            $lhusHtml = $hasFile && $fileUrl
                 ? '<button type="button" class="btn btn-sm btn-outline-primary" onclick="window.open(\'' . esc($fileUrl) . '\', \'_blank\')"><i class="bi bi-eye"></i> Lihat</button>'
                 : '<span class="text-muted">-</span>';
 
@@ -239,19 +276,15 @@ class TinjauLHUS extends BaseController
             $ketLhusVal = $row->detKetLhus ?? '';
 
             $textareaLhus =
-                            '<textarea id="detketlhus_' . $detKode . '" class="form-control detketlhus-input" '.
-                            'data-det="' . $detKode . '" data-statuslhus="' . $statusLhus . '" rows="2" placeholder="Keterangan LHUS..." '.
-                            'style="max-width:320px; min-width:220px; max-height:140px; resize:vertical; overflow:auto;">' .
-                            htmlspecialchars($ketLhusVal, ENT_QUOTES, 'UTF-8') .
-                            '</textarea>';
+                '<textarea id="detketlhus_' . $detKode . '" class="form-control detketlhus-input" '.
+                'data-det="' . $detKode . '" data-statuslhus="' . $statusLhus . '" rows="2" placeholder="Keterangan LHUS..." '.
+                'style="max-width:320px; min-width:220px; max-height:140px; resize:vertical; overflow:auto;">' .
+                htmlspecialchars($ketLhusVal, ENT_QUOTES, 'UTF-8') .
+                '</textarea>';
 
-
-            if     ($statusLhus === 1) 
-                $statusBadge = '<span class="badge bg-success">LHUS Diterima</span>';
-            elseif ($statusLhus === 2) 
-                $statusBadge = '<span class="badge bg-danger">LHUS Ditolak</span>';
-            else                       
-                $statusBadge = '<span class="badge bg-secondary">Belum Diproses</span>';
+            if     ($statusLhus === 1) $statusBadge = '<span class="badge bg-success">LHUS Diterima</span>';
+            elseif ($statusLhus === 2) $statusBadge = '<span class="badge bg-danger">LHUS Ditolak</span>';
+            else                       $statusBadge = '<span class="badge bg-secondary">Belum Diproses</span>';
 
             $canAccept = ($statusLhus !== 1);
             $canReject = ($statusLhus !== 2);
@@ -261,13 +294,14 @@ class TinjauLHUS extends BaseController
             $aksiHtml .= '<span class="text-warning btn-action btn-reject-lhus" title="Tolak LHUS"  data-det="' . $detKode . '"' . ($canReject ? '' : ' style="opacity:.5;pointer-events:none;"') . '><i class="bi bi-x-circle"></i></span>';
             $aksiHtml .= '</div>';
 
+            // ===== JSON row (8 kolom) — match header modal =====
             $data[] = [
                 $no++,
                 $layanan,
                 $jumlah,
                 $ket,
                 $statusBadge,
-                $latusHtml,
+                $lhusHtml,
                 $textareaLhus,
                 $aksiHtml
             ];
@@ -321,104 +355,97 @@ class TinjauLHUS extends BaseController
     }
 
     // Proses detil (POST form-data): 'terima'->1, 'tolak'->2
-    // Proses detil (POST form-data): 'terima'->1, 'tolak'->2
-public function prosesDetailLhus()
-{
-    $detKode = $this->request->getPost('detKode');
-    $aksi    = $this->request->getPost('aksi');
+    public function prosesDetailLhus()
+    {
+        $detKode = $this->request->getPost('detKode');
+        $aksi    = $this->request->getPost('aksi');
 
-    if (empty($detKode) || empty($aksi)) {
-        return $this->response->setJSON([
-            'res'   => false,
-            'msg'   => 'Parameter tidak lengkap',
-            'xname' => csrf_token(),
-            'xhash' => csrf_hash()
-        ]);
-    }
-
-    $detKode = (int)$detKode;
-    $map = ['terima' => 1, 'tolak' => 2];
-    if (!isset($map[$aksi])) {
-        return $this->response->setJSON([
-            'res'   => false,
-            'msg'   => 'Aksi tidak valid',
-            'xname' => csrf_token(),
-            'xhash' => csrf_hash()
-        ]);
-    }
-    $new = $map[$aksi];
-
-    try {
-        $db = \Config\Database::connect();
-        $db->transStart();
-
-        // Ambil LN parent dari detil ini
-        $detRow = $db->table('simlab_t_layanan_detil')
-            ->select('detLnKode')
-            ->where('detKode', $detKode)
-            ->get()->getRow();
-
-        if (!$detRow) {
-            $db->transComplete();
+        if (empty($detKode) || empty($aksi)) {
             return $this->response->setJSON([
                 'res'   => false,
-                'msg'   => 'Detil tidak ditemukan',
+                'msg'   => 'Parameter tidak lengkap',
                 'xname' => csrf_token(),
                 'xhash' => csrf_hash()
             ]);
         }
 
-        $lnKode = (int)$detRow->detLnKode;
-
-        // Update status detil
-        $db->table('simlab_t_layanan_detil')
-            ->where('detKode', $detKode)
-            ->update(['detStatusLHUS' => $new]);
-
-        // === NEW: auto set lnStatus = 6 jika SEMUA det aktif sudah detStatusLHUS = 1
-        // Catatan aturanmu: "ketika seluruh layanan sdh teracc, baru LnStatus = 6"
-        // diterjemahkan sebagai: semua detil aktif pada LN tsb memiliki detStatusLHUS = 1
-        $rowG = $db->query("
-            SELECT 
-                COUNT(*) AS total,
-                SUM(CASE WHEN detStatusLHUS = 1 THEN 1 ELSE 0 END) AS cnt1
-            FROM simlab_t_layanan_detil
-            WHERE detLnKode = ? AND detStatus = 1
-        ", [$lnKode])->getRowArray();
-
-        $gTotal = (int)($rowG['total'] ?? 0);
-        $gCnt1  = (int)($rowG['cnt1']  ?? 0);
-
-        if ($gTotal > 0 && $gCnt1 === $gTotal) {
-            // Semua layanan aktif sudah diterima -> set parent ke 6
-            $db->table('simlab_t_layanan')
-               ->where('lnKode', $lnKode)
-               ->update(['lnStatus' => 6]);
+        $detKode = (int)$detKode;
+        $map = ['terima' => 1, 'tolak' => 2];
+        if (!isset($map[$aksi])) {
+            return $this->response->setJSON([
+                'res'   => false,
+                'msg'   => 'Aksi tidak valid',
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
         }
-        // === END NEW
+        $new = $map[$aksi];
 
-        $db->transComplete();
+        try {
+            $db = \Config\Database::connect();
+            $db->transStart();
 
-        $ok = $db->transStatus();
+            // Ambil LN parent dari detil ini
+            $detRow = $db->table('simlab_t_layanan_detil')
+                ->select('detLnKode')
+                ->where('detKode', $detKode)
+                ->get()->getRow();
 
-        return $this->response->setJSON([
-            'res'   => $ok,
-            'msg'   => $ok ? 'Status LHUS diperbarui' : 'Tidak ada perubahan',
-            'xname' => csrf_token(),
-            'xhash' => csrf_hash()
-        ]);
+            if (!$detRow) {
+                $db->transComplete();
+                return $this->response->setJSON([
+                    'res'   => false,
+                    'msg'   => 'Detil tidak ditemukan',
+                    'xname' => csrf_token(),
+                    'xhash' => csrf_hash()
+                ]);
+            }
 
-    } catch (\Throwable $e) {
-        return $this->response->setJSON([
-            'res'   => false,
-            'msg'   => 'Error: ' . $e->getMessage(),
-            'xname' => csrf_token(),
-            'xhash' => csrf_hash()
-        ]);
+            $lnKode = (int)$detRow->detLnKode;
+
+            // Update status detil
+            $db->table('simlab_t_layanan_detil')
+                ->where('detKode', $detKode)
+                ->update(['detStatusLHUS' => $new]);
+
+            // Auto set lnStatus = 6 jika SEMUA det aktif sudah detStatusLHUS = 1
+            $rowG = $db->query("
+                SELECT 
+                    COUNT(*) AS total,
+                    SUM(CASE WHEN detStatusLHUS = 1 THEN 1 ELSE 0 END) AS cnt1
+                FROM simlab_t_layanan_detil
+                WHERE detLnKode = ? AND detStatus = 1
+            ", [$lnKode])->getRowArray();
+
+            $gTotal = (int)($rowG['total'] ?? 0);
+            $gCnt1  = (int)($rowG['cnt1']  ?? 0);
+
+            if ($gTotal > 0 && $gCnt1 === $gTotal) {
+                $db->table('simlab_t_layanan')
+                   ->where('lnKode', $lnKode)
+                   ->update(['lnStatus' => 6]);
+            }
+
+            $db->transComplete();
+
+            $ok = $db->transStatus();
+
+            return $this->response->setJSON([
+                'res'   => $ok,
+                'msg'   => $ok ? 'Status LHUS diperbarui' : 'Tidak ada perubahan',
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+
+        } catch (\Throwable $e) {
+            return $this->response->setJSON([
+                'res'   => false,
+                'msg'   => 'Error: ' . $e->getMessage(),
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        }
     }
-}
-
-
 
     // Proses parent LN (terima/tolak)
     public function proses($idEnc = null, $aksi = null)

@@ -4,6 +4,18 @@
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <label class="card-title mb-0"><?php echo $title ?></label>
+
+                <!-- [ADDED] Filter Status -->
+                <div class="d-flex align-items-center" style="gap:8px;">
+                    <label class="mb-0 small text-muted">Status:</label>
+                    <select id="statusFilter" class="form-select form-select-sm" style="width:260px;">
+                        <option value="">— Semua status —</option>
+                        <option value="tolak">LHUS ditolak</option>
+                        <option value="5">LHUS belum ditinjau</option>
+                        <option value="6">LHUS disetujui</option>
+                    </select>
+                </div>
+                <!-- [ADDED] end -->
             </div>
             <div class="card-body">
 
@@ -71,6 +83,76 @@
         dataSrc: 'items'
     });
     addAction();
+
+    // [ADDED] Helpers untuk filter & cache-buster
+    if (typeof window.buildApiUrlWithOptionalParam !== 'function') {
+      function buildApiUrlWithOptionalParam(path, key, value) {
+          try {
+              const u = new URL(path, window.location.origin);
+              const params = new URLSearchParams(u.search);
+              if (key && String(key) !== '') {
+                  if (typeof value !== 'undefined' && value !== null && String(value) !== '') {
+                      params.set(key, String(value));
+                  } else {
+                      params.delete(key);
+                  }
+              }
+              const s = params.toString();
+              return u.pathname + (s ? '?' + s : '');
+          } catch(e) {
+              if (key && String(key) !== '' && value !== null && String(value) !== '') {
+                  return path + (path.includes('?') ? '&' : '?') + encodeURIComponent(key) + '=' + encodeURIComponent(String(value));
+              }
+              return path;
+          }
+      }
+    }
+    if (typeof window.normalizeDoubleQuestion !== 'function') {
+      function normalizeDoubleQuestion(url) {
+          if (typeof url !== 'string') return url;
+          url = url.replace(/\?([^?]*)\?/, '?$1&');
+          url = url.replace(/&{2,}/g, '&');
+          url = url.replace(/\?&/, '?');
+          if (url.endsWith('&')) url = url.slice(0, -1);
+          return url;
+      }
+    }
+    (function patchFetchData(){
+      if (typeof table !== 'undefined' && table && typeof table.getConfig === 'function' && typeof table.fetchData === 'function' && !table.__fetchPatchedTL) {
+          const _origFetch = table.fetchData.bind(table);
+          let _currentAbort = null;
+          table.fetchData = function(opts = {}) {
+              try {
+                  const cfg = table.getConfig();
+                  if (cfg && typeof cfg.apiUrl === 'string') {
+                      const u = new URL(cfg.apiUrl, window.location.origin);
+                      u.searchParams.set('_ts', Date.now().toString());
+                      cfg.apiUrl = normalizeDoubleQuestion(u.pathname + (u.search ? u.search : ''));
+                  }
+              } catch (err) {}
+              try { if (_currentAbort) _currentAbort.abort(); } catch(e){}
+              try { _currentAbort = new AbortController(); opts.signal = _currentAbort.signal; } catch(e){}
+              return _origFetch(opts);
+          };
+          table.__fetchPatchedTL = true;
+      }
+    })();
+    (function attachStatusFilter(){
+        const sel = document.getElementById('statusFilter');
+        if (!sel || sel.dataset.bound === '1') return;
+        sel.addEventListener('change', function(){
+            const val = (this.value || '').toString().trim();
+            if (table?.getConfig) {
+                const cfg = table.getConfig();
+                cfg.apiUrl = normalizeDoubleQuestion(
+                    buildApiUrlWithOptionalParam('<?php echo site_url("tinjaulhus/datalist") ?>', 'lnStatus', (val === '' ? null : val))
+                );
+                table.fetchData({ reload: true, page: 1 });
+            }
+        });
+        sel.dataset.bound = '1';
+    })();
+    // [ADDED] end
 
     // Utility ambil CSRF token
     function _getCsrf() {
@@ -225,11 +307,11 @@
 
         e.preventDefault();
         const isAccept = !!btnAccept;
-        const el = isAccept ? btnAccept : btnReject;
-        const det = el.dataset.det;
+        theEl = isAccept ? btnAccept : btnReject;
+        const det = theEl.dataset.det;
         if (!det) return;
 
-        el.disabled = true;
+        theEl.disabled = true;
         const formData = new FormData();
         formData.append('detKode', det);
         formData.append('aksi', isAccept ? 'terima' : 'tolak');
@@ -263,7 +345,7 @@
             console.error(err);
             sayAlert('errorModal', 'Error', 'Terjadi kesalahan sistem', 'warning');
         })
-        .finally(() => { el.disabled = false; });
+        .finally(() => { theEl.disabled = false; });
     });
 
     (function(){
