@@ -1,8 +1,21 @@
-<div class="row">
+<div class="row"> 
     <div class="col-md-12">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <label class="card-title mb-0"><?php echo $title ?></label>
+
+                <!-- [ADDED] Filter Status -->
+                <div class="d-flex align-items-center" style="gap:8px;">
+                    <label class="mb-0 small text-muted">Status:</label>
+                    <select id="statusFilter" class="form-select form-select-sm" style="width:280px;">
+                        <option value="">— Semua status —</option>
+                        <!-- <option value="6">Memproses LHU (Semua)</option> -->
+                        <option value="pending">Memproses LHU</option>
+                        <option value="uploaded">LHU Terunggah</option>
+                        <option value="7">LHU Disetujui</option>
+                    </select>
+                </div>
+                <!-- [ADDED] end -->
             </div>
             <div class="card-body">
                 <table id="data-table" class="saytable border-top-bottom">
@@ -10,11 +23,9 @@
                         <tr>
                             <th show width="5%">No.</th>
                             <th show width="35%">Pemesan</th>
-                            <!-- <th show width="15%">Detail Layanan</th> -->
-                            <th show width="10%">LHUS </th>
-                            <th show width="15%">LHU</th>
-                            <th show width="10%">Status</th>
-                            <th show width="20%" class="action text-end">Aksi</th>
+                            <th show width="10%">LHUS</th>
+                            <th show width="15%">Status</th>
+                            <th show width="25%" class="action text-end">Aksi</th>
                         </tr>
                     </thead>
                     <tbody id="table-body"></tbody>
@@ -24,12 +35,168 @@
     </div>
 </div>
 
+
+<!--  Modal Detail -->
+<div class="modal fade" id="modalDetail" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+  <div class="modal-dialog modal-lg" role="document" style="margin: 2% auto">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Detail Item Layanan</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <table class="table table-bordered">
+          <thead>
+            <tr>
+                <th width="5%">No</th>
+                <th width="45%">Layanan</th>
+                <th width="10%">Jumlah</th>
+                <th width="30%">Keterangan</th>
+                <th width="15%">File LHUS</th>
+            </tr>
+            </thead>
+            <tbody id="detail-body">
+               <tr><td colspan="5" class="text-center">Loading...</td></tr>
+            </tbody>
+
+        </table>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-light" type="button" data-bs-dismiss="modal">
+          <i class="bi bi-x-circle"></i> Tutup
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Upload LHU -->
+<div class="modal fade" id="modalUploadLhu" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+    <div class="modal-dialog modal-md" role="document" style="margin: 4% auto">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Unggah File LHU</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div style="border-bottom:1px solid #e9ecef"></div>
+
+            <div class="modal-body">
+                <form id="formUploadLhu" action="<?php echo site_url('pelaksanaan/upload') ?>" method="post" enctype="multipart/form-data" novalidate>
+                    <!-- CSRF input (server-side) -->
+                    <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>">
+                    <input type="hidden" name="id" id="upload_lhu_id" value="">
+                    <input type="hidden" name="detKode" id="upload_detKode" value="">
+
+                    <div class="mb-3">
+                        <label for="lhu_file" class="form-label">Pilih File (jpg, png, pdf, docx, xlsx)</label>
+
+                        <div class="d-flex align-items-center gap-2">
+                            <input type="file" name="lhu_file" id="lhu_file" class="form-control" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx" style="max-width:360px">
+                            <button type="button" id="btnViewExistingLhu" class="btn btn-outline-primary btn-sm" title="Lihat Bukti" disabled>
+                                <i class="bi bi-eye"></i> <span class="d-none d-sm-inline">Lihat Bukti</span>
+                            </button>
+                        </div>
+
+                        <div id="lhu-selection" class="form-text mt-2">Anda bisa unggah file baru untuk mengganti.</div>
+                        <div class="form-text text-muted">Ukuran maksimal 5MB.</div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="modal-footer justify-content-between">
+                <div class="text-start">
+                    <button class="btn btn-light" type="button" id="btnCancelUpload" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Batal
+                    </button>
+                </div>
+                <div>
+                    <button class="btn btn-primary" id="btnUploadLhu" type="button">
+                        <i class="bi bi-cloud-upload"></i> Unggah
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 <script>
     table = createTable({
         apiUrl: '<?php echo site_url("pelaksanaan/datalist") ?>',
         dataSrc: 'items'
     });
     addAction();
+
+    // [ADDED] Helpers untuk build url + cache buster + binding filter
+    if (typeof window.buildApiUrlWithOptionalParam !== 'function') {
+      function buildApiUrlWithOptionalParam(path, key, value) {
+          try {
+              const u = new URL(path, window.location.origin);
+              const params = new URLSearchParams(u.search);
+              if (key && String(key) !== '') {
+                  if (typeof value !== 'undefined' && value !== null && String(value) !== '') {
+                      params.set(key, String(value));
+                  } else {
+                      params.delete(key);
+                  }
+              }
+              const s = params.toString();
+              return u.pathname + (s ? '?' + s : '');
+          } catch(e) {
+              if (key && String(key) !== '' && value !== null && String(value) !== '') {
+                  return path + (path.includes('?') ? '&' : '?') + encodeURIComponent(key) + '=' + encodeURIComponent(String(value));
+              }
+              return path;
+          }
+      }
+    }
+    if (typeof window.normalizeDoubleQuestion !== 'function') {
+      function normalizeDoubleQuestion(url) {
+          if (typeof url !== 'string') return url;
+          url = url.replace(/\?([^?]*)\?/, '?$1&');
+          url = url.replace(/&{2,}/g, '&');
+          url = url.replace(/\?&/, '?');
+          if (url.endsWith('&')) url = url.slice(0, -1);
+          return url;
+      }
+    }
+    (function patchFetchData(){
+      if (typeof table !== 'undefined' && table && typeof table.getConfig === 'function' && typeof table.fetchData === 'function' && !table.__fetchPatchedPELAK) {
+          const _origFetch = table.fetchData.bind(table);
+          let _currentAbort = null;
+          table.fetchData = function(opts = {}) {
+              try {
+                  const cfg = table.getConfig();
+                  if (cfg && typeof cfg.apiUrl === 'string') {
+                      const u = new URL(cfg.apiUrl, window.location.origin);
+                      u.searchParams.set('_ts', Date.now().toString());
+                      cfg.apiUrl = normalizeDoubleQuestion(u.pathname + (u.search ? u.search : ''));
+                  }
+              } catch (err) {}
+              try { if (_currentAbort) _currentAbort.abort(); } catch(e){}
+              try { _currentAbort = new AbortController(); opts.signal = _currentAbort.signal; } catch(e){}
+              return _origFetch(opts);
+          };
+          table.__fetchPatchedPELAK = true;
+      }
+    })();
+    (function attachStatusFilter(){
+        const sel = document.getElementById('statusFilter');
+        if (!sel || sel.dataset.bound === '1') return;
+        sel.addEventListener('change', function(){
+            const val = (this.value || '').toString().trim();
+            if (table?.getConfig) {
+                const cfg = table.getConfig();
+                cfg.apiUrl = normalizeDoubleQuestion(
+                    buildApiUrlWithOptionalParam('<?php echo site_url("pelaksanaan/datalist") ?>', 'lnStatus', (val === '' ? null : val))
+                );
+                table.fetchData({ reload: true, page: 1 });
+            }
+        });
+        sel.dataset.bound = '1';
+    })();
+    // [ADDED] end
 
     const btnSimpan = document.querySelector('#btnSimpan');
     if (btnSimpan) {
@@ -180,49 +347,11 @@
                 }
             },
             'success',   // style tombol utama
-            'Kirim',   // label tombol konfirmasi
-            'Batal'     // label batal
+            'Kirim',     // label tombol konfirmasi
+            'Batal'      // label batal
         );
     }
 
-
-    /**
-     *  Tombol Hapus
-     */
-    // function deleteItem(e) {
-    //     e.preventDefault();
-    //     let id = e.currentTarget.closest('div').id;
-    //     if (!id) return;
-
-    //     if (confirm('Yakin ingin menghapus data ini?')) {
-    //         const csrfInput = document.querySelector('[name="<?= csrf_token() ?>"]');
-    //         const csrfToken = csrfInput ? csrfInput.value : '';
-
-    //         fetch('<?php echo site_url("pelaksanaan/delete/") ?>' + id, {
-    //             method: 'POST',
-    //             headers: {
-    //                 'X-Requested-With': 'XMLHttpRequest',
-    //                 'X-CSRF-TOKEN': csrfToken
-    //             }
-    //         })
-    //         .then(res => res.json())
-    //         .then(data => {
-    //             if (data.res) {
-    //                 if (typeof table !== 'undefined') table.fetchData({ reload: true });
-    //                 sayAlert('successModal', 'Berhasil', 'Data berhasil dihapus', 'success');
-    //             } else {
-    //                 sayAlert('errorModal', 'Gagal', data.msg || 'Hapus gagal dilakukan', 'warning');
-    //             }
-
-    //             if (data.xname && data.xhash) {
-    //                 document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => input.value = data.xhash);
-    //             }
-    //         })
-    //         .catch(err => sayAlert('errorModal', 'Error', 'Terjadi kesalahan sistem', 'warning'));
-    //     }
-    // }
-
-   
    // 🔹 Tombol Lihat Detail
 function loadDetail(id) {
     const url = '<?php echo site_url("pelaksanaan/detaillist/") ?>' + id;
@@ -271,7 +400,6 @@ function loadDetail(id) {
             }
         });
 }
-
 
     /* ------------------ Upload LHU modal integration ------------------ */
     function openUploadModal(encId, fileUrl = '#', detKode = '') {
@@ -400,19 +528,22 @@ function loadDetail(id) {
         // ---- REFRESH TABEL UTAMA ----
         if (typeof table !== 'undefined') table.fetchData({ reload: true });
 
-        // ---- UPDATE TOMBOL DI BARIS TERKAIT (ubah label & onclick) ----
+        // ---- UPDATE IKON UPLOAD DI KOLOM AKSI (URL file terbaru) ----
         const encId = document.getElementById('upload_lhu_id')?.value || '';
         if (encId) {
-            // cari tombol yang memanggil openUploadModal untuk encId ini
-            const selector = 'button[onclick^="openUploadModal(\\\'' + encId + '\\\'"]';
+            const selector = '[onclick^="openUploadModal(\\\'' + encId + '\\\'"]';
             const btn = document.querySelector(selector);
             if (btn) {
-            // set label jadi "Lihat file"
-            btn.innerHTML = '<i class="bi bi-upload"></i> Lihat file';
-            // perbarui parameter url di onclick
-            const safeUrl = (data.url && typeof data.url === 'string') ? data.url.replace(/'/g, "\\'") : '#';
-            btn.setAttribute('onclick', "openUploadModal('" + encId + "', '" + safeUrl + "')");
+                const safeUrl = (data.url && typeof data.url === 'string') ? data.url.replace(/'/g, "\\'") : '#';
+                btn.setAttribute('onclick', "openUploadModal('" + encId + "', '" + safeUrl + "')");
             }
+        }
+
+        //  Ganti kolom Status menjadi "Terunggah" (jika sebelumnya Memproses LHU)
+        const encId2 = document.getElementById('upload_lhu_id')?.value || '';
+        const statusEl = document.getElementById('status-cell-' + encId2);
+        if (statusEl) {
+            statusEl.innerHTML = '<span class="badge bg-success">Terunggah</span>';
         }
 
         // ---- REFRESH MODAL DETAIL BILA SEDANG TERBUKA ----
@@ -439,90 +570,4 @@ function loadDetail(id) {
         hideLoading();
     });
     });
-
-
 </script>
-
-<!-- 🔹 Modal Detail -->
-<div class="modal fade" id="modalDetail" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
-  <div class="modal-dialog modal-lg" role="document" style="margin: 2% auto">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Detail Item Layanan</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <table class="table table-bordered">
-          <thead>
-            <tr>
-                <th width="5%">No</th>
-                <th width="45%">Layanan</th>
-                <th width="10%">Jumlah</th>
-                <th width="30%">Keterangan</th>
-                <th width="15%">File LHUS</th>
-            </tr>
-            </thead>
-            <tbody id="detail-body">
-               <tr><td colspan="5" class="text-center">Loading...</td></tr>
-            </tbody>
-
-        </table>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-light" type="button" data-bs-dismiss="modal">
-          <i class="bi bi-x-circle"></i> Tutup
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Modal Upload LHU -->
-<div class="modal fade" id="modalUploadLhu" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
-    <div class="modal-dialog modal-md" role="document" style="margin: 4% auto">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Unggah File LHU</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-
-            <div style="border-bottom:1px solid #e9ecef"></div>
-
-            <div class="modal-body">
-                <form id="formUploadLhu" action="<?php echo site_url('pelaksanaan/upload') ?>" method="post" enctype="multipart/form-data" novalidate>
-                    <!-- CSRF input (server-side) -->
-                    <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>">
-                    <input type="hidden" name="id" id="upload_lhu_id" value="">
-                    <input type="hidden" name="detKode" id="upload_detKode" value="">
-
-                    <div class="mb-3">
-                        <label for="lhu_file" class="form-label">Pilih File (jpg, png, pdf, docx, xlsx)</label>
-
-                        <div class="d-flex align-items-center gap-2">
-                            <input type="file" name="lhu_file" id="lhu_file" class="form-control" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx" style="max-width:360px">
-                            <button type="button" id="btnViewExistingLhu" class="btn btn-outline-primary btn-sm" title="Lihat Bukti" disabled>
-                                <i class="bi bi-eye"></i> <span class="d-none d-sm-inline">Lihat Bukti</span>
-                            </button>
-                        </div>
-
-                        <div id="lhu-selection" class="form-text mt-2">Anda bisa unggah file baru untuk mengganti.</div>
-                        <div class="form-text text-muted">Ukuran maksimal 5MB.</div>
-                    </div>
-                </form>
-            </div>
-
-            <div class="modal-footer justify-content-between">
-                <div class="text-start">
-                    <button class="btn btn-light" type="button" id="btnCancelUpload" data-bs-dismiss="modal">
-                        <i class="bi bi-x-circle"></i> Batal
-                    </button>
-                </div>
-                <div>
-                    <button class="btn btn-primary" id="btnUploadLhu" type="button">
-                        <i class="bi bi-cloud-upload"></i> Unggah
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
