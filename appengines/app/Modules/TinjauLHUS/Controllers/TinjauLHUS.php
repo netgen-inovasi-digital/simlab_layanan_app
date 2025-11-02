@@ -356,96 +356,112 @@ class TinjauLHUS extends BaseController
 
     // Proses detil (POST form-data): 'terima'->1, 'tolak'->2
     public function prosesDetailLhus()
-    {
-        $detKode = $this->request->getPost('detKode');
-        $aksi    = $this->request->getPost('aksi');
+{
+    $detKode = $this->request->getPost('detKode');
+    $aksi    = $this->request->getPost('aksi');
 
-        if (empty($detKode) || empty($aksi)) {
-            return $this->response->setJSON([
-                'res'   => false,
-                'msg'   => 'Parameter tidak lengkap',
-                'xname' => csrf_token(),
-                'xhash' => csrf_hash()
-            ]);
-        }
-
-        $detKode = (int)$detKode;
-        $map = ['terima' => 1, 'tolak' => 2];
-        if (!isset($map[$aksi])) {
-            return $this->response->setJSON([
-                'res'   => false,
-                'msg'   => 'Aksi tidak valid',
-                'xname' => csrf_token(),
-                'xhash' => csrf_hash()
-            ]);
-        }
-        $new = $map[$aksi];
-
-        try {
-            $db = \Config\Database::connect();
-            $db->transStart();
-
-            // Ambil LN parent dari detil ini
-            $detRow = $db->table('simlab_t_layanan_detil')
-                ->select('detLnKode')
-                ->where('detKode', $detKode)
-                ->get()->getRow();
-
-            if (!$detRow) {
-                $db->transComplete();
-                return $this->response->setJSON([
-                    'res'   => false,
-                    'msg'   => 'Detil tidak ditemukan',
-                    'xname' => csrf_token(),
-                    'xhash' => csrf_hash()
-                ]);
-            }
-
-            $lnKode = (int)$detRow->detLnKode;
-
-            // Update status detil
-            $db->table('simlab_t_layanan_detil')
-                ->where('detKode', $detKode)
-                ->update(['detStatusLHUS' => $new]);
-
-            // Auto set lnStatus = 6 jika SEMUA det aktif sudah detStatusLHUS = 1
-            $rowG = $db->query("
-                SELECT 
-                    COUNT(*) AS total,
-                    SUM(CASE WHEN detStatusLHUS = 1 THEN 1 ELSE 0 END) AS cnt1
-                FROM simlab_t_layanan_detil
-                WHERE detLnKode = ? AND detStatus = 1
-            ", [$lnKode])->getRowArray();
-
-            $gTotal = (int)($rowG['total'] ?? 0);
-            $gCnt1  = (int)($rowG['cnt1']  ?? 0);
-
-            if ($gTotal > 0 && $gCnt1 === $gTotal) {
-                $db->table('simlab_t_layanan')
-                   ->where('lnKode', $lnKode)
-                   ->update(['lnStatus' => 6]);
-            }
-
-            $db->transComplete();
-
-            $ok = $db->transStatus();
-
-            return $this->response->setJSON([
-                'res'   => $ok,
-                'msg'   => $ok ? 'Status LHUS diperbarui' : 'Tidak ada perubahan',
-                'xname' => csrf_token(),
-                'xhash' => csrf_hash()
-            ]);
-
-        } catch (\Throwable $e) {
-            return $this->response->setJSON([
-                'res'   => false,
-                'msg'   => 'Error: ' . $e->getMessage(),
-                'xname' => csrf_token(),
-                'xhash' => csrf_hash()
-            ]);
-        }
+    if (empty($detKode) || empty($aksi)) {
+        return $this->response->setJSON([
+            'res'   => false,
+            'msg'   => 'Parameter tidak lengkap',
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
+        ]);
     }
+
+    $detKode = (int)$detKode;
+    $map = ['terima' => 1, 'tolak' => 2];
+    if (!isset($map[$aksi])) {
+        return $this->response->setJSON([
+            'res'   => false,
+            'msg'   => 'Aksi tidak valid',
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
+        ]);
+    }
+    $new = $map[$aksi];
+
+    // --- ADD: ambil user yang sedang login untuk dicatat sebagai detAccLHUS
+    $session   = session();
+    $accUserId = (int) ($session->get('id_user') ?? 0);
+    if ($accUserId <= 0) {
+        return $this->response->setJSON([
+            'res'   => false,
+            'msg'   => 'User login tidak ditemukan',
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
+        ]);
+    }
+
+    try {
+        $db = \Config\Database::connect();
+        $db->transStart();
+
+        // Ambil LN parent dari detil ini
+        $detRow = $db->table('simlab_t_layanan_detil')
+            ->select('detLnKode')
+            ->where('detKode', $detKode)
+            ->get()->getRow();
+
+        if (!$detRow) {
+            $db->transComplete();
+            return $this->response->setJSON([
+                'res'   => false,
+                'msg'   => 'Detil tidak ditemukan',
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        }
+
+        $lnKode = (int)$detRow->detLnKode;
+
+        // --- UPDATE + catat siapa yang menilai LHUS
+        $db->table('simlab_t_layanan_detil')
+            ->where('detKode', $detKode)
+            ->update([
+                'detStatusLHUS' => $new,
+                'detAccLHUS'    => $accUserId   // << catat evaluator
+            ]);
+
+        // Auto set lnStatus = 6 jika semua det aktif sudah diterima
+        $rowG = $db->query("
+            SELECT 
+                COUNT(*) AS total,
+                SUM(CASE WHEN detStatusLHUS = 1 THEN 1 ELSE 0 END) AS cnt1
+            FROM simlab_t_layanan_detil
+            WHERE detLnKode = ? AND detStatus = 1
+        ", [$lnKode])->getRowArray();
+
+        $gTotal = (int)($rowG['total'] ?? 0);
+        $gCnt1  = (int)($rowG['cnt1']  ?? 0);
+
+        if ($gTotal > 0 && $gCnt1 === $gTotal) {
+            $db->table('simlab_t_layanan')
+               ->where('lnKode', $lnKode)
+               ->update(['lnStatus' => 6]);
+        }
+
+        $db->transComplete();
+
+        $ok = $db->transStatus();
+
+        return $this->response->setJSON([
+            'res'   => $ok,
+            'msg'   => $ok ? 'Status LHUS diperbarui' : 'Tidak ada perubahan',
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
+        ]);
+
+    } catch (\Throwable $e) {
+        return $this->response->setJSON([
+            'res'   => false,
+            'msg'   => 'Error: ' . $e->getMessage(),
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
+        ]);
+    }
+}
+
 
     // Proses parent LN (terima/tolak)
     public function proses($idEnc = null, $aksi = null)
