@@ -354,230 +354,295 @@ class FormulirManajer extends BaseController
 
 
     public function approveDetail()
-    {
-        $lnEnc = $this->request->getPost('ln');
-        $ujiRaw = $this->request->getPost('uji');
+{
+    $lnEnc = $this->request->getPost('ln');
+    $ujiRaw = $this->request->getPost('uji');
 
-        if (empty($lnEnc) || $ujiRaw === null) {
-            return $this->response->setJSON([
-                'res' => false,
-                'affected' => 0,
-                'msg' => 'Parameter tidak lengkap',
-                'xname' => csrf_token(),
-                'xhash' => csrf_hash()
-            ]);
-        }
-
-        $uji = (int)$ujiRaw;
-
-        try {
-            $lnId = $this->encrypter->decrypt(hex2bin($lnEnc));
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'res' => false,
-                'affected' => 0,
-                'msg' => 'ID layanan tidak valid',
-                'xname' => csrf_token(),
-                'xhash' => csrf_hash()
-            ]);
-        }
-
-        $db = \Config\Database::connect();
-        $table = $db->table('simlab_t_layanan_detil');
-
-        // total rows matching ln + uji
-        $table->where('detLnKode', $lnId);
-        $table->where('detUjiKode', $uji);
-        $total = (int) $table->countAllResults(false);
-
-        if ($total === 0) {
-            return $this->response->setJSON([
-                'res' => false,
-                'affected' => 0,
-                'msg' => 'No matching detail rows found',
-                'xname' => csrf_token(),
-                'xhash' => csrf_hash()
-            ]);
-        }
-
-        // brp detStatus = 1
-        $table->where('detLnKode', $lnId);
-        $table->where('detUjiKode', $uji);
-        $table->where('detStatus', 1);
-        $already = (int) $table->countAllResults(false);
-
-        if ($already === $total) {
-            $pendingBuilder = $db->table('simlab_t_layanan_detil');
-            $pendingBuilder->where('detLnKode', $lnId);
-            $pendingBuilder->groupStart()
-                            ->where('detStatus', 0)
-                            ->orWhere('detStatus IS NULL', null, false)
-                         ->groupEnd();
-            $pendingRemaining = (int) $pendingBuilder->countAllResults(false);
-
-            $parentUpdated = false;
-            if ($pendingRemaining === 0) {
-                $model = new MyModel($this->table);
-                $resParent = $model->updateData(['lnStatus' => 3], $this->id, $lnId);
-                $parentUpdated = ($resParent === true || $resParent === 1);
-            }
-
-            return $this->response->setJSON([
-                'res' => true,
-                'affected' => 0,
-                'msg' => 'Sudah disetujui',
-                'parent_updated' => $parentUpdated,
-                'xname' => csrf_token(),
-                'xhash' => csrf_hash()
-            ]);
-        }
-
-        $res = $db->table('simlab_t_layanan_detil')
-                ->where('detLnKode', $lnId)
-                ->where('detUjiKode', $uji)
-                ->where('(detStatus IS NULL OR detStatus != 1)')
-                ->update(['detStatus' => 1]);
-
-        $affected = $db->affectedRows();
-
-        $parentUpdated = false;
-        if ($affected > 0) {
-            $pendingBuilder = $db->table('simlab_t_layanan_detil');
-            $pendingBuilder->where('detLnKode', $lnId);
-            $pendingBuilder->groupStart()
-                            ->where('detStatus', 0)
-                            ->orWhere('detStatus IS NULL', null, false)
-                         ->groupEnd();
-            $pendingRemaining = (int) $pendingBuilder->countAllResults(false);
-
-            if ($pendingRemaining === 0) {
-                $model = new MyModel($this->table);
-                $resParent = $model->updateData(['lnStatus' => 3], $this->id, $lnId);
-                $parentUpdated = ($resParent === true || $resParent === 1);
-            }
-        }
-
+    if (empty($lnEnc) || $ujiRaw === null) {
         return $this->response->setJSON([
-            'res'      => (bool)$res && $affected > 0,
-            'affected' => $affected,
-            'msg'      => $affected > 0 ? 'OK' : 'No rows updated',
-            'parent_updated' => $parentUpdated,
-            'xname'    => csrf_token(),
-            'xhash'    => csrf_hash()
+            'res' => false,
+            'affected' => 0,
+            'msg' => 'Parameter tidak lengkap',
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
         ]);
     }
 
-    public function rejectDetail()
-    {
-        $lnEnc = $this->request->getPost('ln');
-        $ujiRaw = $this->request->getPost('uji');
+    $uji = (int)$ujiRaw;
 
-        if (empty($lnEnc) || $ujiRaw === null) {
-            return $this->response->setJSON([
-                'res' => false,
-                'affected' => 0,
-                'msg' => 'Parameter tidak lengkap',
-                'xname' => csrf_token(),
-                'xhash' => csrf_hash()
-            ]);
-        }
+    try {
+        $lnId = $this->encrypter->decrypt(hex2bin($lnEnc));
+    } catch (\Exception $e) {
+        return $this->response->setJSON([
+            'res' => false,
+            'affected' => 0,
+            'msg' => 'ID layanan tidak valid',
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
+        ]);
+    }
 
-        $uji = (int)$ujiRaw;
+    // --- ambil user login sebagai manajer yang meng-approve ---
+    $session   = session();
+    $managerId = (int) ($session->get('id_user') ?? 0);
+    if ($managerId <= 0) {
+        return $this->response->setJSON([
+            'res' => false,
+            'affected' => 0,
+            'msg' => 'User login tidak ditemukan.',
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
+        ]);
+    }
 
-        try {
-            $lnId = $this->encrypter->decrypt(hex2bin($lnEnc));
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'res' => false,
-                'affected' => 0,
-                'msg' => 'ID layanan tidak valid',
-                'xname' => csrf_token(),
-                'xhash' => csrf_hash()
-            ]);
-        }
+    $db = \Config\Database::connect();
 
-        $db = \Config\Database::connect();
-        $table = $db->table('simlab_t_layanan_detil');
+    // (opsional tapi aman): pastikan managerId ada di simlab_account agar lolos FK
+    $acc = $db->table('simlab_account')->select('user_id')->where('user_id', $managerId)->get()->getRow();
+    if (!$acc) {
+        return $this->response->setJSON([
+            'res' => false,
+            'affected' => 0,
+            'msg' => 'User login tidak valid di simlab_account.',
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
+        ]);
+    }
 
-        $table->where('detLnKode', $lnId);
-        $table->where('detUjiKode', $uji);
-        $total = (int) $table->countAllResults(false);
+    $table = $db->table('simlab_t_layanan_detil');
 
-        if ($total === 0) {
-            return $this->response->setJSON([
-                'res' => false,
-                'affected' => 0,
-                'msg' => 'No matching detail rows found',
-                'xname' => csrf_token(),
-                'xhash' => csrf_hash()
-            ]);
-        }
+    // total rows matching ln + uji
+    $table->where('detLnKode', $lnId);
+    $table->where('detUjiKode', $uji);
+    $total = (int) $table->countAllResults(false);
 
-        $table->where('detLnKode', $lnId);
-        $table->where('detUjiKode', $uji);
-        $table->where('detStatus', 2);
-        $already = (int) $table->countAllResults(false);
+    if ($total === 0) {
+        return $this->response->setJSON([
+            'res' => false,
+            'affected' => 0,
+            'msg' => 'No matching detail rows found',
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
+        ]);
+    }
 
-        if ($already === $total) {
-            $pendingBuilder = $db->table('simlab_t_layanan_detil');
-            $pendingBuilder->where('detLnKode', $lnId);
-            $pendingBuilder->groupStart()
-                            ->where('detStatus', 0)
-                            ->orWhere('detStatus IS NULL', null, false)
-                         ->groupEnd();
-            $pendingRemaining = (int) $pendingBuilder->countAllResults(false);
+    // brp detStatus = 1
+    $table->where('detLnKode', $lnId);
+    $table->where('detUjiKode', $uji);
+    $table->where('detStatus', 1);
+    $already = (int) $table->countAllResults(false);
 
-            $parentUpdated = false;
-            if ($pendingRemaining === 0) {
-                $model = new MyModel($this->table);
-                $resParent = $model->updateData(['lnStatus' => 3], $this->id, $lnId);
-                $parentUpdated = ($resParent === true || $resParent === 1);
-            }
-
-            return $this->response->setJSON([
-                'res' => true,
-                'affected' => 0,
-                'msg' => 'Sudah ditolak',
-                'parent_updated' => $parentUpdated,
-                'xname' => csrf_token(),
-                'xhash' => csrf_hash()
-            ]);
-        }
-
-        $res = $db->table('simlab_t_layanan_detil')
-                ->where('detLnKode', $lnId)
-                ->where('detUjiKode', $uji)
-                ->where('(detStatus IS NULL OR detStatus != 2)')
-                ->update(['detStatus' => 2]);
-
-        $affected = $db->affectedRows();
+    if ($already === $total) {
+        $pendingBuilder = $db->table('simlab_t_layanan_detil');
+        $pendingBuilder->where('detLnKode', $lnId);
+        $pendingBuilder->groupStart()
+                        ->where('detStatus', 0)
+                        ->orWhere('detStatus IS NULL', null, false)
+                     ->groupEnd();
+        $pendingRemaining = (int) $pendingBuilder->countAllResults(false);
 
         $parentUpdated = false;
-        if ($affected > 0) {
-            $pendingBuilder = $db->table('simlab_t_layanan_detil');
-            $pendingBuilder->where('detLnKode', $lnId);
-            $pendingBuilder->groupStart()
-                            ->where('detStatus', 0)
-                            ->orWhere('detStatus IS NULL', null, false)
-                         ->groupEnd();
-            $pendingRemaining = (int) $pendingBuilder->countAllResults(false);
-
-            if ($pendingRemaining === 0) {
-                $model = new MyModel($this->table);
-                $resParent = $model->updateData(['lnStatus' => 3], $this->id, $lnId);
-                $parentUpdated = ($resParent === true || $resParent === 1);
-            }
+        if ($pendingRemaining === 0) {
+            $model = new MyModel($this->table);
+            $resParent = $model->updateData(['lnStatus' => 3], $this->id, $lnId);
+            $parentUpdated = ($resParent === true || $resParent === 1);
         }
 
         return $this->response->setJSON([
-            'res'      => (bool)$res && $affected > 0,
-            'affected' => $affected,
-            'msg'      => $affected > 0 ? 'OK' : 'No rows updated',
+            'res' => true,
+            'affected' => 0,
+            'msg' => 'Sudah disetujui',
             'parent_updated' => $parentUpdated,
-            'xname'    => csrf_token(),
-            'xhash'    => csrf_hash()
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
         ]);
     }
+
+    // update hanya baris yang belum status=1
+    $res = $db->table('simlab_t_layanan_detil')
+            ->where('detLnKode', $lnId)
+            ->where('detUjiKode', $uji)
+            ->where('(detStatus IS NULL OR detStatus != 1)')
+            // <<< perubahan utama: set juga detAccLayanan = $managerId >>>
+            ->update([
+                'detStatus'      => 1,
+                'detAccLayanan'  => $managerId
+            ]);
+
+    $affected = $db->affectedRows();
+
+    $parentUpdated = false;
+    if ($affected > 0) {
+        $pendingBuilder = $db->table('simlab_t_layanan_detil');
+        $pendingBuilder->where('detLnKode', $lnId);
+        $pendingBuilder->groupStart()
+                        ->where('detStatus', 0)
+                        ->orWhere('detStatus IS NULL', null, false)
+                     ->groupEnd();
+        $pendingRemaining = (int) $pendingBuilder->countAllResults(false);
+
+        if ($pendingRemaining === 0) {
+            $model = new MyModel($this->table);
+            $resParent = $model->updateData(['lnStatus' => 3], $this->id, $lnId);
+            $parentUpdated = ($resParent === true || $resParent === 1);
+        }
+    }
+
+    return $this->response->setJSON([
+        'res'      => (bool)$res && $affected > 0,
+        'affected' => $affected,
+        'msg'      => $affected > 0 ? 'OK' : 'No rows updated',
+        'parent_updated' => $parentUpdated,
+        'xname'    => csrf_token(),
+        'xhash'    => csrf_hash()
+    ]);
+}
+
+public function rejectDetail()
+{
+    $lnEnc = $this->request->getPost('ln');
+    $ujiRaw = $this->request->getPost('uji');
+
+    if (empty($lnEnc) || $ujiRaw === null) {
+        return $this->response->setJSON([
+            'res' => false,
+            'affected' => 0,
+            'msg' => 'Parameter tidak lengkap',
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
+        ]);
+    }
+
+    $uji = (int)$ujiRaw;
+
+    try {
+        $lnId = $this->encrypter->decrypt(hex2bin($lnEnc));
+    } catch (\Exception $e) {
+        return $this->response->setJSON([
+            'res' => false,
+            'affected' => 0,
+            'msg' => 'ID layanan tidak valid',
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
+        ]);
+    }
+
+    // --- ambil user login untuk dicatat sebagai penolak ---
+    $session   = session();
+    $managerId = (int) ($session->get('id_user') ?? 0);
+    if ($managerId <= 0) {
+        return $this->response->setJSON([
+            'res' => false,
+            'affected' => 0,
+            'msg' => 'User login tidak ditemukan.',
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
+        ]);
+    }
+
+    $db = \Config\Database::connect();
+
+    // (opsional) pastikan managerId valid terhadap FK simlab_account
+    $acc = $db->table('simlab_account')->select('user_id')->where('user_id', $managerId)->get()->getRow();
+    if (!$acc) {
+        return $this->response->setJSON([
+            'res' => false,
+            'affected' => 0,
+            'msg' => 'User login tidak valid di simlab_account.',
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
+        ]);
+    }
+
+    $table = $db->table('simlab_t_layanan_detil');
+
+    // total baris matching ln + uji
+    $table->where('detLnKode', $lnId);
+    $table->where('detUjiKode', $uji);
+    $total = (int) $table->countAllResults(false);
+
+    if ($total === 0) {
+        return $this->response->setJSON([
+            'res' => false,
+            'affected' => 0,
+            'msg' => 'No matching detail rows found',
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
+        ]);
+    }
+
+    // sudah berapa yang status=2
+    $table->where('detLnKode', $lnId);
+    $table->where('detUjiKode', $uji);
+    $table->where('detStatus', 2);
+    $already = (int) $table->countAllResults(false);
+
+    if ($already === $total) {
+        $pendingBuilder = $db->table('simlab_t_layanan_detil');
+        $pendingBuilder->where('detLnKode', $lnId);
+        $pendingBuilder->groupStart()
+                        ->where('detStatus', 0)
+                        ->orWhere('detStatus IS NULL', null, false)
+                     ->groupEnd();
+        $pendingRemaining = (int) $pendingBuilder->countAllResults(false);
+
+        $parentUpdated = false;
+        if ($pendingRemaining === 0) {
+            $model = new MyModel($this->table);
+            $resParent = $model->updateData(['lnStatus' => 3], $this->id, $lnId);
+            $parentUpdated = ($resParent === true || $resParent === 1);
+        }
+
+        return $this->response->setJSON([
+            'res' => true,
+            'affected' => 0,
+            'msg' => 'Sudah ditolak',
+            'parent_updated' => $parentUpdated,
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
+        ]);
+    }
+
+    // update hanya baris yang belum status=2
+    $res = $db->table('simlab_t_layanan_detil')
+            ->where('detLnKode', $lnId)
+            ->where('detUjiKode', $uji)
+            ->where('(detStatus IS NULL OR detStatus != 2)')
+            // <<< perubahan utama: catat juga siapa yang menolak >>>
+            ->update([
+                'detStatus'     => 2,
+                'detAccLayanan' => $managerId
+            ]);
+
+    $affected = $db->affectedRows();
+
+    $parentUpdated = false;
+    if ($affected > 0) {
+        $pendingBuilder = $db->table('simlab_t_layanan_detil');
+        $pendingBuilder->where('detLnKode', $lnId);
+        $pendingBuilder->groupStart()
+                        ->where('detStatus', 0)
+                        ->orWhere('detStatus IS NULL', null, false)
+                     ->groupEnd();
+        $pendingRemaining = (int) $pendingBuilder->countAllResults(false);
+
+        if ($pendingRemaining === 0) {
+            $model = new MyModel($this->table);
+            $resParent = $model->updateData(['lnStatus' => 3], $this->id, $lnId);
+            $parentUpdated = ($resParent === true || $resParent === 1);
+        }
+    }
+
+    return $this->response->setJSON([
+        'res'      => (bool)$res && $affected > 0,
+        'affected' => $affected,
+        'msg'      => $affected > 0 ? 'OK' : 'No rows updated',
+        'parent_updated' => $parentUpdated,
+        'xname'    => csrf_token(),
+        'xhash'    => csrf_hash()
+    ]);
+}
+
 
     public function kirim()
     {
