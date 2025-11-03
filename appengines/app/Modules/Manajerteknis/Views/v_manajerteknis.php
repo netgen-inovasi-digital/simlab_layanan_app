@@ -3,9 +3,9 @@
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <label class="card-title mb-0"><?= $title ?></label>
-                <button id="add" class="btn btn-primary">
+                <!-- <button id="add" class="btn btn-primary">
                     <i class="bi bi-plus-circle-dotted"></i> Tambah
-                </button>
+                </button> -->
             </div>
             <div class="card-body">
                 <div class="table-wrapper">
@@ -29,7 +29,7 @@
 </div>
 
 <script>
-let csrfHash = '<?= csrf_hash() ?>';
+var csrfHash = '<?= csrf_hash() ?>';
 
 // Inisialisasi tabel utama
 table = createTable({
@@ -38,7 +38,7 @@ table = createTable({
 });
 addAction();
 
-const modal = document.getElementById('modalForm');
+var modal = document.getElementById('modalForm');
 modal.addEventListener('shown.bs.modal', function () {
     const pwd = document.querySelector('[name="password"]');
     pwd.value = "";
@@ -47,8 +47,8 @@ modal.addEventListener('shown.bs.modal', function () {
     else pwd.removeAttribute('required');
 });
 
-let modalLayananInstance = null;
-let layananTable = null;
+var modalLayananInstance = null;
+var layananTable = null;
 
 function lihatLayanan(id) {
     const modalEl = document.getElementById('modallayanan');
