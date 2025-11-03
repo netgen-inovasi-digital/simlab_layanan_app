@@ -12,6 +12,7 @@ $routes->group('formuliradmin', ['namespace' => 'Modules\FormulirAdmin\Controlle
     $subroutes->post('delete/(:any)', 'FormulirAdmin::delete/$1', ['as' => 'formuliradmin.delete']);
     $subroutes->post('upload', 'FormulirAdmin::upload', ['as' => 'formuliradmin.upload']);
     $subroutes->post('approve/(:any)', 'FormulirAdmin::approve/$1', ['as' => 'formuliradmin.approve']);
+   
     $subroutes->get('keranjang/delete/(:any)', 'FormulirAdmin::keranjangDelete/$1');
     $subroutes->get('keranjangDataListLayanan', 'FormulirAdmin::keranjangDataListLayanan', ['as' => 'formuliradmin.keranjangDataListLayanan']);
     $subroutes->get('keranjangDatalist', 'FormulirAdmin::keranjangDatalist', ['as' => 'formuliradmin.keranjangDatalist']);

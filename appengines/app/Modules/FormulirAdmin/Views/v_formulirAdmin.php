@@ -1,19 +1,17 @@
 <!-- modal tabel utama -->
 <div class="row">
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <div class="d-flex align-items-center" style="gap:12px;">
-                    <label class="card-title mb-0"><?php echo $title ?></label>
-                </div>
+  <div class="col-md-12">
+    <div class="card">
 
-                <div>
-                    <button id="add" class="btn btn-primary">
-                        <i class="bi bi-plus-circle-dotted"></i> Pesan Layanan
-                    </button>
-                </div>
+      <div class="card-header d-flex justify-content-between align-items-center">
+            <!-- Tetap kiri: Judul -->
+            <div class="d-flex align-items-center" style="gap:12px;">
+                <label class="card-title mb-0"><?= $title ?></label>
             </div>
-            <select id="statusFilter" class="form-select form-select-sm" style="width:180px; display:inline-block; margin-left:8px;">
+
+            <!-- Kanan: Filter + Tombol, urutan sesuai request -->
+            <div class="d-flex align-items-center" style="gap:10px;">
+                <select id="statusFilter" class="form-select form-select-sm" style="width:180px;">
                 <option value="all">Semua Kategori</option>
                 <option value="1">In Review Manajer</option>
                 <option value="3">Belum direview</option>
@@ -21,206 +19,212 @@
                 <option value="5">LHUS diproses</option>
                 <option value="6">LHUS disetujui</option>
                 <option value="7">LHU proses</option>
-            </select>
-            <div class="card-body">
-                <table id="data-table" class="saytable border-top-bottom">
-                    <thead>
-                        <tr>
-                            <th show width="5%">No.</th>
-                            <th show width="30%">Pemesan</th>
-                            <th show width="15%">No Invoice</th>
-                            <th show width="15%">Status</th>
-                            <th show width="15%">Detail Layanan</th>
-                            <th show width="15%" class="action text-end">Aksi<i class="bi bi-code sort-icon"></i></th>
-                        </tr>
-                    </thead>
-                    <tbody id="table-body"></tbody>
-                </table>
+                </select>
+
+                <button id="add" class="btn btn-primary">
+                <i class="bi bi-plus-circle-dotted"></i> Pesan 
+                </button>
             </div>
         </div>
+
+      <div class="card-body">
+        <table id="data-table" class="saytable border-top-bottom">
+          <thead>
+            <tr>
+              <th show width="5%">No.</th>
+              <th show width="30%">Pemesan</th>
+              <th show width="15%">No Invoice</th>
+              <th show width="15%">Status</th>
+              <th show width="15%">Detail Layanan</th>
+              <th show width="15%" class="action text-end">Aksi<i class="bi bi-code sort-icon"></i></th>
+            </tr>
+          </thead>
+          <tbody id="table-body"></tbody>
+        </table>
+      </div>
     </div>
+  </div>
 </div>
 
 
 <!-- modal keranjang layanan -->
 <div class="modal fade" id="modalKeranjang" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
-    aria-labelledby="staticBackdropLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl" role="document" style="margin: 2% auto">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Pilih Layanan</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
+  aria-labelledby="staticBackdropLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl" role="document" style="margin: 2% auto">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Pilih Layanan</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
 
-            <div class="modal-body">
-                <div class="mb-3">
-                    <h6 class="fw-bold text-primary mb-0">
-                        <i class="bi bi-list-check"></i> Daftar Layanan Tersedia
-                    </h6>
-                </div>
-
-                <hr class="my-3">
-
-                <!-- pilih kategori -->
-                <div class="row mb-4 align-items-end">
-                    <!-- Kategori -->
-                    <div class="col-md-8">
-                        <label class="form-label mb-1 fw-semibold">Kategori</label>
-                        <div class="d-flex gap-2 align-items-center">
-                            <select id="jenFilter" class="form-select form-select-sm" style="max-width:60px;">
-                                <option value="">— Semua —</option>
-                                <?php if (!empty($categories) && (is_array($categories) || is_object($categories))): ?>
-                                    <?php foreach ($categories as $c): ?>
-                                        <?php
-                                            $kode = isset($c->jenKode) ? $c->jenKode : (isset($c['jenKode']) ? $c['jenKode'] : '');
-                                            $nama = isset($c->jenNama) && trim((string)$c->jenNama) !== '' ? $c->jenNama : $kode;
-                                        ?>
-                                        <option value="<?= esc($kode) ?>"><?= esc($nama) ?></option>
-                                    <?php endforeach; ?>
-                                <?php endif; ?>
-                            </select>
-                        </div>
-                    </div>
-
-                   <!-- Pelanggan -->
-                    <div class="col-md-4 d-flex flex-column justify-content-end" style="padding-left: 20px;">
-                    <label class="form-label mb-1 fw-semibold">Pelanggan</label>
-                    <!-- pilih searching -->
-                    <div class="d-flex justify-content-end align-items-center gap-2">
-                        <select id="ker_pelanggan_select" class="form-select form-select-sm" style="max-width:400px;">
-                        <option value=""></option>
-                        <?php if (!empty($users) && is_array($users)): ?>
-                            <?php foreach ($users as $u):
-                            $status = (isset($u->user_identity) && strtoupper($u->user_identity) === 'ULM') ? 'ULM' : 'NON ULM';
-                            ?>
-                            <option value="<?= esc($u->user_id) ?>"
-                                data-email="<?= esc($u->user_email) ?>"
-                                data-status="<?= esc($status) ?>"
-                                data-name="<?= esc($u->user_name) ?>">
-                                <?= esc($u->user_name) ?> — <?= esc($u->user_email) ?> — <?= esc($status) ?>
-                            </option>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                        </select>
-                    </div>
-                    </div>
-
-                </div>
-
-                <!-- CSRF Token -->
-                <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" />
-
-                <!-- tabel keranjang pilih layanan -->
-                <div class="mb-4">
-                    <table id="ker_layanan-table" class="saytable border-top-bottom">
-                        <thead>
-                            <tr>
-                                <th style="width:5%">No</th>
-                                <th style="width:15%">Parameter</th>
-                                <th style="width:15%">Instrumen/Alat/Tempat</th>
-                                <th style="width:12%">Biaya</th>
-                                <th style="width:12%">Jumlah</th>
-                                <th style="width:18%">Keterangan</th>
-                                <th style="width:5%" class="text-center">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody id="ker_layanan-table-body"></tbody>
-                    </table>
-                </div>
-
-                <hr class="my-4">
-
-                <!-- tabel keranjang preview layanan -->
-                <div>
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h6 class="fw-bold text-success mb-0">
-                            <i class="bi bi-cart3"></i> Keranjang Anda 
-                            (<span id="ker_jumlahItemKeranjang">0</span> Item)
-                        </h6>
-                    </div>
-
-                    <div id="ker_keranjangKosong" class="alert alert-warning text-center" style="display:none;">
-                        <i class="bi bi-cart-x"></i> Keranjang masih kosong. Silakan pilih layanan di atas.
-                    </div>
-                    
-                    <table id="ker_preview-keranjang-table" class="saytable border-top-bottom">
-                        <thead>
-                            <tr>
-                                <th style="width:5%">No</th>
-                                <th style="width:22%">Parameter</th>
-                                <th style="width:22%">Instrumen/Alat/Tempat</th>
-                                <th style="width:12%">Biaya Satuan</th>
-                                <th style="width:8%">Jumlah</th>
-                                <th style="width:10%">Diskon (%)</th>
-                                <th style="width:15%">Total</th>
-                                <th style="width:20%">Keterangan</th>
-                                <th style="width:10%" class="text-center">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody id="ker_preview-keranjang-table-body"></tbody>
-                        <tfoot>
-                            <tr class="table-active align-middle">
-                                <td colspan="8">
-                                    <div class="d-flex justify-content-end">
-                                        <div class="fw-bold fs-5">
-                                            TOTAL KESELURUHAN:
-                                            <span id="grandTotal" class="text-primary">Rp 0</span>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tfoot>
-                    </table>
-                </div>
-            </div>
-
-            <div class="modal-footer">
-                <button class="btn btn-light" type="button" data-bs-dismiss="modal">
-                    <i class="bi bi-x-circle"></i> Tutup
-                </button>
-                <button id="ker_btnCheckoutFromModal" class="btn btn-success" disabled>
-                    <i class="bi bi-cart-check"></i> Checkout Sekarang
-                </button>
-            </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <h6 class="fw-bold text-primary mb-0">
+            <i class="bi bi-list-check"></i> Daftar Layanan Tersedia
+          </h6>
         </div>
+
+        <hr class="my-3">
+
+        <!-- pilih kategori -->
+        <div class="row mb-4 align-items-end">
+          <!-- Kategori -->
+          <div class="col-md-8">
+            <label class="form-label mb-1 fw-semibold">Kategori</label>
+            <div class="d-flex gap-2 align-items-center">
+              <select id="jenFilter" class="form-select form-select-sm" style="max-width:60px;">
+                <option value="">— Semua —</option>
+                <?php if (!empty($categories) && (is_array($categories) || is_object($categories))): ?>
+                  <?php foreach ($categories as $c): ?>
+                    <?php
+                      $kode = isset($c->jenKode) ? $c->jenKode : (isset($c['jenKode']) ? $c['jenKode'] : '');
+                      $nama = isset($c->jenNama) && trim((string)$c->jenNama) !== '' ? $c->jenNama : $kode;
+                    ?>
+                    <option value="<?= esc($kode) ?>"><?= esc($nama) ?></option>
+                  <?php endforeach; ?>
+                <?php endif; ?>
+              </select>
+            </div>
+          </div>
+
+          <!-- Pelanggan -->
+          <div class="col-md-4 d-flex flex-column justify-content-end" style="padding-left: 20px;">
+            <label class="form-label mb-1 fw-semibold">Pelanggan</label>
+            <div class="d-flex justify-content-end align-items-center gap-2">
+              <select id="ker_pelanggan_select" class="form-select form-select-sm" style="max-width:400px;">
+                <option value=""></option>
+                <?php if (!empty($users) && is_array($users)): ?>
+                  <?php foreach ($users as $u):
+                    $status = (isset($u->user_identity) && strtoupper($u->user_identity) === 'ULM') ? 'ULM' : 'NON ULM';
+                  ?>
+                  <option value="<?= esc($u->user_id) ?>"
+                    data-email="<?= esc($u->user_email) ?>"
+                    data-status="<?= esc($status) ?>"
+                    data-name="<?= esc($u->user_name) ?>">
+                    <?= esc($u->user_name) ?> — <?= esc($u->user_email) ?> — <?= esc($status) ?>
+                  </option>
+                  <?php endforeach; ?>
+                <?php endif; ?>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- CSRF Token -->
+        <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" />
+
+        <!-- tabel keranjang pilih layanan -->
+        <div class="mb-4">
+          <table id="ker_layanan-table" class="saytable border-top-bottom">
+            <thead>
+              <tr>
+                <th style="width:5%">No</th>
+                <th style="width:15%">Parameter</th>
+                <th style="width:15%">Instrumen/Alat/Tempat</th>
+                <th style="width:12%">Biaya</th>
+                <th style="width:12%">Jumlah</th>
+                <th style="width:18%">Keterangan</th>
+                <th style="width:5%" class="text-center">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="ker_layanan-table-body"></tbody>
+          </table>
+        </div>
+
+        <hr class="my-4">
+
+        <!-- tabel keranjang preview layanan -->
+        <div>
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="fw-bold text-success mb-0">
+              <i class="bi bi-cart3"></i> Keranjang Anda
+              (<span id="ker_jumlahItemKeranjang">0</span> Item)
+            </h6>
+          </div>
+
+          <div id="ker_keranjangKosong" class="alert alert-warning text-center" style="display:none;">
+            <i class="bi bi-cart-x"></i> Keranjang masih kosong. Silakan pilih layanan di atas.
+          </div>
+
+          <table id="ker_preview-keranjang-table" class="saytable border-top-bottom">
+            <thead>
+              <tr>
+                <th style="width:5%">No</th>
+                <th style="width:22%">Parameter</th>
+                <th style="width:22%">Instrumen/Alat/Tempat</th>
+                <th style="width:12%">Biaya Satuan</th>
+                <th style="width:8%">Jumlah</th>
+                <th style="width:10%">Diskon (%)</th>
+                <th style="width:15%">Total</th>
+                <th style="width:20%">Keterangan</th>
+                <th style="width:10%" class="text-center">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="ker_preview-keranjang-table-body"></tbody>
+            <tfoot>
+              <tr class="table-active align-middle">
+                <td colspan="8">
+                  <div class="d-flex justify-content-end">
+                    <div class="fw-bold fs-5">
+                      TOTAL KESELURUHAN:
+                      <span id="grandTotal" class="text-primary">Rp 0</span>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-light" type="button" data-bs-dismiss="modal">
+          <i class="bi bi-x-circle"></i> Tutup
+        </button>
+        <button id="ker_btnCheckoutFromModal" class="btn btn-success" disabled>
+          <i class="bi bi-cart-check"></i> Checkout Sekarang
+        </button>
+      </div>
     </div>
+  </div>
 </div>
 
 <!-- Modal detail Pesanan -->
-<div class="modal fade" id="modalDetail" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl" role="document" style="margin: 2% auto">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Detail Layanan</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
-                </button>
-            </div>
-            <div class="modal-body">
-                <table class="table table-bordered">
-                    <thead>
-                        <tr>
-                            <th width="5%">No</th>
-                            <th width="30%">Parameter</th>
-                            <th width="20%">Biaya</th>
-                            <th width="15%">Jumlah</th>
-                            <th width="15%">Keterangan</th>
-                            <th width="15%">Status</th>
-                            <th width="15%">Keterangan Manajer</th>
-                            <th width="10%">Acc</th>
-                        </tr>
-                    </thead>
-                    <tbody id="detail-body">
-                        <tr><td colspan="6" class="text-center">Loading...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-light" type="button" data-bs-dismiss="modal">
-                    <i class="bi bi-x-circle"></i> Tutup
-                </button>
-            </div>
-        </div>
+<div class="modal fade" id="modalDetail" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+  aria-labelledby="staticBackdropLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl" role="document" style="margin: 2% auto">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Detail Layanan</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+        </button>
+      </div>
+      <div class="modal-body">
+        <table class="table table-bordered">
+          <thead>
+            <tr>
+              <th width="5%">No</th>
+              <th width="30%">Parameter</th>
+              <th width="20%">Biaya</th>
+              <th width="15%">Jumlah</th>
+              <th width="15%">Keterangan</th>
+              <th width="15%">Status</th>
+              <th width="15%">Keterangan Manajer</th>
+              <th width="10%">Acc</th>
+            </tr>
+          </thead>
+          <tbody id="detail-body">
+            <tr><td colspan="6" class="text-center">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-light" type="button" data-bs-dismiss="modal">
+          <i class="bi bi-x-circle"></i> Tutup
+        </button>
+      </div>
     </div>
+  </div>
 </div>
 
 
@@ -314,14 +318,14 @@ function applyJenFilter() {
         createOrRefreshKerLayananTable(jen);
 
         // opsional: update main table juga
-        try {
-            if (typeof table !== 'undefined' && table && typeof table.getConfig === 'function') {
-                const cfg = table.getConfig();
-                cfg.apiUrl = buildApiUrlWithOptionalParam('<?php echo site_url("formuliradmin/datalist") ?>', (jen !== '') ? 'jenKode' : '', jen);
-                cfg.apiUrl = normalizeDoubleQuestion(cfg.apiUrl);
-                if (typeof table.fetchData === 'function') table.fetchData({ reload: true });
-            }
-        } catch (err) { console.warn('Failed to update main table with jen filter:', err); }
+        // try {
+        //     if (typeof table !== 'undefined' && table && typeof table.getConfig === 'function') {
+        //         const cfg = table.getConfig();
+        //         cfg.apiUrl = buildApiUrlWithOptionalParam('<?php echo site_url("formuliradmin/datalist") ?>', (jen !== '') ? 'jenKode' : '', jen);
+        //         cfg.apiUrl = normalizeDoubleQuestion(cfg.apiUrl);
+        //         if (typeof table.fetchData === 'function') table.fetchData({ reload: true });
+        //     }
+        // } catch (err) { console.warn('Failed to update main table with jen filter:', err); }
     } catch (e) { console.warn('applyJenFilter error', e); }
 }
 
@@ -668,10 +672,13 @@ function loadDetail(id) {
             }
         });
     })();
-
     // ======= Inisialisasi modalKeranjang ketika terbuka =======
-    let ker_layananTable;
-    let ker_previewKeranjangTable;
+    var ker_layananTable = window.ker_layananTable || null;
+    var ker_previewKeranjangTable = window.ker_previewKeranjangTable || null;
+    window.ker_layananTable = ker_layananTable;
+    window.ker_previewKeranjangTable = ker_previewKeranjangTable;
+
+
 
     var modalKeranjangEl = document.getElementById('modalKeranjang');
     if (modalKeranjangEl) {
@@ -974,7 +981,10 @@ function ker_calculateGrandTotal() {
 }
 
 
-    // ======= Delegated click handlers (Masukkan, Refresh, Hapus, Checkout) =======
+    // Click handlers (Masukkan, Refresh, Hapus, Checkout) =======
+    if (!window.__CLICK_BIND_FORMADM__) {
+    window.__CLICK_BIND_FORMADM__ = true;
+
     document.addEventListener('click', function(e) {
         // Tombol masukkan (.btnMasukkan)
         if (e.target.closest && e.target.closest('.btnMasukkan')) {
@@ -1058,9 +1068,9 @@ function ker_calculateGrandTotal() {
                     }
                 }
 
-                if (res.res === true) {
+              if (res.res === true) {
                     if (typeof table !== 'undefined') table.fetchData({ reload: true });
-                    
+
                     if (ker_previewKeranjangTable) {
                         ker_previewKeranjangTable.fetchData({ reload: true });
                         setTimeout(function() {
@@ -1068,10 +1078,7 @@ function ker_calculateGrandTotal() {
                             ker_calculateGrandTotal();
                         }, 500);
                     }
-                    
-                    if (jumlahInput) jumlahInput.value = 1;
-                    if (tr.querySelector('.keterangan')) tr.querySelector('.keterangan').value = '';
-                    
+
                     sayAlert('successModal', 'Berhasil', res.msg ?? 'Layanan berhasil ditambahkan ke keranjang.', 'success');
                 } else {
                     sayAlert('errorModal', 'Gagal', res.msg ?? 'Terjadi kesalahan saat menambahkan ke keranjang.', 'error');
@@ -1097,8 +1104,9 @@ function ker_calculateGrandTotal() {
         // Hapus item dari preview
         if (e.target.closest && e.target.closest('.btn-delete-item')) {
             e.preventDefault();
-            keranjangDeleteItem(e);
+            deleteItemFromPreview(e);  // <<< ganti namanya
         }
+
         
         // Tombol Checkout dari Modal
         if (e.target.closest && e.target.closest('#ker_btnCheckoutFromModal')) {
@@ -1106,7 +1114,7 @@ function ker_calculateGrandTotal() {
             
             // gunakan confirm custom jika sayConfirm tersedia (lebih konsisten UI)
             if (typeof sayConfirm === 'function') {
-              sayConfirm('Konfirmasi', 'Apakah anda yakin ingin melakukan checkout?', function() {
+                sayConfirm('Konfirmasi', 'Apakah anda yakin ingin melakukan checkout?', function() {
                     ker_doCheckout();
                 }, 'primary', 'Checkout');
             } else {
@@ -1116,101 +1124,118 @@ function ker_calculateGrandTotal() {
             }
         }
     });
+    }
 
     
     // ======= Checkout =======
-    function ker_doCheckout() {
-        const formData = new FormData();
-        const csrfInput = document.querySelector('input[name="<?= csrf_token() ?>"]');
-        if (csrfInput) {
-            formData.append('<?= csrf_token() ?>', csrfInput.value);
-        } else {
-            const csrf = getCsrfTokenFromPage();
-            if (csrf && csrf.name && csrf.value) formData.append(csrf.name, csrf.value);
-        }
-
-        // ambil selected user id dari select di modal (bukan di header)
-        const sel = document.getElementById('ker_pelanggan_select');
-        const selectedVal = sel ? sel.value : '';
-        if (!selectedVal) {
-            if (typeof sayAlert === 'function') {
-                sayAlert('errorModal', 'Pelanggan tidak ditemukan', 'Pilih pelanggan di bagian atas modal sebelum checkout.', 'warning');
-            } else {
-                alert('Pilih pelanggan di bagian atas modal sebelum checkout.');
-            }
-            return;
-        }
-        formData.append('selectedUserId', selectedVal);
-
-        fetch('<?= site_url("formuliradmin/keranjangCheckout") ?>', {
-            method: 'POST',
-            body: formData
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.xname && data.xhash) {
-                document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => {
-                    input.value = data.xhash;
-                });
-            }
-
-            if (data.res === true) {
-                if (typeof table !== 'undefined') table.fetchData({ reload: true });
-                
-                if (ker_previewKeranjangTable) {
-                    ker_previewKeranjangTable.fetchData({ reload: true });
-                    setTimeout(function() {
-                        ker_updateKeranjangCounter();
-                        ker_calculateGrandTotal();
-                    }, 500);
-                }
-                
-                const modalEl = document.getElementById('modalKeranjang');
-                if (typeof bootstrap !== 'undefined') {
-                    const modal = bootstrap.Modal.getInstance(modalEl);
-                    if (modal) modal.hide();
-                } else if (typeof $ !== 'undefined' && typeof $('#modalKeranjang').modal === 'function') {
-                    $('#modalKeranjang').modal('hide');
-                }
-                
-                sayAlert('successModal', 'Sukses', data.msg, 'success');
-            } else {
-                sayAlert('errorModal', 'Gagal', data.msg ?? 'Checkout gagal.', 'error');
-            }
-        })
-        .catch(error => {
-            sayAlert('errorModal', 'Error', 'Terjadi kesalahan koneksi ke server.', 'error');
-        });
+   function ker_doCheckout() {
+    const formData = new FormData();
+    const csrfInput = document.querySelector('input[name="<?= csrf_token() ?>"]');
+    if (csrfInput) {
+        formData.append('<?= csrf_token() ?>', csrfInput.value);
+    } else {
+        const csrf = getCsrfTokenFromPage();
+        if (csrf && csrf.name && csrf.value) formData.append(csrf.name, csrf.value);
     }
+
+    // ambil selected user id dari select di modal (bukan di header)
+    const sel = document.getElementById('ker_pelanggan_select');
+    const selectedVal = sel ? sel.value : '';
+    if (!selectedVal) {
+        if (typeof sayAlert === 'function') {
+            sayAlert('errorModal', 'Pelanggan tidak ditemukan', 'Pilih pelanggan di bagian atas modal sebelum checkout.', 'warning');
+        } else {
+            alert('Pilih pelanggan di bagian atas modal sebelum checkout.');
+        }
+        return;
+    }
+    formData.append('selectedUserId', selectedVal);
+
+    fetch('<?= site_url("formuliradmin/keranjangCheckout") ?>', {
+        method: 'POST',
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.xname && data.xhash) {
+            document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => {
+                input.value = data.xhash;
+            });
+        }
+
+        if (data.res === true) {
+            if (typeof table !== 'undefined') table.fetchData({ reload: true });
+            
+            if (ker_previewKeranjangTable) {
+                ker_previewKeranjangTable.fetchData({ reload: true });
+                setTimeout(function() {
+                    ker_updateKeranjangCounter();
+                    ker_calculateGrandTotal();
+                }, 500);
+            }
+
+            // === RESET teks select pelanggan (kembali ke "-- pilih pelanggan --") ===
+            var pelSel = document.getElementById('ker_pelanggan_select');
+            if (pelSel) {
+                pelSel.value = '';
+                const wrap = pelSel.parentElement ? pelSel.parentElement.querySelector('.selected') : null;
+                if (wrap) wrap.textContent = '-- pilih pelanggan --';
+            }
+            // ======================================================================
+
+            const modalEl = document.getElementById('modalKeranjang');
+            if (typeof bootstrap !== 'undefined') {
+                const modal = bootstrap.Modal.getInstance(modalEl);
+                if (modal) modal.hide();
+            } else if (typeof $ !== 'undefined' && typeof $('#modalKeranjang').modal === 'function') {
+                $('#modalKeranjang').modal('hide');
+            }
+            
+            sayAlert('successModal', 'Sukses', data.msg, 'success');
+        } else {
+            sayAlert('errorModal', 'Gagal', data.msg ?? 'Checkout gagal.', 'error');
+        }
+    })
+    .catch(error => {
+        sayAlert('errorModal', 'Error', 'Terjadi kesalahan koneksi ke server.', 'error');
+    });
+}
+
 
     
 /* populate jenFilter via AJAX fallback */
 (function populateJenFilterFallback(){
-    const select = document.getElementById('jenFilter');
-    if (!select) return;
+  const select = document.getElementById('jenFilter');
+  if (!select) return;
 
-    if (select.options.length <= 1) {
-        fetch('<?= site_url("formuliradmin/kategoriList") ?>', { method: 'GET', headers: { 'Accept': 'application/json' } })
-        .then(r => r.json())
-        .then(resp => {
-            if (!resp || !resp.categories) return;
-            while (select.options.length > 1) select.remove(1);
-            resp.categories.forEach(c => {
-                const kode = (c.jenKode ?? '').toString().trim();
-                const nama = (c.jenNama && c.jenNama.toString().trim() !== '') ? c.jenNama : kode;
-                if (!kode) return;
-                const opt = document.createElement('option');
-                opt.value = kode;
-                opt.textContent = nama;
-                select.appendChild(opt);
-            });
-            if (typeof applyJenFilter === 'function') applyJenFilter();
-        })
-        .catch(err => { console.warn('Gagal load kategori via AJAX:', err); });
-    } else {
-        if (typeof applyJenFilter === 'function') applyJenFilter();
-    }
+  const refreshModalOnly = () => {
+    // cukup refresh tabel layanan di modal; jangan sentuh tabel utama
+    createOrRefreshKerLayananTable(select.value || '');
+  };
+
+  if (select.options.length <= 1) {
+    fetch('<?= site_url("formuliradmin/kategoriList") ?>', { method: 'GET', headers: { 'Accept': 'application/json' } })
+      .then(r => r.json())
+      .then(resp => {
+        if (!resp || !resp.categories) return;
+        while (select.options.length > 1) select.remove(1);
+        resp.categories.forEach(c => {
+          const kode = (c.jenKode ?? '').toString().trim();
+          const nama = (c.jenNama && c.jenNama.toString().trim() !== '') ? c.jenNama : kode;
+          if (!kode) return;
+          const opt = document.createElement('option');
+          opt.value = kode;
+          opt.textContent = nama;
+          select.appendChild(opt);
+        });
+        refreshModalOnly();
+      })
+      .catch(err => { console.warn('Gagal load kategori via AJAX:', err); });
+  } else {
+    refreshModalOnly();
+  }
 })();
+
 
 (function(){
   function applyOnce(selector) {
