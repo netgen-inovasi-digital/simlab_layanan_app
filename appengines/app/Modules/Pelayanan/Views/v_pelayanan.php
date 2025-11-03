@@ -1,3 +1,6 @@
+<!-- Include Modal Tracking -->
+<?php require_once(__DIR__ . '/v_track_modal.php'); ?>
+
 <!-- modal tabel utama -->
 <div class="row">
     <div class="col-md-12">
@@ -9,15 +12,15 @@
                 </button>
             </div>
             <div class="card-body">
-                <table id="data-table" class="saytable border-top-bottom table table-hover table-sm">
+                <table id="data-table" class="saytable border-top-bottom">
                     <thead>
                         <tr>
                             <th show width="5%">No.</th>
-                            <th show width="15%">No. transaksi</th>
-                            <th show width="15%">Status pesanan</th>
-                            <th show width="15%">Status pembayaran</th>
+                            <th show width="20%">No. transaksi</th>
+                            <th show width="20%">Status & Detail Pesanan</th>
+                            <th show width="15%">Status Pembayaran</th>
                             <th show width="15%">File LHU</th>
-                            <th show class="action text-center">Detail pesanan</th>
+                            <!-- <th show >Detail pesanan</th> -->
                         </tr>
                     </thead>
                     <tbody id="table-body">
@@ -29,7 +32,7 @@
 </div>
 
 <!-- Modal detail Pesanan -->
-<div class="modal fade" id="modalDetail" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+<!-- <div class="modal fade" id="modalDetail" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl" role="document" style="margin: 2% auto">
         <div class="modal-content">
             <div class="modal-header">
@@ -63,7 +66,7 @@
             </div>
         </div>
     </div>
-</div>
+</div> -->
 
 <!-- Modal Keranjang (Pesan Layanan Baru) -->
 <div class="modal fade" id="modalForm" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
@@ -178,88 +181,59 @@
 
 <!-- Modal Tracking -->
 <div class="modal fade" id="modalTracking" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="modalTrackingLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Status Tracking Layanan</h5>
+                <h5 class="modal-title" id="modalTrackingLabel">Progress & Detail Layanan</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div class="tracking-info mb-4">
+                <!-- Status Tracking Section -->
+                <div class="statusbox">
                     <div class="mb-3">
-                        <small class="text-muted">No. Layanan:</small>
-                        <div class="h6 mb-0" id="trackingNoLayanan">-</div>
+                        <p class="mb-0">No. Layanan: <strong id="trackLnKode"></strong></p>
                     </div>
-                    <div class="mb-3">
-                        <small class="text-muted">Status:</small>
-                        <div id="trackingStatus" class="h6 mb-0">-</div>
+
+                    <div class="track">
+                        <?php
+                        $steps = [
+                            1 => ['icon' => 'bi-person-check', 'text' => 'Review Manajer'],
+                            2 => ['icon' => 'bi-person-check', 'text' => 'Review Admin'],
+                            3 => ['icon' => 'bi-gear', 'text' => 'Pengujian'],
+                            4 => ['icon' => 'bi-file-text', 'text' => 'Proses LHUS'],
+                            5 => ['icon' => 'bi-check-circle', 'text' => 'LHUS Disetujui'],
+                            6 => ['icon' => 'bi-file-earmark-text', 'text' => 'Proses LHU'],
+                            7 => ['icon' => 'bi-check-circle', 'text' => 'LHU Disetujui'],
+                            8 => ['icon' => 'bi-flag', 'text' => 'Selesai']
+                        ];
+
+                        foreach ($steps as $step => $info):
+                        ?>
+                            <div class="step" data-step="<?= $step ?>">
+                                <span class="icon">
+                                    <i class="bi <?= $info['icon'] ?>"></i>
+                                </span>
+                                <span class="text"><?= $info['text'] ?></span>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+
+                    <div class="text-center">
+                        <h6>Status Saat Ini:</h6>
+                        <div id="trackStatus" class="badge bg-secondary p-2">
+                            Memuat...
+                        </div>
                     </div>
                 </div>
 
-                <div class="progress-track">
-                    <div class="step-box" data-step="1">
-                        <div class="step-icon">
-                            <i class="bi bi-person-check"></i>
-                        </div>
-                        <div class="step-text">Review Manajer</div>
-                    </div>
-                    <div class="step-box reject-step" data-step="2">
-                        <div class="step-icon">
-                            <i class="bi bi-x-circle"></i>
-                        </div>
-                        <div class="step-text">Ditolak</div>
-                    </div>
-                    <div class="step-box" data-step="3">
-                        <div class="step-icon">
-                            <i class="bi bi-person-check"></i>
-                        </div>
-                        <div class="step-text">Review Admin</div>
-                    </div>
-                    <div class="step-box" data-step="4">
-                        <div class="step-icon">
-                            <i class="bi bi-gear"></i>
-                        </div>
-                        <div class="step-text">Pengujian</div>
-                    </div>
-                    <div class="step-box" data-step="5">
-                        <div class="step-icon">
-                            <i class="bi bi-file-text"></i>
-                        </div>
-                        <div class="step-text">Proses LHUS</div>
-                    </div>
-                    <div class="step-box" data-step="6">
-                        <div class="step-icon">
-                            <i class="bi bi-check-circle"></i>
-                        </div>
-                        <div class="step-text">LHUS Disetujui</div>
-                    </div>
-                    <div class="step-box" data-step="7">
-                        <div class="step-icon">
-                            <i class="bi bi-file-earmark-text"></i>
-                        </div>
-                        <div class="step-text">Proses LHU</div>
-                    </div>
-                    <div class="step-box" data-step="8">
-                        <div class="step-icon">
-                            <i class="bi bi-check-circle"></i>
-                        </div>
-                        <div class="step-text">LHU Disetujui</div>
-                    </div>
-                    <div class="step-box" data-step="9">
-                        <div class="step-icon">
-                            <i class="bi bi-flag"></i>
-                        </div>
-                        <div class="step-text">Selesai</div>
-                    </div>
-                </div>
-
-                <!-- Detail Layanan -->
-                <div class="tracking-details mt-4">
-                    <h6 class="mb-3">Detail Layanan</h6>
+                <!-- Detail Table Section -->
+                <div class="detail-table">
+                    <h6 class="mb-3">Detail Layanan:</h6>
                     <div class="table-responsive">
-                        <table class="table table-bordered table-sm">
+                        <table class="table table-bordered table-hover" id="tableDetail">
                             <thead class="table-light">
                                 <tr>
+                                    <th>No</th>
                                     <th>Parameter</th>
                                     <th>Biaya</th>
                                     <th>Jumlah</th>
@@ -267,109 +241,19 @@
                                     <th>Status</th>
                                 </tr>
                             </thead>
-                            <tbody id="trackingDetailBody">
-                                <tr>
-                                    <td colspan="5" class="text-center">Memuat data...</td>
-                                </tr>
-                            </tbody>
+                            <tbody></tbody>
                         </table>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                     <i class="bi bi-x-circle"></i> Tutup
                 </button>
             </div>
         </div>
     </div>
 </div>
-
-<style>
-    .progress-track {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 1rem;
-        padding: 1rem;
-        background: #f8f9fa;
-        border-radius: 0.5rem;
-    }
-
-    .step-box {
-        flex: 1;
-        min-width: 100px;
-        text-align: center;
-        position: relative;
-        opacity: 0.5;
-    }
-
-    .step-box.active {
-        opacity: 1;
-    }
-
-    .step-box.reject {
-        opacity: 1;
-    }
-
-    .step-box .step-icon {
-        width: 40px;
-        height: 40px;
-        margin: 0 auto 0.5rem;
-        background: #fff;
-        border: 2px solid #dee2e6;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.2rem;
-        color: #6c757d;
-    }
-
-    .step-box.active .step-icon {
-        background: #0d6efd;
-        border-color: #0d6efd;
-        color: #fff;
-    }
-
-    .step-box.reject .step-icon {
-        background: #dc3545;
-        border-color: #dc3545;
-        color: #fff;
-    }
-
-    .step-box .step-text {
-        font-size: 0.875rem;
-        color: #6c757d;
-    }
-
-    .step-box.active .step-text {
-        color: #0d6efd;
-        font-weight: 500;
-    }
-
-    .step-box.reject .step-text {
-        color: #dc3545;
-        font-weight: 500;
-    }
-
-    .tracking-info {
-        background: #f8f9fa;
-        padding: 1rem;
-        border-radius: 0.5rem;
-    }
-
-    .reject-step {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        display: none;
-    }
-
-    .reject-step.show {
-        display: block;
-    }
-</style>
 
 <script>
     /**
@@ -476,11 +360,12 @@
                 sf.value = jenKodeFromUrl;
             }
         } catch (e) {
-            /* ignore */ }
+            /* ignore */
+        }
     })();
 
     /* Helper build URL layanan (untuk modal)
-       - memastikan jika jen diberikan -> url ...?jenKode=A*/
+    - memastikan jika jen diberikan -> url ...?jenKode=A*/
     function buildLayananUrl(jen = '') {
         const base = '<?= site_url("pelayanan/keranjang/dataListLayanan") ?>';
         return buildApiUrlWithOptionalParam(base, (jen && jen !== '') ? 'jenKode' : '', jen || '');
@@ -519,7 +404,8 @@
                 try {
                     if (typeof layananTable.destroy === 'function') layananTable.destroy();
                 } catch (e2) {
-                    /*ignore*/ }
+                    /*ignore*/
+                }
                 layananTable = null;
             }
         }
@@ -727,74 +613,10 @@
             .finally(() => hideLoading());
     }
 
-    /* loadDetail (sama seperti implementasi kamu) */
-    function showTrackingModal(id, kode, status) {
-        // Reset semua step
-        document.querySelectorAll('.step-box').forEach(step => {
-            step.classList.remove('active', 'reject');
-        });
-
-        document.querySelector('.reject-step').classList.remove('show');
-
-        // Update tracking info
-        document.getElementById('trackingNoLayanan').textContent = kode;
-
-        // Load data tracking
-        fetch(`<?php echo site_url('pelayanan/getTrackingData/') ?>${id}`)
-            .then(response => response.json())
-            .then(result => {
-                if (result.success) {
-                    const data = result.data;
-
-                    // Update status text dengan badge
-                    const statusClass = status === 2 ? 'danger' :
-                        status >= 9 ? 'success' :
-                        status >= 6 ? 'info' : 'primary';
-                    document.getElementById('trackingStatus').innerHTML =
-                        `<span class="badge bg-${statusClass}">${data.statusText}</span>`;
-
-                    // Update progress steps
-                    if (status === 2) {
-                        // Jika ditolak, tampilkan step reject
-                        document.querySelector('.reject-step').classList.add('show');
-                        document.querySelector(`.step-box[data-step="2"]`).classList.add('reject');
-                    } else {
-                        // Update progress sampai status terkini
-                        document.querySelectorAll('.step-box').forEach(step => {
-                            const stepNum = parseInt(step.dataset.step);
-                            if (stepNum <= status) {
-                                step.classList.add('active');
-                            }
-                        });
-                    }
-
-                    // Update detail table
-                    const tbody = document.getElementById('trackingDetailBody');
-                    if (data.details && data.details.length > 0) {
-                        tbody.innerHTML = data.details.map(item => `
-                        <tr>
-                            <td>${item.parameter}</td>
-                            <td class="text-end">Rp ${item.biaya}</td>
-                            <td class="text-center">${item.jumlah}</td>
-                            <td>${item.keterangan}</td>
-                            <td>${item.status}</td>
-                        </tr>
-                    `).join('');
-                    } else {
-                        tbody.innerHTML = '<tr><td colspan="5" class="text-center">Tidak ada detail</td></tr>';
-                    }
-                } else {
-                    sayAlert('errorModal', 'Error', result.message || 'Gagal memuat data tracking', 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                sayAlert('errorModal', 'Error', 'Terjadi kesalahan saat memuat data', 'error');
-            });
-
-        // Show modal
-        const modal = new bootstrap.Modal(document.getElementById('modalTracking'));
-        modal.show();
+    // Fungsi untuk menampilkan tracking modal
+    function showTrackingModal(id, lnKode, lnStatus) {
+        // Panggil fungsi dari v_track_modal.php
+        showFullTrackingModal(id, lnKode, lnStatus);
     }
 
     function loadDetail(id) {

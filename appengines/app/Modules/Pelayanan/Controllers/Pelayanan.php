@@ -36,7 +36,7 @@ class Pelayanan extends BaseController
             1 => 'Review Manajer',
             2 => 'Ditolak',
             3 => 'Review Admin',
-            4 => 'Pengujian',
+            4 => 'Dalam Pengujian',
             5 => 'Proses LHUS',
             6 => 'LHUS Disetujui',
             7 => 'Proses LHU',
@@ -65,28 +65,49 @@ class Pelayanan extends BaseController
                 ]);
             }
 
-            // Get detail items
+            // Get detail items with grouped data
             $db = \Config\Database::connect();
-            $details = $db->table('simlab_t_detail_layanan')
-                ->where('detLnKode', $realId)
-                ->get()
-                ->getResult();
+            $builder = $db->table('simlab_t_layanan_detil as d');
+            $builder->select("
+                d.detUjiKode,
+                d.detLnKode,
+                d.detLayanan as detParameter,
+                d.detJenKode,
+                GROUP_CONCAT(DISTINCT d.detKeterangan SEPARATOR ' | ') as detKeterangan,
+                SUM(d.detJumlah) as detJumlah,
+                SUM(d.detBiaya) as detBiaya,
+                MAX(d.detStatus) as detStatus
+            ");
+            $builder->where('d.detLnKode', $realId);
+            $builder->groupBy('d.detUjiKode, d.detLnKode, d.detLayanan, d.detJenKode');
+            $details = $builder->get()->getResult();
 
             return $this->response->setJSON([
                 'success' => true,
                 'data' => [
                     'kode' => $data->lnKode,
-                    'status' => (int)$data->lnStatus,
+                    // 'status' => (int)$data->lnStatus,
                     'statusText' => $this->getStatusText((int)$data->lnStatus),
                     'tanggal' => date('d-m-Y', strtotime($data->lnTgl)),
                     'noTransaksi' => $data->lnNoTransaksi ?? 'Belum tersedia',
                     'details' => array_map(function ($detail) {
+                        $statusGroup = isset($detail->detStatus) ? (int)$detail->detStatus : null;
+
+                        if ($statusGroup === 0) {
+                            $statusHtml = '<span class="badge bg-warning">Pending</span>';
+                        } elseif ($statusGroup === 1) {
+                            $statusHtml = '<span class="badge bg-success">Diterima</span>';
+                        } elseif ($statusGroup === 2) {
+                            $statusHtml = '<span class="badge bg-danger">Ditolak</span>';
+                        } else {
+                            $statusHtml = '<span class="badge bg-secondary">Belum Diproses</span>';
+                        }
                         return [
-                            'parameter' => $detail->detParameter,
-                            'biaya' => number_format($detail->detBiaya, 0, ',', '.'),
-                            'jumlah' => $detail->detJumlah,
+                            'parameter' => $detail->detParameter ?? '-',
+                            'biaya' => number_format((float)($detail->detBiaya ?? 0), 0, ',', '.'),
+                            'jumlah' => (int)($detail->detJumlah ?? 0),
                             'keterangan' => $detail->detKeterangan ?? '-',
-                            'status' => $detail->detStatus ?? '-'
+                            'status' => $statusHtml
                         ];
                     }, $details)
                 ]
@@ -174,12 +195,10 @@ class Pelayanan extends BaseController
             $response[]  = '<div>' . esc($noTransaksi) . '<br><small>' . esc($tanggal) . '</small></div>';
 
             // Status layanan dengan tracking
-            $statusClass = $this->getStatusClass((int)($row->lnStatus ?? 0));
             $statusText = $this->getStatusText((int)($row->lnStatus ?? 0));
             $response[] = '<div class="d-flex gap-2 align-items-center">' .
-                '<span class="badge bg-' . $statusClass . ' px-2 py-1">' . $statusText . '</span>' .
                 '<button class="btn btn-sm btn-outline-primary" onclick="showTrackingModal(\'' . $id . '\', \'' . $row->lnKode . '\', ' . (int)($row->lnStatus ?? 0) . ')">' .
-                '<i class="bi bi-activity"></i> Track</button>' .
+                '<i class="bi bi-activity"></i> ' . $statusText . '</button>' .
                 '</div>';
 
             // Kuisioner (ambil dari row dulu, kalau kosong fallback dari user)
@@ -205,7 +224,7 @@ class Pelayanan extends BaseController
             if ($bayarStatusVal === 1) {
                 $response[] = '<button class="btn btn-sm btn-success"><i class="bi bi-credit-card"></i> Sudah Bayar</button>';
             } else {
-                $response[] = '<button class="btn btn-sm btn-danger" onclick="lokasiPembayaran(' . $lnKodeInt . ')"><i class="bi bi-credit-card"></i> Belum Bayar</button>';
+                $response[] = '<button class="btn btn-sm btn-info" onclick="lokasiPembayaran(' . $lnKodeInt . ')"><i class="bi bi-credit-card"></i> Belum Bayar</button>';
             }
 
             // Akses LHU
@@ -232,44 +251,13 @@ class Pelayanan extends BaseController
             }
 
             // Aksi detail (masking lnKode via enkripsi)
-            $response[] = '<a href="javascript:void(0)" onclick="loadDetail(\'' . $id . '\')" class="btn btn-sm btn-info">Lihat pesanan</a>';
+            // $response[] = '<a href="javascript:void(0)" onclick="loadDetail(\'' . $id . '\')" class="btn btn-sm btn-info">Lihat pesanan</a>';
 
             $data[] = $response;
         }
 
         return $this->response->setJSON(["items" => $data]);
     }
-
-
-
-    private function statusBadge($status)
-    {
-        $labels = [
-            0 => 'Draft',
-            1 => 'Sedang diverifikasi petugas',
-            2 => 'Ditolak',
-            3 => 'Sedang diverifikasi petugas',
-            4 => 'Pengujian sedang dilakukan',
-            5 => 'File LHUS sedang diproses',
-            6 => 'LHUS telah disetujui petugas',
-            7 => 'LHU disetujui oleh petugas',
-        ];
-        $class = [
-            0 => 'secondary',
-            1 => 'info',
-            2 => 'danger',
-            3 => 'info',
-            4 => 'primary',
-            5 => 'info',
-            6 => 'warning',
-            7 => 'warning',
-        ];
-
-        return isset($labels[$status])
-            ? '<span class="badge bg-' . $class[$status] . '">' . $labels[$status] . '</span>'
-            : '<span class="badge bg-secondary">Unknown</span>';
-    }
-
 
     public function detail($id)
     {

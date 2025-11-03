@@ -21,7 +21,7 @@
     }
 
     .track .step.active:before {
-        background: #3bb077
+        background: var(--bs-primary);
     }
 
     .track .step.reject:before {
@@ -38,7 +38,7 @@
     }
 
     .track .step.active .icon {
-        background: #3bb077;
+        background: var(--bs-primary);
         color: #fff
     }
 
@@ -82,34 +82,143 @@
         border-radius: 8px;
         padding: 20px;
     }
+
+    .progress-track::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: #dee2e6;
+        transform: translateY(-50%);
+        z-index: 1;
+    }
+
+    .step-box {
+        flex: 1;
+        min-width: 120px;
+        text-align: center;
+        position: relative;
+        z-index: 2;
+        opacity: 0.5;
+        padding: 0 1rem;
+    }
+
+    .step-box::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: #dee2e6;
+        transform: translateY(-50%);
+        z-index: -1;
+        transition: background-color 0.3s ease;
+    }
+
+    .step-box.active {
+        opacity: 1;
+    }
+
+    .step-box.active::before {
+        background: #0d6efd;
+    }
+
+    .step-box.reject {
+        opacity: 1;
+    }
+
+    .step-box.reject::before {
+        background: #dc3545;
+    }
+
+    .step-box .step-icon {
+        width: 45px;
+        height: 45px;
+        margin: 0 auto 0.75rem;
+        background: #fff;
+        border: 2px solid #dee2e6;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        position: relative;
+        z-index: 3;
+        transition: all 0.3s ease;
+        font-size: 1.2rem;
+        color: #6c757d;
+    }
+
+    .step-box.active .step-icon {
+        background: #0d6efd;
+        border-color: #0d6efd;
+        color: #fff;
+    }
+
+    .step-box.reject .step-icon {
+        background: #dc3545;
+        border-color: #dc3545;
+        color: #fff;
+    }
+
+    .step-box .step-text {
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+
+    .step-box.active .step-text {
+        color: #0d6efd;
+        font-weight: 500;
+    }
+
+    .step-box.reject .step-text {
+        color: #dc3545;
+        font-weight: 500;
+    }
+
+    .tracking-info {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 0.5rem;
+    }
+
+    .reject-step {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        display: none;
+    }
+
+    .reject-step.show {
+        display: block;
+    }
 </style>
 
-<div class="modal fade" id="modalTrack" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="modalTrackLabel" aria-hidden="true">
+<!-- Modal Tracking -->
+<div class="modal fade" id="modalTracking" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="modalTrackingLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="modalTrackLabel">Progress & Detail Layanan</h5>
+                <h5 class="modal-title" id="modalTrackingLabel">Progress & Detail Layanan</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <!-- Status Tracking Section -->
                 <div class="statusbox">
-                    <div class="mb-3">
-                        <p class="mb-0">No. Layanan: <strong id="trackLnKode"></strong></p>
-                    </div>
-
                     <div class="track">
                         <?php
                         $steps = [
-                            1 => ['icon' => 'bi-person-check', 'text' => 'Review Manajer'],
-                            2 => ['icon' => 'bi-x-circle', 'text' => 'Ditolak'],
-                            3 => ['icon' => 'bi-person-check', 'text' => 'Review Admin'],
-                            4 => ['icon' => 'bi-gear', 'text' => 'Pengujian'],
-                            5 => ['icon' => 'bi-file-text', 'text' => 'Proses LHUS'],
-                            6 => ['icon' => 'bi-check-circle', 'text' => 'LHUS Disetujui'],
-                            7 => ['icon' => 'bi-file-earmark-text', 'text' => 'Proses LHU'],
-                            8 => ['icon' => 'bi-check-circle', 'text' => 'LHU Disetujui'],
-                            9 => ['icon' => 'bi-flag', 'text' => 'Selesai']
+                            1 => ['icon' => 'bi-person-check', 'text' => 'In Review Petugas'],
+                            2 => ['icon' => 'bi-gear', 'text' => 'Pengujian Dilakukan'],
+                            3 => ['icon' => 'bi-file-text', 'text' => 'Proses LHUS'],
+                            4 => ['icon' => 'bi-check-circle', 'text' => 'LHUS Disetujui'],
+                            5 => ['icon' => 'bi-file-earmark-text', 'text' => 'Proses LHU'],
+                            6 => ['icon' => 'bi-check-circle', 'text' => 'LHU Disetujui'],
+                            7 => ['icon' => 'bi-flag', 'text' => 'Selesai']
                         ];
 
                         foreach ($steps as $step => $info):
@@ -146,11 +255,7 @@
                                     <th>Status</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                <tr>
-                                    <td colspan="6" class="text-center">Memuat data...</td>
-                                </tr>
-                            </tbody>
+                            <tbody></tbody>
                         </table>
                     </div>
                 </div>
@@ -165,23 +270,48 @@
 </div>
 
 <script>
-    function showFullTrackingModal(id, lnKode, lnStatus) {
-        // Update nomor layanan
-        document.getElementById('trackLnKode').textContent = lnKode;
+    let trackingDetailTable;
 
+    // Fungsi ini akan dipanggil dari v_pelayanan.php
+    function showFullTrackingModal(id, lnKode, lnStatus) {
         // Reset semua step
         document.querySelectorAll('.track .step').forEach(step => {
             step.classList.remove('active', 'reject');
         });
 
-        // Update status steps
-        if (lnStatus == 2) {
-            // Jika ditolak
-            document.querySelector('.step[data-step="2"]').classList.add('reject');
+        // mapping lnStatus -> step index
+        const statusToStep = {
+            1: 1, 
+            2: 1,
+            3: 1,
+            4: 2,
+            5: 3,
+            6: 4,
+            7: 5,
+            8: 6,
+            9: 7
+        };
+
+        // mapping untuk status "reject"
+        const rejectMap = {
+            2: 1 
+        };
+
+        // tentukan target step berdasarkan mapping (fallback ke lnStatus jika tidak ada)
+        const targetStep = (statusToStep.hasOwnProperty(lnStatus) ? statusToStep[lnStatus] : lnStatus);
+
+        // jika status termasuk reject, tandai step yang sesuai dengan kelas 'reject'
+        if (rejectMap.hasOwnProperty(lnStatus)) {
+            const r = document.querySelector(`.step[data-step="${rejectMap[lnStatus]}"]`);
+            if (r) {
+                r.classList.remove('active');
+                r.classList.add('reject');
+            }
         } else {
-            // Update progress sampai status terkini
+            // aktifkan semua step sampai targetStep (ini mencegah "bergerak" jika Anda set target lebih kecil)
             document.querySelectorAll('.track .step').forEach(step => {
-                if (parseInt(step.dataset.step) <= lnStatus && lnStatus != 2) {
+                const stepNum = parseInt(step.dataset.step, 10);
+                if (stepNum <= targetStep) {
                     step.classList.add('active');
                 }
             });
@@ -189,54 +319,38 @@
 
         // Update badge status
         const statusText = {
-            1: 'Dalam Review Manajer',
+            1: 'In Review Petugas',
             2: 'Ditolak',
-            3: 'Dalam Review Admin',
-            4: 'Sedang Dalam Pengujian',
-            5: 'Sedang Memproses LHUS',
-            6: 'LHUS Telah Disetujui',
-            7: 'Sedang Memproses LHU',
-            8: 'LHU Telah Disetujui',
-            9: 'Selesai'
+            3: 'In Review Petugas',
+            4: 'Pengujian Dilakukan',
+            5: 'Proses LHUS',
+            6: 'LHUS Disetujui',
+            7: 'Proses LHU',
+            8: 'LHU Disetujui',
+            9: 'Selesai',
         };
 
         const statusBadge = document.getElementById('trackStatus');
         statusBadge.textContent = statusText[lnStatus] || 'Status Tidak Diketahui';
-        statusBadge.className = 'badge p-2 ' + (lnStatus == 2 ? 'bg-danger' : 'bg-success');
+        statusBadge.className = 'badge p-2 ' + (lnStatus === 2 ? 'bg-danger' : 'bg-success');
 
-        // Load detail table data
-        loadDetailData(id);
+        if (!trackingDetailTable) {
+            trackingDetailTable = createModal({
+                tableId: 'tableDetail',
+                apiUrl: `<?= site_url('pelayanan/detailList/') ?>${id}`,
+                itemsPerPage: 5,
+                showFilter: false,
+                treeview: false,
+                numbering: false
+            });
+        } else {
+            trackingDetailTable.refresh({
+                apiUrl: `<?= site_url('pelayanan/detailList/') ?>${id}`
+            });
+        }
 
         // Tampilkan modal
-        const modal = new bootstrap.Modal(document.getElementById('modalTrack'));
-        modal.show();
-    }
-
-    function loadDetailData(id) {
-        const tbody = document.querySelector('#tableDetail tbody');
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center">Memuat data...</td></tr>';
-
-        fetch(`<?= site_url('pelayanan/detailList/') ?>${id}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.items && data.items.length > 0) {
-                    tbody.innerHTML = data.items.map(item => `
-                        <tr>
-                            <td>${item.no}</td>
-                            <td>${item.detParameter}</td>
-                            <td>Rp ${item.detBiaya}</td>
-                            <td>${item.detJumlah}</td>
-                            <td>${item.detKeterangan}</td>
-                            <td>${item.detStatus}</td>
-                        </tr>
-                    `).join('');
-                } else {
-                    tbody.innerHTML = '<tr><td colspan="6" class="text-center">Tidak ada data detail</td></tr>';
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Gagal memuat data</td></tr>';
-            });
+        const trackingModal = new bootstrap.Modal(document.getElementById('modalTracking'));
+        trackingModal.show();
     }
 </script>
