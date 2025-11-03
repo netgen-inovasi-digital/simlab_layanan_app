@@ -200,7 +200,7 @@
     })();
     // [ADDED] end
 
-    const btnSimpan = document.querySelector('#btnSimpan');
+    var btnSimpan = document.querySelector('#btnSimpan');
     if (btnSimpan) {
         btnSimpan.addEventListener('click', function(e) {
             e.preventDefault();
