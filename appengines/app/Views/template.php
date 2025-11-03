@@ -107,7 +107,7 @@
                     </button>
                 </a>
                 <span class="divider vr ms-2 me-2"></span>
-                <a href="<?= base_url('profilpw') ?>" class="header-link nav-link" title="Profil">
+                <a href="<?= base_url('profiluser') ?>" class="header-link nav-link" title="Profil">
                     <button aria-label="button" type="button" class="btn btn-icon p-0 text-secondary">
                         <i class="bi bi-person-fill" style="font-size: 1.3rem;"></i>
                     </button>

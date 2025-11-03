@@ -434,7 +434,7 @@ document.querySelector('#add').addEventListener('click', function () {
             modalForm.show();
         } else {
             sayAlert('warningModal', 'Verifikasi Diperlukan', 'Akun anda belum diverifikasi. Silakan lengkapi data di halaman profil.', 'warning');
-            setTimeout(() => { loadContent('<?php echo site_url("profilpw") ?>'); }, 1200);
+            setTimeout(() => { loadContent('<?php echo site_url("profiluser") ?>'); }, 1200);
         }
     })
     .catch(err => {

@@ -1,4 +1,4 @@
-<div class="row">
+<div class="row">   
     <div class="col-md-12">
         <div class="card">
             <div class="card-header">
@@ -6,7 +6,8 @@
             </div>
             <div class="card-body">
 
-                <?php echo form_open_multipart('profilpw/submit', ['id'=>'myform', 'novalidate'=>'']) ?>
+                <?= form_open_multipart(site_url('profiluser/submit'), ['id'=>'myform','novalidate'=>'']) ?>
+                <?= csrf_field() ?>
 
                 <div class="row">
 
@@ -71,8 +72,18 @@
                         <h5 class="mb-4">Perbarui Akun</h5>
 
                         <div class="mb-3">
-                            <label class="form-label">Email</label>
-                            <input type="email" class="form-control" name="email" value="<?= esc($get->user_email ?? '') ?>" readonly>
+                        <label class="form-label mb-0">Email</label>
+                            <input
+                                type="email"
+                                class="form-control"
+                                name="email"
+                                id="emailInput"
+                                value="<?= esc($get->user_email ?? '') ?>"
+                                data-original="<?= esc(strtolower($get->user_email ?? '')) ?>"
+                                placeholder="nama@domain.tld"
+                                autocomplete="email"
+                            >
+                            <div class="form-text">Jika mengubah email, wajib isi Password Lama.</div>
                         </div>
 
                         <div class="mb-3">
@@ -114,7 +125,7 @@
 
                 </div>
 
-                <?php echo form_close() ?>
+                <?= form_close() ?>
 
             </div>
         </div>
@@ -122,9 +133,14 @@
 </div>
 
 <script>
-const identitySelect = document.getElementById('identitySelect');
-const instansiField  = document.getElementById('instansiField');
-const buktiWrapper   = document.getElementById('buktiWrapper');
+// pakai yang sudah ada kalau sebelumnya pernah dideklarasikan
+if (typeof identitySelect === 'undefined') 
+    { window.identitySelect = document.getElementById('identitySelect'); }
+if (typeof instansiField  === 'undefined') 
+    { window.instansiField  = document.getElementById('instansiField'); }
+if (typeof buktiWrapper   === 'undefined') 
+    { window.buktiWrapper   = document.getElementById('buktiWrapper'); }
+
 
 function toggleFields() {
     const value = identitySelect.value;
@@ -158,38 +174,85 @@ function togglePassword(id, btn) {
 }
 
 $('#myform').submit(function(e){
-    e.preventDefault();
+  e.preventDefault();
+  const form = this;
+  const url  = form.getAttribute('action');
 
-    const form = this;
-    const formData = new FormData(form);
-    const url = form.getAttribute('action');
+  // === email changed guard ===
+  const emailInput = form.querySelector('#emailInput');
+  const oldPwd     = form.querySelector('#oldPassword');
+  if (emailInput) {
+    const original = (emailInput.dataset.original || '').trim().toLowerCase();
+    const current  = (emailInput.value || '').trim().toLowerCase();
 
-    showLoading();
+    // optional: format sederhana
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (current && !emailRe.test(current)) {
+      if (typeof sayAlert === 'function')
+        sayAlert('errorModal','Format Email','Format email tidak valid.','warning');
+      else alert('Format email tidak valid.');
+      return;
+    }
 
-    fetch(url, {
-        method: 'POST',
-        body: formData
-    })
-    .then(res => res.json())
-    .then(data => {
-        
-        console.log(data); 
-        if(data.res === true){
-            sayAlert('successModal','Success','Data berhasil disimpan','success');
-        } else if(data.res === 'error'){
-            sayAlert('errorModal','Error',data.msg,'warning');
-        } 
-        else if(data.res === 'redirect' || data.res === 'refresh'){
-            window.location.href = data.link;
-        } 
-        else {
-            sayAlert('errorModal','Error','Data gagal disimpan','warning');
-        }
-    })
-    .catch(err => {
-        console.error(err);
-        sayAlert('errorModal','Error','Terjadi kesalahan sistem','warning');
-    })
-    .finally(() => hideLoading());
+    // jika email berubah → wajib isi password lama
+    if (current && current !== original && (!oldPwd || !oldPwd.value)) {
+      if (typeof sayAlert === 'function')
+        sayAlert('errorModal','Perlu Password','Masukkan password lama untuk mengubah email.','warning');
+      else alert('Masukkan password lama untuk mengubah email.');
+      return;
+    }
+  }
+
+  showLoading();
+
+  const formData = new FormData(form);
+  fetch(url, {
+    method: 'POST',
+    body: formData,
+    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+    credentials: 'same-origin'
+  })
+  .then(async res => {
+    const ctype = res.headers.get('content-type') || '';
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`HTTP ${res.status}: ${text.slice(0,300)}`);
+    }
+    if (!ctype.includes('application/json')) {
+      const text = await res.text();
+      throw new Error(`Unexpected response (not JSON): ${text.slice(0,300)}`);
+    }
+    return res.json();
+  })
+  .then(data => {
+    // update CSRF bila ada
+    if (data.xname && data.xhash) {
+      const csrfInput = form.querySelector(`input[name="${data.xname}"]`)
+                      || form.querySelector('input[name="<?= csrf_token() ?>"]');
+      if (csrfInput) { csrfInput.setAttribute('name', data.xname); csrfInput.value = data.xhash; }
+    }
+
+    if (data.res === 'refresh') {
+      window.location.href = data.link || '<?= site_url('profiluser') ?>';
+      return;
+    }
+    if (data.res === true || data.res === 'true') {
+      sayAlert('successModal','Success', data.msg || 'Data berhasil disimpan','success');
+      setTimeout(() => window.location.reload(), 350);
+      return;
+    }
+    if (data.res === 'redirect' && data.link) {
+      window.location.href = data.link;
+      return;
+    }
+
+    sayAlert('errorModal','Error', data.msg || 'Data gagal disimpan','warning');
+  })
+  .catch(err => {
+    console.error(err);
+    sayAlert('errorModal','Error','Terjadi kesalahan sistem atau respon tidak valid','warning');
+  })
+  .finally(() => hideLoading());
 });
+
 </script>
