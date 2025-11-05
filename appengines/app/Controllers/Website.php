@@ -45,17 +45,36 @@ class Website extends BaseController
 
 
     // ===== model untuk layanan ===== //
-    $modelLayanan = new MyModel('layanan');
+    $modelLayanan = new MyModel('simlab_r_layanan_pengujian');
 
-    $where = [
-      'status' => 'Y',
-    ];
+    $dataLayanan = $modelLayanan->builder()
+        ->select('ujiLayanan as judul, 
+                  ujiBiaya as biaya, 
+                  ujiSatuan as satuan, 
+                  ujiJenKode') // <-- 1. 'status' DIHAPUS DARI SINI
+        // ->where('status', 'Y') // <-- 2. BARIS INI DIHAPUS
+        ->orderBy('ujiLayanan', 'ASC')
+        ->get()
+        ->getResult();
 
-    $order = [
-      'urutan' => 'ASC'
-    ];
+    // --- Ini memuat data untuk DROPDOWN ---
+    $modelJenisLayanan = new MyModel('simlab_r_jenis');
+    
+    // Get Jenis Layanan (untuk dropdown)
+    $dataJenisLayanan = $modelJenisLayanan->builder()
+        ->orderBy('jenKode', 'ASC')
+        ->get()
+        ->getResult();
 
-    $dataLayanan = $modelLayanan->getAllDataById($where, $order);
+    // $where = [
+    //   'status' => 'Y',
+    // ];
+
+    // $order = [
+    //   'urutan' => 'ASC'
+    // ];
+
+    // $dataLayanan = $modelLayanan->getAllDataById($where, $order);
 
     // ===== model untuk berita ===== //
     $modelBerita = new BeritaModel('posts p');
@@ -122,11 +141,12 @@ class Website extends BaseController
       'getHero' => $dataHero,
       'getTeam' => $dataTeam,
       'getLayanan' => $dataLayanan,
+      'getJenisLayanan' => $dataJenisLayanan,
       'getBerita' => $dataBerita,
       'getPengumuman' => $dataPengumuman,
       'getMitra' => $dataMitra,
       'getLayout' => $dataLayout,
-      'title' => 'Netx Template',
+      'title' => 'Lab Terpadu ULM',
       'content' => 'Modules\Landing\Views\v_landing'
     ];
 

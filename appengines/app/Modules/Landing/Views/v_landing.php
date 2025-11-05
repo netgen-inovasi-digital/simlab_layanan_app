@@ -62,50 +62,54 @@
 
     <?php elseif ($kode == 'layanan'): ?>
         <section id="services" class="services-section py-5 bg-light">
-            <div class="container">
-                <div class="text-center mb-5">
-                    <h2 class="section-title fw-bold mb-3"><?= esc($konten->judul ?? 'Layanan Kami') ?></h2>
-                    <h6 class="section-desc"><?= esc($konten->deskripsi ?? 'Berikut daftar layanan yang tersedia') ?></h6>
-                </div>
-                <div class="row mb-4">
-                    <div class="col-md-4 ms-auto">
-                        <label for="pencarian" class="form-label fw-bold">Pencarian Layanan</label>
-                        <input type="text" class="form-control" id="pencarian" placeholder="Ketik untuk mencari...">
-                    </div>
-                </div>
-                <div class="table-responsive shadow-sm p-3 mb-5 bg-body rounded">
-                    <table id="layananTable" class="table table-striped" style="width:100%">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Instrumen / Alat / Tempat</th>
-                                <th>Biaya</th>
-                                <th>Satuan</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($getLayanan as $layanan): ?>
-                                <?php if ($layanan->status == 'Y'): ?>
-                                    <tr>
-                                        <td>
-                                            <?php // Coba tampilkan properti 'judul'. Jika tidak ada, tampilkan 'Data Tidak Tersedia'. ?>
-                                            <?= esc($layanan->judul ?? 'Data Tidak Tersedia') ?>
-                                        </td>
-                                        <td>
-                                            <?php // Coba format properti 'biaya'. Jika tidak ada, gunakan angka 0. ?>
-                                            <?= 'Rp ' . number_format($layanan->biaya ?? 0, 0, ',', '.') ?>
-                                        </td>
-                                        <td>
-                                            <?php // Coba tampilkan properti 'satuan'. Jika tidak ada, tampilkan '-'. ?>
-                                            <?= esc($layanan->satuan ?? '-') ?>
-                                        </td>
-                                    </tr>
-                                <?php endif; ?>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
+    <div class="container">
+        <div class="row mb-4">
+            
+            <div class="col-md-4">
+                <label for="filterJenis" class="form-label fw-bold">Jenis Layanan</label>
+                <select class="form-select" id="filterJenis">
+                    <option value="">Semua Jenis Layanan</option>
+                    <?php foreach ($getJenisLayanan as $jenis): ?>
+                        <option value="<?= esc($jenis->jenKode) ?>">
+                            <?= esc($jenis->jenNama) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
             </div>
-        </section>
+            <div class="col-md-4"> <label for="pencarian" class="form-label fw-bold">Pencarian Layanan</label>
+                <input type="text" class="form-control" id="pencarian" placeholder="Ketik untuk mencari...">
+            </div>
+        </div>
+
+        <div class="table-responsive shadow-sm p-3 mb-5 bg-body rounded">
+            <table id="layananTable" class="table table-striped" style="width:100%">
+                <thead class="table-light">
+                    <tr>
+                        <th>Instrumen / Alat / Tempat</th>
+                        <th>Biaya</th>
+                        <th>Satuan</th>
+                </thead>
+                <tbody>
+                    <?php foreach ($getLayanan as $layanan): ?>
+                        <tr>
+                            <td>
+                                <?= esc($layanan->judul ?? 'Data Tidak Tersedia') ?>
+                            </td>
+                            <td>
+                                <?= 'Rp ' . number_format($layanan->biaya ?? 0, 0, ',', '.') ?>
+                            </td>
+                            <td>
+                                <?= esc($layanan->satuan ?? '-') ?>
+                            </td>
+                            <td>
+                                <?= esc($layanan->ujiJenKode ?? '') ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
     <?php elseif ($kode == 'team'): ?>
         <!-- TEAM SECTION -->
         <!-- <section id="team" class="team-section py-5">
@@ -297,34 +301,47 @@
     // SEMUA SCRIPT SWIPER ASLI ANDA
     var filterButtons = document.querySelectorAll('.filter-btn');
     var produkItems = document.querySelectorAll('.produk-item');
-    filterButtons.forEach(btn => { /* ... (kode filter Anda) ... */ });
+    filterButtons.forEach(btn => {  });
 
     var slider = document.querySelector('.notice-swiper');
-    if (slider) { /* ... (kode panah swiper Anda) ... */ }
+    if (slider) {  }
 
-    var swiper = new Swiper(".team-slider", { /* ... (konfigurasi swiper Anda) ... */ });
+    var swiper = new Swiper(".team-slider", {  });
     var heroSwiper = new Swiper(".hero-slider", {
         loop: true,
         autoplay: { delay: 4000, disableOnInteraction: false },
         pagination: { el: ".hero-pagination", clickable: true }
     });
-    var partnerSlider = new Swiper(".partner-slider", { /* ... (konfigurasi swiper Anda) ... */ });
-    var noticeSwiper = new Swiper(".notice-swiper", { /* ... (konfigurasi swiper Anda) ... */ });
+    var partnerSlider = new Swiper(".partner-slider", { });
+    var noticeSwiper = new Swiper(".notice-swiper", {  });
 </script>
 
 <script src="https://code.jquery.com/jquery-3.7.0.js"></script>
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
 <script>
+    // SCRIPT DATATABLES
     $(document).ready(function () {
         var table = new DataTable('#layananTable', {
             "language": {
                 "url": "https://cdn.datatables.net/plug-ins/1.13.6/i18n/id.json"
             },
-            "dom": 'lrtip'
+            "dom": 'lrtip',
+            "columnDefs": [
+                {
+                    "targets": 3, 
+                    "visible": false 
+                }
+            ]
         });
+
         $('#pencarian').on('keyup', function () {
             table.search(this.value).draw();
+        });
+
+        $('#filterJenis').on('change', function () {
+            var selectedValue = $(this).val();
+            table.column(3).search(selectedValue).draw();
         });
     });
 </script>

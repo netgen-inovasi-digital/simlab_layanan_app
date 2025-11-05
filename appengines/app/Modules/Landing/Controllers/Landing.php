@@ -3,27 +3,50 @@
 namespace Modules\Landing\Controllers;
 
 use App\Controllers\BaseController;
-
 use App\Models\MyModel;
 
 class Landing extends BaseController
 {
 
-	public function index()
+    public function index()
     {
         $modelPengumuman = new MyModel('pengumuman');
-        
+        $modelJenisLayanan = new MyModel('simlab_r_jenis');
+        $modelLayanan = new MyModel('simlab_r_layanan_pengujian');
+
+        // Get Pengumuman
         $getPengumuman = $modelPengumuman->builder()
             ->where('status', 'tampil')
             ->orderBy('id_pengumuman', 'DESC') 
             ->get()
             ->getResult(); 
 
+        // Get Jenis Layanan (for the dropdown)
+        $getJenisLayanan = $modelJenisLayanan->builder()
+            ->orderBy('jenKode', 'ASC')
+            ->get()
+            ->getResult();
+
+        // Get Layanan (for the table)
+        $getLayanan = $modelLayanan->builder()
+            ->select('ujiLayanan as judul, 
+                      ujiBiaya as biaya, 
+                      ujiSatuan as satuan, 
+                      ujiJenKode, 
+                      status')
+            ->where('status', 'Y')
+            ->orderBy('ujiLayanan', 'ASC')
+            ->get()
+            ->getResult();
+            
         $data = [
-            'title'         => 'Lab Terpadu ULM',
-            'content'       => 'Modules\Landing\Views\landing',
-            'getPengumuman' => $getPengumuman,
+            'title'           => 'Lab Terpadu ULM',
+            'content'         => 'Modules\Landing\Views\v_landing',
+            'getPengumuman'   => $getPengumuman,
+            'getJenisLayanan' => $getJenisLayanan,
+            'getLayanan'      => $getLayanan,     
         ];
+
 
         return view('website', $data);
     }

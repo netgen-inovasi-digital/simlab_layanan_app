@@ -124,7 +124,26 @@
     </nav>
 
     <!-- Konten -->
-    <?php echo view($content) ?>
+    <?php
+// INI ADALAH PERBAIKANNYA
+// Kita secara manual meneruskan variabel yang BENAR dari Controller
+// ke dalam view $content (v_landing.php)
+
+
+echo view($content, [
+    // Data ini diambil dari Landing.php dan diteruskan ke v_landing.php
+    'getJenisLayanan' => $getJenisLayanan ?? [], // Data untuk dropdown
+    'getLayanan'      => $getLayanan ?? [],      // Data untuk tabel
+    'getPengumuman'   => $getPengumuman ?? [],   // Data untuk modal
+    
+    // Data lain yang mungkin dibutuhkan oleh v_landing.php
+    // (Jika Anda memuatnya di Landing.php)
+    'getHero'         => $getHero ?? [],
+    'getTeam'         => $getTeam ?? [],
+    'getBerita'       => $getBerita ?? [],
+    'getMitra'        => $getMitra ?? [],
+]);
+?>
 
     <!-- Footer 
     <footer class="footer">
@@ -198,8 +217,10 @@
     <script src="<?php echo base_url('assets/js/bootstrap.bundle.min.js') ?>"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <script src="<?php echo base_url('assets/js/rupiahFormatter.js') ?>"></script>
+    <?php if ($title !== 'Lab Terpadu ULM'): ?>
     <script src="<?php echo base_url('assets/js/sayJS.js?v=0.02') ?>"></script>
     <script src="<?php echo base_url('assets/js/sayTable.js?v=0.11') ?>"></script>
+<?php endif; ?>
 
     <!-- Cart Badge Script -->
     <script>
