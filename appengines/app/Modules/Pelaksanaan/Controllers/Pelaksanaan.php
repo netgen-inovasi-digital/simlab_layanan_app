@@ -184,11 +184,14 @@ class Pelaksanaan extends BaseController
             $val = trim((string)$row->{$cf});
             if (strpos($val, ';;') !== false) {
                 foreach (array_filter(array_map('trim', explode(';;', $val))) as $p) {
-                    if (preg_match('/^https?:\/\//i', $p)) { $fileUrl = $p; break 2; }
+                    if (preg_match('/^https?:\/\//i', $p)) 
+                        { $fileUrl = $p; break 2; }
                     $p1 = FCPATH.'uploads/lhus/'.ltrim($p,'/');
                     $p2 = FCPATH.'uploads/lhu/'.ltrim($p,'/');
-                    if (is_file($p1)) { $fileUrl = base_url('uploads/lhus/'.ltrim($p,'/')); break 2; }
-                    if (is_file($p2)) { $fileUrl = base_url('uploads/lhu/'.ltrim($p,'/'));  break 2; }
+                    if (is_file($p1))
+                         { $fileUrl = base_url('uploads/lhus/'.ltrim($p,'/')); break 2; }
+                    if (is_file($p2)) 
+                        { $fileUrl = base_url('uploads/lhu/'.ltrim($p,'/'));  break 2; }
                 }
             } else {
                 if (preg_match('/^https?:\/\//i', $val)) { $fileUrl = $val; break; }
