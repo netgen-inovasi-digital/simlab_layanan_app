@@ -63,6 +63,10 @@
     <?php elseif ($kode == 'layanan'): ?>
         <section id="services" class="services-section py-5 bg-light">
     <div class="container">
+        <div class="text-center mb-5">
+                <h2 class="section-title fw-bold mb-3"><?= esc($konten->judul ?? 'Layanan Kami') ?></h2>
+                <h6 class="section-desc"><?= esc($konten->deskripsi ?? 'Berikut daftar layanan yang tersedia') ?></h6>
+            </div>
         <div class="row mb-4">
             
             <div class="col-md-4">
