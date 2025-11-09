@@ -1,0 +1,65 @@
+<?php
+
+namespace App\Database\Migrations;
+
+use CodeIgniter\Database\Migration;
+
+class CreateTFilesLhus extends Migration
+{
+    public function up()
+    {
+        $this->forge->addField([
+            'file_id' => [
+                'type' => 'INT',
+                'unsigned' => true,
+                'auto_increment' => true,
+            ],
+            'kode' => [
+                'type' => 'INT',
+                'unsigned' => true, // refer ke t_layanan_detil.kode (unsigned)
+                'null' => true,
+            ],
+            'file_lhus' => [
+                'type' => 'VARCHAR',
+                'constraint' => 255,
+                'null' => true,
+            ],
+            'validasi_by' => [
+                'type' => 'INT',
+                'unsigned' => true, // refer ke simlab_account_users.user_id
+                'null' => true,
+            ],
+            'upload_by' => [
+                'type' => 'INT',
+                'unsigned' => true, // refer ke simlab_account_users.user_id
+                'null' => true,
+            ],
+            'catatan' => [
+                'type' => 'VARCHAR',
+                'constraint' => 255,
+                'null' => true,
+            ],
+            'status' => [
+                'type' => 'INT',
+                'null' => true,
+            ],
+        ]);
+
+        $this->forge->addKey('file_id', true);
+        $this->forge->addKey('kode');
+        $this->forge->addKey('validasi_by');
+        $this->forge->addKey('upload_by');
+
+        // FK via Forge
+        $this->forge->addForeignKey('kode', 't_layanan_detil', 'kode', 'CASCADE', 'CASCADE');
+        $this->forge->addForeignKey('upload_by', 'simlab_account_users', 'user_id', 'RESTRICT', 'RESTRICT');
+        $this->forge->addForeignKey('validasi_by', 'simlab_account_users', 'user_id', 'RESTRICT', 'RESTRICT');
+
+        $this->forge->createTable('t_files_lhus', true);
+    }
+
+    public function down()
+    {
+        $this->forge->dropTable('t_files_lhus', true);
+    }
+}
