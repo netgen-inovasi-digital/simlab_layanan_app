@@ -19,6 +19,8 @@ class DatabaseSeeder extends Seeder
         $this->call('ParameterSeeder'); 
         $this->call('RLayananPengujianSeeder');
         $this->call('RTimSeeder');
+        $this->call('MenuSeeder');
+        $this->call('OtoritasSeeder');
 
         // Seeder tambahan jika ada:
         // $this->call('UsersSeeder');
