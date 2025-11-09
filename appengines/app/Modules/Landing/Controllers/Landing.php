@@ -12,7 +12,7 @@ class Landing extends BaseController
     {
         $modelPengumuman = new MyModel('pengumuman');
         $modelJenisLayanan = new MyModel('simlab_r_jenis');
-        $modelLayanan = new MyModel('simlab_r_layanan_pengujian');
+        $modelLayanan = new MyModel('r_layanan_pengujian');
 
         // Get Pengumuman
         $getPengumuman = $modelPengumuman->builder()
@@ -23,19 +23,19 @@ class Landing extends BaseController
 
         // Get Jenis Layanan (for the dropdown)
         $getJenisLayanan = $modelJenisLayanan->builder()
-            ->orderBy('jenKode', 'ASC')
+            ->orderBy('kode', 'ASC')
             ->get()
             ->getResult();
 
         // Get Layanan (for the table)
         $getLayanan = $modelLayanan->builder()
-            ->select('ujiLayanan as judul, 
-                      ujiBiaya as biaya, 
-                      ujiSatuan as satuan, 
-                      ujiJenKode, 
+            ->select('nama_layanan as judul, 
+                      biaya as biaya, 
+                      satuan, 
+                      kode_jenis, 
                       status')
             ->where('status', 'Y')
-            ->orderBy('ujiLayanan', 'ASC')
+            ->orderBy('nama_layanan', 'ASC')
             ->get()
             ->getResult();
             
