@@ -45,15 +45,15 @@ class Website extends BaseController
 
 
     // ===== model untuk layanan ===== //
-    $modelLayanan = new MyModel('simlab_r_layanan_pengujian');
+    $modelLayanan = new MyModel('r_layanan_pengujian');
 
     $dataLayanan = $modelLayanan->builder()
-        ->select('ujiLayanan as judul, 
-                  ujiBiaya as biaya, 
-                  ujiSatuan as satuan, 
-                  ujiJenKode') // <-- 1. 'status' DIHAPUS DARI SINI
+        ->select('nama_layanan as judul, 
+                  biaya as biaya, 
+                  satuan as satuan, 
+                  kode_jenis') // <-- 1. 'status' DIHAPUS DARI SINI
         // ->where('status', 'Y') // <-- 2. BARIS INI DIHAPUS
-        ->orderBy('ujiLayanan', 'ASC')
+        ->orderBy('nama_layanan', 'ASC')
         ->get()
         ->getResult();
 
