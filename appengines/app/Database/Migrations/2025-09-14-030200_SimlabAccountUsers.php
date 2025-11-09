@@ -62,6 +62,11 @@ class CreateSimlabAccountUsers extends Migration
                 'constraint' => 255,
                 'null' => true,
             ],
+            'kuisioner' => [
+                'type' => 'VARCHAR',
+                'constraint' => 255,
+                'null' => true,
+            ],
         ]);
         $this->forge->addKey('user_id', true);
         $this->forge->addKey('user_email', false, true); // unique
