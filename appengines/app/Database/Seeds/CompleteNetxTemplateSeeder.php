@@ -9,11 +9,11 @@ class CompleteNetxTemplateSeeder extends Seeder
     public function run()
     {
         // 1. Insert roles data
-        $this->db->table('roles')->insertBatch([
-            ['id_role' => 1, 'nama_role' => 'Admin', 'grup' => 'admin', 'status_role' => 1],
-            ['id_role' => 2, 'nama_role' => 'User', 'grup' => 'author', 'status_role' => 1],
-            ['id_role' => 8, 'nama_role' => 'Super Admin', 'grup' => null, 'status_role' => 1],
-        ]);
+        // $this->db->table('roles')->insertBatch([
+        //     ['id_role' => 1, 'nama_role' => 'Admin', 'grup' => 'admin', 'status_role' => 1],
+        //     ['id_role' => 2, 'nama_role' => 'User', 'grup' => 'author', 'status_role' => 1],
+        //     ['id_role' => 8, 'nama_role' => 'Super Admin', 'grup' => null, 'status_role' => 1],
+        // ]);
 
         // 2. Insert users data (exact from SQL)
         $this->db->table('users')->insertBatch([
@@ -165,27 +165,27 @@ class CompleteNetxTemplateSeeder extends Seeder
         ]);
 
         // 7. Insert menus data (exact from SQL)
-        $this->db->table('menus')->insertBatch([
-            ['id_menu' => 6, 'kode_menu' => '1', 'kode_induk' => '0', 'nama' => 'Dashboard', 'link' => 'dashboard/load', 'icon' => 'bi-house', 'sort_order' => 1],
-            ['id_menu' => 9, 'kode_menu' => '3', 'kode_induk' => '0', 'nama' => 'Pengumuman', 'link' => 'pengumuman', 'icon' => 'bi-megaphone', 'sort_order' => 3],
-            ['id_menu' => 11, 'kode_menu' => '6', 'kode_induk' => '0', 'nama' => 'Tampilan', 'link' => '#', 'icon' => 'bi-display', 'sort_order' => 6],
-            ['id_menu' => 12, 'kode_menu' => '6.1', 'kode_induk' => '6', 'nama' => 'Menu', 'link' => 'navbar', 'icon' => 'bi-three-dots-vertical', 'sort_order' => 7],
-            ['id_menu' => 13, 'kode_menu' => '6.4', 'kode_induk' => '6', 'nama' => 'Slider', 'link' => 'hero', 'icon' => 'bi-three-dots-vertical', 'sort_order' => 10],
-            ['id_menu' => 14, 'kode_menu' => '6.2', 'kode_induk' => '6', 'nama' => 'Layanan', 'link' => 'layanan', 'icon' => 'bi-three-dots-vertical', 'sort_order' => 8],
-            ['id_menu' => 15, 'kode_menu' => '6.5', 'kode_induk' => '6', 'nama' => 'Informasi', 'link' => 'konfigurasi', 'icon' => 'bi-three-dots-vertical', 'sort_order' => 11],
-            ['id_menu' => 16, 'kode_menu' => '6.6', 'kode_induk' => '6', 'nama' => 'Sosial', 'link' => 'sosmed', 'icon' => 'bi-three-dots-vertical', 'sort_order' => 12],
-            ['id_menu' => 31, 'kode_menu' => '6.7', 'kode_induk' => '6', 'nama' => 'Mitra', 'link' => 'mitra', 'icon' => 'bi-three-dots-vertical', 'sort_order' => 13],
-            ['id_menu' => 17, 'kode_menu' => '7', 'kode_induk' => '0', 'nama' => 'Urutan Tampilan', 'link' => 'layout', 'icon' => 'bi-layout-text-window', 'sort_order' => 14],
-            ['id_menu' => 18, 'kode_menu' => '9', 'kode_induk' => '0', 'nama' => 'Pengaturan', 'link' => '#', 'icon' => 'bi-gear', 'sort_order' => 18],
-            ['id_menu' => 19, 'kode_menu' => '9.1', 'kode_induk' => '9', 'nama' => 'Pengguna', 'link' => 'user', 'icon' => 'bi-person', 'sort_order' => 19],
-            ['id_menu' => 20, 'kode_menu' => '9.3', 'kode_induk' => '9', 'nama' => 'Role', 'link' => 'role', 'icon' => 'bi-shield-lock', 'sort_order' => 20],
-            ['id_menu' => 21, 'kode_menu' => '9.2', 'kode_induk' => '9', 'nama' => 'Otoritas', 'link' => 'otoritas', 'icon' => 'bi-shield-check', 'sort_order' => 21],
-            ['id_menu' => 23, 'kode_menu' => '9.4', 'kode_induk' => '9', 'nama' => 'Menu ', 'link' => 'menu', 'icon' => 'bi-people', 'sort_order' => 22],
-            ['id_menu' => 24, 'kode_menu' => '2', 'kode_induk' => '0', 'nama' => 'Berita', 'link' => 'posts', 'icon' => 'bi-newspaper', 'sort_order' => 2],
-            ['id_menu' => 28, 'kode_menu' => '6.3', 'kode_induk' => '6', 'nama' => 'Team', 'link' => 'team', 'icon' => 'bi-three-dots-vertical', 'sort_order' => 9],
-            ['id_menu' => 29, 'kode_menu' => '8', 'kode_induk' => '0', 'nama' => 'Data Master', 'link' => '#', 'icon' => 'bi bi-box', 'sort_order' => 16],
-            ['id_menu' => 30, 'kode_menu' => '8.1', 'kode_induk' => '8', 'nama' => 'Motif', 'link' => 'motif', 'icon' => 'bi bi-receipt', 'sort_order' => 17],
-        ]);
+        // $this->db->table('menus')->insertBatch([
+        //     ['id_menu' => 6, 'kode_menu' => '1', 'kode_induk' => '0', 'nama' => 'Dashboard', 'link' => 'dashboard/load', 'icon' => 'bi-house', 'sort_order' => 1],
+        //     ['id_menu' => 9, 'kode_menu' => '3', 'kode_induk' => '0', 'nama' => 'Pengumuman', 'link' => 'pengumuman', 'icon' => 'bi-megaphone', 'sort_order' => 3],
+        //     ['id_menu' => 11, 'kode_menu' => '6', 'kode_induk' => '0', 'nama' => 'Tampilan', 'link' => '#', 'icon' => 'bi-display', 'sort_order' => 6],
+        //     ['id_menu' => 12, 'kode_menu' => '6.1', 'kode_induk' => '6', 'nama' => 'Menu', 'link' => 'navbar', 'icon' => 'bi-three-dots-vertical', 'sort_order' => 7],
+        //     ['id_menu' => 13, 'kode_menu' => '6.4', 'kode_induk' => '6', 'nama' => 'Slider', 'link' => 'hero', 'icon' => 'bi-three-dots-vertical', 'sort_order' => 10],
+        //     ['id_menu' => 14, 'kode_menu' => '6.2', 'kode_induk' => '6', 'nama' => 'Layanan', 'link' => 'layanan', 'icon' => 'bi-three-dots-vertical', 'sort_order' => 8],
+        //     ['id_menu' => 15, 'kode_menu' => '6.5', 'kode_induk' => '6', 'nama' => 'Informasi', 'link' => 'konfigurasi', 'icon' => 'bi-three-dots-vertical', 'sort_order' => 11],
+        //     ['id_menu' => 16, 'kode_menu' => '6.6', 'kode_induk' => '6', 'nama' => 'Sosial', 'link' => 'sosmed', 'icon' => 'bi-three-dots-vertical', 'sort_order' => 12],
+        //     ['id_menu' => 31, 'kode_menu' => '6.7', 'kode_induk' => '6', 'nama' => 'Mitra', 'link' => 'mitra', 'icon' => 'bi-three-dots-vertical', 'sort_order' => 13],
+        //     ['id_menu' => 17, 'kode_menu' => '7', 'kode_induk' => '0', 'nama' => 'Urutan Tampilan', 'link' => 'layout', 'icon' => 'bi-layout-text-window', 'sort_order' => 14],
+        //     ['id_menu' => 18, 'kode_menu' => '9', 'kode_induk' => '0', 'nama' => 'Pengaturan', 'link' => '#', 'icon' => 'bi-gear', 'sort_order' => 18],
+        //     ['id_menu' => 19, 'kode_menu' => '9.1', 'kode_induk' => '9', 'nama' => 'Pengguna', 'link' => 'user', 'icon' => 'bi-person', 'sort_order' => 19],
+        //     ['id_menu' => 20, 'kode_menu' => '9.3', 'kode_induk' => '9', 'nama' => 'Role', 'link' => 'role', 'icon' => 'bi-shield-lock', 'sort_order' => 20],
+        //     ['id_menu' => 21, 'kode_menu' => '9.2', 'kode_induk' => '9', 'nama' => 'Otoritas', 'link' => 'otoritas', 'icon' => 'bi-shield-check', 'sort_order' => 21],
+        //     ['id_menu' => 23, 'kode_menu' => '9.4', 'kode_induk' => '9', 'nama' => 'Menu ', 'link' => 'menu', 'icon' => 'bi-people', 'sort_order' => 22],
+        //     ['id_menu' => 24, 'kode_menu' => '2', 'kode_induk' => '0', 'nama' => 'Berita', 'link' => 'posts', 'icon' => 'bi-newspaper', 'sort_order' => 2],
+        //     ['id_menu' => 28, 'kode_menu' => '6.3', 'kode_induk' => '6', 'nama' => 'Team', 'link' => 'team', 'icon' => 'bi-three-dots-vertical', 'sort_order' => 9],
+        //     ['id_menu' => 29, 'kode_menu' => '8', 'kode_induk' => '0', 'nama' => 'Data Master', 'link' => '#', 'icon' => 'bi bi-box', 'sort_order' => 16],
+        //     ['id_menu' => 30, 'kode_menu' => '8.1', 'kode_induk' => '8', 'nama' => 'Motif', 'link' => 'motif', 'icon' => 'bi bi-receipt', 'sort_order' => 17],
+        // ]);
 
         // 8. Insert mitra data (exact from SQL)
         $this->db->table('mitra')->insertBatch([
@@ -222,54 +222,54 @@ class CompleteNetxTemplateSeeder extends Seeder
         ]);
 
 // 11. Insert otoritas data (exact from SQL - first 42 records)
-$this->db->table('otoritas')->insertBatch([
-    ['id_otoritas' => 1, 'role_id' => 1, 'kode_menu' => '3', 'status_otoritas' => 1],
-    ['id_otoritas' => 2, 'role_id' => 1, 'kode_menu' => '1', 'status_otoritas' => 1],
-    ['id_otoritas' => 3, 'role_id' => 1, 'kode_menu' => '4', 'status_otoritas' => 0],
-    ['id_otoritas' => 4, 'role_id' => 1, 'kode_menu' => '5', 'status_otoritas' => 0],
-    ['id_otoritas' => 5, 'role_id' => 1, 'kode_menu' => '6', 'status_otoritas' => 1],
-    ['id_otoritas' => 6, 'role_id' => 1, 'kode_menu' => '7', 'status_otoritas' => 1],
-    ['id_otoritas' => 7, 'role_id' => 1, 'kode_menu' => '2', 'status_otoritas' => 1],
-    ['id_otoritas' => 8, 'role_id' => 1, 'kode_menu' => '6.1', 'status_otoritas' => 1],
-    ['id_otoritas' => 9, 'role_id' => 1, 'kode_menu' => '6.2', 'status_otoritas' => 1],
-    ['id_otoritas' => 10, 'role_id' => 1, 'kode_menu' => '6.3', 'status_otoritas' => 1],
-    ['id_otoritas' => 11, 'role_id' => 1, 'kode_menu' => '6.4', 'status_otoritas' => 1],
-    ['id_otoritas' => 12, 'role_id' => 1, 'kode_menu' => '6.5', 'status_otoritas' => 1],
-    ['id_otoritas' => 24, 'role_id' => 1, 'kode_menu' => '8', 'status_otoritas' => 1],
-    ['id_otoritas' => 25, 'role_id' => 1, 'kode_menu' => '9', 'status_otoritas' => 1],
-    ['id_otoritas' => 26, 'role_id' => 1, 'kode_menu' => '9.2', 'status_otoritas' => 0],
-    ['id_otoritas' => 36, 'role_id' => 8, 'kode_menu' => '1', 'status_otoritas' => 1],
-    ['id_otoritas' => 37, 'role_id' => 8, 'kode_menu' => '4', 'status_otoritas' => 0],
-    ['id_otoritas' => 38, 'role_id' => 8, 'kode_menu' => '5', 'status_otoritas' => 0],
-    ['id_otoritas' => 39, 'role_id' => 8, 'kode_menu' => '6', 'status_otoritas' => 1],
-    ['id_otoritas' => 40, 'role_id' => 8, 'kode_menu' => '6.1', 'status_otoritas' => 1],
-    ['id_otoritas' => 41, 'role_id' => 8, 'kode_menu' => '6.2', 'status_otoritas' => 1],
-    ['id_otoritas' => 42, 'role_id' => 8, 'kode_menu' => '6.3', 'status_otoritas' => 1],
-    ['id_otoritas' => 43, 'role_id' => 8, 'kode_menu' => '6.4', 'status_otoritas' => 1],
-    ['id_otoritas' => 44, 'role_id' => 8, 'kode_menu' => '6.5', 'status_otoritas' => 1],
-    ['id_otoritas' => 45, 'role_id' => 8, 'kode_menu' => '7', 'status_otoritas' => 1],
-    ['id_otoritas' => 46, 'role_id' => 8, 'kode_menu' => '8', 'status_otoritas' => 1],
-    ['id_otoritas' => 47, 'role_id' => 8, 'kode_menu' => '8.1', 'status_otoritas' => 1],
-    ['id_otoritas' => 51, 'role_id' => 8, 'kode_menu' => '3', 'status_otoritas' => 1],
-    ['id_otoritas' => 52, 'role_id' => 8, 'kode_menu' => '9', 'status_otoritas' => 1],
-    ['id_otoritas' => 54, 'role_id' => 8, 'kode_menu' => '2', 'status_otoritas' => 1],
-    ['id_otoritas' => 86, 'role_id' => 2, 'kode_menu' => '2', 'status_otoritas' => 1],
-    ['id_otoritas' => 87, 'role_id' => 2, 'kode_menu' => '7', 'status_otoritas' => 0],
-    ['id_otoritas' => 88, 'role_id' => 2, 'kode_menu' => '7.1', 'status_otoritas' => 0],
-    ['id_otoritas' => 89, 'role_id' => 1, 'kode_menu' => '6.6', 'status_otoritas' => 1],
-    ['id_otoritas' => 90, 'role_id' => 1, 'kode_menu' => '9.1', 'status_otoritas' => 1],
-    ['id_otoritas' => 91, 'role_id' => 1, 'kode_menu' => '9.3', 'status_otoritas' => 0],
-    ['id_otoritas' => 92, 'role_id' => 1, 'kode_menu' => '9.4', 'status_otoritas' => 0],
-    ['id_otoritas' => 93, 'role_id' => 1, 'kode_menu' => '8.1', 'status_otoritas' => 1],
-    ['id_otoritas' => 94, 'role_id' => 8, 'kode_menu' => '6.6', 'status_otoritas' => 1],
-    ['id_otoritas' => 95, 'role_id' => 8, 'kode_menu' => '9.1', 'status_otoritas' => 1],
-    ['id_otoritas' => 96, 'role_id' => 8, 'kode_menu' => '9.3', 'status_otoritas' => 1],
-    ['id_otoritas' => 97, 'role_id' => 8, 'kode_menu' => '9.2', 'status_otoritas' => 1],
-    ['id_otoritas' => 98, 'role_id' => 8, 'kode_menu' => '9.4', 'status_otoritas' => 1],
-    ['id_otoritas' => 99, 'role_id' => 8, 'kode_menu' => '6.7', 'status_otoritas' => 1],
-    ['id_otoritas' => 100, 'role_id' => 1, 'kode_menu' => '6.7', 'status_otoritas' => 1],
-    ['id_otoritas' => 101, 'role_id' => 2, 'kode_menu' => '3', 'status_otoritas' => 1],
-]);
+// $this->db->table('otoritas')->insertBatch([
+//     ['id_otoritas' => 1, 'role_id' => 1, 'kode_menu' => '3', 'status_otoritas' => 1],
+//     ['id_otoritas' => 2, 'role_id' => 1, 'kode_menu' => '1', 'status_otoritas' => 1],
+//     ['id_otoritas' => 3, 'role_id' => 1, 'kode_menu' => '4', 'status_otoritas' => 0],
+//     ['id_otoritas' => 4, 'role_id' => 1, 'kode_menu' => '5', 'status_otoritas' => 0],
+//     ['id_otoritas' => 5, 'role_id' => 1, 'kode_menu' => '6', 'status_otoritas' => 1],
+//     ['id_otoritas' => 6, 'role_id' => 1, 'kode_menu' => '7', 'status_otoritas' => 1],
+//     ['id_otoritas' => 7, 'role_id' => 1, 'kode_menu' => '2', 'status_otoritas' => 1],
+//     ['id_otoritas' => 8, 'role_id' => 1, 'kode_menu' => '6.1', 'status_otoritas' => 1],
+//     ['id_otoritas' => 9, 'role_id' => 1, 'kode_menu' => '6.2', 'status_otoritas' => 1],
+//     ['id_otoritas' => 10, 'role_id' => 1, 'kode_menu' => '6.3', 'status_otoritas' => 1],
+//     ['id_otoritas' => 11, 'role_id' => 1, 'kode_menu' => '6.4', 'status_otoritas' => 1],
+//     ['id_otoritas' => 12, 'role_id' => 1, 'kode_menu' => '6.5', 'status_otoritas' => 1],
+//     ['id_otoritas' => 24, 'role_id' => 1, 'kode_menu' => '8', 'status_otoritas' => 1],
+//     ['id_otoritas' => 25, 'role_id' => 1, 'kode_menu' => '9', 'status_otoritas' => 1],
+//     ['id_otoritas' => 26, 'role_id' => 1, 'kode_menu' => '9.2', 'status_otoritas' => 0],
+//     ['id_otoritas' => 36, 'role_id' => 8, 'kode_menu' => '1', 'status_otoritas' => 1],
+//     ['id_otoritas' => 37, 'role_id' => 8, 'kode_menu' => '4', 'status_otoritas' => 0],
+//     ['id_otoritas' => 38, 'role_id' => 8, 'kode_menu' => '5', 'status_otoritas' => 0],
+//     ['id_otoritas' => 39, 'role_id' => 8, 'kode_menu' => '6', 'status_otoritas' => 1],
+//     ['id_otoritas' => 40, 'role_id' => 8, 'kode_menu' => '6.1', 'status_otoritas' => 1],
+//     ['id_otoritas' => 41, 'role_id' => 8, 'kode_menu' => '6.2', 'status_otoritas' => 1],
+//     ['id_otoritas' => 42, 'role_id' => 8, 'kode_menu' => '6.3', 'status_otoritas' => 1],
+//     ['id_otoritas' => 43, 'role_id' => 8, 'kode_menu' => '6.4', 'status_otoritas' => 1],
+//     ['id_otoritas' => 44, 'role_id' => 8, 'kode_menu' => '6.5', 'status_otoritas' => 1],
+//     ['id_otoritas' => 45, 'role_id' => 8, 'kode_menu' => '7', 'status_otoritas' => 1],
+//     ['id_otoritas' => 46, 'role_id' => 8, 'kode_menu' => '8', 'status_otoritas' => 1],
+//     ['id_otoritas' => 47, 'role_id' => 8, 'kode_menu' => '8.1', 'status_otoritas' => 1],
+//     ['id_otoritas' => 51, 'role_id' => 8, 'kode_menu' => '3', 'status_otoritas' => 1],
+//     ['id_otoritas' => 52, 'role_id' => 8, 'kode_menu' => '9', 'status_otoritas' => 1],
+//     ['id_otoritas' => 54, 'role_id' => 8, 'kode_menu' => '2', 'status_otoritas' => 1],
+//     ['id_otoritas' => 86, 'role_id' => 2, 'kode_menu' => '2', 'status_otoritas' => 1],
+//     ['id_otoritas' => 87, 'role_id' => 2, 'kode_menu' => '7', 'status_otoritas' => 0],
+//     ['id_otoritas' => 88, 'role_id' => 2, 'kode_menu' => '7.1', 'status_otoritas' => 0],
+//     ['id_otoritas' => 89, 'role_id' => 1, 'kode_menu' => '6.6', 'status_otoritas' => 1],
+//     ['id_otoritas' => 90, 'role_id' => 1, 'kode_menu' => '9.1', 'status_otoritas' => 1],
+//     ['id_otoritas' => 91, 'role_id' => 1, 'kode_menu' => '9.3', 'status_otoritas' => 0],
+//     ['id_otoritas' => 92, 'role_id' => 1, 'kode_menu' => '9.4', 'status_otoritas' => 0],
+//     ['id_otoritas' => 93, 'role_id' => 1, 'kode_menu' => '8.1', 'status_otoritas' => 1],
+//     ['id_otoritas' => 94, 'role_id' => 8, 'kode_menu' => '6.6', 'status_otoritas' => 1],
+//     ['id_otoritas' => 95, 'role_id' => 8, 'kode_menu' => '9.1', 'status_otoritas' => 1],
+//     ['id_otoritas' => 96, 'role_id' => 8, 'kode_menu' => '9.3', 'status_otoritas' => 1],
+//     ['id_otoritas' => 97, 'role_id' => 8, 'kode_menu' => '9.2', 'status_otoritas' => 1],
+//     ['id_otoritas' => 98, 'role_id' => 8, 'kode_menu' => '9.4', 'status_otoritas' => 1],
+//     ['id_otoritas' => 99, 'role_id' => 8, 'kode_menu' => '6.7', 'status_otoritas' => 1],
+//     ['id_otoritas' => 100, 'role_id' => 1, 'kode_menu' => '6.7', 'status_otoritas' => 1],
+//     ['id_otoritas' => 101, 'role_id' => 2, 'kode_menu' => '3', 'status_otoritas' => 1],
+// ]);
 
         // 12. Insert landing_views data (exact from SQL)
         $this->db->table('landing_views')->insert([

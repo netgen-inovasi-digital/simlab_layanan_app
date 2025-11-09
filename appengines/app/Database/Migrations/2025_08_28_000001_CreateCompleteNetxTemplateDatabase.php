@@ -74,69 +74,99 @@ class CreateCompleteNetxTemplateDatabase extends Migration
         $this->forge->createTable('hero', true, ['ENGINE' => 'InnoDB', 'CHARSET' => 'utf8mb4', 'COLLATE' => 'utf8mb4_unicode_ci']);
 
         // 3. Konfigurasi table
-        $this->forge->addField([
-            'id_konfigurasi' => [
-                'type' => 'INT',
-                'constraint' => 11,
-                'unsigned' => true,
-                'auto_increment' => true,
-            ],
-            'nama_profil' => [
-                'type' => 'VARCHAR',
-                'constraint' => '200',
-                'null' => false,
-                'default' => '',
-            ],
-            'deskripsi' => [
-                'type' => 'TEXT',
-                'null' => true,
-            ],
-            'alamat' => [
-                'type' => 'TEXT',
-                'null' => false,
-            ],
-            'telepon' => [
-                'type' => 'VARCHAR',
-                'constraint' => '20',
-                'null' => false,
-                'default' => '',
-            ],
-            'email' => [
-                'type' => 'VARCHAR',
-                'constraint' => '100',
-                'null' => false,
-                'default' => '',
-            ],
-            'kota' => [
-                'type' => 'VARCHAR',
-                'constraint' => '100',
-                'null' => false,
-                'default' => '',
-            ],
-            'provinsi' => [
-                'type' => 'VARCHAR',
-                'constraint' => '100',
-                'null' => false,
-                'default' => '',
-            ],
-            'logo' => [
-                'type' => 'VARCHAR',
-                'constraint' => '255',
-                'null' => false,
-                'default' => '',
-            ],
-            'peta' => [
-                'type' => 'TEXT',
-                'null' => true,
-            ],
-            'link' => [
-                'type' => 'VARCHAR',
-                'constraint' => '255',
-                'null' => true,
-            ],
-        ]);
-        $this->forge->addKey('id_konfigurasi', true);
-        $this->forge->createTable('konfigurasi', true, ['ENGINE' => 'InnoDB', 'CHARSET' => 'utf8mb4', 'COLLATE' => 'utf8mb4_unicode_ci']);
+       // 3. Konfigurasi table
+$this->forge->addField([
+    'id_konfigurasi' => [
+        'type' => 'INT',
+        'constraint' => 11,
+        'unsigned' => true,
+        'auto_increment' => true,
+    ],
+    'nama_profil' => [
+        'type' => 'VARCHAR',
+        'constraint' => '200',
+        'null' => false,
+        'default' => '',
+    ],
+    'deskripsi' => [
+        'type' => 'TEXT',
+        'null' => true,
+    ],
+    'alamat' => [
+        'type' => 'TEXT',
+        'null' => false,
+    ],
+    'telepon' => [
+        'type' => 'VARCHAR',
+        'constraint' => '20',
+        'null' => false,
+        'default' => '',
+    ],
+    'email' => [
+        'type' => 'VARCHAR',
+        'constraint' => '100',
+        'null' => false,
+        'default' => '',
+    ],
+    'kota' => [
+        'type' => 'VARCHAR',
+        'constraint' => '100',
+        'null' => false,
+        'default' => '',
+    ],
+    'provinsi' => [
+        'type' => 'VARCHAR',
+        'constraint' => '100',
+        'null' => false,
+        'default' => '',
+    ],
+    'logo' => [
+        'type' => 'VARCHAR',
+        'constraint' => '255',
+        'null' => false,
+        'default' => '',
+    ],
+    'peta' => [
+        'type' => 'TEXT',
+        'null' => true,
+    ],
+    'rajaongkir_api_key' => [
+        'type' => 'VARCHAR',
+        'constraint' => '255',
+        'null' => true,
+        'default' => null,
+    ],
+    'rajaongkir_origin_subdistrict_id' => [
+        'type' => 'VARCHAR',
+        'constraint' => '20',
+        'null' => true,
+        'default' => null,
+    ],
+    'rajaongkir_origin_name' => [
+        'type' => 'VARCHAR',
+        'constraint' => '255',
+        'null' => true,
+        'default' => null,
+    ],
+    'rajaongkir_couriers' => [
+        'type' => 'TEXT',
+        'null' => true,
+        'comment' => 'Comma separated courier codes (jne,sicepat,jnt,pos,tiki)',
+    ],
+    'link' => [
+        'type' => 'VARCHAR',
+        'constraint' => '255',
+        'null' => true,
+        'default' => null,
+    ],
+]);
+$this->forge->addKey('id_konfigurasi', true);
+$this->forge->createTable('konfigurasi', true, [
+    'ENGINE' => 'InnoDB',
+    'CHARSET' => 'utf8mb4',
+    'COLLATE' => 'utf8mb4_unicode_ci',
+]);
+
 
         // 4. Landing Views table
         $this->forge->addField([
@@ -741,9 +771,8 @@ class CreateCompleteNetxTemplateDatabase extends Migration
                 'constraint' => '80',
                 'null' => true,
             ],
-            'file' => [
-                'type' => 'VARCHAR',
-                'constraint' => '255',
+            'deskripsi' => [
+                'type' => 'TEXT',
                 'null' => true,
             ],
             'status' => [
@@ -759,6 +788,7 @@ class CreateCompleteNetxTemplateDatabase extends Migration
         $this->forge->addKey('id_pengumuman', true);
         $this->forge->addKey('user_id', false, false, 'author_id');
         $this->forge->createTable('pengumuman', true, ['ENGINE' => 'InnoDB', 'CHARSET' => 'utf8mb4', 'COLLATE' => 'utf8mb4_unicode_ci']);
+
 
         // 22. Posts table
         $this->forge->addField([

@@ -9,7 +9,9 @@ class DatabaseSeeder extends Seeder
     public function run()
     {
         // Seeder untuk template lengkap
-        $this->call('SimlabSeeder');
+        // $this->call('SimlabSeeder');
+        $this->call('CompleteNetxTemplateSeeder');
+
 
         // Seeder khusus aplikasi SIMLAB
         $this->call('RolesSeeder');
