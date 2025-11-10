@@ -4,16 +4,16 @@ namespace Modules\Keranjang\Controllers;
 
 use App\Controllers\BaseController;
 use App\Models\MyModel;
-use Modules\Keranjang\Config\LayananConfig;
 
 /**
  * Base Controller untuk semua jenis keranjang
  * Berisi logic umum yang di-share antar jenis layanan
+ * Juga menjadi penyimpan konfigurasi untuk semua jenis layanan
  */
 abstract class KeranjangBase extends BaseController
 {
-    protected $jenisLayanan;      // 'pengujian', 'sewa', 'konsultasi', dll
-    protected $config;            // Konfigurasi dari LayananConfig
+    protected $jenisLayanan;      // 'pengujian', 'sewa', dll
+    protected $config;
     protected $encrypter;
     protected $sessionKey;
 
@@ -37,11 +37,11 @@ abstract class KeranjangBase extends BaseController
     }
 
     /**
-     * Load konfigurasi dari LayananConfig
+     * Load konfigurasi dari getLayananConfig()
      */
     protected function loadConfig(): void
     {
-        $this->config = LayananConfig::getConfig($this->jenisLayanan);
+        $this->config = static::getLayananConfig($this->jenisLayanan);
 
         // Set table names dari config
         $this->tableLayanan = $this->config['table_layanan'];
@@ -49,6 +49,173 @@ abstract class KeranjangBase extends BaseController
         $this->tablePengujian = $this->config['table_pengujian'];
         $this->tablePembayaran = $this->config['table_pembayaran'];
         $this->sessionKey = $this->config['session_key'];
+    }
+
+    /**
+     * Get konfigurasi untuk jenis layanan tertentu
+     * CENTRAL CONFIG - Semua konfigurasi jenis layanan ada di sini
+     * 
+     * @param string $jenisLayanan 'pengujian', 'sewa', 'konsultasi'
+     * @return array Konfigurasi lengkap untuk jenis layanan
+     */
+    protected static function getLayananConfig(string $jenisLayanan): array
+    {
+        $configs = [
+            // ========================================
+            // PENGUJIAN (Testing Services)
+            // ========================================
+            'pengujian' => [
+                'title' => 'Keranjang Layanan Pengujian',
+                'session_key' => 'keranjang_pengujian',
+
+                // Table names
+                'table_layanan' => 'simlab_t_layanan',
+                'table_detail' => 't_layanan_detil',
+                'table_pengujian' => 'r_layanan_pengujian',
+                'table_pembayaran' => 't_pembayaran',
+
+                // Column mappings
+                'columns' => [
+                    'kode' => 'kode',
+                    'nama' => 'nama_layanan',
+                    'alat' => 'kode_alat',
+                    'parameter' => 'kode_parameter',
+                    'jenis' => 'kode_jenis',
+                    'satuan' => 'satuan',
+                    'biaya' => 'biaya',
+                    'diskon' => 'diskon',
+                ],
+
+                // Joins untuk query
+                'joins' => [
+                    [
+                        'table' => 'simlab_r_parameter',
+                        'alias' => 'p',
+                        'on' => 'p.paraKode = lp.kode_parameter',
+                        'type' => 'left'
+                    ],
+                    [
+                        'table' => 'simlab_r_alat',
+                        'alias' => 'a',
+                        'on' => 'a.alatKode = lp.kode_alat',
+                        'type' => 'left'
+                    ],
+                    [
+                        'table' => 'simlab_r_jenis',
+                        'alias' => 'j',
+                        'on' => 'j.jenKode = lp.kode_jenis',
+                        'type' => 'left'
+                    ],
+                ],
+
+                // Fields untuk modal form
+                'modal_fields' => [
+                    ['label' => 'Parameter', 'name' => 'detParameter', 'type' => 'text', 'readonly' => true],
+                    ['label' => 'Instrumen/Alat', 'name' => 'detAlat', 'type' => 'text', 'readonly' => true],
+                    ['label' => 'Biaya', 'name' => 'detBiaya', 'type' => 'number', 'readonly' => true],
+                    ['label' => 'Jumlah', 'name' => 'detJumlah', 'type' => 'number', 'min' => 1, 'max' => 100],
+                    ['label' => 'Keterangan', 'name' => 'detKeterangan', 'type' => 'textarea'],
+                ],
+
+                // Validation rules
+                'validation' => [
+                    'min_jumlah' => 1,
+                    'max_jumlah' => 100,
+                    'require_keterangan' => false,
+                ]
+            ],
+
+            // ========================================
+            // SEWA ALAT (Equipment Rental)
+            // ========================================
+            'sewa' => [
+                'title' => 'Keranjang Sewa Alat',
+                'session_key' => 'keranjang_sewa',
+
+                // Table names
+                'table_layanan' => 'simlab_t_layanan',
+                'table_detail' => 't_sewa_detil',
+                'table_pengujian' => 'r_layanan_sewa_alat',
+                'table_pembayaran' => 't_pembayaran',
+
+                // Column mappings
+                'columns' => [
+                    'kode' => 'kode',
+                    'nama_alat' => 'nama_alat',
+                    'kategori' => 'kode_kategori',
+                    'biaya_per_hari' => 'biaya_per_hari',
+                    'diskon' => 'diskon',
+                    'durasi' => 'durasi_hari',
+                    'tanggal_mulai' => 'tanggal_mulai',
+                    'tanggal_selesai' => 'tanggal_selesai',
+                    'stok_tersedia' => 'stok_tersedia',
+                ],
+
+                // Joins untuk query
+                'joins' => [
+                    [
+                        'table' => 'simlab_r_alat',
+                        'alias' => 'a',
+                        'on' => 'a.alatKode = ls.kode',
+                        'type' => 'left'
+                    ],
+                    [
+                        'table' => 'simlab_r_kategori_alat',
+                        'alias' => 'k',
+                        'on' => 'k.kategoriKode = ls.kode_kategori',
+                        'type' => 'left'
+                    ],
+                ],
+
+                // Fields untuk modal form
+                'modal_fields' => [
+                    ['label' => 'Nama Alat', 'name' => 'nama_alat', 'type' => 'text', 'readonly' => true],
+                    ['label' => 'Kategori', 'name' => 'kategori', 'type' => 'text', 'readonly' => true],
+                    ['label' => 'Biaya per Hari', 'name' => 'biaya_per_hari', 'type' => 'number', 'readonly' => true],
+                    ['label' => 'Jumlah Unit', 'name' => 'jumlah', 'type' => 'number', 'min' => 1, 'max' => 50],
+                    ['label' => 'Durasi (Hari)', 'name' => 'durasi', 'type' => 'number', 'min' => 1, 'max' => 365],
+                    ['label' => 'Tanggal Mulai', 'name' => 'tanggal_mulai', 'type' => 'date'],
+                    ['label' => 'Keterangan', 'name' => 'keterangan', 'type' => 'textarea'],
+                ],
+
+                // Validation rules
+                'validation' => [
+                    'min_jumlah' => 1,
+                    'max_jumlah' => 50,
+                    'min_durasi' => 1,
+                    'max_durasi' => 365,
+                    'require_keterangan' => false,
+                ]
+            ],
+
+        ];
+
+        // Return config untuk jenis layanan yang diminta, default ke pengujian
+        return $configs[$jenisLayanan] ?? $configs['pengujian'];
+    }
+
+    /**
+     * Get list semua jenis layanan yang tersedia
+     * 
+     * @return array
+     */
+    protected static function getAvailableTypes(): array
+    {
+        return [
+            'pengujian' => 'Layanan Pengujian',
+            'sewa' => 'Sewa Alat',
+        ];
+    }
+
+    /**
+     * Validate apakah jenis layanan valid
+     * 
+     * @param string $jenisLayanan
+     * @return bool
+     */
+    protected static function isValidType(string $jenisLayanan): bool
+    {
+        return array_key_exists($jenisLayanan, static::getAvailableTypes());
     }
 
     /**

@@ -4,17 +4,19 @@
 
 ```
 app/Modules/Keranjang/
-├── Config/
-│   └── LayananConfig.php          ← Konfigurasi untuk semua jenis layanan
 ├── Controllers/
-│   ├── KeranjangBase.php          ← Base class (abstract)
+│   ├── KeranjangBase.php          ← Base class (abstract) + CENTRAL CONFIG
 │   ├── Keranjang.php              ← Controller untuk PENGUJIAN (extends Base)
 │   ├── KeranjangSewa.php          ← Controller untuk SEWA ALAT (extends Base)
-│   └── KeranjangKonsultasi.php    ← (Future) Controller untuk KONSULTASI
 ├── Views/
 │   └── v_keranjang.php            ← Modal view (shared)
 └── Routes.php                     ← Routing dengan dukungan multi-service type
 ```
+
+**⚠️ PENTING:**
+
+-   ❌ **TIDAK ADA folder `Config/`** - Semua konfigurasi ada di `KeranjangBase.php`
+-   ✅ **KeranjangBase.php** adalah controller utama sekaligus penyimpan konfigurasi
 
 ---
 
@@ -25,18 +27,42 @@ app/Modules/Keranjang/
 ```
 BaseController (CI4)
     ↓
-KeranjangBase (abstract)
+KeranjangBase (abstract + central config)
     ↓
     ├── Keranjang (pengujian)
     ├── KeranjangSewa (sewa)
-    └── KeranjangKonsultasi (konsultasi)
 ```
 
 ---
 
-## 📋 LayananConfig.php
+## 📋 KeranjangBase.php - Controller Utama + Central Config
 
-**Lokasi:** `app/Modules/Keranjang/Config/LayananConfig.php`
+**Lokasi:** `app/Modules/Keranjang/Controllers/KeranjangBase.php`
+
+### Peran Ganda
+
+1. **Controller Utama (Abstract Base Class)**
+
+    - Berisi common logic untuk semua jenis layanan
+    - Abstract methods yang harus di-implement oleh child
+
+2. **Central Configuration**
+    - Semua konfigurasi jenis layanan disimpan di static method `getLayananConfig()`
+    - Tidak perlu file config terpisah
+
+### Config Method
+
+```php
+protected static function getLayananConfig(string $jenisLayanan): array
+{
+    $configs = [
+        'pengujian' => [...],
+        'sewa' => [...],
+    ];
+
+    return $configs[$jenisLayanan] ?? $configs['pengujian'];
+}
+```
 
 **Fungsi:**
 
