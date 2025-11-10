@@ -7,7 +7,7 @@ use App\Models\MyModel;
 
 class PembayaranUser extends BaseController
 {
-    private $table = 'simlab_t_pembayaran';
+    private $table = 't_pembayaran';
     private $id = 'bayarKode';
 
     public function index()
@@ -27,12 +27,8 @@ class PembayaranUser extends BaseController
             $session = session();
             $user_id = $session->get('id_user'); // ✅ Sama seperti Pelayanan.php
 
-            log_message('debug', '=== PembayaranUser dataList START ===');
-            log_message('debug', 'Session id_user: ' . ($user_id ?? 'NULL'));
-
             // Validasi: User harus login
             if (empty($user_id)) {
-                log_message('error', '⚠️ USER NOT LOGGED IN! Session id_user is NULL');
                 return $this->response->setJSON([
                     "items" => [],
                     "error" => "User belum login atau session expired. Silakan login kembali."
@@ -45,34 +41,28 @@ class PembayaranUser extends BaseController
 
             // Jika user tidak ditemukan, kembalikan data kosong
             if (!$user) {
-                log_message('error', '⚠️ USER NOT FOUND! user_id=' . $user_id);
                 return $this->response->setJSON([
                     "items" => [],
                     "error" => "Data user tidak ditemukan."
                 ]);
             }
 
-            log_message('debug', 'User found: ' . $user->user_email);
 
             $db = \Config\Database::connect();
             $data = [];
 
             // Query dengan JOIN - filter berdasarkan EMAIL seperti di Pelayanan.php
-            $builder = $db->table('simlab_t_pembayaran');
-            $builder->select('simlab_t_pembayaran.*, simlab_t_layanan.lnKode, simlab_t_layanan.lnAccEmail, simlab_t_layanan.lnNoTransaksi, simlab_t_layanan.lnTgl, simlab_t_layanan.user_id');
-            $builder->join('simlab_t_layanan', 'simlab_t_pembayaran.bayarLnKode = simlab_t_layanan.lnKode', 'inner');
-            $builder->where('simlab_t_pembayaran.bayarInvoiceNo IS NOT NULL');
+            $builder = $db->table('t_pembayaran');
+            $builder->select('t_pembayaran.*, simlab_t_layanan.lnKode, simlab_t_layanan.lnAccEmail, simlab_t_layanan.lnNoTransaksi, simlab_t_layanan.lnTgl, simlab_t_layanan.user_id');
+            $builder->join('simlab_t_layanan', 't_pembayaran.bayarLnKode = simlab_t_layanan.lnKode', 'inner');
+            $builder->where('t_pembayaran.bayarInvoiceNo IS NOT NULL');
             $builder->where('simlab_t_layanan.lnAccEmail', $user->user_email); // ✅ Filter by EMAIL
-            $builder->orderBy('simlab_t_pembayaran.bayarKode', 'DESC');
+            $builder->orderBy('t_pembayaran.bayarKode', 'DESC');
 
             // Log SQL query
             $sql = $builder->getCompiledSelect(false);
-            log_message('debug', 'SQL Query: ' . $sql);
 
             $list = $builder->get()->getResult();
-
-            log_message('debug', 'Total records found: ' . count($list));
-            log_message('debug', '=== PembayaranUser dataList END ===');
 
             $userModel = new MyModel('simlab_account_users');
 
@@ -91,24 +81,24 @@ class PembayaranUser extends BaseController
                 // Tombol aksi
                 $aksi = $this->aksiButton($encrypted_id, $paymentStatus, $currentFile);
 
-                // Ambil data user (sama seperti di Tagihan)
+                // Ambil data user
                 $personName = null;
                 $userIdentity = '-';
                 $instansi = '-';
                 $u = null;
 
-                // 1️⃣ Cek langsung dari user_id (FK)
+                // Cek langsung dari user_id (FK)
                 if (!empty($row->user_id)) {
                     $u = $userModel->getDataById('user_id', $row->user_id);
                 }
 
-                // 2️⃣ Jika belum ada, cek berdasarkan email (lnAccEmail)
+                // Jika belum ada, cek berdasarkan email (lnAccEmail)
                 if (!$u && !empty($row->lnAccEmail)) {
                     $users = $userModel->getAllDataById(['user_email' => $row->lnAccEmail]);
                     if (!empty($users)) $u = is_array($users) ? $users[0] : $users;
                 }
 
-                // 3️⃣ Jika user ditemukan, ambil info
+                // Jika user ditemukan, ambil info
                 if ($u) {
                     $personName = $u->user_name ?? $u->user_email ?? '-';
                     $instansi = $u->user_instansi ?? '-';
@@ -164,7 +154,6 @@ class PembayaranUser extends BaseController
 
             return $this->response->setJSON(["items" => $data]);
         } catch (\Exception $e) {
-            log_message('error', 'PembayaranUser dataList error: ' . $e->getMessage());
             return $this->response->setJSON([
                 "items" => [],
                 "error" => $e->getMessage()
@@ -265,8 +254,6 @@ class PembayaranUser extends BaseController
     public function uploadBukti()
     {
         try {
-            log_message('debug', 'UploadBukti request received');
-
             $file = $this->request->getFile('file_bukti');
             $encId = $this->request->getPost('id');
 
@@ -290,8 +277,6 @@ class PembayaranUser extends BaseController
                 ]);
             }
 
-            log_message('debug', 'Decrypted ID: ' . $id);
-
             if (!($file && $file->isValid() && !$file->hasMoved())) {
                 return $this->response->setJSON([
                     'res' => false,
@@ -314,12 +299,9 @@ class PembayaranUser extends BaseController
             }
 
             $filename = $uploadResult['filename'];
-            log_message('debug', 'Bukti uploaded successfully: ' . $filename);
 
             // Simpan filename untuk sementara di session
             session()->set('temp_bukti_' . $id, $filename);
-
-            log_message('debug', 'Bukti saved to session: temp_bukti_' . $id . ' = ' . $filename);
 
             return $this->response->setJSON([
                 'res' => 'success',
@@ -328,7 +310,6 @@ class PembayaranUser extends BaseController
                 'xhash' => csrf_hash()
             ]);
         } catch (\Exception $e) {
-            log_message('error', 'UploadBukti exception: ' . $e->getMessage());
             return $this->response->setJSON([
                 'res' => false,
                 'msg' => 'Terjadi kesalahan: ' . $e->getMessage(),
@@ -405,7 +386,6 @@ class PembayaranUser extends BaseController
             $fullPath = $path . DIRECTORY_SEPARATOR . $filename;
 
             if (is_file($fullPath)) {
-                log_message('debug', 'File moved successfully to: ' . $fullPath);
                 return ['status' => true, 'filename' => $filename];
             } else {
                 return ['status' => false, 'msg' => 'File gagal dipindahkan'];
@@ -420,18 +400,11 @@ class PembayaranUser extends BaseController
      */
     public function kirimBukti()
     {
-        log_message('debug', '=== KIRIM BUKTI REQUEST START ===');
-        log_message('debug', 'POST data: ' . json_encode($this->request->getPost()));
-
         $id = $this->request->getPost('id');
-
-        log_message('debug', 'ID received: ' . ($id ?? 'NULL'));
 
         try {
             $id = service('encrypter')->decrypt(hex2bin($id));
-            log_message('debug', 'Decrypted ID: ' . $id);
         } catch (\Exception $e) {
-            log_message('error', 'Decrypt error: ' . $e->getMessage());
             return $this->response->setJSON([
                 'res' => false,
                 'msg' => 'ID tidak valid: ' . $e->getMessage(),
@@ -460,14 +433,12 @@ class PembayaranUser extends BaseController
         // Gunakan file dari session jika ada, jika tidak gunakan file lama dari database
         $filename = !empty($tempFilename) ? $tempFilename : $currentData->bayarBuktiFile;
 
-        log_message('debug', 'Processing with bukti filename: ' . $filename);
 
         // Hapus file lama jika ada dan berbeda dengan file baru
         if (!empty($currentData->bayarBuktiFile) && !empty($tempFilename) && $currentData->bayarBuktiFile !== $tempFilename) {
             $oldFilePath = FCPATH . 'uploads/bukti/' . $currentData->bayarBuktiFile;
             if (file_exists($oldFilePath)) {
                 @unlink($oldFilePath);
-                log_message('debug', 'Old bukti file deleted: ' . $currentData->bayarBuktiFile);
             }
         }
 
@@ -491,10 +462,7 @@ class PembayaranUser extends BaseController
         // Hapus dari session setelah berhasil save
         if (!empty($tempFilename)) {
             session()->remove($sessionKey);
-            log_message('debug', 'Session key removed: ' . $sessionKey);
         }
-
-        log_message('debug', 'Bukti bayar sent successfully. Status: Menunggu Verifikasi');
 
         return $this->response->setJSON([
             'res' => true,
