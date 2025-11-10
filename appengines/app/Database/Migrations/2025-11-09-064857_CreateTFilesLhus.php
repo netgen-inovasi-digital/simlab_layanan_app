@@ -52,8 +52,8 @@ class CreateTFilesLhus extends Migration
 
         // FK via Forge
         $this->forge->addForeignKey('kode', 't_layanan_detil', 'kode', 'CASCADE', 'CASCADE');
-        $this->forge->addForeignKey('upload_by', 'simlab_account_users', 'user_id', 'RESTRICT', 'RESTRICT');
-        $this->forge->addForeignKey('validasi_by', 'simlab_account_users', 'user_id', 'RESTRICT', 'RESTRICT');
+        $this->forge->addForeignKey('upload_by', 'simlab_account', 'user_id', 'RESTRICT', 'RESTRICT');
+        $this->forge->addForeignKey('validasi_by', 'simlab_account', 'user_id', 'RESTRICT', 'RESTRICT');
 
         $this->forge->createTable('t_files_lhus', true);
     }
