@@ -16,13 +16,4 @@ $routes->group('pelayanan', ['namespace' => 'Modules\Pelayanan\Controllers'], fu
     $subroutes->get('datalist2/(:any)', 'Pelayanan::dataList2/$1');
     $subroutes->get('kuesioner/(:any)', 'Pelayanan::kuesioner/$1');
     $subroutes->post('submit_kuesioner', 'Pelayanan::submit_kuesioner');
-
-    $subroutes->get('keranjang', 'Pelayanan::keranjang');
-    $subroutes->get('keranjang/datalist', 'Pelayanan::keranjangDataList');
-    $subroutes->get('keranjang/dataListLayanan', 'Pelayanan::keranjangDataListLayanan');
-    $subroutes->get('keranjang/form', 'Pelayanan::keranjangFormTambah');
-    $subroutes->get('keranjang/kategoriList', 'Pelayanan::kategoriList');
-    $subroutes->post('keranjang/submit', 'Pelayanan::keranjangSubmit');
-    $subroutes->get('keranjang/delete/(:any)', 'Pelayanan::keranjangDelete/$1');
-    $subroutes->post('keranjang/checkout', 'Pelayanan::keranjangCheckout');
 });
