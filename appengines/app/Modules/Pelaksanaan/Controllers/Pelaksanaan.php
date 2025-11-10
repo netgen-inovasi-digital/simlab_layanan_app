@@ -9,6 +9,7 @@ class Pelaksanaan extends BaseController
     private $table = 'simlab_t_layanan';
     private $id    = 'lnKode';
 
+    
     public function index()
     {
         $session = session();
@@ -68,7 +69,8 @@ class Pelaksanaan extends BaseController
         foreach ($list as $row) {
             if ((int)$row->lnStatus < 6) continue;
 
-            $id = bin2hex($this->encrypter->encrypt($row->lnKode));
+            $id = bin2hex(service('encrypter')->encrypt($row->lnKode));
+                // $encrypted_id = bin2hex(service('encrypter')->encrypt($row->bayarKode));
             $response = [];
 
             // kolom pemesan
@@ -129,9 +131,9 @@ class Pelaksanaan extends BaseController
     if (!$id) return $this->response->setJSON(['items' => []]);
 
     // decrypt tolerant (hex → raw)
-    try { $lnKode = $this->encrypter->decrypt(hex2bin($id)); }
+    try { $lnKode = service('encrypter')->decrypt(hex2bin($id)); }
     catch (\Throwable $e) {
-        try { $lnKode = $this->encrypter->decrypt($id); }
+        try { $lnKode = service('encrypter')->decrypt($id); }
         catch (\Throwable $e2) { return $this->response->setJSON(['items' => []]); }
     }
 
@@ -240,9 +242,9 @@ class Pelaksanaan extends BaseController
             ]);
         }
 
-        try { $lnKode = $this->encrypter->decrypt(hex2bin($encId)); }
+        try { $lnKode = service('encrypter')->decrypt(hex2bin($encId)); }
         catch (\Throwable $e) {
-            try { $lnKode = $this->encrypter->decrypt($encId); }
+            try { $lnKode = service('encrypter')->decrypt($encId); }
             catch (\Throwable $e2) {
                 return $this->response->setJSON([
                     'res'=>'error','msg'=>'ID tidak valid',
@@ -499,7 +501,7 @@ class Pelaksanaan extends BaseController
     // proses: kini hanya butuh LHU sudah terunggah
     public function proses($id)
     {
-        try { $kode = $this->encrypter->decrypt(hex2bin($id)); }
+        try { $kode = service('encrypter')->decrypt(hex2bin($id)); }
         catch (\Exception $e) {
             return $this->response->setJSON([
                 'res'=>false,'msg'=>'ID tidak valid',
@@ -547,7 +549,7 @@ class Pelaksanaan extends BaseController
 
     public function delete($id)
     {
-        try { $kode = $this->encrypter->decrypt(hex2bin($id)); }
+        try { $kode = service('encrypter')->decrypt(hex2bin($id)); }
         catch (\Exception $e) {
             return $this->response->setJSON([
                 'res'=>false,'msg'=>'ID tidak valid',

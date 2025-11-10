@@ -13,25 +13,6 @@
 
                 <!-- Tabel Pilih Layanan -->
                 <div class="mb-4">
-                    <h6 class="fw-bold text-primary mb-3">
-                        <i class="bi bi-list-check"></i> Daftar Layanan Tersedia
-                    </h6>
-                    <div class="mb-3 d-flex gap-2 align-items-center">
-                        <label class="mb-0 fw-semibold">Kategori:</label>
-                        <select id="jenFilter" class="form-select form-select-sm" style="width:220px;">
-                            <option value="">— Semua —</option>
-                            <?php if (!empty($categories) && (is_array($categories) || is_object($categories))): ?>
-                                <?php foreach ($categories as $c): ?>
-                                    <?php
-                                    $kode = isset($c->jenKode) ? $c->jenKode : (isset($c['jenKode']) ? $c['jenKode'] : '');
-                                    $nama = isset($c->jenNama) && trim((string)$c->jenNama) !== '' ? $c->jenNama : $kode;
-                                    ?>
-                                    <option value="<?= esc($kode) ?>"><?= esc($nama) ?></option>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                        </select>
-                    </div>
-
                     <!-- tabel list keranjang -->
                     <table id="layanan-table" class="saytable border-top-bottom">
                         <thead>
