@@ -158,11 +158,17 @@ class Keranjang extends KeranjangBase
         $db = \Config\Database::connect();
 
         foreach ($keranjang as $i => $item) {
-            // Ambil jenKode dari item atau dari tabel pengujian
+            // Ambil jenKode dari keranjang atau fallback ke tabel pengujian supaya sesuai FK
             $jenKodeValue = null;
-            if (isset($item['jenKode']) && trim($item['jenKode']) !== '') {
-                $jenKodeValue = substr(trim($item['jenKode']), 0, 2);
-            } else if (isset($item['kode']) && !empty($item['kode'])) {
+
+            if (isset($item['jenKode'])) {
+                $jenKodeValue = trim((string) $item['jenKode']);
+                if ($jenKodeValue === '') {
+                    $jenKodeValue = null;
+                }
+            }
+
+            if ($jenKodeValue === null && isset($item['kode']) && $item['kode'] !== '') {
                 try {
                     $pengujian = $db->table($this->tablePengujian)
                         ->select('kode_jenis')
@@ -170,32 +176,42 @@ class Keranjang extends KeranjangBase
                         ->get()
                         ->getRow();
 
-                    if ($pengujian && !empty($pengujian->kode_jenis)) {
-                        $jenKodeValue = substr(trim($pengujian->kode_jenis), 0, 2);
+                    if ($pengujian && $pengujian->kode_jenis !== null) {
+                        $jenKodeValue = trim((string) $pengujian->kode_jenis);
+                        if ($jenKodeValue === '') {
+                            $jenKodeValue = null;
+                        }
                     }
                 } catch (\Throwable $e) {
                     log_message('warning', "Failed to fetch jenKode from pengujian for kode: {$item['kode']}");
                 }
             }
 
-            // Build data detil
+            // Build data detil - sesuai struktur tabel t_layanan_detil
             $detil = [
-                'kode_layanan'      => $lnKode,
-                'uji_kode'          => $item['kode'] ?? null,
-                'biaya'             => $item['biaya'] ?? null,
-                'jumlah'            => $item['jumlah'] ?? 1,
-                'catatan_pelanggan' => $item['keterangan'] ?? null,
-                'nama_layanan'      => $item['layanan'] ?? null,
-                'status_layanan'    => 0,
-                'kode_jenis'        => $jenKodeValue,
+                'kode_layanan'      => $lnKode,                    // FK ke simlab_t_layanan
+                'uji_kode'          => $item['kode'] ?? null,      // FK ke r_layanan_pengujian
+                'biaya'             => $item['biaya'] ?? 0,        // Total biaya item ini
+                'jumlah'            => $item['jumlah'] ?? 1,       // Jumlah item
+                'catatan_pelanggan' => $item['keterangan'] ?? null, // Keterangan dari pelanggan
+                'nama_layanan'      => $item['layanan'] ?? null,   // Nama layanan
+                'status_layanan'    => 0,                          // Status default: 0
+                'kode_jenis'        => $jenKodeValue,              // Kode jenis (2 char)
+                'catatan_manajer'   => null,                       // Default null
+                'terima_layanan_by' => null,                       // Default null
+                'files'             => null,                       // Default null
             ];
+
+            // Log data yang akan di-insert untuk debugging
+            log_message('debug', 'Inserting detail layanan: ' . json_encode($detil));
 
             // Insert ke tabel detil
             $res = $modelDetil->insertData($detil);
             if (!$res) {
-                $error = $modelDetil->db->error();
+                $error = $db->error();
                 log_message('error', 'Insert gagal ke ' . $this->tableLayananDetail . '. Data: ' . json_encode($detil));
-                log_message('error', 'DB Error: ' . json_encode($error));
+                log_message('error', 'DB Error Code: ' . $error['code']);
+                log_message('error', 'DB Error Message: ' . $error['message']);
 
                 throw new \RuntimeException('Gagal simpan detail: ' . ($error['message'] ?? 'Unknown error'));
             }

@@ -523,10 +523,9 @@ abstract class KeranjangBase extends BaseController
 
         $insertLayananId = $modelLayanan->insertData([
             'user_id'       => session()->get('id_user'),
-            'lnOrangNama'   => $userRow->user_name ?? '',
-            'lnOrangEmail'  => $userRow->user_email ?? '',
-            'lnStatus'      => 0,
-            'lnTotalBiaya'  => $totalBiaya,
+            'lnAccEmail'    => $userRow->user_email ?? '',
+            'lnTgl'         => date('Y-m-d H:i:s'),
+            'lnStatus'      => 1,
             'kuisioner'     => 0
         ], true);
 
@@ -542,12 +541,14 @@ abstract class KeranjangBase extends BaseController
         $today = date('Y-m-d');
 
         $modelPembayaran->insertData([
-            'bayarLnKode'     => $lnKode,
-            'bayarTotalBiaya' => $totalBiaya,
-            'bayarStatus'     => 0,
-            'bayarTanggal'    => $today,
+            'bayarLnKode'      => $lnKode,
+            'bayarTotalBiaya'  => $totalBiaya,
+            'bayarStatus'      => 0,
+            'bayarInvoiceTgl'  => $today,
             'bayarInvoiceFile' => null,
-            'bayarBuktiFile'  => null
+            'bayarBuktiFile'   => null,
+            'bayarCatatan'     => null,
+            'bayarInvoiceNo'   => null,
         ], true);
     }
 
