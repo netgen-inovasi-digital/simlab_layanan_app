@@ -1,5 +1,4 @@
 <?php   
-
 namespace Modules\FormulirManajer\Controllers;
 
 use App\Controllers\BaseController;
@@ -20,14 +19,13 @@ class FormulirManajer extends BaseController
     {
         $session = session();
         $user_id = $session->get('id_user');
-
+        
         $modelUser = new MyModel('simlab_account_users');
-
         $data = [
             'title' => 'Data Formulir Manajer',
             'user'  => $modelUser->getDataById('user_id', $user_id),
         ];
-
+        
         return view('Modules\FormulirManajer\Views\v_formulirManajer', $data);
     }
 
@@ -35,13 +33,9 @@ class FormulirManajer extends BaseController
     {
         $session = session();
         $user_id = $session->get('id_user');
+        $model   = new MyModel($this->table);
+        $data    = [];
 
-        $model    = new MyModel($this->table);
-        $modelDet = new MyModel('simlab_t_layanan_detil');
-
-        $data  = [];
-
-        // --- SANITIZE lnStatus: ambil semua digit dari input apa pun bentuknya ---
         $lnStatusRaw = (string) ($this->request->getGet('lnStatus') ?? '');
         $statusArr = [];
         if ($lnStatusRaw !== '') {
@@ -51,27 +45,22 @@ class FormulirManajer extends BaseController
             }
         }
 
-        // dapatkan daftar detil untuk manajer teknis ini
-        $detilList = $modelDet->getAllDataById(['detManajerTeknis' => $user_id]);
+        $db = \Config\Database::connect();
 
-        if (empty($detilList)) {
-            $db = \Config\Database::connect();
-            $builder = $db->table('simlab_t_layanan_detil as d');
-            $builder->select('d.detLnKode');
-            $builder->groupStart();
-            $builder->where('d.detPenyelia', $user_id);
-            $builder->orWhere('d.detManajerTeknis', $user_id);
-            $builder->groupEnd();
-            $rows = $builder->get()->getResult();
-            $detilList = $rows;
-        }
+        // Dapatkan daftar kode_layanan yang berkaitan dengan user lewat r_tim -> t_layanan_detil
+        $builderLn = $db->table('t_layanan_detil as d');
+        // tambahkan alias supaya hasil selalu berproperty kode_layanan
+        $builderLn->select('DISTINCT d.kode_layanan AS kode_layanan', false);
+        $builderLn->join('r_tim rt', 'rt.uji_kode = d.uji_kode', 'inner');
+        $builderLn->where('rt.user_id', $user_id);
+        $rowsLn = $builderLn->get()->getResult();
 
         $lnKodeList = [];
-        foreach ($detilList as $item) {
-            if (is_array($item) && isset($item['detLnKode'])) {
-                $lnKodeList[] = $item['detLnKode'];
-            } elseif (is_object($item) && isset($item->detLnKode)) {
-                $lnKodeList[] = $item->detLnKode;
+        foreach ($rowsLn as $item) {
+            if (is_array($item) && isset($item['kode_layanan'])) {
+                $lnKodeList[] = $item['kode_layanan'];
+            } elseif (is_object($item) && isset($item->kode_layanan)) {
+                $lnKodeList[] = $item->kode_layanan;
             }
         }
 
@@ -83,60 +72,64 @@ class FormulirManajer extends BaseController
             return $this->response->setJSON(['items' => []]);
         }
 
-        $db = \Config\Database::connect();
-        $builder = $db->table('simlab_t_layanan as l');
+        // Build main query on simlab_t_layanan
+         $builder = $db->table('simlab_t_layanan as l');
+        // join both account_users (preferred) and account (fallback)
+        $builder->join('simlab_account_users as au', 'au.user_id = l.user_id', 'left');
+        $builder->join('simlab_account as a', 'a.user_id = l.user_id', 'left');
 
-        $builder->select('
+        // use COALESCE so pemesan_name favors account_users.user_name, then account.nama, then lnAccEmail
+        $builder->select("
             l.*,
-            u.user_name as pemesan_name, 
-            u.user_email as pemesan_email, 
-            u.user_identity as pemesan_identity,
+            COALESCE(au.user_name, a.nama, l.lnAccEmail, '-') AS pemesan_name,
+            COALESCE(au.user_email, l.lnAccEmail, '') AS pemesan_email,
+            COALESCE(au.user_identity, '-') AS pemesan_identity,
             COALESCE(pm.pending_for_manager, 0) as pending_for_manager
-        ');
-        $builder->join('simlab_account_users as u', 'u.user_id = l.user_id', 'left');
+        ", false);
 
-        // SUBQUERY pending per manajer (berapa detail pending utk user ini)
-        $pendingSub = $db->table('simlab_t_layanan_detil')
-            ->select('detLnKode, SUM(CASE WHEN (detStatus = 0 OR detStatus IS NULL) THEN 1 ELSE 0 END) AS pending_for_manager', false)
-            ->where('detManajerTeknis', $user_id)
-            ->groupBy('detLnKode');
+
+        // SUBQUERY pending per manager
+        $pendingSub = $db->table('t_layanan_detil as det')
+            ->select('det.kode_layanan AS kode_layanan, SUM(CASE WHEN (det.status_layanan = 0 OR det.status_layanan IS NULL) THEN 1 ELSE 0 END) AS pending_for_manager', false)
+            ->join('r_tim rt', 'rt.uji_kode = det.uji_kode', 'inner')
+            ->where('rt.user_id', $user_id)
+            ->groupBy('det.kode_layanan');
 
         // join subquery
-        $builder->join('(' . $pendingSub->getCompiledSelect(false) . ') pm', 'pm.detLnKode = l.lnKode', 'left');
+        $builder->join('(' . $pendingSub->getCompiledSelect(false) . ') pm', 'pm.kode_layanan = l.lnKode', 'left');
 
         $builder->whereIn('l.lnKode', $lnKodeList);
-
-        // exclude lnStatus = 2 (Ditolak) seperti sebelumnya
+        
+        // exclude lnStatus = 2 (Ditolak)
         $builder->where('l.lnStatus !=', 2);
 
         // === FILTER BERDASARKAN LOGIC TABEL UTAMA ===
-        // Mapping:
-        // 1 (Belum direview): lnStatus = 1 AND pending_for_manager > 0
-        // 3 (Terkirim ke admin): pending_for_manager = 0   [sesuai badge formatStatusForManager]
-        // 4 (Pengujian): lnStatus = 4
         if (!empty($statusArr)) {
             $builder->groupStart();
-            foreach ($statusArr as $i => $st) {
-                if ((int)$st === 1) {
+            foreach ($statusArr as $st) {
+                $st = (int)$st;
+                if ($st === 1) {
+                    // 1 (Belum direview): lnStatus = 1 AND pending_for_manager > 0
                     $builder->orGroupStart()
-                        ->where('l.lnStatus', 1)
-                        ->where('COALESCE(pm.pending_for_manager,0) >', 0, false)
-                    ->groupEnd();
-                  } elseif ((int)$st === 3) {
+                            ->where('l.lnStatus', 1)
+                            ->where('COALESCE(pm.pending_for_manager,0) >', 0, false)
+                        ->groupEnd();
+                } elseif ($st === 3) {
+                    // 3 (Terkirim ke admin): pending_for_manager = 0 and not draft
                     $builder->orGroupStart()
-                        ->where('COALESCE(pm.pending_for_manager,0) =', 0, false)
-                        ->where('l.lnStatus !=', 0) // hindari draft jika masih ada
-                    ->groupEnd();
-                }
-                elseif ((int)$st === 4) {
+                            ->where('COALESCE(pm.pending_for_manager,0) =', 0, false)
+                            ->where('l.lnStatus !=', 0)
+                        ->groupEnd();
+                } elseif ($st === 4) {
+                    // 4 (Pengujian)
                     $builder->orGroupStart()
-                        ->where('l.lnStatus', 4)
-                    ->groupEnd();
+                            ->where('l.lnStatus', 4)
+                        ->groupEnd();
                 } else {
-                    // fallback: kalau ada status lain di masa depan, selaras dengan lnStatus murni
+                    // fallback ke lnStatus murni
                     $builder->orGroupStart()
-                        ->where('l.lnStatus', (int)$st)
-                    ->groupEnd();
+                            ->where('l.lnStatus', $st)
+                        ->groupEnd();
                 }
             }
             $builder->groupEnd();
@@ -163,9 +156,10 @@ class FormulirManajer extends BaseController
                     <span style="font-size:1rem; font-weight:600;">' . esc($pemesanNama) . '</span><br>
                     <span style="font-size:0.9rem; color:#555;">' . esc($tanggal) . ' | ' . esc($tipe) . '</span>
                 </div>';
+
             $response[] = $combined;
 
-            // Tampilkan status perspektif manajer (tidak memengaruhi filter)
+            // Tampilkan status perspektif manajer
             $response[] = $this->formatStatusForManager($row->lnStatus, $row->lnKode, $user_id);
 
             $response[] = '<a href="javascript:void(0)" onclick="loadDetail(\'' . $id . '\')" 
@@ -195,12 +189,14 @@ class FormulirManajer extends BaseController
             return $this->response->setJSON(['items' => []]);
         }
 
-        // cek user sebagai manajer teknis untuk Ln ini
         $db = \Config\Database::connect();
-        $checkBuilder = $db->table('simlab_t_layanan_detil as d');
+
+        // Cek user sebagai anggota tim untuk layanan ini
+        $checkBuilder = $db->table('t_layanan_detil as d');
         $checkBuilder->select('1');
-        $checkBuilder->where('d.detLnKode', $kode);
-        $checkBuilder->where('d.detManajerTeknis', $user_id);
+        $checkBuilder->join('r_tim rt', 'rt.uji_kode = d.uji_kode', 'inner');
+        $checkBuilder->where('d.kode_layanan', $kode);
+        $checkBuilder->where('rt.user_id', $user_id);
         $exists = $checkBuilder->limit(1)->get()->getRow();
 
         if (!$exists) {
@@ -210,22 +206,23 @@ class FormulirManajer extends BaseController
         // Encrypted ln dipakai di tombol & save
         $encLnId = bin2hex($this->encrypter->encrypt($kode));
 
-        $builder = $db->table('simlab_t_layanan_detil as d');
-
+        $builder = $db->table('t_layanan_detil as d');
         $builder->select("
-            d.detUjiKode,
-            d.detLnKode,
-            d.detLayanan,
-            d.detJenKode,
-            GROUP_CONCAT(DISTINCT d.detKeterangan SEPARATOR ' | ') AS detKet,
-            GROUP_CONCAT(DISTINCT d.detKetLn SEPARATOR ' | ') AS detKetLn,
-            SUM(d.detJumlah) AS jumlah,
-            SUM(d.detBiaya) AS detBiaya,
-            MAX(d.detStatus) AS detStatusGroup
+            d.uji_kode,
+            d.kode_layanan,
+            d.nama_layanan,
+            d.kode_jenis,
+            GROUP_CONCAT(DISTINCT d.catatan_pelanggan SEPARATOR ' | ') AS catatan_pelanggan,
+            GROUP_CONCAT(DISTINCT d.catatan_manajar SEPARATOR ' | ') AS catatan_manajar,
+            SUM(d.jumlah) AS jumlah,
+            SUM(d.biaya) AS total_biaya,
+            MAX(d.status_layanan) AS status_group
         ");
-        $builder->where('d.detLnKode', $kode);
-        $builder->where('d.detManajerTeknis', $user_id);
-        $builder->groupBy('d.detUjiKode, d.detLnKode, d.detLayanan, d.detJenKode');
+        $builder->join('r_tim rt', 'rt.uji_kode = d.uji_kode', 'inner');
+        $builder->where('d.kode_layanan', $kode);
+        $builder->where('rt.user_id', $user_id);
+        $builder->groupBy('d.uji_kode, d.kode_layanan, d.nama_layanan, d.kode_jenis');
+
         $rows = $builder->get()->getResult();
 
         $data = [];
@@ -234,18 +231,19 @@ class FormulirManajer extends BaseController
         foreach ($rows as $row) {
             $response = [];
             $response[] = $no++;
-            $response[] = $row->detLayanan ?? '-';
+            $response[] = $row->nama_layanan ?? '-';
             $response[] = isset($row->jumlah) ? (int)$row->jumlah : 0;
+
             $response[] = '<div 
                         style="display:block; max-width:240px; min-width:160px; width:100%;
                             max-height:120px; min-height:48px; overflow-y:auto; overflow-x:hidden;
                             padding:4px 6px; border:1px solid #ddd; border-radius:4px; background:#f9f9f9;
                             white-space:pre-wrap; word-break:break-word; font-size:0.9rem;">'
-                        . htmlspecialchars($row->detKet ?? '', ENT_QUOTES, 'UTF-8') .
+                        . htmlspecialchars($row->catatan_pelanggan ?? '', ENT_QUOTES, 'UTF-8') .
                         '</div>';
 
-            // status grouping
-            $statusGroup = isset($row->detStatusGroup) ? (int)$row->detStatusGroup : null;
+            // Status grouping
+            $statusGroup = isset($row->status_group) ? (int)$row->status_group : null;
             if ($statusGroup === 2) {
                 $statusHtml = '<span class="badge bg-danger">Ditolak</span>';
             } elseif ($statusGroup === 1) {
@@ -257,11 +255,11 @@ class FormulirManajer extends BaseController
             }
             $response[] = $statusHtml;
 
-            // aksi approve/reject 
-            $ujiKodeInt = (int)$row->detUjiKode;
+            // Aksi approve/reject 
+            $ujiKodeInt = (int)$row->uji_kode;
             $encLnForBtn = $encLnId;
+            $komentarVal = $row->catatan_manajar !== null ? esc($row->catatan_manajar) : '';
 
-            $komentarVal = $row->detKetLn !== null ? esc($row->detKetLn) : '';
             $textarea = '<textarea class="form-control komentar-input" data-uji="' . $ujiKodeInt . '" rows="2" placeholder="Keterangan/manajer..."'
             . ' style="max-width:240px; min-width:160px; max-height:120px; min-height:48px; overflow-y:auto; overflow-x:hidden; resize:vertical; white-space:pre-wrap; word-break:break-word;">'
             . $komentarVal .
@@ -312,11 +310,12 @@ class FormulirManajer extends BaseController
         $user_id = $session->get('id_user');
 
         $db = \Config\Database::connect();
-        $builder = $db->table('simlab_t_layanan_detil');
 
-        $check = (int)$db->table('simlab_t_layanan_detil')
-            ->where('detLnKode', $lnKode)
-            ->where('detManajerTeknis', $user_id)
+        // Cek otorisasi via r_tim
+        $check = (int)$db->table('t_layanan_detil as d')
+            ->join('r_tim rt', 'rt.uji_kode = d.uji_kode', 'inner')
+            ->where('d.kode_layanan', $lnKode)
+            ->where('rt.user_id', $user_id)
             ->limit(1)
             ->countAllResults(false);
 
@@ -330,17 +329,20 @@ class FormulirManajer extends BaseController
         }
 
         $db->transStart();
+
+        $builder = $db->table('t_layanan_detil');
         foreach ($input['items'] as $it) {
             $uji = isset($it['ujiKode']) ? (int)$it['ujiKode'] : null;
             $kom = isset($it['komentar']) ? $it['komentar'] : null;
+            
             if ($uji === null) continue;
 
-            $builder->where('detLnKode', $lnKode)
-                    ->where('detUjiKode', $uji)
-                    ->update(['detKetLn' => $kom]);
+            $builder->where('kode_layanan', $lnKode)
+                    ->where('uji_kode', $uji)
+                    ->update(['catatan_manajar' => $kom]);
         }
-        $db->transComplete();
 
+        $db->transComplete();
         $ok = $db->transStatus();
 
         return $this->response->setJSON([
@@ -351,9 +353,7 @@ class FormulirManajer extends BaseController
         ]);
     }
 
-
-
-    public function approveDetail()
+ public function approveDetail()
 {
     $lnEnc = $this->request->getPost('ln');
     $ujiRaw = $this->request->getPost('uji');
@@ -382,9 +382,9 @@ class FormulirManajer extends BaseController
         ]);
     }
 
-    // --- ambil user login sebagai manajer yang meng-approve ---
     $session   = session();
     $managerId = (int) ($session->get('id_user') ?? 0);
+
     if ($managerId <= 0) {
         return $this->response->setJSON([
             'res' => false,
@@ -397,7 +397,7 @@ class FormulirManajer extends BaseController
 
     $db = \Config\Database::connect();
 
-    // (opsional tapi aman): pastikan managerId ada di simlab_account agar lolos FK
+    // Pastikan managerId valid
     $acc = $db->table('simlab_account')->select('user_id')->where('user_id', $managerId)->get()->getRow();
     if (!$acc) {
         return $this->response->setJSON([
@@ -409,11 +409,11 @@ class FormulirManajer extends BaseController
         ]);
     }
 
-    $table = $db->table('simlab_t_layanan_detil');
+    $table = $db->table('t_layanan_detil');
 
-    // total rows matching ln + uji
-    $table->where('detLnKode', $lnId);
-    $table->where('detUjiKode', $uji);
+    // Total baris matching
+    $table->where('kode_layanan', $lnId);
+    $table->where('uji_kode', $uji);
     $total = (int) $table->countAllResults(false);
 
     if ($total === 0) {
@@ -426,18 +426,18 @@ class FormulirManajer extends BaseController
         ]);
     }
 
-    // brp detStatus = 1
-    $table->where('detLnKode', $lnId);
-    $table->where('detUjiKode', $uji);
-    $table->where('detStatus', 1);
+    // Sudah berapa yang status_layanan=1
+    $table->where('kode_layanan', $lnId);
+    $table->where('uji_kode', $uji);
+    $table->where('status_layanan', 1);
     $already = (int) $table->countAllResults(false);
 
     if ($already === $total) {
-        $pendingBuilder = $db->table('simlab_t_layanan_detil');
-        $pendingBuilder->where('detLnKode', $lnId);
+        $pendingBuilder = $db->table('t_layanan_detil');
+        $pendingBuilder->where('kode_layanan', $lnId);
         $pendingBuilder->groupStart()
-                        ->where('detStatus', 0)
-                        ->orWhere('detStatus IS NULL', null, false)
+                        ->where('status_layanan', 0)
+                        ->orWhere('status_layanan IS NULL', null, false)
                      ->groupEnd();
         $pendingRemaining = (int) $pendingBuilder->countAllResults(false);
 
@@ -458,26 +458,25 @@ class FormulirManajer extends BaseController
         ]);
     }
 
-    // update hanya baris yang belum status=1
-    $res = $db->table('simlab_t_layanan_detil')
-            ->where('detLnKode', $lnId)
-            ->where('detUjiKode', $uji)
-            ->where('(detStatus IS NULL OR detStatus != 1)')
-            // <<< perubahan utama: set juga detAccLayanan = $managerId >>>
+    // Update hanya baris yang belum status_layanan=1
+    $res = $db->table('t_layanan_detil')
+            ->where('kode_layanan', $lnId)
+            ->where('uji_kode', $uji)
+            ->where('(status_layanan IS NULL OR status_layanan != 1)')
             ->update([
-                'detStatus'      => 1,
-                'detAccLayanan'  => $managerId
+                'status_layanan'    => 1,
+                'terima_layanan_by' => $managerId
             ]);
 
     $affected = $db->affectedRows();
-
     $parentUpdated = false;
+
     if ($affected > 0) {
-        $pendingBuilder = $db->table('simlab_t_layanan_detil');
-        $pendingBuilder->where('detLnKode', $lnId);
+        $pendingBuilder = $db->table('t_layanan_detil');
+        $pendingBuilder->where('kode_layanan', $lnId);
         $pendingBuilder->groupStart()
-                        ->where('detStatus', 0)
-                        ->orWhere('detStatus IS NULL', null, false)
+                        ->where('status_layanan', 0)
+                        ->orWhere('status_layanan IS NULL', null, false)
                      ->groupEnd();
         $pendingRemaining = (int) $pendingBuilder->countAllResults(false);
 
@@ -491,162 +490,164 @@ class FormulirManajer extends BaseController
     return $this->response->setJSON([
         'res'      => (bool)$res && $affected > 0,
         'affected' => $affected,
-        'msg'      => $affected > 0 ? 'OK' : 'No rows updated',
+        'msg'      => $affected > 0 ? 'Berhasil disetujui' : 'No rows updated',
         'parent_updated' => $parentUpdated,
         'xname'    => csrf_token(),
         'xhash'    => csrf_hash()
     ]);
 }
 
-public function rejectDetail()
-{
-    $lnEnc = $this->request->getPost('ln');
-    $ujiRaw = $this->request->getPost('uji');
+    public function rejectDetail()
+    {
 
-    if (empty($lnEnc) || $ujiRaw === null) {
-        return $this->response->setJSON([
-            'res' => false,
-            'affected' => 0,
-            'msg' => 'Parameter tidak lengkap',
-            'xname' => csrf_token(),
-            'xhash' => csrf_hash()
-        ]);
-    }
+        $session   = session();
+        $managerId = (int) ($session->get('id_user') ?? 0);
 
-    $uji = (int)$ujiRaw;
 
-    try {
-        $lnId = $this->encrypter->decrypt(hex2bin($lnEnc));
-    } catch (\Exception $e) {
-        return $this->response->setJSON([
-            'res' => false,
-            'affected' => 0,
-            'msg' => 'ID layanan tidak valid',
-            'xname' => csrf_token(),
-            'xhash' => csrf_hash()
-        ]);
-    }
+        $lnEnc = $this->request->getPost('ln');
+        $ujiRaw = $this->request->getPost('uji');
 
-    // --- ambil user login untuk dicatat sebagai penolak ---
-    $session   = session();
-    $managerId = (int) ($session->get('id_user') ?? 0);
-    if ($managerId <= 0) {
-        return $this->response->setJSON([
-            'res' => false,
-            'affected' => 0,
-            'msg' => 'User login tidak ditemukan.',
-            'xname' => csrf_token(),
-            'xhash' => csrf_hash()
-        ]);
-    }
+        if (empty($lnEnc) || $ujiRaw === null) {
+            return $this->response->setJSON([
+                'res' => false,
+                'affected' => 0,
+                'msg' => 'Parameter tidak lengkap',
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        }
 
-    $db = \Config\Database::connect();
+        $uji = (int)$ujiRaw;
 
-    // (opsional) pastikan managerId valid terhadap FK simlab_account
-    $acc = $db->table('simlab_account')->select('user_id')->where('user_id', $managerId)->get()->getRow();
-    if (!$acc) {
-        return $this->response->setJSON([
-            'res' => false,
-            'affected' => 0,
-            'msg' => 'User login tidak valid di simlab_account.',
-            'xname' => csrf_token(),
-            'xhash' => csrf_hash()
-        ]);
-    }
+        try {
+            $lnId = $this->encrypter->decrypt(hex2bin($lnEnc));
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'res' => false,
+                'affected' => 0,
+                'msg' => 'ID layanan tidak valid',
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        }
 
-    $table = $db->table('simlab_t_layanan_detil');
+        $session   = session();
+        $managerId = (int) ($session->get('id_user') ?? 0);
 
-    // total baris matching ln + uji
-    $table->where('detLnKode', $lnId);
-    $table->where('detUjiKode', $uji);
-    $total = (int) $table->countAllResults(false);
+        if ($managerId <= 0) {
+            return $this->response->setJSON([
+                'res' => false,
+                'affected' => 0,
+                'msg' => 'User login tidak ditemukan.',
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        }
 
-    if ($total === 0) {
-        return $this->response->setJSON([
-            'res' => false,
-            'affected' => 0,
-            'msg' => 'No matching detail rows found',
-            'xname' => csrf_token(),
-            'xhash' => csrf_hash()
-        ]);
-    }
+        $db = \Config\Database::connect();
 
-    // sudah berapa yang status=2
-    $table->where('detLnKode', $lnId);
-    $table->where('detUjiKode', $uji);
-    $table->where('detStatus', 2);
-    $already = (int) $table->countAllResults(false);
+        // Pastikan managerId valid
+        $acc = $db->table('simlab_account')->select('user_id')->where('user_id', $managerId)->get()->getRow();
+        if (!$acc) {
+            return $this->response->setJSON([
+                'res' => false,
+                'affected' => 0,
+                'msg' => 'User login tidak valid di simlab_account.',
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        }
 
-    if ($already === $total) {
-        $pendingBuilder = $db->table('simlab_t_layanan_detil');
-        $pendingBuilder->where('detLnKode', $lnId);
-        $pendingBuilder->groupStart()
-                        ->where('detStatus', 0)
-                        ->orWhere('detStatus IS NULL', null, false)
-                     ->groupEnd();
-        $pendingRemaining = (int) $pendingBuilder->countAllResults(false);
+        $table = $db->table('t_layanan_detil');
 
+        // Total baris matching
+        $table->where('kode_layanan', $lnId);
+        $table->where('uji_kode', $uji);
+        $total = (int) $table->countAllResults(false);
+
+        if ($total === 0) {
+            return $this->response->setJSON([
+                'res' => false,
+                'affected' => 0,
+                'msg' => 'No matching detail rows found',
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        }
+
+        // Sudah berapa yang status_layanan=2
+        $table->where('kode_layanan', $lnId);
+        $table->where('uji_kode', $uji);
+        $table->where('status_layanan', 2);
+        $already = (int) $table->countAllResults(false);
+
+        if ($already === $total) {
+            $pendingBuilder = $db->table('t_layanan_detil');
+            $pendingBuilder->where('kode_layanan', $lnId);
+            $pendingBuilder->groupStart()
+                            ->where('status_layanan', 0)
+                            ->orWhere('status_layanan IS NULL', null, false)
+                         ->groupEnd();
+            $pendingRemaining = (int) $pendingBuilder->countAllResults(false);
+
+            $parentUpdated = false;
+            if ($pendingRemaining === 0) {
+                $model = new MyModel($this->table);
+                $resParent = $model->updateData(['lnStatus' => 3], $this->id, $lnId);
+                $parentUpdated = ($resParent === true || $resParent === 1);
+            }
+
+            return $this->response->setJSON([
+                'res' => true,
+                'affected' => 0,
+                'msg' => 'Sudah ditolak',
+                'parent_updated' => $parentUpdated,
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        }
+
+        // Update hanya baris yang belum status_layanan=2
+        $res = $db->table('t_layanan_detil')
+                ->where('kode_layanan', $lnId)
+                ->where('uji_kode', $uji)
+                ->where('(status_layanan IS NULL OR status_layanan != 2)')
+                ->update([
+                    'status_layanan'     => 2,
+                    'terima_layanan_by'  => $managerId
+                ]);
+
+        $affected = $db->affectedRows();
         $parentUpdated = false;
-        if ($pendingRemaining === 0) {
-            $model = new MyModel($this->table);
-            $resParent = $model->updateData(['lnStatus' => 3], $this->id, $lnId);
-            $parentUpdated = ($resParent === true || $resParent === 1);
+
+        if ($affected > 0) {
+            $pendingBuilder = $db->table('t_layanan_detil');
+            $pendingBuilder->where('kode_layanan', $lnId);
+            $pendingBuilder->groupStart()
+                            ->where('status_layanan', 0)
+                            ->orWhere('status_layanan IS NULL', null, false)
+                         ->groupEnd();
+            $pendingRemaining = (int) $pendingBuilder->countAllResults(false);
+
+            if ($pendingRemaining === 0) {
+                $model = new MyModel($this->table);
+                $resParent = $model->updateData(['lnStatus' => 3], $this->id, $lnId);
+                $parentUpdated = ($resParent === true || $resParent === 1);
+            }
         }
 
         return $this->response->setJSON([
-            'res' => true,
-            'affected' => 0,
-            'msg' => 'Sudah ditolak',
+            'res'      => (bool)$res && $affected > 0,
+            'affected' => $affected,
+            'msg'      => $affected > 0 ? 'OK' : 'No rows updated',
             'parent_updated' => $parentUpdated,
-            'xname' => csrf_token(),
-            'xhash' => csrf_hash()
+            'xname'    => csrf_token(),
+            'xhash'    => csrf_hash()
         ]);
     }
-
-    // update hanya baris yang belum status=2
-    $res = $db->table('simlab_t_layanan_detil')
-            ->where('detLnKode', $lnId)
-            ->where('detUjiKode', $uji)
-            ->where('(detStatus IS NULL OR detStatus != 2)')
-            // <<< perubahan utama: catat juga siapa yang menolak >>>
-            ->update([
-                'detStatus'     => 2,
-                'detAccLayanan' => $managerId
-            ]);
-
-    $affected = $db->affectedRows();
-
-    $parentUpdated = false;
-    if ($affected > 0) {
-        $pendingBuilder = $db->table('simlab_t_layanan_detil');
-        $pendingBuilder->where('detLnKode', $lnId);
-        $pendingBuilder->groupStart()
-                        ->where('detStatus', 0)
-                        ->orWhere('detStatus IS NULL', null, false)
-                     ->groupEnd();
-        $pendingRemaining = (int) $pendingBuilder->countAllResults(false);
-
-        if ($pendingRemaining === 0) {
-            $model = new MyModel($this->table);
-            $resParent = $model->updateData(['lnStatus' => 3], $this->id, $lnId);
-            $parentUpdated = ($resParent === true || $resParent === 1);
-        }
-    }
-
-    return $this->response->setJSON([
-        'res'      => (bool)$res && $affected > 0,
-        'affected' => $affected,
-        'msg'      => $affected > 0 ? 'OK' : 'No rows updated',
-        'parent_updated' => $parentUpdated,
-        'xname'    => csrf_token(),
-        'xhash'    => csrf_hash()
-    ]);
-}
-
 
     public function kirim()
     {
-        // Tetap dipertahankan (logic tidak diubah), meski tombol Kirim di UI sudah dihapus
         $lnEnc = $this->request->getPost('ln');
 
         if (empty($lnEnc)) {
@@ -674,10 +675,11 @@ public function rejectDetail()
 
         $db = \Config\Database::connect();
 
-        // Otorisasi
-        $check = (int) $db->table('simlab_t_layanan_detil')
-                    ->where('detLnKode', $lnId)
-                    ->where('detManajerTeknis', $user_id)
+        // Otorisasi via r_tim
+        $check = (int) $db->table('t_layanan_detil as d')
+                    ->join('r_tim rt', 'rt.uji_kode = d.uji_kode', 'inner')
+                    ->where('d.kode_layanan', $lnId)
+                    ->where('rt.user_id', $user_id)
                     ->limit(1)
                     ->countAllResults(false);
 
@@ -690,19 +692,21 @@ public function rejectDetail()
             ]);
         }
 
-        // pending per-manajer
-        $pendingManagerCount = (int) $db->table('simlab_t_layanan_detil')
-            ->where('detLnKode', $lnId)
-            ->where('detManajerTeknis', $user_id)
+        // Pending per-manajer (via r_tim)
+        $pendingManagerCount = (int) $db->table('t_layanan_detil as d')
+            ->join('r_tim rt', 'rt.uji_kode = d.uji_kode', 'inner')
+            ->where('d.kode_layanan', $lnId)
+            ->where('rt.user_id', $user_id)
             ->groupStart()
-                ->where('detStatus', 0)
-                ->orWhere('detStatus IS NULL', null, false)
+                ->where('d.status_layanan', 0)
+                ->orWhere('d.status_layanan IS NULL', null, false)
             ->groupEnd()
             ->countAllResults(false);
 
         if ($pendingManagerCount > 0) {
             return $this->response->setJSON([
-                'res' => false,
+                'res' => false
+                ,
                 'msg' => 'Layanan yang belum anda proses : ' . $pendingManagerCount,
                 'pending' => $pendingManagerCount,
                 'xname' => csrf_token(),
@@ -710,12 +714,12 @@ public function rejectDetail()
             ]);
         }
 
-        // pending total LN
-        $pendingTotal = (int) $db->table('simlab_t_layanan_detil')
-            ->where('detLnKode', $lnId)
+        // Pending total LN
+        $pendingTotal = (int) $db->table('t_layanan_detil')
+            ->where('kode_layanan', $lnId)
             ->groupStart()
-                ->where('detStatus', 0)
-                ->orWhere('detStatus IS NULL', null, false)
+                ->where('status_layanan', 0)
+                ->orWhere('status_layanan IS NULL', null, false)
             ->groupEnd()
             ->countAllResults(false);
 
@@ -731,14 +735,14 @@ public function rejectDetail()
             ]);
         }
 
-        // update parent lnStatus = 3
+        // Update parent lnStatus = 3
         $db->transStart();
 
-        $pendingTotalCheck = (int) $db->table('simlab_t_layanan_detil')
-            ->where('detLnKode', $lnId)
+        $pendingTotalCheck = (int) $db->table('t_layanan_detil')
+            ->where('kode_layanan', $lnId)
             ->groupStart()
-                ->where('detStatus', 0)
-                ->orWhere('detStatus IS NULL', null, false)
+                ->where('status_layanan', 0)
+                ->orWhere('status_layanan IS NULL', null, false)
             ->groupEnd()
             ->countAllResults(false);
 
@@ -801,21 +805,24 @@ public function rejectDetail()
     private function formatStatusForManager($lnStatus, $lnKode, $userId)
     {
         $db = \Config\Database::connect();
-        $pendingCount = (int) $db->table('simlab_t_layanan_detil')
-            ->where('detLnKode', $lnKode)
-            ->where('detManajerTeknis', $userId)
+
+        // Cek pending via r_tim
+        $pendingCount = (int) $db->table('t_layanan_detil as d')
+            ->join('r_tim rt', 'rt.uji_kode = d.uji_kode', 'inner')
+            ->where('d.kode_layanan', $lnKode)
+            ->where('rt.user_id', $userId)
             ->groupStart()
-                ->where('detStatus', 0)
-                ->orWhere('detStatus IS NULL', null, false)
+                ->where('d.status_layanan', 0)
+                ->orWhere('d.status_layanan IS NULL', null, false)
             ->groupEnd()
             ->countAllResults(false);
 
-        // jika manajer tidak punya pending lagi -> tunjukkan badge "Layanan terkirim ke admin"
+        // Jika manajer tidak punya pending lagi -> badge "Layanan terkirim ke admin"
         if ($pendingCount === 0) {
             return '<span class="badge bg-info">Layanan terkirim ke admin</span>';
         }
 
-        // selain itu, tampilkan status parent sebagaimana biasa
+        // Selain itu, tampilkan status parent sebagaimana biasa
         return $this->formatStatus((int)$lnStatus);
     }
 }

@@ -23,7 +23,9 @@ class DatabaseSeeder extends Seeder
         $this->call('RTimSeeder');
         $this->call('MenuSeeder');
         $this->call('OtoritasSeeder');
-
+        
+        //ngasih transaksi
+        $this->call('TransaksiSeeder');
         // Seeder tambahan jika ada:
         // $this->call('UsersSeeder');
         // $this->call('MenusSeeder');
