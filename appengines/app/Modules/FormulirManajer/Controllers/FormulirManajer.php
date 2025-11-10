@@ -213,7 +213,7 @@ class FormulirManajer extends BaseController
             d.nama_layanan,
             d.kode_jenis,
             GROUP_CONCAT(DISTINCT d.catatan_pelanggan SEPARATOR ' | ') AS catatan_pelanggan,
-            GROUP_CONCAT(DISTINCT d.catatan_manajar SEPARATOR ' | ') AS catatan_manajar,
+            GROUP_CONCAT(DISTINCT d.catatan_manajer SEPARATOR ' | ') AS catatan_manajer,
             SUM(d.jumlah) AS jumlah,
             SUM(d.biaya) AS total_biaya,
             MAX(d.status_layanan) AS status_group
@@ -258,7 +258,7 @@ class FormulirManajer extends BaseController
             // Aksi approve/reject 
             $ujiKodeInt = (int)$row->uji_kode;
             $encLnForBtn = $encLnId;
-            $komentarVal = $row->catatan_manajar !== null ? esc($row->catatan_manajar) : '';
+            $komentarVal = $row->catatan_manajer !== null ? esc($row->catatan_manajer) : '';
 
             $textarea = '<textarea class="form-control komentar-input" data-uji="' . $ujiKodeInt . '" rows="2" placeholder="Keterangan/manajer..."'
             . ' style="max-width:240px; min-width:160px; max-height:120px; min-height:48px; overflow-y:auto; overflow-x:hidden; resize:vertical; white-space:pre-wrap; word-break:break-word;">'
@@ -339,7 +339,7 @@ class FormulirManajer extends BaseController
 
             $builder->where('kode_layanan', $lnKode)
                     ->where('uji_kode', $uji)
-                    ->update(['catatan_manajar' => $kom]);
+                    ->update(['catatan_manajer' => $kom]);
         }
 
         $db->transComplete();
@@ -353,7 +353,7 @@ class FormulirManajer extends BaseController
         ]);
     }
 
- public function approveDetail()
+public function approveDetail()
 {
     $lnEnc = $this->request->getPost('ln');
     $ujiRaw = $this->request->getPost('uji');
@@ -409,9 +409,25 @@ class FormulirManajer extends BaseController
         ]);
     }
 
+    // PASTIKAN manager adalah anggota tim untuk uji ini (otorisasi)
+    $auth = (int) $db->table('r_tim')
+                ->where('uji_kode', $uji)
+                ->where('user_id', $managerId)
+                ->countAllResults(false);
+
+    if ($auth === 0) {
+        return $this->response->setJSON([
+            'res' => false,
+            'affected' => 0,
+            'msg' => 'Anda tidak berwenang memproses uji ini.',
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
+        ]);
+    }
+
     $table = $db->table('t_layanan_detil');
 
-    // Total baris matching
+    // Total baris matching (khusus uji + ln)
     $table->where('kode_layanan', $lnId);
     $table->where('uji_kode', $uji);
     $total = (int) $table->countAllResults(false);
@@ -433,6 +449,7 @@ class FormulirManajer extends BaseController
     $already = (int) $table->countAllResults(false);
 
     if ($already === $total) {
+        // Jika semua sudah approved untuk uji ini, cek apakah masih ada pending di seluruh LN
         $pendingBuilder = $db->table('t_layanan_detil');
         $pendingBuilder->where('kode_layanan', $lnId);
         $pendingBuilder->groupStart()
@@ -443,8 +460,9 @@ class FormulirManajer extends BaseController
 
         $parentUpdated = false;
         if ($pendingRemaining === 0) {
+            // Jika tidak ada pending sama sekali, update parent menjadi Pengujian (4)
             $model = new MyModel($this->table);
-            $resParent = $model->updateData(['lnStatus' => 3], $this->id, $lnId);
+            $resParent = $model->updateData(['lnStatus' => 4], $this->id, $lnId);
             $parentUpdated = ($resParent === true || $resParent === 1);
         }
 
@@ -458,8 +476,12 @@ class FormulirManajer extends BaseController
         ]);
     }
 
-    // Update hanya baris yang belum status_layanan=1
-    $res = $db->table('t_layanan_detil')
+    // Mulai TRANSAKSI untuk menghindari race condition antara update + pengecekan pending + update parent
+    $db->transStart();
+
+    // Update hanya baris yang belum status_layanan=1 untuk uji yang bersangkutan
+    // (otorisasi sudah dipastikan via r_tim untuk uji ini)
+    $resUpdate = $db->table('t_layanan_detil')
             ->where('kode_layanan', $lnId)
             ->where('uji_kode', $uji)
             ->where('(status_layanan IS NULL OR status_layanan != 1)')
@@ -472,6 +494,7 @@ class FormulirManajer extends BaseController
     $parentUpdated = false;
 
     if ($affected > 0) {
+        // Setelah update, cek apakah masih ada pending di seluruh LN
         $pendingBuilder = $db->table('t_layanan_detil');
         $pendingBuilder->where('kode_layanan', $lnId);
         $pendingBuilder->groupStart()
@@ -481,14 +504,18 @@ class FormulirManajer extends BaseController
         $pendingRemaining = (int) $pendingBuilder->countAllResults(false);
 
         if ($pendingRemaining === 0) {
+            // KONSISTENSI: set ke 4 (Pengujian) bila sudah tidak ada pending
             $model = new MyModel($this->table);
-            $resParent = $model->updateData(['lnStatus' => 3], $this->id, $lnId);
+            $resParent = $model->updateData(['lnStatus' => 4], $this->id, $lnId);
             $parentUpdated = ($resParent === true || $resParent === 1);
         }
     }
 
+    $db->transComplete();
+    $transOk = $db->transStatus();
+
     return $this->response->setJSON([
-        'res'      => (bool)$res && $affected > 0,
+        'res'      => $transOk && $affected > 0,
         'affected' => $affected,
         'msg'      => $affected > 0 ? 'Berhasil disetujui' : 'No rows updated',
         'parent_updated' => $parentUpdated,
@@ -496,6 +523,7 @@ class FormulirManajer extends BaseController
         'xhash'    => csrf_hash()
     ]);
 }
+
 
     public function rejectDetail()
     {
@@ -558,6 +586,22 @@ class FormulirManajer extends BaseController
             ]);
         }
 
+        // PASTIKAN manager adalah anggota tim untuk uji ini (otorisasi)
+        $auth = (int) $db->table('r_tim')
+                    ->where('uji_kode', $uji)
+                    ->where('user_id', $managerId)
+                    ->countAllResults(false);
+
+        if ($auth === 0) {
+            return $this->response->setJSON([
+                'res' => false,
+                'affected' => 0,
+                'msg' => 'Anda tidak berwenang memproses uji ini.',
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        }
+
         $table = $db->table('t_layanan_detil');
 
         // Total baris matching
@@ -607,8 +651,11 @@ class FormulirManajer extends BaseController
             ]);
         }
 
+        // Mulai TRANSAKSI untuk menghindari race condition
+        $db->transStart();
+
         // Update hanya baris yang belum status_layanan=2
-        $res = $db->table('t_layanan_detil')
+        $resUpdate = $db->table('t_layanan_detil')
                 ->where('kode_layanan', $lnId)
                 ->where('uji_kode', $uji)
                 ->where('(status_layanan IS NULL OR status_layanan != 2)')
@@ -636,8 +683,11 @@ class FormulirManajer extends BaseController
             }
         }
 
+        $db->transComplete();
+        $transOk = $db->transStatus();
+
         return $this->response->setJSON([
-            'res'      => (bool)$res && $affected > 0,
+            'res'      => $transOk && $affected > 0,
             'affected' => $affected,
             'msg'      => $affected > 0 ? 'OK' : 'No rows updated',
             'parent_updated' => $parentUpdated,
