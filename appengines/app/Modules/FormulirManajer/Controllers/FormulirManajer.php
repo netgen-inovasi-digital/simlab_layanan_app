@@ -548,7 +548,6 @@ public function approveDetail()
         $uji = (int)$ujiRaw;
 
         try {
-            $lnId = $this->encrypter->decrypt(hex2bin($lnEnc));
         } catch (\Exception $e) {
             return $this->response->setJSON([
                 'res' => false,
