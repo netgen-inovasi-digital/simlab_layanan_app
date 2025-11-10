@@ -130,12 +130,15 @@ class PembayaranUser extends BaseController
                     }
                 }
 
-                // Tombol lihat catatan jika verifikasi ditolak
-                $catatanButton = '';
+                // FIX: Status badge - jika ditolak, tampilkan sebagai BADGE yang bisa diklik (seperti badge lainnya)
                 if ($paymentStatus == 3 && !empty($row->bayarCatatan)) {
-                    $catatanButton = '<button class="btn btn-sm btn-warning mt-1" onclick="lihatCatatan(\'' . $encrypted_id . '\', \'' . esc($row->bayarCatatan, 'js') . '\')">
-                        <i class="bi bi-file-text"></i> Lihat Catatan
-                    </button>';
+                    // Status DITOLAK - tampilkan sebagai badge danger yang bisa diklik (cursor pointer)
+                    $status = '<span class="badge bg-danger" style="cursor: pointer;" onclick="lihatCatatan(\'' . $encrypted_id . '\', \'' . esc($row->bayarCatatan, 'js') . '\')">
+                        Ditolak - Lihat Catatan
+                    </span>';
+                } else {
+                    // Status lainnya - tampilkan badge biasa
+                    $status = $this->formatStatus($paymentStatus);
                 }
 
                 // Response array
@@ -147,7 +150,7 @@ class PembayaranUser extends BaseController
                         ? '<a href="' . base_url('uploads/invoice/' . $row->bayarInvoiceFile) . '" target="_blank" class="btn btn-sm btn-info"><i class="bi bi-file-pdf"></i> Lihat</a>'
                         : '<span class="text-muted">-</span>', // File Invoice
                     $buktiBayar, // Bukti Bayar
-                    $status . $catatanButton, // Status + Tombol Catatan (jika ditolak)
+                    $status, // Status (badge biasa atau button jika ditolak)
                     $aksi // Aksi
                 ];
             }
@@ -210,46 +213,135 @@ class PembayaranUser extends BaseController
     }
 
     /**
-     * Tombol aksi - update logic untuk status verifikasi gagal
+     * Tombol aksi - Hanya 1 button untuk Upload & Kirim (gabungan)
      */
     private function aksiButton($id, $status, $file)
     {
         // URL file bukti bayar (jika ada)
         $fileUrl = !empty($file) ? base_url('uploads/bukti/' . $file) : '';
 
-        // Button "Upload Bukti":
+        // Button "Upload & Kirim Bukti":
         // - Disabled jika status = Menunggu Verifikasi (1) atau Terverifikasi (2)
-        // - Aktif jika status = Belum Terkirim (0) atau Verifikasi Gagal (3)
+        // - Aktif jika status = Belum Bayar (0) atau Verifikasi Gagal (3)
         $uploadDisabled = ($status == 1 || $status == 2) ? 'disabled' : '';
         $uploadClass = ($status == 1 || $status == 2) ? 'text-secondary' : 'text-primary';
         $uploadTitle = ($status == 2) ? 'Sudah terverifikasi'
             : (($status == 1) ? 'Menunggu verifikasi admin'
                 : (($status == 3) ? 'Upload ulang bukti bayar'
-                    : 'Upload Bukti Bayar'));
-
-        // Button "Kirim":
-        // - Aktif jika sudah upload file DAN (status = Belum Terkirim atau Verifikasi Gagal)
-        // - Disabled jika belum upload, Menunggu Verifikasi, atau Terverifikasi
-        $prosesDisabled = (empty($file) || $status == 1 || $status == 2) ? 'disabled' : '';
-        $prosesClass = (empty($file) || $status == 1 || $status == 2) ? 'text-secondary' : 'text-success';
-        $prosesTitle = empty($file)
-            ? 'Upload bukti bayar terlebih dahulu'
-            : (($status == 2) ? 'Sudah terverifikasi'
-                : (($status == 1) ? 'Menunggu verifikasi admin'
-                    : (($status == 3) ? 'Kirim ulang bukti pembayaran'
-                        : 'Kirim Bukti Pembayaran')));
+                    : 'Upload & Kirim Bukti Bayar'));
 
         return '<div id="' . $id . '" class="float-end">
         <span class="' . $uploadClass . ' btn-action" ' . $uploadDisabled . ' title="' . $uploadTitle . '" data-fileurl="' . esc($fileUrl) . '" onclick="uploadBukti(event)">
-            <i class="bi bi-upload"></i></span> 
-        <label class="divider">|</label>
-        <span class="' . $prosesClass . ' btn-action" ' . $prosesDisabled . ' title="' . $prosesTitle . '" onclick="kirimBukti(event)">
-            <i class="bi bi-send"></i></span>
+            <i class="bi bi-send"></i> Kirim Bukti</span>
     </div>';
     }
 
     /**
-     * Upload bukti bayar (PNG/JPG/PDF/image format)
+     * Upload & Kirim Bukti Bayar (GABUNGAN) - Upload file + langsung kirim ke admin untuk verifikasi
+     */
+    public function uploadKirimBukti()
+    {
+        try {
+            $file = $this->request->getFile('file_bukti');
+            $encId = $this->request->getPost('id');
+
+            if (empty($encId)) {
+                return $this->response->setJSON([
+                    'res' => false,
+                    'msg' => 'ID tidak ditemukan',
+                    'xname' => csrf_token(),
+                    'xhash' => csrf_hash()
+                ]);
+            }
+
+            try {
+                $id = service('encrypter')->decrypt(hex2bin($encId));
+            } catch (\Throwable $e) {
+                return $this->response->setJSON([
+                    'res' => false,
+                    'msg' => 'ID tidak valid',
+                    'xname' => csrf_token(),
+                    'xhash' => csrf_hash()
+                ]);
+            }
+
+            if (!($file && $file->isValid() && !$file->hasMoved())) {
+                return $this->response->setJSON([
+                    'res' => false,
+                    'msg' => 'File tidak valid atau belum dipilih',
+                    'xname' => csrf_token(),
+                    'xhash' => csrf_hash()
+                ]);
+            }
+
+            // Upload file ke folder uploads/bukti/
+            $uploadResult = $this->doUpload($file, 'bukti');
+
+            if (!$uploadResult['status']) {
+                return $this->response->setJSON([
+                    'res' => false,
+                    'msg' => $uploadResult['msg'],
+                    'xname' => csrf_token(),
+                    'xhash' => csrf_hash()
+                ]);
+            }
+
+            $filename = $uploadResult['filename'];
+
+            // Langsung simpan ke database (tidak pakai session)
+            $model = new MyModel($this->table);
+            $currentData = $model->getDataById($this->id, $id);
+
+            // Hapus file lama jika ada
+            if (!empty($currentData->bayarBuktiFile)) {
+                $oldFile = FCPATH . 'uploads/bukti/' . $currentData->bayarBuktiFile;
+                if (file_exists($oldFile)) {
+                    @unlink($oldFile);
+                }
+            }
+
+            // Update bukti bayar dan set bayarStatus = 0 (menunggu verifikasi)
+            $dataPembayaran = [
+                'bayarBuktiFile' => $filename,
+                'bayarStatus' => 0  // Menunggu verifikasi admin
+            ];
+
+            $updatePembayaran = $model->updateData($dataPembayaran, $this->id, $id);
+
+            if (!$updatePembayaran) {
+                // Jika gagal update, hapus file yang sudah diupload
+                $uploadedFile = FCPATH . 'uploads/bukti/' . $filename;
+                if (file_exists($uploadedFile)) {
+                    @unlink($uploadedFile);
+                }
+
+                return $this->response->setJSON([
+                    'res' => false,
+                    'msg' => 'Gagal menyimpan bukti bayar',
+                    'xname' => csrf_token(),
+                    'xhash' => csrf_hash()
+                ]);
+            }
+
+            return $this->response->setJSON([
+                'res' => 'success',
+                'msg' => 'Bukti pembayaran berhasil dikirim ke admin. Menunggu verifikasi.',
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'UploadKirimBukti exception: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'res' => false,
+                'msg' => 'Terjadi kesalahan: ' . $e->getMessage(),
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        }
+    }
+
+    /**
+     * Upload bukti bayar (PNG/JPG/PDF/image format) - OLD METHOD, kept for compatibility
      */
     public function uploadBukti()
     {
