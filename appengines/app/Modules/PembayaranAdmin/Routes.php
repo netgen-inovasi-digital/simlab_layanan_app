@@ -10,6 +10,7 @@ $routes->group('pembayaran_admin', ['namespace' => 'Modules\PembayaranAdmin\Cont
     $subroutes->get('dataList', 'PembayaranAdmin::dataList');
     $subroutes->post('uploadInvoice', 'PembayaranAdmin::uploadInvoice');
     $subroutes->post('kirimInvoice', 'PembayaranAdmin::kirimInvoice');
+    $subroutes->post('uploadKirimInvoice', 'PembayaranAdmin::uploadKirimInvoice');
     $subroutes->post('uploadBukti', 'PembayaranAdmin::uploadBukti');
     $subroutes->post('terimaVerifikasi', 'PembayaranAdmin::terimaVerifikasi');
     $subroutes->post('tolakVerifikasi', 'PembayaranAdmin::tolakVerifikasi');

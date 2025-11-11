@@ -12,9 +12,9 @@
                             <th show width="10%">No. Invoice</th>
                             <th show width="20%">Pemesan</th>
                             <th show width="12%">Total Biaya</th>
-                            <th show width="12%">File Invoice</th>
-                            <th show width="12%">Bukti Bayar</th>
-                            <th show width="12%">Status</th>
+                            <th show width="10%">File Invoice</th>
+                            <th show width="10%">Bukti Bayar</th>
+                            <th show width="17%">Status</th>
                             <th show width="12%" class="text-end">Aksi</th>
                         </tr>
                     </thead>
@@ -31,15 +31,28 @@
         opacity: 0.5;
         pointer-events: none;
     }
+
+    /* Style untuk badge status Ditolak yang bisa diklik */
+    .badge[onclick]:hover {
+        background-color: #9e202cff !important;
+        /* Warna merah lebih gelap saat hover */
+        transform: scale(1.01);
+    }
+
+    .badge[onclick]:active {
+        background-color: #a71d2a !important;
+        /* Warna merah lebih gelap lagi saat diklik */
+        transform: scale(0.98);
+    }
 </style>
 
-<!-- Modal Upload Bukti Bayar -->
+<!-- Modal Upload & Kirim Bukti Bayar (GABUNGAN) -->
 <div class="modal fade" id="modalUploadBukti" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header bg-primary text-white">
                 <h5 class="modal-title">
-                    <i class="bi bi-upload"></i> Upload Bukti Bayar
+                    <i class="bi bi-upload"></i> Upload & Kirim Bukti Bayar
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
@@ -63,46 +76,18 @@
                             accept=".pdf,.png,.jpg,.jpeg,.gif,.bmp,.webp" required>
                         <div class="form-text" id="bukti-selection">Format: PNG, JPG, PDF, dll. Maksimal 5MB</div>
                     </div>
-                </div>
 
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <i class="bi bi-x-circle"></i> Batal
-                    </button>
-                    <button type="button" class="btn btn-primary" id="btnUploadBukti" onclick="handleUploadBukti()">
-                        <i class="bi bi-cloud-upload"></i> Upload
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div><!-- Modal Kirim Bukti Pembayaran -->
-<div class="modal fade" id="modalKirimBukti" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-success text-white">
-                <h5 class="modal-title">
-                    <i class="bi bi-send"></i> Kirim Bukti Pembayaran
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <form id="formKirimBukti" method="post" onsubmit="return false;">
-                <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" class="txt_csrfname">
-                <input type="hidden" name="id" id="kirim_bukti_id">
-
-                <div class="modal-body">
                     <div class="alert alert-info">
                         <i class="bi bi-info-circle"></i>
-                        Setelah dikirim, bukti pembayaran akan diverifikasi oleh petugas lab.</strong>
+                        Bukti bayar akan langsung dikirim ke petugas untuk verifikasi.
                     </div>
-                    <p>Apakah Anda yakin ingin mengirim bukti pembayaran?</p>
                 </div>
 
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                         <i class="bi bi-x-circle"></i> Batal
                     </button>
-                    <button type="button" class="btn btn-success" id="btnKirimBukti" onclick="handleKirimBukti()">
+                    <button type="button" class="btn btn-primary" id="btnUploadBukti" onclick="handleUploadKirimBukti()">
                         <i class="bi bi-send"></i> Kirim
                     </button>
                 </div>
@@ -110,7 +95,6 @@
         </div>
     </div>
 </div>
-
 
 <!-- Modal Lihat Catatan Penolakan -->
 <div class="modal fade" id="modalLihatCatatan" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
@@ -125,7 +109,7 @@
             <div class="modal-body">
                 <div class="alert alert-warning mb-3">
                     <i class="bi bi-info-circle"></i>
-                    Bukti pembayaran Anda ditolak oleh admin. Silakan perbaiki dan upload ulang sesuai catatan berikut:
+                    Bukti pembayaran Anda ditolak oleh petugas. Silakan perbaiki dan upload ulang sesuai catatan berikut:
                 </div>
                 <div class="card">
                     <div class="card-body">
@@ -171,11 +155,11 @@
     }
 
     /**
-     * Buka modal upload bukti bayar
+     * Buka modal upload & kirim bukti bayar (GABUNGAN)
      */
     function uploadBukti(event) {
         const id = event.target.closest('.btn-action').parentElement.id;
-        console.log('Opening upload bukti modal for ID:', id);
+        console.log('Opening upload & kirim bukti modal for ID:', id);
 
         // Set ID ke input hidden (vanilla JS)
         document.getElementById('upload_bukti_id').value = id;
@@ -252,7 +236,104 @@
     })();
 
     /**
-     * Handle upload bukti bayar - PembayaranUser Module
+     * Handle Upload & Kirim Bukti Bayar (GABUNGAN) - langsung upload + kirim sekaligus
+     */
+    function handleUploadKirimBukti() {
+        console.log('=== PembayaranUser: handleUploadKirimBukti called ===');
+
+        // Validasi form menggunakan HTML5 validation
+        const form = document.getElementById('formUploadBukti');
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+
+        const formData = new FormData(form);
+        const btnUpload = document.getElementById('btnUploadBukti');
+
+        // Debug: cek FormData
+        console.log('Form ID:', document.getElementById('upload_bukti_id').value);
+
+        // Log file jika ada
+        const fileInput = document.getElementById('file_bukti');
+        if (fileInput && fileInput.files && fileInput.files[0]) {
+            console.log('File:', fileInput.files[0].name, fileInput.files[0].size, 'bytes');
+        }
+
+        // ✅ Ambil CSRF token TERBARU dari hidden input
+        const csrfInput = document.querySelector('input.txt_csrfname');
+        const csrfName = csrfInput ? csrfInput.getAttribute('name') : '<?= csrf_token() ?>';
+        const csrfHash = csrfInput ? csrfInput.value : '<?= csrf_hash() ?>';
+        formData.set(csrfName, csrfHash);
+        console.log('=== CSRF Token Added ===', csrfName, '=', csrfHash);
+
+        // Disable button dan ubah text
+        btnUpload.disabled = true;
+        btnUpload.innerHTML = '<i class="bi bi-hourglass-split"></i> Mengirim...';
+
+        console.log('=== PembayaranUser: Sending fetch request ===');
+
+        // Gunakan fetch() API - langsung kirim ke uploadKirimBukti
+        fetch('<?php echo site_url("pembayaran_user/uploadKirimBukti") ?>', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                console.log('=== PembayaranUser: Response received ===', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('=== PembayaranUser: Upload & Kirim response ===', data);
+
+                // ✅ Update CSRF token untuk request berikutnya
+                if (data.xname && data.xhash) {
+                    const allCsrfInputs = document.querySelectorAll('input.txt_csrfname');
+                    allCsrfInputs.forEach(input => {
+                        input.setAttribute('name', data.xname);
+                        input.value = data.xhash;
+                    });
+                    console.log('=== PembayaranUser: CSRF token updated ===');
+                }
+
+                // Reset button
+                btnUpload.disabled = false;
+                btnUpload.innerHTML = '<i class="bi bi-send"></i> Kirim ke Admin';
+
+                if (data.res === 'success' || data.res === true) {
+                    sayAlert('successModal', 'Berhasil', data.msg, 'success');
+
+                    // Tutup modal menggunakan Bootstrap API
+                    const modalElement = document.getElementById('modalUploadBukti');
+                    const modal = bootstrap.Modal.getInstance(modalElement);
+                    if (modal) {
+                        modal.hide();
+                    } else {
+                        bootstrap.Modal.getOrCreateInstance(modalElement).hide();
+                    }
+
+                    // Reload table
+                    if (typeof table !== 'undefined') {
+                        table.fetchData({
+                            reload: true
+                        });
+                    }
+                } else {
+                    sayAlert('errorModal', 'Gagal', data.msg, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('=== PembayaranUser: Upload & Kirim error ===', error);
+
+                // Reset button
+                btnUpload.disabled = false;
+                btnUpload.innerHTML = '<i class="bi bi-send"></i> Kirim ke Admin';
+
+                sayAlert('errorModal', 'Error', 'Terjadi kesalahan saat upload file: ' + error.message, 'error');
+            });
+    }
+
+    /**
+     * OLD FUNCTION - KEEP FOR BACKWARDS COMPATIBILITY (not used anymore)
      */
     function handleUploadBukti() {
         console.log('=== PembayaranUser: handleUploadBukti called ===');
@@ -349,7 +430,7 @@
     }
 
     /**
-     * Buka modal kirim bukti
+     * OLD FUNCTION - kirimBukti (not used anymore, kept for compatibility)
      */
     function kirimBukti(event) {
         // Cek apakah button disabled
