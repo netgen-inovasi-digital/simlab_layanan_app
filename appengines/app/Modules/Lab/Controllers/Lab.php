@@ -113,11 +113,10 @@ public function submit()
             ]);
         }
 
-        $res = $model->insertData($data);
+        // Insert with lastID = true to get the inserted ID
+        $insertedId = $model->insertData($data, true);
         
-        if ($res) {
-            $insertedId = $db->insertID();
-            
+        if ($insertedId) {
             // Insert tim members jika ada
             if (!empty($timMembers) && is_array($timMembers)) {
                 foreach ($timMembers as $userId) {
@@ -137,6 +136,9 @@ public function submit()
                     }
                 }
             }
+            $res = true;
+        } else {
+            $res = false;
         }
     } else {
         //cek duplikat update
@@ -188,6 +190,7 @@ public function submit()
 
     return $this->response->setJSON([
         'res' => $res,
+        'msg' => $res ? 'Data berhasil disimpan' : 'Gagal menyimpan data',
         'debug_info' => [
             'tim_received' => $timMembers,
             'tim_is_array' => is_array($timMembers),

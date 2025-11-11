@@ -262,11 +262,11 @@
                 allManajer = data.manajer || [];
                 
                 allPenyelia.forEach(user => {
-                    selectPenyelia.innerHTML += `<option value="${user.user_id}">${user.nama || user.username}</option>`;
+                    selectPenyelia.innerHTML += `<option value="${user.user_id}">${user.username}</option>`;
                 });
                 
                 allManajer.forEach(user => {
-                    selectManajer.innerHTML += `<option value="${user.user_id}">${user.nama || user.username}</option>`;
+                    selectManajer.innerHTML += `<option value="${user.user_id}">${user.username}</option>`;
                 });
 
                 // Load selected tim jika edit
@@ -363,7 +363,7 @@
                 tbody.innerHTML += `
                     <tr>
                         <td>${idx + 1}.</td>
-                        <td>${user.nama || user.username}</td>
+                        <td>${user.username}</td>
                         <td class="text-center">
                             <button type="button" class="btn btn-sm btn-danger btn-hapus-penyelia" data-id="${user.user_id}" title="Hapus">
                                 [ Hapus ]
@@ -386,7 +386,7 @@
                 tbody.innerHTML += `
                     <tr>
                         <td>${idx + 1}.</td>
-                        <td>${user.nama || user.username}</td>
+                        <td>${user.username}</td>
                         <td class="text-center">
                             <button type="button" class="btn btn-sm btn-danger btn-hapus-manajer" data-id="${user.user_id}" title="Hapus">
                                 [ Hapus ]
@@ -453,22 +453,27 @@
                     tbody.innerHTML = '';
                     
                     if (data.data.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Belum ada tim penanggung jawab</td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">Belum ada tim penanggung jawab</td></tr>';
                     } else {
-                        data.data.forEach((member, idx) => {
-                            // Determine if Manajer Teknis or Penyelia
-                            let isManajer = member.role_id == 4; // role_id 4 = Manajer Teknis
-                            let isPenyelia = member.role_id == 6; // role_id 6 = Penyelia
+                        // Group by role
+                        let manajerList = data.data.filter(m => m.role_id == 4);
+                        let penyeliaList = data.data.filter(m => m.role_id == 6);
+                        
+                        // Get max length to show all pairs
+                        let maxLength = Math.max(manajerList.length, penyeliaList.length);
+                        
+                        for (let i = 0; i < maxLength; i++) {
+                            let manajer = manajerList[i] ? manajerList[i].username : '';
+                            let penyelia = penyeliaList[i] ? penyeliaList[i].username : '';
                             
                             tbody.innerHTML += `
                                 <tr>
-                                    <td>${idx + 1}</td>
-                                    <td>${member.username}</td>
-                                    <td class="text-center">${isManajer ? '<i class="bi bi-check-circle-fill text-success"></i>' : '-'}</td>
-                                    <td class="text-center">${isPenyelia ? '<i class="bi bi-check-circle-fill text-success"></i>' : '-'}</td>
+                                    <td class="text-center">${i + 1}</td>
+                                    <td class="text-center">${manajer}</td>
+                                    <td class="text-center">${penyelia}</td>
                                 </tr>
                             `;
-                        });
+                        }
                     }
                     
                     $('#modalTim').modal('show');
@@ -679,7 +684,7 @@
                                 <thead class="table-light">
                                     <tr>
                                         <th width="10%">No.</th>
-                                        <th width="70%">Nama Penyelia</th>
+                                        <th width="70%">Username</th>
                                         <th width="20%" class="text-center">Aksi</th>
                                     </tr>
                                 </thead>
@@ -704,7 +709,7 @@
                                 <thead class="table-light">
                                     <tr>
                                         <th width="10%">No.</th>
-                                        <th width="70%">Nama Manajer Teknis</th>
+                                        <th width="70%">Username</th>
                                         <th width="20%" class="text-center">Aksi</th>
                                     </tr>
                                 </thead>
@@ -742,15 +747,14 @@
                 <table class="table table-hover">
                     <thead class="table-light">
                         <tr>
-                            <th width="8%">No</th>
-                            <th width="35%">Username</th>
-                            <th width="28%" class="text-center">Manajer Teknis</th>
-                            <th width="29%" class="text-center">Penyelia</th>
+                            <th width="10%" class="text-center">No</th>
+                            <th width="45%" class="text-center">Manajer Teknis</th>
+                            <th width="45%" class="text-center">Penyelia</th>
                         </tr>
                     </thead>
                     <tbody id="timTableBody">
                         <tr>
-                            <td colspan="4" class="text-center">
+                            <td colspan="3" class="text-center">
                                 <div class="spinner-border spinner-border-sm" role="status">
                                     <span class="visually-hidden">Loading...</span>
                                 </div>
