@@ -494,15 +494,12 @@ class HasilPengujian extends BaseController
         }
 
         // --- kirim & catat upload_by di t_files_lhus / files flag ---
-       // ... kode sebelumnya tetap sama sampai pengecekan missingCount ...
-// --- kirim & catat upload_by di t_files_lhus / files flag ---
 try {
     $db = \Config\Database::connect();
     // mulai transaksi eksplisit
     $db->transBegin();
 
-    // 1) Tandai detil milik user yang belum dikirim -> files = 0
-    // Gunakan raw SQL UPDATE ... JOIN ... karena Query Builder tidak andal untuk update dengan join
+    // 1) Ubah status files dari 3 (terunggah) menjadi 0 (terkirim ke manajer) untuk detil milik user ini
     $sql1 = "
         UPDATE t_layanan_detil d
         INNER JOIN r_tim rt ON rt.uji_kode = d.uji_kode
@@ -510,11 +507,24 @@ try {
         WHERE d.kode_layanan = ?
           AND rt.user_id = ?
           AND d.status_layanan = 1
-          AND (d.files IS NULL OR d.files IN (0,3))
+          AND d.files = 3
     ";
     $db->query($sql1, [$lnKode, $user_id]);
 
-    // 2) Catat terima_layanan_by untuk baris yang relevan (hanya user ini)
+    // 2) Update status di t_files_lhus menjadi 0 (terkirim)
+    $sql1b = "
+        UPDATE t_files_lhus lhus
+        INNER JOIN t_layanan_detil d ON d.kode = lhus.kode
+        INNER JOIN r_tim rt ON rt.uji_kode = d.uji_kode
+        SET lhus.status = 0
+        WHERE lhus.kode_layanan = ?
+          AND rt.user_id = ?
+          AND d.status_layanan = 1
+          AND lhus.status = 3
+    ";
+    $db->query($sql1b, [$lnKode, $user_id]);
+
+    // 3) Catat terima_layanan_by untuk baris yang relevan (hanya user ini)
     $sql2 = "
         UPDATE t_layanan_detil d
         INNER JOIN r_tim rt2 ON rt2.uji_kode = d.uji_kode
@@ -522,33 +532,44 @@ try {
         WHERE d.kode_layanan = ?
           AND rt2.user_id = ?
           AND d.status_layanan = 1
-          AND (d.files IS NULL OR d.files IN (0,3))
+          AND d.files = 0
     ";
     $db->query($sql2, [$user_id, $lnKode, $user_id]);
 
-    // 3) Cek apakah masih ada detil aktif tanpa file (sisa)
-    $sqlRemaining = "
-        SELECT d2.kode
-        FROM t_layanan_detil d2
-        WHERE d2.kode_layanan = ?
-          AND d2.status_layanan = 1
-          AND (d2.files IS NULL OR d2.files = '')
+    // 4) Cek apakah SEMUA layanan detil dalam invoice ini sudah terupload (tidak peduli user siapa)
+    // Menggunakan t_files_lhus dengan kode_layanan untuk mempermudah pengecekan
+    $sqlCheckAllUploaded = "
+        SELECT COUNT(*) as total_belum_upload
+        FROM t_layanan_detil d
+        LEFT JOIN t_files_lhus lhus ON lhus.kode = d.kode
+        WHERE d.kode_layanan = ?
+          AND d.status_layanan = 1
+          AND (lhus.file_id IS NULL OR lhus.file_lhus IS NULL OR lhus.file_lhus = '')
     ";
-    $remainingRows = $db->query($sqlRemaining, [$lnKode])->getResult();
-    $remainingCount = is_array($remainingRows) ? count($remainingRows) : 0;
-    $remainingCodes = [];
-    foreach ($remainingRows as $r) { if (isset($r->kode)) $remainingCodes[] = $r->kode; }
+    $resultCheck = $db->query($sqlCheckAllUploaded, [$lnKode])->getRow();
+    $totalBelumUpload = $resultCheck ? (int)$resultCheck->total_belum_upload : 0;
 
     $parentUpdated = false;
-    if ($remainingCount === 0) {
-        // update parent status -> gunakan table update sederhana
+    if ($totalBelumUpload === 0) {
+        // Semua layanan dalam invoice ini sudah terupload, update lnStatus ke 5
         $db->table('simlab_t_layanan')->where('lnKode', $lnKode)->update(['lnStatus' => 5]);
         $parentUpdated = true;
     }
 
+    // 5) Cek apakah masih ada detil milik user lain yang belum upload
+    $sqlRemainingForOthers = "
+        SELECT COUNT(*) as remaining
+        FROM t_layanan_detil d
+        LEFT JOIN t_files_lhus lhus ON lhus.kode = d.kode
+        WHERE d.kode_layanan = ?
+          AND d.status_layanan = 1
+          AND (lhus.file_id IS NULL OR lhus.file_lhus IS NULL OR lhus.file_lhus = '')
+    ";
+    $resultRemaining = $db->query($sqlRemainingForOthers, [$lnKode])->getRow();
+    $remainingCount = $resultRemaining ? (int)$resultRemaining->remaining : 0;
+
     // commit / complete
     if ($db->transStatus() === false) {
-        // rollback otomatis jika error; ambil pesan db
         $db->transRollback();
         $dberr = $db->error();
         return $this->response->setJSON([
@@ -565,10 +586,9 @@ try {
     if ($remainingCount > 0) {
         return $this->response->setJSON([
             'res' => true,
-            'msg' => 'Sebagian layanan sudah dikirim, masih ada ' . $remainingCount . ' layanan aktif yang perlu diaccc.',
+            'msg' => 'LHUS Anda berhasil dikirim ke manajer. Masih ada ' . $remainingCount . ' layanan lain yang belum terupload.',
             'waiting_others' => true,
             'pending_total' => $remainingCount,
-            'missing_detKode' => $remainingCodes,
             'parent_updated' => false,
             'xname' => csrf_token(),
             'xhash' => csrf_hash()
@@ -577,18 +597,17 @@ try {
 
     return $this->response->setJSON([
         'res' => true,
-        'msg' => 'Lhus terkirim ke manajer',
+        'msg' => 'Semua LHUS dalam invoice ini sudah lengkap dan terkirim ke manajer teknis!',
         'waiting_others' => false,
         'parent_updated' => $parentUpdated,
         'xname' => csrf_token(),
         'xhash' => csrf_hash()
     ]);
 } catch (\Throwable $e) {
-    // rollback bila belum ter-rollback
-    if ($db->transStatus() !== false) {
+    if (isset($db) && $db->transStatus() !== false) {
         $db->transRollback();
     }
-    $dberr = $db->error();
+    $dberr = isset($db) ? $db->error() : [];
     return $this->response->setJSON([
         'res' => 'error',
         'msg' => 'Error saat update: ' . $e->getMessage(),
@@ -692,22 +711,49 @@ try {
 
         try {
             if (!empty($detKode)) {
+                // Update status files ke 3 (terunggah, belum dikirim)
                 $ok = $db->table('t_layanan_detil')
                     ->where('kode', $detKode)
                     ->update(['files' => 3]);
 
                 if ($ok) {
-                    // insert t_files_lhus record
-                    $db->table('t_files_lhus')->insert([
-                        'kode' => $detKode,
-                        'file_lhus' => $filename,
-                        'upload_by' => $user_id,
-                        'status' => 3
-                    ]);
+                    // Cek apakah sudah ada record di t_files_lhus untuk kode ini
+                    $existingFile = $db->table('t_files_lhus')
+                        ->where('kode', $detKode)
+                        ->get()->getRow();
+
+                    if ($existingFile) {
+                        // Update record yang sudah ada
+                        $db->table('t_files_lhus')
+                            ->where('kode', $detKode)
+                            ->update([
+                                'file_lhus' => $filename,
+                                'upload_by' => $user_id,
+                                'status' => 3,  // status 3 = terunggah (belum dikirim)
+                                'kode_layanan' => $lnKode
+                            ]);
+                        
+                        // Hapus file lama jika ada
+                        if (!empty($existingFile->file_lhus) && $existingFile->file_lhus !== $filename) {
+                            $oldFilePath = FCPATH . 'uploads/lhus/' . $existingFile->file_lhus;
+                            if (is_file($oldFilePath)) {
+                                @unlink($oldFilePath);
+                            }
+                        }
+                    } else {
+                        // Insert record baru jika belum ada
+                        $db->table('t_files_lhus')->insert([
+                            'kode' => $detKode,
+                            'kode_layanan' => $lnKode,
+                            'file_lhus' => $filename,
+                            'upload_by' => $user_id,
+                            'status' => 3  // status 3 = terunggah (belum dikirim)
+                        ]);
+                    }
 
                     return $this->response->setJSON([
                         'res' => true,
-                        'msg' => 'File LHUS berhasil diunggah ',
+                        'msg' => 'File LHUS berhasil diunggah (status: terunggah)',
                         'url' => base_url('uploads/lhus/' . $filename),
                         'detKode' => $detKode,
                         'xname' => csrf_token(),
@@ -726,6 +772,7 @@ try {
                     ]);
                 }
             } else {
+                // Update status files ke 3 untuk semua detil yang relevan dengan user
                 $updateBuilder = $db->table('t_layanan_detil as d');
                 $updateBuilder->join('r_tim as t', 't.uji_kode = d.uji_kode', 'inner');
                 $updateBuilder->where('d.kode_layanan', $lnKode);
@@ -734,7 +781,7 @@ try {
                 $ok = $updateBuilder->update(['d.files' => 3]);
 
                 if ($ok) {
-                    // simpan t_files_lhus untuk setiap detil yang relevan
+                    // Simpan t_files_lhus untuk setiap detil yang relevan
                     $detRows = $db->table('t_layanan_detil as d2')
                         ->join('r_tim as t2', 't2.uji_kode = d2.uji_kode', 'inner')
                         ->where('d2.kode_layanan', $lnKode)
@@ -745,15 +792,16 @@ try {
                     foreach ($detRows as $dr) {
                         $db->table('t_files_lhus')->insert([
                             'kode' => $dr->kode,
+                            'kode_layanan' => $lnKode,
                             'file_lhus' => $filename,
                             'upload_by' => $user_id,
-                            'status' => 3
+                            'status' => 3  // status 3 = terunggah (belum dikirim)
                         ]);
                     }
 
                     return $this->response->setJSON([
                         'res' => true,
-                        'msg' => 'File LHUS berhasil diunggah untuk layanan terkait Anda',
+                        'msg' => 'File LHUS berhasil diunggah untuk layanan terkait Anda (status: terunggah)',
                         'url' => base_url('uploads/lhus/' . $filename),
                         'xname' => csrf_token(),
                         'xhash' => csrf_hash()
@@ -804,7 +852,7 @@ try {
     {
         $db = \Config\Database::connect();
 
-        // PRIORITAS: ada detail milik user yang ditolak (files = 2)
+        // PRIORITAS 1: ada detail milik user yang ditolak (files = 2)
         try {
             $checkReject = $db->table('t_layanan_detil')
                 ->select('1')
@@ -821,60 +869,63 @@ try {
             }
         } catch (\Throwable $e) {}
 
-        // CEK PENDING: semua detil milik user sudah upload file?
-        $pendingCount = 0;
+        // PRIORITAS 2: Cek apakah ada yang statusnya 3 (terunggah tapi belum dikirim)
         try {
-            $rows = $db->table('t_layanan_detil as d')
-                ->select('d.kode, d.files')
+            $checkUploaded = $db->table('t_layanan_detil as d')
+                ->select('1')
                 ->join('r_tim rt', 'rt.uji_kode = d.uji_kode', 'inner')
                 ->where('d.kode_layanan', $lnKode)
                 ->where('d.status_layanan', 1)
                 ->where('rt.user_id', $userId)
-                ->get()->getResult();
+                ->where('d.files', 3)
+                ->limit(1)
+                ->get()->getRow();
 
-            foreach ($rows as $dr) {
-                $hasFile = false;
-                if (isset($dr->files) && (int)$dr->files > 0) {
-                    $hasFile = true;
-                } else {
-                    $fileRow = $db->table('t_files_lhus')->where('kode', $dr->kode)->limit(1)->get()->getRow();
-                    if ($fileRow && !empty($fileRow->file_lhus)) $hasFile = true;
-                }
-                if (!$hasFile) $pendingCount++;
+            if ($checkUploaded) {
+                return '<span class="badge bg-info">Terunggah (belum dikirim)</span>';
             }
-        } catch (\Throwable $e) {
-            $pendingCount = -1;
-        }
+        } catch (\Throwable $e) {}
 
-        if ($pendingCount === 0) {
-            try {
-                $totalUserActive = (int) $db->table('t_layanan_detil as d')
+        // PRIORITAS 3: Cek apakah sudah diterima semua (files = 1)
+        try {
+            $totalUserActive = (int) $db->table('t_layanan_detil as d')
+                ->join('r_tim rt', 'rt.uji_kode = d.uji_kode', 'inner')
+                ->where('d.kode_layanan', $lnKode)
+                ->where('d.status_layanan', 1)
+                ->where('rt.user_id', $userId)
+                ->countAllResults();
+
+            if ($totalUserActive > 0) {
+                $acceptedCount = (int) $db->table('t_layanan_detil as d')
                     ->join('r_tim rt', 'rt.uji_kode = d.uji_kode', 'inner')
                     ->where('d.kode_layanan', $lnKode)
                     ->where('d.status_layanan', 1)
                     ->where('rt.user_id', $userId)
+                    ->where('d.files', 1)
                     ->countAllResults();
 
-                if ($totalUserActive > 0) {
-                    $acceptedCount = (int) $db->table('t_layanan_detil as d')
-                        ->join('r_tim rt', 'rt.uji_kode = d.uji_kode', 'inner')
-                        ->where('d.kode_layanan', $lnKode)
-                        ->where('d.status_layanan', 1)
-                        ->where('rt.user_id', $userId)
-                        ->where('d.files', 1)
-                        ->countAllResults();
-
-                    if ($acceptedCount === $totalUserActive) {
-                        return '<span class="badge bg-success">LHUS diterima</span>';
-                    }
+                if ($acceptedCount === $totalUserActive) {
+                    return '<span class="badge bg-success">LHUS diterima</span>';
                 }
-
-                return '<span class="badge bg-primary">LHUS sedang diverifikasi manajer</span>';
-
-            } catch (\Throwable $e) {
-                return '<span class="badge bg-primary">LHUS sedang diverifikasi manajer</span>';
             }
-        }
+        } catch (\Throwable $e) {}
+
+        // PRIORITAS 4: Cek apakah sudah terkirim ke manajer (files = 0)
+        try {
+            $checkSent = $db->table('t_layanan_detil as d')
+                ->select('1')
+                ->join('r_tim rt', 'rt.uji_kode = d.uji_kode', 'inner')
+                ->where('d.kode_layanan', $lnKode)
+                ->where('d.status_layanan', 1)
+                ->where('rt.user_id', $userId)
+                ->where('d.files', 0)
+                ->limit(1)
+                ->get()->getRow();
+
+            if ($checkSent) {
+                return '<span class="badge bg-primary">Terkirim ke manajer teknis</span>';
+            }
+        } catch (\Throwable $e) {}
 
         // Fallback ke mapping lnStatus
         return $this->formatStatus((int)$lnStatus);

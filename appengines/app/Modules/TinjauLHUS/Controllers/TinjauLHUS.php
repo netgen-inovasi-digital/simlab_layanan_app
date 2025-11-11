@@ -59,18 +59,20 @@ class TinjauLHUS extends BaseController
         $db   = \Config\Database::connect();
         $data = [];
 
-        // 1) det aktif relevan dengan user
-        $detRows = $db->table('simlab_t_layanan_detil as d')
-            ->select('d.detLnKode')
-            ->groupStart()
-                ->where('d.detManajerTeknis', $user_id)
-                ->orWhere('d.detPenyelia', $user_id)
-            ->groupEnd()
-            ->where('d.detStatus', 1)
+        // 1) det aktif relevan dengan user (menggunakan tabel baru t_layanan_detil dan r_tim)
+        $detRows = $db->table('t_layanan_detil as d')
+            ->distinct()
+            ->select('d.kode_layanan')
+            ->join('r_tim rt', 'rt.uji_kode = d.uji_kode', 'inner')
+            ->where('rt.user_id', $user_id)
+            ->where('d.status_layanan', 1)
             ->get()->getResult();
 
         $lnKodeList = [];
-        foreach ($detRows as $r) $lnKodeList[] = (int)(is_object($r) ? $r->detLnKode : $r['detLnKode']);
+        foreach ($detRows as $r) {
+            $val = is_object($r) ? $r->kode_layanan : $r['kode_layanan'];
+            if ($val) $lnKodeList[] = (int)$val;
+        }
         $lnKodeList = array_values(array_unique(array_filter($lnKodeList)));
 
         if (empty($lnKodeList)) {
@@ -87,21 +89,22 @@ class TinjauLHUS extends BaseController
             ->get()->getResult();
 
         // 3) Ringkasan global dan subset user (det aktif saja)
+        // Menggunakan files status dari t_layanan_detil: 0=terkirim, 1=diterima, 2=ditolak, 3=terunggah
         $statusSummary = [];
-        $rowsG = $db->table('simlab_t_layanan_detil')
+        $rowsG = $db->table('t_layanan_detil')
             ->select("
-                detLnKode,
+                kode_layanan,
                 COUNT(*) AS total,
-                SUM(CASE WHEN detStatusLHUS = 1 THEN 1 ELSE 0 END) AS cnt1,
-                SUM(CASE WHEN detStatusLHUS = 2 THEN 1 ELSE 0 END) AS cnt2,
-                SUM(CASE WHEN detStatusLHUS = 0 OR detStatusLHUS IS NULL THEN 1 ELSE 0 END) AS cnt0
+                SUM(CASE WHEN files = 1 THEN 1 ELSE 0 END) AS cnt1,
+                SUM(CASE WHEN files = 2 THEN 1 ELSE 0 END) AS cnt2,
+                SUM(CASE WHEN files = 0 OR files = 3 THEN 1 ELSE 0 END) AS cnt0
             ", false)
-            ->whereIn('detLnKode', $lnKodeList)
-            ->where('detStatus', 1)
-            ->groupBy('detLnKode')
+            ->whereIn('kode_layanan', $lnKodeList)
+            ->where('status_layanan', 1)
+            ->groupBy('kode_layanan')
             ->get()->getResultArray();
         foreach ($rowsG as $sr) {
-            $statusSummary[(int)$sr['detLnKode']] = [
+            $statusSummary[(int)$sr['kode_layanan']] = [
                 'total' => (int)$sr['total'],
                 'cnt1'  => (int)$sr['cnt1'],
                 'cnt2'  => (int)$sr['cnt2'],
@@ -110,24 +113,22 @@ class TinjauLHUS extends BaseController
         }
 
         $userSummary = [];
-        $rowsU = $db->table('simlab_t_layanan_detil')
+        $rowsU = $db->table('t_layanan_detil as d')
             ->select("
-                detLnKode,
+                d.kode_layanan,
                 COUNT(*) AS total,
-                SUM(CASE WHEN detStatusLHUS = 1 THEN 1 ELSE 0 END) AS cnt1,
-                SUM(CASE WHEN detStatusLHUS = 2 THEN 1 ELSE 0 END) AS cnt2,
-                SUM(CASE WHEN detStatusLHUS = 0 OR detStatusLHUS IS NULL THEN 1 ELSE 0 END) AS cnt0
+                SUM(CASE WHEN d.files = 1 THEN 1 ELSE 0 END) AS cnt1,
+                SUM(CASE WHEN d.files = 2 THEN 1 ELSE 0 END) AS cnt2,
+                SUM(CASE WHEN d.files = 0 OR d.files = 3 THEN 1 ELSE 0 END) AS cnt0
             ", false)
-            ->whereIn('detLnKode', $lnKodeList)
-            ->where('detStatus', 1)
-            ->groupStart()
-                ->where('detManajerTeknis', $user_id)
-                ->orWhere('detPenyelia', $user_id)
-            ->groupEnd()
-            ->groupBy('detLnKode')
+            ->join('r_tim rt', 'rt.uji_kode = d.uji_kode', 'inner')
+            ->whereIn('d.kode_layanan', $lnKodeList)
+            ->where('d.status_layanan', 1)
+            ->where('rt.user_id', $user_id)
+            ->groupBy('d.kode_layanan')
             ->get()->getResultArray();
         foreach ($rowsU as $sr) {
-            $userSummary[(int)$sr['detLnKode']] = [
+            $userSummary[(int)$sr['kode_layanan']] = [
                 'total' => (int)$sr['total'],
                 'cnt1'  => (int)$sr['cnt1'],
                 'cnt2'  => (int)$sr['cnt2'],
@@ -210,70 +211,86 @@ class TinjauLHUS extends BaseController
         $session = session();
         $user_id = (int)$session->get('id_user');
 
-        $model = new MyModel('simlab_t_layanan_detil d');
-        $joins = [
-            'simlab_r_layanan_pengujian lp' => 'lp.ujiKode = d.detUjiKode',
-            'simlab_r_parameter p'          => 'p.paraKode = lp.ujiParaKode',
-            'simlab_r_alat a'               => 'a.alatKode = lp.ujiAlatKode',
-        ];
-        $where   = ['d.detLnKode' => $lnKode];
-        $select  = "
-            d.detKode,
-            d.detUjiKode,
-            lp.ujiLayanan,
-            p.paraNama,
-            a.alatNama,
-            d.detJumlah,
-            d.detBiaya,
-            d.detKeterangan,
-            d.detil_LHUS,
-            d.detStatusLHUS,
-            d.detKetLhus,
-            d.detManajerTeknis,
-            d.detPenyelia,
-            d.detStatus
-        ";
+        $db = \Config\Database::connect();
+        
+        // Query dengan struktur baru: t_layanan_detil + r_tim + t_files_lhus
+        // Gunakan subquery untuk mengambil hanya 1 file terbaru per kode (yang terakhir diupload)
+        $builder = $db->table('t_layanan_detil as d');
+        $builder->select("
+            d.kode,
+            d.uji_kode,
+            d.kode_layanan,
+            d.nama_layanan,
+            d.jumlah,
+            d.biaya,
+            d.catatan_pelanggan,
+            d.catatan_manajer,
+            d.files,
+            d.status_layanan,
+            lhus.file_lhus,
+            lhus.catatan as ket_lhus,
+            lhus.validasi_by
+        ", false);
+        
+        $builder->join('r_tim rt', 'rt.uji_kode = d.uji_kode', 'inner');
+        
+        // Subquery untuk ambil hanya 1 file terbaru per kode
+        // Jika ada multiple files untuk 1 kode, ambil yang file_id paling besar (terakhir diupload)
+        $builder->join(
+            '(SELECT lhus1.* FROM t_files_lhus lhus1 
+              INNER JOIN (
+                SELECT kode, MAX(file_id) as max_file_id 
+                FROM t_files_lhus 
+                GROUP BY kode
+              ) lhus2 ON lhus1.kode = lhus2.kode AND lhus1.file_id = lhus2.max_file_id
+            ) lhus', 
+            'lhus.kode = d.kode', 
+            'left'
+        );
+        
+        $builder->where('d.kode_layanan', $lnKode);
+        $builder->where('d.status_layanan', 1);
+        $builder->where('rt.user_id', $user_id);
+        $builder->orderBy('d.kode', 'ASC');
 
         try {
-            $list = $model->getAllDataWithJoinWhereOrder($joins, $where, ['d.detUjiKode' => 'ASC'], $select);
+            $list = $builder->get()->getResult();
         } catch (\Throwable $e) {
-            return $this->response->setJSON(['items' => []]);
+            return $this->response->setJSON(['items' => [], 'error' => $e->getMessage()]);
         }
 
         $data = [];
         $no   = 1;
 
         foreach ($list as $row) {
-            if ((int)($row->detStatus ?? 0) !== 1) continue; // hanya detil aktif
+            $layanan = $row->nama_layanan ?? '-';
+            $jumlah = (int)($row->jumlah ?? 0);
+            $ket    = $row->catatan_pelanggan ?: '-';
 
-            $isRelevant = false;
-            if ((int)$row->detManajerTeknis === $user_id) $isRelevant = true;
-            if ((int)$row->detPenyelia      === $user_id) $isRelevant = true;
-            if (!$isRelevant) continue;
-
-            $layanan = $row->ujiLayanan ?? '-';
-            if (!empty($row->paraNama)) $layanan .= ' (' . $row->paraNama . ')';
-            $jumlah = (int)($row->detJumlah ?? 0);
-            $ket    = $row->detKeterangan ?: '-';
-
-            // Deteksi file LHUS
+            // Deteksi file LHUS dari t_files_lhus
             $hasFile = false; $fileUrl = null;
-            $candidates = ['detil_LHUS','detil_LHU','detFile','detLhus','detFileLhus','det_file_lhus','detil_lhus'];
-            foreach ($candidates as $cf) {
-                if (!empty($row->{$cf})) {
-                    $raw = trim((string)$row->{$cf});
-                    if (preg_match('/^https?:\/\//i', $raw)) { $hasFile = true; $fileUrl = $raw; break; }
+            if (!empty($row->file_lhus)) {
+                $raw = trim((string)$row->file_lhus);
+                if (preg_match('/^https?:\/\//i', $raw)) {
+                    $hasFile = true; 
+                    $fileUrl = $raw;
+                } else {
                     $possiblePath = FCPATH . 'uploads/lhus/' . ltrim($raw, '/');
-                    if (is_file($possiblePath)) { $hasFile = true; $fileUrl = base_url('uploads/lhus/' . ltrim($raw, '/')); break; }
+                    if (is_file($possiblePath)) {
+                        $hasFile = true;
+                        $fileUrl = base_url('uploads/lhus/' . ltrim($raw, '/'));
+                    }
                 }
             }
+            
             $lhusHtml = $hasFile && $fileUrl
                 ? '<button type="button" class="btn btn-sm btn-outline-primary" onclick="window.open(\'' . esc($fileUrl) . '\', \'_blank\')"><i class="bi bi-eye"></i> Lihat</button>'
                 : '<span class="text-muted">-</span>';
 
-            $detKode    = (int)($row->detKode ?? 0);
-            $statusLhus = isset($row->detStatusLHUS) ? (int)$row->detStatusLHUS : 0; // 0 pending, 1 diterima, 2 ditolak
-            $ketLhusVal = $row->detKetLhus ?? '';
+            $detKode    = (int)($row->kode ?? 0);
+            // Status LHUS: 0=terkirim (pending review), 1=diterima, 2=ditolak, 3=terunggah (belum kirim)
+            $statusLhus = isset($row->files) ? (int)$row->files : 0;
+            $ketLhusVal = $row->ket_lhus ?? '';
 
             $textareaLhus =
                 '<textarea id="detketlhus_' . $detKode . '" class="form-control detketlhus-input" '.
@@ -282,8 +299,11 @@ class TinjauLHUS extends BaseController
                 htmlspecialchars($ketLhusVal, ENT_QUOTES, 'UTF-8') .
                 '</textarea>';
 
+            // Status badge: 0/3=pending, 1=diterima, 2=ditolak
             if     ($statusLhus === 1) $statusBadge = '<span class="badge bg-success">LHUS Diterima</span>';
             elseif ($statusLhus === 2) $statusBadge = '<span class="badge bg-danger">LHUS Ditolak</span>';
+            elseif ($statusLhus === 3) $statusBadge = '<span class="badge bg-info">Terunggah (Belum Kirim)</span>';
+            elseif ($statusLhus === 0) $statusBadge = '<span class="badge bg-warning">Terkirim (Menunggu Review)</span>';
             else                       $statusBadge = '<span class="badge bg-secondary">Belum Diproses</span>';
 
             $canAccept = ($statusLhus !== 1);
@@ -313,7 +333,7 @@ class TinjauLHUS extends BaseController
         ]);
     }
 
-    // Simpan detKetLhus (JSON)
+    // Simpan detKetLhus (JSON) - Update ke t_files_lhus.catatan
     public function saveDetKetLhus()
     {
         $raw   = file_get_contents('php://input');
@@ -333,9 +353,11 @@ class TinjauLHUS extends BaseController
 
         try {
             $db  = \Config\Database::connect();
-            $res = $db->table('simlab_t_layanan_detil')
-                ->where('detKode', $detKode)
-                ->update(['detKetLhus' => $ket]);
+            
+            // Update catatan di t_files_lhus (bukan di t_layanan_detil)
+            $res = $db->table('t_files_lhus')
+                ->where('kode', $detKode)
+                ->update(['catatan' => $ket]);
 
             $ok = $db->affectedRows() > 0 || $res === true;
             return $this->response->setJSON([
@@ -381,7 +403,7 @@ class TinjauLHUS extends BaseController
     }
     $new = $map[$aksi];
 
-    // --- ADD: ambil user yang sedang login untuk dicatat sebagai detAccLHUS
+    // Ambil user yang sedang login untuk dicatat sebagai validasi_by
     $session   = session();
     $accUserId = (int) ($session->get('id_user') ?? 0);
     if ($accUserId <= 0) {
@@ -397,10 +419,10 @@ class TinjauLHUS extends BaseController
         $db = \Config\Database::connect();
         $db->transStart();
 
-        // Ambil LN parent dari detil ini
-        $detRow = $db->table('simlab_t_layanan_detil')
-            ->select('detLnKode')
-            ->where('detKode', $detKode)
+        // Ambil LN parent dari detil ini (menggunakan t_layanan_detil baru)
+        $detRow = $db->table('t_layanan_detil')
+            ->select('kode_layanan')
+            ->where('kode', $detKode)
             ->get()->getRow();
 
         if (!$detRow) {
@@ -413,23 +435,28 @@ class TinjauLHUS extends BaseController
             ]);
         }
 
-        $lnKode = (int)$detRow->detLnKode;
+        $lnKode = (int)$detRow->kode_layanan;
 
-        // --- UPDATE + catat siapa yang menilai LHUS
-        $db->table('simlab_t_layanan_detil')
-            ->where('detKode', $detKode)
+        // UPDATE status files di t_layanan_detil + catat siapa yang menilai di t_files_lhus
+        $db->table('t_layanan_detil')
+            ->where('kode', $detKode)
+            ->update(['files' => $new]);
+
+        // Update validasi_by di t_files_lhus
+        $db->table('t_files_lhus')
+            ->where('kode', $detKode)
             ->update([
-                'detStatusLHUS' => $new,
-                'detAccLHUS'    => $accUserId   // << catat evaluator
+                'status' => $new,
+                'validasi_by' => $accUserId
             ]);
 
-        // Auto set lnStatus = 6 jika semua det aktif sudah diterima
+        // Auto set lnStatus = 6 jika semua det aktif sudah diterima (files = 1)
         $rowG = $db->query("
             SELECT 
                 COUNT(*) AS total,
-                SUM(CASE WHEN detStatusLHUS = 1 THEN 1 ELSE 0 END) AS cnt1
-            FROM simlab_t_layanan_detil
-            WHERE detLnKode = ? AND detStatus = 1
+                SUM(CASE WHEN files = 1 THEN 1 ELSE 0 END) AS cnt1
+            FROM t_layanan_detil
+            WHERE kode_layanan = ? AND status_layanan = 1
         ", [$lnKode])->getRowArray();
 
         $gTotal = (int)($rowG['total'] ?? 0);
@@ -499,14 +526,14 @@ class TinjauLHUS extends BaseController
                 $session = session();
                 $user_id = (int) $session->get('id_user');
 
-                // Ringkasan global (det aktif)
+                // Ringkasan global (det aktif) - menggunakan t_layanan_detil.files
                 $rowG = $db->query("
                     SELECT 
                         COUNT(*) AS total,
-                        SUM(CASE WHEN detStatusLHUS = 1 THEN 1 ELSE 0 END) AS cnt1,
-                        SUM(CASE WHEN detStatusLHUS = 0 OR detStatusLHUS IS NULL THEN 1 ELSE 0 END) AS cnt0
-                    FROM simlab_t_layanan_detil
-                    WHERE detLnKode = ? AND detStatus = 1
+                        SUM(CASE WHEN files = 1 THEN 1 ELSE 0 END) AS cnt1,
+                        SUM(CASE WHEN files = 0 OR files = 3 THEN 1 ELSE 0 END) AS cnt0
+                    FROM t_layanan_detil
+                    WHERE kode_layanan = ? AND status_layanan = 1
                 ", [$lnKode])->getRowArray();
 
                 $gTotal = (int)($rowG['total'] ?? 0);
@@ -514,17 +541,16 @@ class TinjauLHUS extends BaseController
                 $gCnt0  = (int)($rowG['cnt0']  ?? 0);
 
                 // Ringkasan subset user (det aktif)
-                $rowU = $db->table('simlab_t_layanan_detil')
+                $rowU = $db->table('t_layanan_detil as d')
                     ->select("
                         COUNT(*) AS total,
-                        SUM(CASE WHEN detStatusLHUS = 1 THEN 1 ELSE 0 END) AS cnt1,
-                        SUM(CASE WHEN detStatusLHUS = 0 OR detStatusLHUS IS NULL THEN 1 ELSE 0 END) AS cnt0
+                        SUM(CASE WHEN d.files = 1 THEN 1 ELSE 0 END) AS cnt1,
+                        SUM(CASE WHEN d.files = 0 OR d.files = 3 THEN 1 ELSE 0 END) AS cnt0
                     ", false)
-                    ->where(['detLnKode' => $lnKode, 'detStatus' => 1])
-                    ->groupStart()
-                        ->where('detManajerTeknis', $user_id)
-                        ->orWhere('detPenyelia', $user_id)
-                    ->groupEnd()
+                    ->join('r_tim rt', 'rt.uji_kode = d.uji_kode', 'inner')
+                    ->where('d.kode_layanan', $lnKode)
+                    ->where('d.status_layanan', 1)
+                    ->where('rt.user_id', $user_id)
                     ->get()->getRowArray();
 
                 $uTotal = (int)($rowU['total'] ?? 0);
