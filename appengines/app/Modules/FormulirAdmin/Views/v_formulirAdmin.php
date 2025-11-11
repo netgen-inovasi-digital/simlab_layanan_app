@@ -268,7 +268,7 @@
     }
 
     function buildKerLayananUrl(jen) {
-    var base = '<?= site_url("formuliradmin/keranjangDataListLayanan") ?>';
+    var base = '<?= site_url("keranjangadmin/dataListLayanan") ?>';
     return buildApiUrlWithOptionalParam(base, (jen && jen !== '') ? 'jenKode' : '', jen || '');
 }
 
@@ -567,7 +567,7 @@ function deleteItemFromPreview(eOrEl) {
     }
 
     // Kirim POST ke endpoint keranjangDelete (sesuai routes yang ada)
-    fetch('<?= site_url("formuliradmin/keranjangDelete/") ?>' + idx, {
+    fetch('<?= site_url("keranjangadmin/delete/") ?>' + idx, {
         method: 'POST',
         body: form,
         headers: { 'X-Requested-With': 'XMLHttpRequest' }
@@ -579,7 +579,7 @@ function deleteItemFromPreview(eOrEl) {
             document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => input.value = data.xhash);
         }
 
-        if (data.res === true) {
+        if (data.success === true) {
             if (typeof table !== 'undefined' && typeof table.fetchData === 'function')
                 table.fetchData({ reload: true });
 
@@ -600,10 +600,10 @@ function deleteItemFromPreview(eOrEl) {
             }
 
             if (typeof sayAlert === 'function')
-                sayAlert('successModal', 'Sukses', data.msg || 'Item berhasil dihapus.', 'success');
+                sayAlert('successModal', 'Sukses', data.message || 'Item berhasil dihapus.', 'success');
         } else {
             if (typeof sayAlert === 'function')
-                sayAlert('errorModal', 'Gagal', data.msg || 'Hapus item gagal.', 'warning');
+                sayAlert('errorModal', 'Gagal', data.message || 'Hapus item gagal.', 'warning');
         }
     })
     .catch(err => {
@@ -684,7 +684,7 @@ function loadDetail(id) {
     if (modalKeranjangEl) {
         modalKeranjangEl.addEventListener('shown.bs.modal', function () {
             // init layanan table
-            const layananApi = buildApiUrlWithOptionalParam('<?= site_url("formuliradmin/keranjangDataListLayanan") ?>', '', '');
+            const layananApi = buildApiUrlWithOptionalParam('<?= site_url("keranjangadmin/dataListLayanan") ?>', '', '');
             if (!ker_layananTable) {
                 ker_layananTable = createModal({
                     apiUrl: normalizeDoubleQuestion(layananApi),
@@ -712,7 +712,7 @@ function loadDetail(id) {
             }
 
             // init preview keranjang
-            const previewApi = '<?= site_url("formuliradmin/keranjangDatalist") ?>';
+            const previewApi = '<?= site_url("keranjangadmin/datalist") ?>';
             if (!ker_previewKeranjangTable) {
                 ker_previewKeranjangTable = createModal({
                     apiUrl: normalizeDoubleQuestion(previewApi),
@@ -805,7 +805,7 @@ function getCsrfTokenFromPage() {
     if (csrf && csrf.name && csrf.value) form.append(csrf.name, csrf.value);
 
     try {
-      const res = await fetch('<?= site_url("formuliradmin/keranjangSetPelanggan") ?>', {
+      const res = await fetch('<?= site_url("keranjangadmin/setPelanggan") ?>', {
         method: 'POST',
         body: form,
         headers: { 'X-Requested-With': 'XMLHttpRequest' }
@@ -892,7 +892,7 @@ function getCsrfTokenFromPage() {
 
     // ======= update counter & tampilkan pelanggan jika ada =======
     function ker_updateKeranjangCounter() {
-        fetch('<?= site_url("formuliradmin/keranjangDatalist") ?>')
+        fetch('<?= site_url("keranjangadmin/datalist") ?>')
             .then(res => res.json())
             .then(data => {
                 const jumlahItem = data.items ? data.items.length : 0;
@@ -944,7 +944,7 @@ function getCsrfTokenFromPage() {
 
     // ======= hitung grand total (patch) =======
 function ker_calculateGrandTotal() {
-    fetch('<?= site_url("formuliradmin/keranjangDatalist") ?>')
+    fetch('<?= site_url("keranjangadmin/datalist") ?>')
         .then(res => res.json())
         .then(data => {
             // Cari elemen total; dukung dua id (backwards compatibility)
@@ -957,16 +957,22 @@ function ker_calculateGrandTotal() {
             if (data.items && data.items.length > 0) {
                 let grandTotal = 0;
                 data.items.forEach(item => {
-                    // Struktur item: [layanan, alat, biayaTampil, jumlah, diskon, total, keterangan, aksi]
-                    const totalCell = item[5]; // <-- kolom 'Total' ada di index 5
-                    if (!totalCell) return;
+                    // Struktur item: [parameter, alat, diskon, biayaSatuan, jumlah, keterangan, aksi+hiddenTotal]
+                    // Index 6 berisi: aksi button + <span class="d-none row-total">Rp XXX</span>
+                    const aksiCell = item[6]; // <-- kolom aksi + hidden total
+                    if (!aksiCell) return;
 
-                    // totalCell bisa berisi HTML seperti "Rp 1.000.000" atau "<span>Rp 1.000</span>"
-                    // ekstrak angka
-                    const text = String(totalCell).replace(/<[^>]*>/g, ''); // hapus tag HTML
-                    const digits = text.replace(/[^0-9]/g, '');
-                    const totalNum = parseInt(digits || '0', 10);
-                    if (!isNaN(totalNum) && totalNum > 0) grandTotal += totalNum;
+                    // Ekstrak dari hidden span dengan class "row-total"
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = String(aksiCell);
+                    const hiddenSpan = tempDiv.querySelector('.row-total');
+                    
+                    if (hiddenSpan) {
+                        const text = hiddenSpan.textContent || '';
+                        const digits = text.replace(/[^0-9]/g, '');
+                        const totalNum = parseInt(digits || '0', 10);
+                        if (!isNaN(totalNum) && totalNum > 0) grandTotal += totalNum;
+                    }
                 });
 
                 const formatted = 'Rp ' + new Intl.NumberFormat('id-ID').format(grandTotal);
@@ -1047,7 +1053,7 @@ function ker_calculateGrandTotal() {
                 if (csrf && csrf.name && csrf.value) formData.append(csrf.name, csrf.value);
             }
 
-            fetch('<?= site_url("formuliradmin/keranjangSubmit") ?>', {
+            fetch('<?= site_url("keranjangadmin/submit") ?>', {
                 method: 'POST',
                 body: formData
             })
@@ -1081,7 +1087,7 @@ function ker_calculateGrandTotal() {
 
                     sayAlert('successModal', 'Berhasil', res.msg ?? 'Layanan berhasil ditambahkan ke keranjang.', 'success');
                 } else {
-                    sayAlert('errorModal', 'Gagal', res.msg ?? 'Terjadi kesalahan saat menambahkan ke keranjang.', 'error');
+                    sayAlert('errorModal', 'Gagal', res.msg ?? 'Silakan pilih pelanggan terlebih dahulu.', 'error');
                 }
             })
             .catch(() => {
@@ -1151,7 +1157,7 @@ function ker_calculateGrandTotal() {
     }
     formData.append('selectedUserId', selectedVal);
 
-    fetch('<?= site_url("formuliradmin/keranjangCheckout") ?>', {
+    fetch('<?= site_url("keranjangadmin/checkout") ?>', {
         method: 'POST',
         body: formData
     })
@@ -1214,7 +1220,7 @@ function ker_calculateGrandTotal() {
   };
 
   if (select.options.length <= 1) {
-    fetch('<?= site_url("formuliradmin/kategoriList") ?>', { method: 'GET', headers: { 'Accept': 'application/json' } })
+    fetch('<?= site_url("keranjangadmin/kategoriList") ?>', { method: 'GET', headers: { 'Accept': 'application/json' } })
       .then(r => r.json())
       .then(resp => {
         if (!resp || !resp.categories) return;
