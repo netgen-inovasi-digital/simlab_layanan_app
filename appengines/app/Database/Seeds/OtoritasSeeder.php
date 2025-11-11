@@ -234,6 +234,17 @@ class OtoritasSeeder extends Seeder
             ['id_otoritas'=>223,'role_id'=>2,'kode_menu'=>'1.5','status_otoritas'=>1],
             ['id_otoritas'=>224,'role_id'=>1,'kode_menu'=>'9.1','status_otoritas'=>1],
             ['id_otoritas'=>225,'role_id'=>1,'kode_menu'=>'9.2','status_otoritas'=>1],
+            ['id_otoritas'=>226,'role_id'=>1,'kode_menu'=>'3.1','status_otoritas'=>1],
+            ['id_otoritas'=>227,'role_id'=>1,'kode_menu'=>'3.2','status_otoritas'=>1],
+            ['id_otoritas'=>228,'role_id'=>1,'kode_menu'=>'3.3','status_otoritas'=>1],
+            ['id_otoritas'=>229,'role_id'=>1,'kode_menu'=>'3.4','status_otoritas'=>1],
+            ['id_otoritas'=>230,'role_id'=>1,'kode_menu'=>'3.5','status_otoritas'=>1],
+            ['id_otoritas'=>231,'role_id'=>1,'kode_menu'=>'9.3','status_otoritas'=>1],
+            ['id_otoritas'=>232,'role_id'=>1,'kode_menu'=>'9.4','status_otoritas'=>1],
+            ['id_otoritas'=>233,'role_id'=>1,'kode_menu'=>'9.5','status_otoritas'=>1],
+            ['id_otoritas'=>234,'role_id'=>6,'kode_menu'=>'11','status_otoritas'=>0],
+            ['id_otoritas'=>235,'role_id'=>6,'kode_menu'=>'11.2','status_otoritas'=>0],
+            ['id_otoritas'=>236,'role_id'=>6,'kode_menu'=>'16.3','status_otoritas'=>0],
         ]);
     }
 }
