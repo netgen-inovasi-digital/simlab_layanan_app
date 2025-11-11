@@ -20,6 +20,7 @@ $routes->group('keranjangadmin', ['namespace' => 'Modules\KeranjangAdmin\Control
     $subroutes->match(['get', 'post'], 'delete/(:any)', 'Keranjang::keranjangDelete/$1');  // Support both GET and POST
     $subroutes->post('checkout', 'Keranjang::keranjangCheckout');
     $subroutes->post('setPelanggan', 'Keranjang::keranjangSetPelanggan'); // Admin feature
+    $subroutes->get('getPelanggan', 'Keranjang::keranjangGetPelanggan'); // Get pelanggan from session
 
     // Endpoints untuk tracking dan detail (tetap di Keranjang controller)
     $subroutes->get('detailList/(:any)', 'Keranjang::detailList/$1');
@@ -52,8 +53,6 @@ $routes->group('keranjangadmin', ['namespace' => 'Modules\KeranjangAdmin\Control
         // Verifikasi user
         $sewaRoutes->get('checkVerified', 'KeranjangSewa::checkVerified');
     });
-
-    
 });
 
 /*

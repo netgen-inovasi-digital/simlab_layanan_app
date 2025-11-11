@@ -1,4 +1,5 @@
-<?php   
+<?php
+
 namespace Modules\FormulirManajer\Controllers;
 
 use App\Controllers\BaseController;
@@ -8,6 +9,7 @@ class FormulirManajer extends BaseController
 {
     private $table = 'simlab_t_layanan';
     private $id    = 'lnKode';
+    private $encrypter;
 
     public function __construct()
     {
@@ -19,13 +21,13 @@ class FormulirManajer extends BaseController
     {
         $session = session();
         $user_id = $session->get('id_user');
-        
+
         $modelUser = new MyModel('simlab_account_users');
         $data = [
             'title' => 'Data Formulir Manajer',
             'user'  => $modelUser->getDataById('user_id', $user_id),
         ];
-        
+
         return view('Modules\FormulirManajer\Views\v_formulirManajer', $data);
     }
 
@@ -73,7 +75,7 @@ class FormulirManajer extends BaseController
         }
 
         // Build main query on simlab_t_layanan
-         $builder = $db->table('simlab_t_layanan as l');
+        $builder = $db->table('simlab_t_layanan as l');
         // join both account_users (preferred) and account (fallback)
         $builder->join('simlab_account_users as au', 'au.user_id = l.user_id', 'left');
         $builder->join('simlab_account as a', 'a.user_id = l.user_id', 'left');
@@ -99,7 +101,7 @@ class FormulirManajer extends BaseController
         $builder->join('(' . $pendingSub->getCompiledSelect(false) . ') pm', 'pm.kode_layanan = l.lnKode', 'left');
 
         $builder->whereIn('l.lnKode', $lnKodeList);
-        
+
         // exclude lnStatus = 2 (Ditolak)
         $builder->where('l.lnStatus !=', 2);
 
@@ -111,24 +113,24 @@ class FormulirManajer extends BaseController
                 if ($st === 1) {
                     // 1 (Belum direview): lnStatus = 1 AND pending_for_manager > 0
                     $builder->orGroupStart()
-                            ->where('l.lnStatus', 1)
-                            ->where('COALESCE(pm.pending_for_manager,0) >', 0, false)
+                        ->where('l.lnStatus', 1)
+                        ->where('COALESCE(pm.pending_for_manager,0) >', 0, false)
                         ->groupEnd();
                 } elseif ($st === 3) {
                     // 3 (Terkirim ke admin): pending_for_manager = 0 and not draft
                     $builder->orGroupStart()
-                            ->where('COALESCE(pm.pending_for_manager,0) =', 0, false)
-                            ->where('l.lnStatus !=', 0)
+                        ->where('COALESCE(pm.pending_for_manager,0) =', 0, false)
+                        ->where('l.lnStatus !=', 0)
                         ->groupEnd();
                 } elseif ($st === 4) {
                     // 4 (Pengujian)
                     $builder->orGroupStart()
-                            ->where('l.lnStatus', 4)
+                        ->where('l.lnStatus', 4)
                         ->groupEnd();
                 } else {
                     // fallback ke lnStatus murni
                     $builder->orGroupStart()
-                            ->where('l.lnStatus', $st)
+                        ->where('l.lnStatus', $st)
                         ->groupEnd();
                 }
             }
@@ -239,8 +241,8 @@ class FormulirManajer extends BaseController
                             max-height:120px; min-height:48px; overflow-y:auto; overflow-x:hidden;
                             padding:4px 6px; border:1px solid #ddd; border-radius:4px; background:#f9f9f9;
                             white-space:pre-wrap; word-break:break-word; font-size:0.9rem;">'
-                        . htmlspecialchars($row->catatan_pelanggan ?? '', ENT_QUOTES, 'UTF-8') .
-                        '</div>';
+                . htmlspecialchars($row->catatan_pelanggan ?? '', ENT_QUOTES, 'UTF-8') .
+                '</div>';
 
             // Status grouping
             $statusGroup = isset($row->status_group) ? (int)$row->status_group : null;
@@ -261,12 +263,12 @@ class FormulirManajer extends BaseController
             $komentarVal = $row->catatan_manajer !== null ? esc($row->catatan_manajer) : '';
 
             $textarea = '<textarea class="form-control komentar-input" data-uji="' . $ujiKodeInt . '" rows="2" placeholder="Keterangan/manajer..."'
-            . ' style="max-width:240px; min-width:160px; max-height:120px; min-height:48px; overflow-y:auto; overflow-x:hidden; resize:vertical; white-space:pre-wrap; word-break:break-word;">'
-            . $komentarVal .
-            '</textarea>';
-            
+                . ' style="max-width:240px; min-width:160px; max-height:120px; min-height:48px; overflow-y:auto; overflow-x:hidden; resize:vertical; white-space:pre-wrap; word-break:break-word;">'
+                . $komentarVal .
+                '</textarea>';
+
             $response[] = $textarea;
-            
+
             $aksiHtml = '<div class="d-flex justify-content-center gap-2 align-items-center">';
             $aksiHtml .= '<span class="text-success btn-action btn-accept-manager" title="Setujui" data-ln="' . $encLnForBtn . '" data-uji="' . $ujiKodeInt . '"><i class="bi bi-check-circle"></i></span> ';
             $aksiHtml .= '<span class="text-warning btn-action btn-reject-manager" title="Tolak" data-ln="' . $encLnForBtn . '" data-uji="' . $ujiKodeInt . '"><i class="bi bi-x-circle"></i></span>';
@@ -334,12 +336,12 @@ class FormulirManajer extends BaseController
         foreach ($input['items'] as $it) {
             $uji = isset($it['ujiKode']) ? (int)$it['ujiKode'] : null;
             $kom = isset($it['komentar']) ? $it['komentar'] : null;
-            
+
             if ($uji === null) continue;
 
             $builder->where('kode_layanan', $lnKode)
-                    ->where('uji_kode', $uji)
-                    ->update(['catatan_manajer' => $kom]);
+                ->where('uji_kode', $uji)
+                ->update(['catatan_manajer' => $kom]);
         }
 
         $db->transComplete();
@@ -353,135 +355,135 @@ class FormulirManajer extends BaseController
         ]);
     }
 
-public function approveDetail()
-{
-    $lnEnc = $this->request->getPost('ln');
-    $ujiRaw = $this->request->getPost('uji');
+    public function approveDetail()
+    {
+        $lnEnc = $this->request->getPost('ln');
+        $ujiRaw = $this->request->getPost('uji');
 
-    if (empty($lnEnc) || $ujiRaw === null) {
-        return $this->response->setJSON([
-            'res' => false,
-            'affected' => 0,
-            'msg' => 'Parameter tidak lengkap',
-            'xname' => csrf_token(),
-            'xhash' => csrf_hash()
-        ]);
-    }
-
-    $uji = (int)$ujiRaw;
-
-    try {
-        $lnId = $this->encrypter->decrypt(hex2bin($lnEnc));
-    } catch (\Exception $e) {
-        return $this->response->setJSON([
-            'res' => false,
-            'affected' => 0,
-            'msg' => 'ID layanan tidak valid',
-            'xname' => csrf_token(),
-            'xhash' => csrf_hash()
-        ]);
-    }
-
-    $session   = session();
-    $managerId = (int) ($session->get('id_user') ?? 0);
-
-    if ($managerId <= 0) {
-        return $this->response->setJSON([
-            'res' => false,
-            'affected' => 0,
-            'msg' => 'User login tidak ditemukan.',
-            'xname' => csrf_token(),
-            'xhash' => csrf_hash()
-        ]);
-    }
-
-    $db = \Config\Database::connect();
-
-    // Pastikan managerId valid
-    $acc = $db->table('simlab_account')->select('user_id')->where('user_id', $managerId)->get()->getRow();
-    if (!$acc) {
-        return $this->response->setJSON([
-            'res' => false,
-            'affected' => 0,
-            'msg' => 'User login tidak valid di simlab_account.',
-            'xname' => csrf_token(),
-            'xhash' => csrf_hash()
-        ]);
-    }
-
-    // PASTIKAN manager adalah anggota tim untuk uji ini (otorisasi)
-    $auth = (int) $db->table('r_tim')
-                ->where('uji_kode', $uji)
-                ->where('user_id', $managerId)
-                ->countAllResults(false);
-
-    if ($auth === 0) {
-        return $this->response->setJSON([
-            'res' => false,
-            'affected' => 0,
-            'msg' => 'Anda tidak berwenang memproses uji ini.',
-            'xname' => csrf_token(),
-            'xhash' => csrf_hash()
-        ]);
-    }
-
-    $table = $db->table('t_layanan_detil');
-
-    // Total baris matching (khusus uji + ln)
-    $table->where('kode_layanan', $lnId);
-    $table->where('uji_kode', $uji);
-    $total = (int) $table->countAllResults(false);
-
-    if ($total === 0) {
-        return $this->response->setJSON([
-            'res' => false,
-            'affected' => 0,
-            'msg' => 'No matching detail rows found',
-            'xname' => csrf_token(),
-            'xhash' => csrf_hash()
-        ]);
-    }
-
-    // Sudah berapa yang status_layanan=1
-    $table->where('kode_layanan', $lnId);
-    $table->where('uji_kode', $uji);
-    $table->where('status_layanan', 1);
-    $already = (int) $table->countAllResults(false);
-
-    if ($already === $total) {
-        // Jika semua sudah approved untuk uji ini, cek apakah masih ada pending di seluruh LN
-        $pendingBuilder = $db->table('t_layanan_detil');
-        $pendingBuilder->where('kode_layanan', $lnId);
-        $pendingBuilder->groupStart()
-                        ->where('status_layanan', 0)
-                        ->orWhere('status_layanan IS NULL', null, false)
-                     ->groupEnd();
-        $pendingRemaining = (int) $pendingBuilder->countAllResults(false);
-
-        $parentUpdated = false;
-        if ($pendingRemaining === 0) {
-            // Jika tidak ada pending sama sekali, update parent menjadi status 3 (Layanan terkirim ke admin)
-            $model = new MyModel($this->table);
-            $resParent = $model->updateData(['lnStatus' => 3], $this->id, $lnId);
-            $parentUpdated = ($resParent === true || $resParent === 1);
+        if (empty($lnEnc) || $ujiRaw === null) {
+            return $this->response->setJSON([
+                'res' => false,
+                'affected' => 0,
+                'msg' => 'Parameter tidak lengkap',
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
         }
 
-        return $this->response->setJSON([
-            'res' => true,
-            'affected' => 0,
-            'msg' => 'Sudah disetujui',
-            'parent_updated' => $parentUpdated,
-            'xname' => csrf_token(),
-            'xhash' => csrf_hash()
-        ]);
-    }
+        $uji = (int)$ujiRaw;
 
-    // Mulai TRANSAKSI untuk menghindari race condition antara update + pengecekan pending + update parent
-    $db->transStart();
+        try {
+            $lnId = $this->encrypter->decrypt(hex2bin($lnEnc));
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'res' => false,
+                'affected' => 0,
+                'msg' => 'ID layanan tidak valid',
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        }
 
-    // Update hanya baris yang belum status_layanan=1 untuk uji yang bersangkutan
-    // (otorisasi sudah dipastikan via r_tim untuk uji ini)
-    $resUpdate = $db->table('t_layanan_detil')
+        $session   = session();
+        $managerId = (int) ($session->get('id_user') ?? 0);
+
+        if ($managerId <= 0) {
+            return $this->response->setJSON([
+                'res' => false,
+                'affected' => 0,
+                'msg' => 'User login tidak ditemukan.',
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        }
+
+        $db = \Config\Database::connect();
+
+        // Pastikan managerId valid
+        $acc = $db->table('simlab_account')->select('user_id')->where('user_id', $managerId)->get()->getRow();
+        if (!$acc) {
+            return $this->response->setJSON([
+                'res' => false,
+                'affected' => 0,
+                'msg' => 'User login tidak valid di simlab_account.',
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        }
+
+        // PASTIKAN manager adalah anggota tim untuk uji ini (otorisasi)
+        $auth = (int) $db->table('r_tim')
+            ->where('uji_kode', $uji)
+            ->where('user_id', $managerId)
+            ->countAllResults(false);
+
+        if ($auth === 0) {
+            return $this->response->setJSON([
+                'res' => false,
+                'affected' => 0,
+                'msg' => 'Anda tidak berwenang memproses uji ini.',
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        }
+
+        $table = $db->table('t_layanan_detil');
+
+        // Total baris matching (khusus uji + ln)
+        $table->where('kode_layanan', $lnId);
+        $table->where('uji_kode', $uji);
+        $total = (int) $table->countAllResults(false);
+
+        if ($total === 0) {
+            return $this->response->setJSON([
+                'res' => false,
+                'affected' => 0,
+                'msg' => 'No matching detail rows found',
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        }
+
+        // Sudah berapa yang status_layanan=1
+        $table->where('kode_layanan', $lnId);
+        $table->where('uji_kode', $uji);
+        $table->where('status_layanan', 1);
+        $already = (int) $table->countAllResults(false);
+
+        if ($already === $total) {
+            // Jika semua sudah approved untuk uji ini, cek apakah masih ada pending di seluruh LN
+            $pendingBuilder = $db->table('t_layanan_detil');
+            $pendingBuilder->where('kode_layanan', $lnId);
+            $pendingBuilder->groupStart()
+                ->where('status_layanan', 0)
+                ->orWhere('status_layanan IS NULL', null, false)
+                ->groupEnd();
+            $pendingRemaining = (int) $pendingBuilder->countAllResults(false);
+
+            $parentUpdated = false;
+            if ($pendingRemaining === 0) {
+                // Jika tidak ada pending sama sekali, update parent menjadi status 3 (Layanan terkirim ke admin)
+                $model = new MyModel($this->table);
+                $resParent = $model->updateData(['lnStatus' => 3], $this->id, $lnId);
+                $parentUpdated = ($resParent === true || $resParent === 1);
+            }
+
+            return $this->response->setJSON([
+                'res' => true,
+                'affected' => 0,
+                'msg' => 'Sudah disetujui',
+                'parent_updated' => $parentUpdated,
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        }
+
+        // Mulai TRANSAKSI untuk menghindari race condition antara update + pengecekan pending + update parent
+        $db->transStart();
+
+        // Update hanya baris yang belum status_layanan=1 untuk uji yang bersangkutan
+        // (otorisasi sudah dipastikan via r_tim untuk uji ini)
+        $resUpdate = $db->table('t_layanan_detil')
             ->where('kode_layanan', $lnId)
             ->where('uji_kode', $uji)
             ->where('(status_layanan IS NULL OR status_layanan != 1)')
@@ -490,39 +492,39 @@ public function approveDetail()
                 'terima_layanan_by' => $managerId
             ]);
 
-    $affected = $db->affectedRows();
-    $parentUpdated = false;
+        $affected = $db->affectedRows();
+        $parentUpdated = false;
 
-    if ($affected > 0) {
-        // Setelah update, cek apakah masih ada pending di seluruh LN
-        $pendingBuilder = $db->table('t_layanan_detil');
-        $pendingBuilder->where('kode_layanan', $lnId);
-        $pendingBuilder->groupStart()
-                        ->where('status_layanan', 0)
-                        ->orWhere('status_layanan IS NULL', null, false)
-                     ->groupEnd();
-        $pendingRemaining = (int) $pendingBuilder->countAllResults(false);
+        if ($affected > 0) {
+            // Setelah update, cek apakah masih ada pending di seluruh LN
+            $pendingBuilder = $db->table('t_layanan_detil');
+            $pendingBuilder->where('kode_layanan', $lnId);
+            $pendingBuilder->groupStart()
+                ->where('status_layanan', 0)
+                ->orWhere('status_layanan IS NULL', null, false)
+                ->groupEnd();
+            $pendingRemaining = (int) $pendingBuilder->countAllResults(false);
 
-        if ($pendingRemaining === 0) {
-            // Update ke 3 (Layanan terkirim ke admin) bila sudah tidak ada pending
-            $model = new MyModel($this->table);
-            $resParent = $model->updateData(['lnStatus' => 3], $this->id, $lnId);
-            $parentUpdated = ($resParent === true || $resParent === 1);
+            if ($pendingRemaining === 0) {
+                // Update ke 3 (Layanan terkirim ke admin) bila sudah tidak ada pending
+                $model = new MyModel($this->table);
+                $resParent = $model->updateData(['lnStatus' => 3], $this->id, $lnId);
+                $parentUpdated = ($resParent === true || $resParent === 1);
+            }
         }
+
+        $db->transComplete();
+        $transOk = $db->transStatus();
+
+        return $this->response->setJSON([
+            'res'      => $transOk && $affected > 0,
+            'affected' => $affected,
+            'msg'      => $affected > 0 ? 'Berhasil disetujui' : 'No rows updated',
+            'parent_updated' => $parentUpdated,
+            'xname'    => csrf_token(),
+            'xhash'    => csrf_hash()
+        ]);
     }
-
-    $db->transComplete();
-    $transOk = $db->transStatus();
-
-    return $this->response->setJSON([
-        'res'      => $transOk && $affected > 0,
-        'affected' => $affected,
-        'msg'      => $affected > 0 ? 'Berhasil disetujui' : 'No rows updated',
-        'parent_updated' => $parentUpdated,
-        'xname'    => csrf_token(),
-        'xhash'    => csrf_hash()
-    ]);
-}
 
 
     public function rejectDetail()
@@ -588,9 +590,9 @@ public function approveDetail()
 
         // PASTIKAN manager adalah anggota tim untuk uji ini (otorisasi)
         $auth = (int) $db->table('r_tim')
-                    ->where('uji_kode', $uji)
-                    ->where('user_id', $managerId)
-                    ->countAllResults(false);
+            ->where('uji_kode', $uji)
+            ->where('user_id', $managerId)
+            ->countAllResults(false);
 
         if ($auth === 0) {
             return $this->response->setJSON([
@@ -629,9 +631,9 @@ public function approveDetail()
             $pendingBuilder = $db->table('t_layanan_detil');
             $pendingBuilder->where('kode_layanan', $lnId);
             $pendingBuilder->groupStart()
-                            ->where('status_layanan', 0)
-                            ->orWhere('status_layanan IS NULL', null, false)
-                         ->groupEnd();
+                ->where('status_layanan', 0)
+                ->orWhere('status_layanan IS NULL', null, false)
+                ->groupEnd();
             $pendingRemaining = (int) $pendingBuilder->countAllResults(false);
 
             $parentUpdated = false;
@@ -656,13 +658,13 @@ public function approveDetail()
 
         // Update hanya baris yang belum status_layanan=2
         $resUpdate = $db->table('t_layanan_detil')
-                ->where('kode_layanan', $lnId)
-                ->where('uji_kode', $uji)
-                ->where('(status_layanan IS NULL OR status_layanan != 2)')
-                ->update([
-                    'status_layanan'     => 2,
-                    'terima_layanan_by'  => $managerId
-                ]);
+            ->where('kode_layanan', $lnId)
+            ->where('uji_kode', $uji)
+            ->where('(status_layanan IS NULL OR status_layanan != 2)')
+            ->update([
+                'status_layanan'     => 2,
+                'terima_layanan_by'  => $managerId
+            ]);
 
         $affected = $db->affectedRows();
         $parentUpdated = false;
@@ -671,9 +673,9 @@ public function approveDetail()
             $pendingBuilder = $db->table('t_layanan_detil');
             $pendingBuilder->where('kode_layanan', $lnId);
             $pendingBuilder->groupStart()
-                            ->where('status_layanan', 0)
-                            ->orWhere('status_layanan IS NULL', null, false)
-                         ->groupEnd();
+                ->where('status_layanan', 0)
+                ->orWhere('status_layanan IS NULL', null, false)
+                ->groupEnd();
             $pendingRemaining = (int) $pendingBuilder->countAllResults(false);
 
             if ($pendingRemaining === 0) {
@@ -727,11 +729,11 @@ public function approveDetail()
 
         // Otorisasi via r_tim
         $check = (int) $db->table('t_layanan_detil as d')
-                    ->join('r_tim rt', 'rt.uji_kode = d.uji_kode', 'inner')
-                    ->where('d.kode_layanan', $lnId)
-                    ->where('rt.user_id', $user_id)
-                    ->limit(1)
-                    ->countAllResults(false);
+            ->join('r_tim rt', 'rt.uji_kode = d.uji_kode', 'inner')
+            ->where('d.kode_layanan', $lnId)
+            ->where('rt.user_id', $user_id)
+            ->limit(1)
+            ->countAllResults(false);
 
         if ($check === 0) {
             return $this->response->setJSON([
@@ -748,15 +750,14 @@ public function approveDetail()
             ->where('d.kode_layanan', $lnId)
             ->where('rt.user_id', $user_id)
             ->groupStart()
-                ->where('d.status_layanan', 0)
-                ->orWhere('d.status_layanan IS NULL', null, false)
+            ->where('d.status_layanan', 0)
+            ->orWhere('d.status_layanan IS NULL', null, false)
             ->groupEnd()
             ->countAllResults(false);
 
         if ($pendingManagerCount > 0) {
             return $this->response->setJSON([
-                'res' => false
-                ,
+                'res' => false,
                 'msg' => 'Layanan yang belum anda proses : ' . $pendingManagerCount,
                 'pending' => $pendingManagerCount,
                 'xname' => csrf_token(),
@@ -768,8 +769,8 @@ public function approveDetail()
         $pendingTotal = (int) $db->table('t_layanan_detil')
             ->where('kode_layanan', $lnId)
             ->groupStart()
-                ->where('status_layanan', 0)
-                ->orWhere('status_layanan IS NULL', null, false)
+            ->where('status_layanan', 0)
+            ->orWhere('status_layanan IS NULL', null, false)
             ->groupEnd()
             ->countAllResults(false);
 
@@ -791,8 +792,8 @@ public function approveDetail()
         $pendingTotalCheck = (int) $db->table('t_layanan_detil')
             ->where('kode_layanan', $lnId)
             ->groupStart()
-                ->where('status_layanan', 0)
-                ->orWhere('status_layanan IS NULL', null, false)
+            ->where('status_layanan', 0)
+            ->orWhere('status_layanan IS NULL', null, false)
             ->groupEnd()
             ->countAllResults(false);
 
@@ -838,17 +839,28 @@ public function approveDetail()
     private function formatStatus($status)
     {
         switch ($status) {
-            case 0: return '<span class="badge bg-secondary">Draft</span>';
-            case 1: return '<span class="badge bg-warning">Layanan belum direview</span>';
-            case 2: return '<span class="badge bg-danger">Ditolak</span>';
-            case 3: return '<span class="badge bg-info">Layanan terkirim ke admin</span>';
-            case 4: return '<span class="badge bg-primary">Pengujian sedang dilakukan</span>';
-            case 5: return '<span class="badge bg-primary">LHUS sedang diproses</span>';
-            case 6: return '<span class="badge bg-success">LHUS telah disetujui</span>';
-            case 7: return '<span class="badge bg-primary">LHU sedang diproses</span>';
-            case 8: return '<span class="badge bg-success">LHU telah disetujui</span>';
-            case 9: return '<span class="badge bg-dark">Pengujian telah selesai</span>';
-            default: return '<span class="badge bg-dark">Unknown</span>';
+            case 0:
+                return '<span class="badge bg-secondary">Draft</span>';
+            case 1:
+                return '<span class="badge bg-warning">Layanan belum direview</span>';
+            case 2:
+                return '<span class="badge bg-danger">Ditolak</span>';
+            case 3:
+                return '<span class="badge bg-info">Layanan terkirim ke admin</span>';
+            case 4:
+                return '<span class="badge bg-primary">Pengujian sedang dilakukan</span>';
+            case 5:
+                return '<span class="badge bg-primary">LHUS sedang diproses</span>';
+            case 6:
+                return '<span class="badge bg-success">LHUS telah disetujui</span>';
+            case 7:
+                return '<span class="badge bg-primary">LHU sedang diproses</span>';
+            case 8:
+                return '<span class="badge bg-success">LHU telah disetujui</span>';
+            case 9:
+                return '<span class="badge bg-dark">Pengujian telah selesai</span>';
+            default:
+                return '<span class="badge bg-dark">Unknown</span>';
         }
     }
 
@@ -862,8 +874,8 @@ public function approveDetail()
             ->where('d.kode_layanan', $lnKode)
             ->where('rt.user_id', $userId)
             ->groupStart()
-                ->where('d.status_layanan', 0)
-                ->orWhere('d.status_layanan IS NULL', null, false)
+            ->where('d.status_layanan', 0)
+            ->orWhere('d.status_layanan IS NULL', null, false)
             ->groupEnd()
             ->countAllResults(false);
 
