@@ -52,6 +52,28 @@ $routes->group('keranjang', ['namespace' => 'Modules\Keranjang\Controllers'], fu
         $sewaRoutes->get('checkVerified', 'KeranjangSewa::checkVerified');
     });
 
+    // ================================================================
+    // SEWA ALAT ROUTES (Alternative naming - keranjang_alat)
+    // ================================================================
+    // Note: Ini sama dengan sewa, tapi menggunakan path terpisah untuk clarity
+    
+});
+
+// ROUTES UNTUK KERANJANG ALAT (Separate group untuk clarity)
+$routes->group('keranjang_alat', ['namespace' => 'Modules\Keranjang\Controllers'], function ($subroutes) {
+    // Halaman utama keranjang alat
+    $subroutes->get('/', 'KeranjangAlat::index');
+
+    // API endpoints untuk keranjang alat
+    $subroutes->get('datalist', 'KeranjangAlat::keranjangDataList');
+    $subroutes->get('dataListLayanan', 'KeranjangAlat::keranjangDataListLayanan');
+    $subroutes->get('kategoriList', 'KeranjangAlat::kategoriList');
+    $subroutes->post('submit', 'KeranjangAlat::keranjangSubmit');
+    $subroutes->get('delete/(:any)', 'KeranjangAlat::keranjangDelete/$1');
+    $subroutes->post('checkout', 'KeranjangAlat::keranjangCheckout');
+
+    // Verifikasi user
+    $subroutes->get('checkVerified', 'KeranjangAlat::checkVerified');
     
 });
 

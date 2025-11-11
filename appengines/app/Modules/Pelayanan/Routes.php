@@ -17,3 +17,13 @@ $routes->group('pelayanan', ['namespace' => 'Modules\Pelayanan\Controllers'], fu
     $subroutes->get('kuesioner/(:any)', 'Pelayanan::kuesioner/$1');
     $subroutes->post('submit_kuesioner', 'Pelayanan::submit_kuesioner');
 });
+
+// Routes untuk Pelayanan Sewa Alat
+$routes->group('pelayanan_alat', ['namespace' => 'Modules\Pelayanan\Controllers'], function ($subroutes) {
+
+    $subroutes->get('/', 'PelayananAlat::index');
+    $subroutes->get('datalist', 'PelayananAlat::dataList');
+    $subroutes->get('detailList/(:any)', 'PelayananAlat::detailList/$1');
+    $subroutes->get('getTrackingData/(:any)', 'PelayananAlat::getTrackingData/$1');
+    $subroutes->get('checkVerified', 'PelayananAlat::checkVerified');
+});

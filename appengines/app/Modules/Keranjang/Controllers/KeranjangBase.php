@@ -128,62 +128,63 @@ abstract class KeranjangBase extends BaseController
             // ========================================
             // SEWA ALAT (Equipment Rental)
             // ========================================
-            'sewa' => [
+            'alat' => [
                 'title' => 'Keranjang Sewa Alat',
-                'session_key' => 'keranjang_sewa',
+                'session_key' => 'keranjang_alat',
 
-                // Table names
+                // Table names - MENGGUNAKAN TABEL YANG SAMA DENGAN PENGUJIAN
                 'table_layanan' => 'simlab_t_layanan',
-                'table_detail' => 't_sewa_detil',
-                'table_pengujian' => 'r_layanan_sewa_alat',
+                'table_detail' => 't_layanan_detil',
+                'table_pengujian' => 'r_layanan_pengujian',
                 'table_pembayaran' => 't_pembayaran',
 
                 // Column mappings
                 'columns' => [
                     'kode' => 'kode',
-                    'nama_alat' => 'nama_alat',
-                    'kategori' => 'kode_kategori',
-                    'biaya_per_hari' => 'biaya_per_hari',
+                    'nama' => 'nama_layanan',
+                    'alat' => 'kode_alat',
+                    'parameter' => 'kode_parameter',
+                    'jenis' => 'kode_jenis',
+                    'satuan' => 'satuan',
+                    'biaya' => 'biaya',
                     'diskon' => 'diskon',
-                    'durasi' => 'durasi_hari',
-                    'tanggal_mulai' => 'tanggal_mulai',
-                    'tanggal_selesai' => 'tanggal_selesai',
-                    'stok_tersedia' => 'stok_tersedia',
                 ],
 
-                // Joins untuk query
+                // Joins untuk query - filter untuk kode_jenis = 'B' (alat)
                 'joins' => [
                     [
-                        'table' => 'simlab_r_alat',
-                        'alias' => 'a',
-                        'on' => 'a.alatKode = ls.kode',
+                        'table' => 'simlab_r_parameter',
+                        'alias' => 'p',
+                        'on' => 'p.paraKode = lp.kode_parameter',
                         'type' => 'left'
                     ],
                     [
-                        'table' => 'simlab_r_kategori_alat',
-                        'alias' => 'k',
-                        'on' => 'k.kategoriKode = ls.kode_kategori',
+                        'table' => 'simlab_r_alat',
+                        'alias' => 'a',
+                        'on' => 'a.alatKode = lp.kode_alat',
+                        'type' => 'left'
+                    ],
+                    [
+                        'table' => 'simlab_r_jenis',
+                        'alias' => 'j',
+                        'on' => 'j.jenKode = lp.kode_jenis',
                         'type' => 'left'
                     ],
                 ],
 
                 // Fields untuk modal form
                 'modal_fields' => [
-                    ['label' => 'Nama Alat', 'name' => 'nama_alat', 'type' => 'text', 'readonly' => true],
-                    ['label' => 'Kategori', 'name' => 'kategori', 'type' => 'text', 'readonly' => true],
-                    ['label' => 'Biaya per Hari', 'name' => 'biaya_per_hari', 'type' => 'number', 'readonly' => true],
-                    ['label' => 'Jumlah Unit', 'name' => 'jumlah', 'type' => 'number', 'min' => 1, 'max' => 50],
-                    ['label' => 'Durasi (Hari)', 'name' => 'durasi', 'type' => 'number', 'min' => 1, 'max' => 365],
-                    ['label' => 'Tanggal Mulai', 'name' => 'tanggal_mulai', 'type' => 'date'],
-                    ['label' => 'Keterangan', 'name' => 'keterangan', 'type' => 'textarea'],
+                    ['label' => 'Nama Alat', 'name' => 'detParameter', 'type' => 'text', 'readonly' => true],
+                    ['label' => 'Instrumen', 'name' => 'detAlat', 'type' => 'text', 'readonly' => true],
+                    ['label' => 'Biaya', 'name' => 'detBiaya', 'type' => 'number', 'readonly' => true],
+                    ['label' => 'Jumlah', 'name' => 'detJumlah', 'type' => 'number', 'min' => 1, 'max' => 100],
+                    ['label' => 'Keterangan', 'name' => 'detKeterangan', 'type' => 'textarea'],
                 ],
 
                 // Validation rules
                 'validation' => [
                     'min_jumlah' => 1,
-                    'max_jumlah' => 50,
-                    'min_durasi' => 1,
-                    'max_durasi' => 365,
+                    'max_jumlah' => 100,
                     'require_keterangan' => false,
                 ]
             ],
@@ -502,8 +503,6 @@ abstract class KeranjangBase extends BaseController
             if ($db->transStatus() === FALSE) {
                 $db->transRollback();
             }
-
-            log_message('error', 'Checkout exception: ' . $e->getMessage());
 
             return $this->response->setJSON([
                 'res'   => false,
