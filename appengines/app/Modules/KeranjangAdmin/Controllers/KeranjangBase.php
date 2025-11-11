@@ -461,7 +461,7 @@ abstract class KeranjangBase extends BaseController
     public function keranjangCheckout()
     {
         $session = session();
-        
+
         // ADMIN MUST SELECT PELANGGAN FIRST
         $pelanggan = $session->get($this->sessionKey . '_pelanggan');
         if (!$pelanggan || !is_array($pelanggan) || empty($pelanggan['user_id'])) {
@@ -472,7 +472,7 @@ abstract class KeranjangBase extends BaseController
                 'xhash' => csrf_hash()
             ]);
         }
-        
+
         $user_id = $session->get('id_user');
 
         $modelUser = new MyModel('simlab_account_users');
@@ -545,12 +545,12 @@ abstract class KeranjangBase extends BaseController
     {
         $modelLayanan = new MyModel($this->tableLayanan);
         $session = session();
-        
+
         // Untuk admin: cek apakah ada pelanggan yang dipilih
         $pelanggan = $session->get($this->sessionKey . '_pelanggan');
         $userIdToSave = null;
         $emailToSave = '';
-        
+
         if ($pelanggan && !empty($pelanggan['user_id'])) {
             // Admin memilih pelanggan
             $userIdToSave = (int)$pelanggan['user_id'];
@@ -603,7 +603,7 @@ abstract class KeranjangBase extends BaseController
     public function keranjangDelete($id)
     {
         $session   = session();
-        
+
         // ADMIN MUST SELECT PELANGGAN FIRST
         $pelanggan = $session->get($this->sessionKey . '_pelanggan');
         if (!$pelanggan || !is_array($pelanggan) || empty($pelanggan['user_id'])) {
@@ -614,7 +614,7 @@ abstract class KeranjangBase extends BaseController
                 'xhash'   => csrf_hash()
             ]);
         }
-        
+
         $keranjang = $session->get($this->sessionKey) ?? [];
 
         if (isset($keranjang[$id])) {
@@ -686,28 +686,64 @@ abstract class KeranjangBase extends BaseController
     {
         $session = session();
         $pelanggan = $session->get($this->sessionKey . '_pelanggan');
-        
+
         // DEBUG: Log pelanggan data
         log_message('debug', 'getUserDiscount - Session key: ' . $this->sessionKey . '_pelanggan');
         log_message('debug', 'getUserDiscount - Pelanggan data: ' . json_encode($pelanggan));
         log_message('debug', 'getUserDiscount - Original diskon: ' . $originalDiskon);
-        
+
         // Jika pelanggan belum dipilih atau tidak ada status, return 0
         if (!$pelanggan || !is_array($pelanggan)) {
             log_message('debug', 'getUserDiscount - RETURN 0: Pelanggan tidak valid');
             return 0;
         }
-        
+
         // Ambil status pelanggan (ULM atau NON ULM)
         $status = isset($pelanggan['status']) ? strtoupper(trim($pelanggan['status'])) : '';
         log_message('debug', 'getUserDiscount - Status pelanggan: ' . $status);
-        
+
         // Jika status adalah "ULM", terapkan diskon dari database
         // Jika bukan ULM, diskon = 0
         $result = ($status === 'ULM') ? max(0, $originalDiskon) : 0;
         log_message('debug', 'getUserDiscount - RETURN: ' . $result);
-        
+
         return $result;
+    }
+
+    /**
+     * Get pelanggan yang dipilih dari session (admin feature)
+     * Endpoint: GET /keranjangadmin/getPelanggan
+     */
+    public function keranjangGetPelanggan()
+    {
+        $session = session();
+        $pelanggan = $session->get($this->sessionKey . '_pelanggan') ?? null;
+        $keranjang = $session->get($this->sessionKey) ?? [];
+        $itemsCount = is_array($keranjang) ? count($keranjang) : 0;
+
+        if ($pelanggan && is_array($pelanggan)) {
+            return $this->response->setJSON([
+                'res' => true,
+                'pelanggan' => [
+                    'user_id' => $pelanggan['user_id'] ?? null,
+                    'name'    => $pelanggan['name'] ?? null,
+                    'email'   => $pelanggan['email'] ?? null,
+                    'status'  => $pelanggan['status'] ?? null
+                ],
+                'items_count' => $itemsCount,
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        }
+
+        return $this->response->setJSON([
+            'res' => false,
+            'pelanggan' => null,
+            'items_count' => $itemsCount,
+            'msg' => 'Belum ada pelanggan yang dipilih',
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
+        ]);
     }
 
     /**
