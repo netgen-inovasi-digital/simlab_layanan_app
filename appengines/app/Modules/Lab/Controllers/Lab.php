@@ -40,9 +40,13 @@ class Lab extends BaseController
     $accModel   = new MyModel('simlab_account');
     $timModel   = new MyModel('r_tim');
 
-    // Get tim members for this layanan
-    $timMembers = $timModel->getWhere(['uji_kode' => $id])->getResult();
-    $selectedTeam = array_map(function($t) { return $t->user_id; }, $timMembers);
+    // Get tim members for this layanan with role info
+    $join = [
+        'simlab_account a' => 'a.user_id = r_tim.user_id'
+    ];
+    $select = 'r_tim.*, a.username, a.nama, a.role_id';
+    $where = ['r_tim.uji_kode' => $id];
+    $timMembers = $timModel->getAllDataWithJoinWhereOrder($join, $where, [], $select, 'left');
 
     $data[csrf_token()] = csrf_hash();
     $data['id']           = $idenc;
@@ -53,13 +57,14 @@ class Lab extends BaseController
     $data['satuan']       = $get->satuan;
     $data['biaya']        = $get->biaya;
     $data['diskon']       = $get->diskon;
-    $data['tim']          = $selectedTeam;
+    $data['tim']          = $timMembers; // Send full tim data with role info
 
     $data['options'] = [
         'jenis'     => $jenisModel->getAllData(),
         'alat'      => $alatModel->getAllData(),
         'parameter' => $paraModel->getAllData(),
-        'users'     => $accModel->getWhere(['role_id' => 6])->getResult(), // role_id=6 penyelia
+        'penyelia'  => $accModel->getWhere(['role_id' => 6])->getResult(), // role_id=6 penyelia
+        'manajer'   => $accModel->getWhere(['role_id' => 4])->getResult(), // role_id=4 manajer teknis
     ];
 
     return $this->response->setJSON($data);
@@ -71,7 +76,9 @@ public function submit()
     $kode_jenis  = $this->request->getPost('kode_jenis');
     $kode_alat = $this->request->getPost('kode_alat');
     $kode_parameter = $this->request->getPost('kode_parameter');
-    $timMembers = $this->request->getPost('tim'); // array of user_id
+    
+    // Ambil data tim sebagai array
+    $timMembers = $this->request->getPost('tim');
 
     $data = [
         'kode_jenis'       => $kode_jenis,
@@ -86,6 +93,9 @@ public function submit()
     $model = new MyModel($this->table);
     $timModel = new MyModel('r_tim');
     $db = \Config\Database::connect();
+    
+    $timInsertedCount = 0;
+    $errorMsg = '';
 
     if ($idenc == "") {
         //cek duplikat insert
@@ -105,13 +115,27 @@ public function submit()
 
         $res = $model->insertData($data);
         
-        if ($res && !empty($timMembers)) {
+        if ($res) {
             $insertedId = $db->insertID();
-            foreach ($timMembers as $userId) {
-                $timModel->insertData([
-                    'uji_kode' => $insertedId,
-                    'user_id' => $userId
-                ]);
+            
+            // Insert tim members jika ada
+            if (!empty($timMembers) && is_array($timMembers)) {
+                foreach ($timMembers as $userId) {
+                    if (!empty($userId)) {
+                        try {
+                            $timData = [
+                                'uji_kode' => $insertedId,
+                                'user_id' => (int)$userId
+                            ];
+                            $timRes = $timModel->insertData($timData);
+                            if ($timRes) {
+                                $timInsertedCount++;
+                            }
+                        } catch (\Exception $e) {
+                            $errorMsg .= "Error inserting user_id {$userId}: " . $e->getMessage() . "; ";
+                        }
+                    }
+                }
             }
         }
     } else {
@@ -140,13 +164,23 @@ public function submit()
             // Delete existing tim members
             $timModel->deleteData('uji_kode', $id);
             
-            // Insert new tim members
-            if (!empty($timMembers)) {
+            // Insert new tim members jika ada
+            if (!empty($timMembers) && is_array($timMembers)) {
                 foreach ($timMembers as $userId) {
-                    $timModel->insertData([
-                        'uji_kode' => $id,
-                        'user_id' => $userId
-                    ]);
+                    if (!empty($userId)) {
+                        try {
+                            $timData = [
+                                'uji_kode' => $id,
+                                'user_id' => (int)$userId
+                            ];
+                            $timRes = $timModel->insertData($timData);
+                            if ($timRes) {
+                                $timInsertedCount++;
+                            }
+                        } catch (\Exception $e) {
+                            $errorMsg .= "Error inserting user_id {$userId}: " . $e->getMessage() . "; ";
+                        }
+                    }
                 }
             }
         }
@@ -154,6 +188,13 @@ public function submit()
 
     return $this->response->setJSON([
         'res' => $res,
+        'debug_info' => [
+            'tim_received' => $timMembers,
+            'tim_is_array' => is_array($timMembers),
+            'tim_count' => is_array($timMembers) ? count($timMembers) : 0,
+            'tim_inserted' => $timInsertedCount,
+            'errors' => $errorMsg
+        ],
         'xname' => csrf_token(),
         'xhash' => csrf_hash()
     ]);
@@ -173,7 +214,8 @@ public function getoptions()
         'jenis'     => $jenisModel->getAllData(),
         'alat'      => $alatModel->getAllData(),
         'parameter' => $paraModel->getAllData(),
-        'users'     => $accModel->getWhere(['role_id' => 6])->getResult(), // role_id=6 penyelia
+        'penyelia'  => $accModel->getWhere(['role_id' => 6])->getResult(), // role_id=6 penyelia
+        'manajer'   => $accModel->getWhere(['role_id' => 4])->getResult(), // role_id=4 manajer teknis
     ];
 
     return $this->response->setJSON($data);

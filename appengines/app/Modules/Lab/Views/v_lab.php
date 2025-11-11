@@ -129,8 +129,42 @@
         e.preventDefault();
         const form = document.querySelector('#myform');
         const formData = new FormData(form);
+        
+        // Hapus data tim lama jika ada
+        formData.delete('tim[]');
+        formData.delete('tim');
+        
+        // Tambahkan data tim ke formData
+        penyeliaList.forEach(p => {
+            formData.append('tim[]', p.user_id);
+        });
+        manajerList.forEach(m => {
+            formData.append('tim[]', m.user_id);
+        });
+        
+        // Debug: log data yang akan dikirim
+        console.log('===== DEBUG DATA TIM =====');
+        console.log('Penyelia List:', penyeliaList);
+        console.log('Manajer List:', manajerList);
+        console.log('Total Tim Members:', penyeliaList.length + manajerList.length);
+        console.log('FormData tim[]:', formData.getAll('tim[]'));
+        
+        // Log semua data di FormData
+        console.log('===== ALL FORM DATA =====');
+        for (let pair of formData.entries()) {
+            console.log(pair[0] + ': ' + pair[1]);
+        }
+        console.log('========================');
+        
         const actionUrl = form.getAttribute('action');
         saveData({ url: actionUrl, formData: formData, onSuccess: function(data) {
+            console.log('===== RESPONSE FROM SERVER =====');
+            console.log('Response:', data);
+            if (data.debug_info) {
+                console.log('Debug Info:', data.debug_info);
+            }
+            console.log('================================');
+            
             if (data.res === true) {
                 if (typeof table !== 'undefined') table.fetchData({ reload: true });
                 sayAlert('successModal', 'Berhasil', 'Data berhasil disimpan.', 'success');
@@ -181,8 +215,14 @@
         .finally(() => hideLoading());
     }
 
+    // Global variables untuk menyimpan data tim
+    let penyeliaList = [];
+    let manajerList = [];
+    let allPenyelia = [];
+    let allManajer = [];
+
     function loadOptions(selected = {}) {
-        // ✅ reset wrapper lama sebelum isi ulang
+        //  reset wrapper lama sebelum isi ulang
         document.querySelectorAll('[data-enhanced="true"]').forEach(el => {
             let wrapper = el.parentNode;
             if (wrapper.classList.contains("position-relative")) {
@@ -198,12 +238,14 @@
                 let jenis = document.querySelector('[name="kode_jenis"]');
                 let alat  = document.querySelector('[name="kode_alat"]');
                 let para  = document.querySelector('[name="kode_parameter"]');
-                let timContainer = document.querySelector('#timContainer');
+                let selectPenyelia = document.querySelector('#selectPenyelia');
+                let selectManajer = document.querySelector('#selectManajer');
 
                 jenis.innerHTML = '<option value="">-- Pilih Jenis --</option>';
                 alat.innerHTML  = '<option value="">-- Pilih Alat --</option>';
                 para.innerHTML  = '<option value="">-- Pilih Parameter --</option>';
-                timContainer.innerHTML = '';
+                selectPenyelia.innerHTML = '<option value="">[ Pilih Penyelia ... ]</option>';
+                selectManajer.innerHTML = '<option value="">[  Pilih Manajer Teknis ... ]</option>';
 
                 data.jenis.forEach(j => {
                     jenis.innerHTML += `<option value="${j.jenKode}" ${selected.jenis==j.jenKode?"selected":""}>${j.jenNama}</option>`;
@@ -215,18 +257,39 @@
                     para.innerHTML += `<option value="${p.paraKode}" ${selected.para==p.paraKode?"selected":""}>${p.paraNama}</option>`;
                 });
                 
-                // Render checkbox list for tim
-                data.users.forEach(user => {
-                    let checked = (selected.tim && selected.tim.includes(user.user_id)) ? 'checked' : '';
-                    timContainer.innerHTML += `
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" name="tim[]" value="${user.user_id}" id="tim_${user.user_id}" ${checked}>
-                            <label class="form-check-label" for="tim_${user.user_id}">
-                                ${user.nama || user.username}
-                            </label>
-                        </div>
-                    `;
+                // Populate dropdown penyelia dan manajer
+                allPenyelia = data.penyelia || [];
+                allManajer = data.manajer || [];
+                
+                allPenyelia.forEach(user => {
+                    selectPenyelia.innerHTML += `<option value="${user.user_id}">${user.nama || user.username}</option>`;
                 });
+                
+                allManajer.forEach(user => {
+                    selectManajer.innerHTML += `<option value="${user.user_id}">${user.nama || user.username}</option>`;
+                });
+
+                // Load selected tim jika edit
+                if (selected.tim && selected.tim.length > 0) {
+                    selected.tim.forEach(tm => {
+                        // Cek berdasarkan role_id
+                        if (tm.role_id == 6) {
+                            // Penyelia
+                            let user = allPenyelia.find(u => u.user_id == tm.user_id);
+                            if (user && !penyeliaList.find(p => p.user_id == user.user_id)) {
+                                penyeliaList.push(user);
+                            }
+                        } else if (tm.role_id == 4) {
+                            // Manajer Teknis
+                            let user = allManajer.find(u => u.user_id == tm.user_id);
+                            if (user && !manajerList.find(m => m.user_id == user.user_id)) {
+                                manajerList.push(user);
+                            }
+                        }
+                    });
+                    renderPenyeliaTable();
+                    renderManajerTable();
+                }
 
                 let namaLayananInput = document.querySelector('[name="nama_layanan"]');
                 function autoFillNamaLayanan() {
@@ -243,12 +306,119 @@
                 selectSearch('[name="kode_jenis"]');
                 selectSearch('[name="kode_alat"]');
                 selectSearch('[name="kode_parameter"]');
+                selectSearch('#selectPenyelia');
+                selectSearch('#selectManajer');
             });
     }
+
+    // Event listener untuk menambah penyelia dan manajer
+    document.addEventListener('change', function(e) {
+        console.log('Change event detected on:', e.target.id, 'Value:', e.target.value);
+        
+        if (e.target.id === 'selectPenyelia' && e.target.value) {
+            let userId = parseInt(e.target.value);
+            console.log('Penyelia selected, userId:', userId);
+            console.log('Available penyelia:', allPenyelia);
+            
+            let user = allPenyelia.find(u => u.user_id == userId);
+            console.log('Found user:', user);
+            
+            if (user && !penyeliaList.find(p => p.user_id == userId)) {
+                penyeliaList.push(user);
+                console.log('Added to penyeliaList:', penyeliaList);
+                renderPenyeliaTable();
+            } else {
+                console.log('User already in list or not found');
+            }
+            e.target.value = '';
+        }
+        
+        if (e.target.id === 'selectManajer' && e.target.value) {
+            let userId = parseInt(e.target.value);
+            console.log('Manajer selected, userId:', userId);
+            console.log('Available manajer:', allManajer);
+            
+            let user = allManajer.find(u => u.user_id == userId);
+            console.log('Found user:', user);
+            
+            if (user && !manajerList.find(m => m.user_id == userId)) {
+                manajerList.push(user);
+                console.log('Added to manajerList:', manajerList);
+                renderManajerTable();
+            } else {
+                console.log('User already in list or not found');
+            }
+            e.target.value = '';
+        }
+    });
+
+    function renderPenyeliaTable() {
+        let tbody = document.querySelector('#tablePenyelia');
+        tbody.innerHTML = '';
+        
+        if (penyeliaList.length === 0) {
+            tbody.innerHTML = '<tr class="text-muted text-center"><td colspan="3"><em>Belum ada penyelia dipilih</em></td></tr>';
+        } else {
+            penyeliaList.forEach((user, idx) => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${idx + 1}.</td>
+                        <td>${user.nama || user.username}</td>
+                        <td class="text-center">
+                            <button type="button" class="btn btn-sm btn-danger btn-hapus-penyelia" data-id="${user.user_id}" title="Hapus">
+                                [ Hapus ]
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+    }
+
+    function renderManajerTable() {
+        let tbody = document.querySelector('#tableManajer');
+        tbody.innerHTML = '';
+        
+        if (manajerList.length === 0) {
+            tbody.innerHTML = '<tr class="text-muted text-center"><td colspan="3"><em>Belum ada manajer teknis dipilih</em></td></tr>';
+        } else {
+            manajerList.forEach((user, idx) => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${idx + 1}.</td>
+                        <td>${user.nama || user.username}</td>
+                        <td class="text-center">
+                            <button type="button" class="btn btn-sm btn-danger btn-hapus-manajer" data-id="${user.user_id}" title="Hapus">
+                                [ Hapus ]
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+    }
+
+    // Event listener untuk hapus
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('btn-hapus-penyelia')) {
+            let userId = parseInt(e.target.getAttribute('data-id'));
+            penyeliaList = penyeliaList.filter(p => p.user_id != userId);
+            renderPenyeliaTable();
+        }
+        
+        if (e.target.classList.contains('btn-hapus-manajer')) {
+            let userId = parseInt(e.target.getAttribute('data-id'));
+            manajerList = manajerList.filter(m => m.user_id != userId);
+            renderManajerTable();
+        }
+    });
 
     document.querySelector('#add').addEventListener('click', function() {
         document.querySelector('#myform').reset();
         document.querySelector('[name="id"]').value = "";
+        // Reset tim lists
+        penyeliaList = [];
+        manajerList = [];
         loadOptions();
         $('#modalForm').modal('show');
     });
@@ -374,10 +544,15 @@
                     li.dataset.value = option.value;
                     li.style.cursor = "pointer";
                     li.addEventListener("click", () => {
+                        console.log('Custom dropdown clicked:', select.id, 'Value:', option.value);
                         select.value = option.value;
                         selected.textContent = option.text;
                         dropdownContainer.style.display = "none";
-                        select.dispatchEvent(new Event("change"));
+                        
+                        // Trigger change event
+                        const changeEvent = new Event("change", { bubbles: true });
+                        select.dispatchEvent(changeEvent);
+                        console.log('Change event dispatched for:', select.id);
                     });
                     dropdown.appendChild(li);
                 }
@@ -405,7 +580,7 @@
         wrapper.appendChild(dropdownContainer);
     }
 
-    // ✅ reset dropdown custom setiap kali modal ditutup
+    //  reset dropdown custom setiap kali modal ditutup
     $('#modalForm').on('hidden.bs.modal', function () {
         document.querySelectorAll('[data-enhanced="true"]').forEach(el => {
             let wrapper = el.parentNode;
@@ -415,14 +590,20 @@
                 el.dataset.enhanced = "false";
             }
         });
+        
+        // Reset tim lists
+        penyeliaList = [];
+        manajerList = [];
+        renderPenyeliaTable();
+        renderManajerTable();
     });
 </script>
 
 <div class="modal fade" id="modalForm" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Form Layanan Lab</h5>
+                <h5 class="modal-title">TAMBAH DATA</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <?php echo form_open('lab/submit', array('id' => 'myform', 'novalidate' => '')) ?>
@@ -479,13 +660,62 @@
                         </div>
                     </div>
                 </div>
-                <div class="row mt-3">
+                <hr class="my-4">
+                <div class="row">
                     <div class="col-12">
-                        <p class="text-muted small fw-bold mb-2">TIM PENANGGUNG JAWAB</p>
-                        <div class="border rounded p-3" style="max-height: 200px; overflow-y: auto;" id="timContainer">
-                            <!-- Checkbox list will be populated here -->
+                        <p class="text-muted small fw-bold mb-3">TIM PENANGGUNG JAWAB</p>
+                    </div>
+                </div>
+
+                <!-- Penyelia Section -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">PENYELIA </label>
+                        <select id="selectPenyelia" class="form-select">
+                            <option value="">[ Pilih Penyelia ... ]</option>
+                        </select>
+                        <div class="table-responsive border rounded mt-3">
+                            <table class="table table-sm table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th width="10%">No.</th>
+                                        <th width="70%">Nama Penyelia</th>
+                                        <th width="20%" class="text-center">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tablePenyelia">
+                                    <tr class="text-muted text-center">
+                                        <td colspan="3"><em>Belum ada penyelia dipilih</em></td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
-                        <small class="text-muted">Pilih satu atau lebih penanggung jawab untuk layanan ini</small>
+                        <p class="small text-muted mt-1 mb-0">(Pilih satu atau lebih penyelia)</p>
+                    </div>
+
+                    <!-- Manajer Teknis Section -->
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">MANAJER TEKNIS</label>
+                        <select id="selectManajer" class="form-select">
+                            <option value="">[Pilih Manajer Teknis ... ]</option>
+                        </select>
+                        <div class="table-responsive border rounded mt-3">
+                            <table class="table table-sm table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th width="10%">No.</th>
+                                        <th width="70%">Nama Manajer Teknis</th>
+                                        <th width="20%" class="text-center">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tableManajer">
+                                    <tr class="text-muted text-center">
+                                        <td colspan="3"><em>Belum ada manajer teknis dipilih</em></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <p class="small text-muted mt-1 mb-0">(Pilih satu atau lebih manajer teknis)</p>
                     </div>
                 </div>
             </div>
