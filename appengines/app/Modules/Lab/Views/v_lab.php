@@ -365,9 +365,9 @@
                         <td>${idx + 1}.</td>
                         <td>${user.username}</td>
                         <td class="text-center">
-                            <button type="button" class="btn btn-sm btn-danger btn-hapus-penyelia" data-id="${user.user_id}" title="Hapus">
-                                [ Hapus ]
-                            </button>
+                            <span class="text-danger btn-action btn-hapus-penyelia" data-id="${user.user_id}" title="Hapus" style="cursor: pointer;">
+                                <i class="bi bi-trash"></i>
+                            </span>
                         </td>
                     </tr>
                 `;
@@ -388,9 +388,9 @@
                         <td>${idx + 1}.</td>
                         <td>${user.username}</td>
                         <td class="text-center">
-                            <button type="button" class="btn btn-sm btn-danger btn-hapus-manajer" data-id="${user.user_id}" title="Hapus">
-                                [ Hapus ]
-                            </button>
+                            <span class="text-danger btn-action btn-hapus-manajer" data-id="${user.user_id}" title="Hapus" style="cursor: pointer;">
+                                <i class="bi bi-trash"></i>
+                            </span>
                         </td>
                     </tr>
                 `;
@@ -400,14 +400,16 @@
 
     // Event listener untuk hapus
     document.addEventListener('click', function(e) {
-        if (e.target.classList.contains('btn-hapus-penyelia')) {
-            let userId = parseInt(e.target.getAttribute('data-id'));
+        const target = e.target.closest('.btn-hapus-penyelia');
+        if (target) {
+            let userId = parseInt(target.getAttribute('data-id'));
             penyeliaList = penyeliaList.filter(p => p.user_id != userId);
             renderPenyeliaTable();
         }
         
-        if (e.target.classList.contains('btn-hapus-manajer')) {
-            let userId = parseInt(e.target.getAttribute('data-id'));
+        const targetManajer = e.target.closest('.btn-hapus-manajer');
+        if (targetManajer) {
+            let userId = parseInt(targetManajer.getAttribute('data-id'));
             manajerList = manajerList.filter(m => m.user_id != userId);
             renderManajerTable();
         }
@@ -511,12 +513,7 @@
         selected.className = "selected";
         selected.textContent = select.options[select.selectedIndex]?.text || "-- pilih data --";
 
-        const caret = document.createElement("span");
-        caret.innerHTML = "&#9662;";
-        caret.style.fontSize = "0.8rem";
-
         customSelect.appendChild(selected);
-        customSelect.appendChild(caret);
 
         const dropdownContainer = document.createElement("div");
         dropdownContainer.className = "dropdown-menu w-100 p-2 shadow";
