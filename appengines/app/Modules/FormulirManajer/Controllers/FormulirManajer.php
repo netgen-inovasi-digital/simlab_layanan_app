@@ -460,9 +460,9 @@ public function approveDetail()
 
         $parentUpdated = false;
         if ($pendingRemaining === 0) {
-            // Jika tidak ada pending sama sekali, update parent menjadi Pengujian (4)
+            // Jika tidak ada pending sama sekali, update parent menjadi status 3 (Layanan terkirim ke admin)
             $model = new MyModel($this->table);
-            $resParent = $model->updateData(['lnStatus' => 4], $this->id, $lnId);
+            $resParent = $model->updateData(['lnStatus' => 3], $this->id, $lnId);
             $parentUpdated = ($resParent === true || $resParent === 1);
         }
 
@@ -504,9 +504,9 @@ public function approveDetail()
         $pendingRemaining = (int) $pendingBuilder->countAllResults(false);
 
         if ($pendingRemaining === 0) {
-            // KONSISTENSI: set ke 4 (Pengujian) bila sudah tidak ada pending
+            // Update ke 3 (Layanan terkirim ke admin) bila sudah tidak ada pending
             $model = new MyModel($this->table);
-            $resParent = $model->updateData(['lnStatus' => 4], $this->id, $lnId);
+            $resParent = $model->updateData(['lnStatus' => 3], $this->id, $lnId);
             $parentUpdated = ($resParent === true || $resParent === 1);
         }
     }
@@ -548,6 +548,7 @@ public function approveDetail()
         $uji = (int)$ujiRaw;
 
         try {
+            $lnId = $this->encrypter->decrypt(hex2bin($lnEnc));
         } catch (\Exception $e) {
             return $this->response->setJSON([
                 'res' => false,
