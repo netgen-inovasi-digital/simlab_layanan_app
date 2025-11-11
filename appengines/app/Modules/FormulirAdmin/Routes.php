@@ -23,3 +23,13 @@ $routes->group('formuliradmin', ['namespace' => 'Modules\FormulirAdmin\Controlle
     $subroutes->get('checkVerified', 'FormulirAdmin::checkVerified', ['as' => 'formuliradmin.checkVerified']);
     $subroutes->get('kategoriList', 'FormulirAdmin::kategoriList', ['as' => 'formuliradmin.kategoriList']);
 });
+
+// Group routing untuk Rapat JAS (khusus kode_jenis = 'D')
+$routes->group('formuliradminrapatjas', ['namespace' => 'Modules\FormulirAdmin\Controllers'], function ($subroutes) {
+    $subroutes->get('/', 'FormulirAdminRapatJas::index', ['as' => 'formuliradminrapatjas.index']);
+    $subroutes->get('datalist', 'FormulirAdminRapatJas::datalist', ['as' => 'formuliradminrapatjas.datalist']);
+    $subroutes->get('detaillist/(:any)', 'FormulirAdminRapatJas::detaillist/$1', ['as' => 'formuliradminrapatjas.detaillist']);
+    $subroutes->post('submit', 'FormulirAdminRapatJas::submit', ['as' => 'formuliradminrapatjas.submit']);
+    $subroutes->post('delete/(:any)', 'FormulirAdminRapatJas::delete/$1', ['as' => 'formuliradminrapatjas.delete']);
+    $subroutes->post('approve/(:any)', 'FormulirAdminRapatJas::approve/$1', ['as' => 'formuliradminrapatjas.approve']);
+});
