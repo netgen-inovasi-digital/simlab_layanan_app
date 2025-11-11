@@ -61,10 +61,11 @@ class Manajerteknis extends BaseController
 
         $db = \Config\Database::connect();
 
+        // Hapus semua relasi manajer teknis-layanan di tabel r_tim
+        $db->table('r_tim')->where('user_id', $id)->delete();
+
         // Hapus akun Manajer Teknis dari simlab_account
         $model = new MyModel($this->table);
-        // Karena di database FK simlab_r_layanan_pengujian.ujiManajerTeknis
-        // sudah ON DELETE SET NULL, maka kolom ujiManajerTeknis otomatis jadi NULL
         $res = $model->deleteData('user_id', $id); 
 
         return $this->response->setJSON([
@@ -134,8 +135,9 @@ class Manajerteknis extends BaseController
 
             $id = bin2hex($this->encrypter->encrypt($row->user_id));
 
-            $count = $db->table('simlab_r_layanan_pengujian')
-                        ->where('ujiManajerTeknis', $row->user_id)
+            // Hitung jumlah layanan dari tabel r_tim
+            $count = $db->table('r_tim')
+                        ->where('user_id', $row->user_id)
                         ->countAllResults();
 
             $aktif = $row->status_user == 1
@@ -144,29 +146,15 @@ class Manajerteknis extends BaseController
 
             $data[] = [
                 $row->username,
-                '<button class="btn btn-sm btn-info" onclick="lihatLayanan(\''.$id.'\')">
-                    <i class="bi bi-eye"></i> '.$count.' layanan
-                 </button>',
                 $row->nama,
                 $aktif,
-                $this->aksi($id)
+                '<button class="btn btn-sm btn-info" onclick="lihatLayanan(\''.$id.'\')">
+                    <i class="bi bi-eye"></i> '.$count.' layanan
+                 </button>'
             ];
         }
 
         return $this->response->setJSON(['items' => $data]);
-    }
-
-    private function aksi($id)
-    {
-        return '<div id="' . $id . '" class="float-end">
-            <span class="text-secondary btn-action" title="Ubah" onclick="editItem(event)">
-                <i class="bi bi-pencil-square"></i>
-            </span> 
-            <label class="divider">|</label>
-            <span class="text-danger btn-action" title="Hapus" onclick="deleteManajerteknis(event)">
-                <i class="bi bi-trash"></i>
-            </span>
-        </div>';
     }
 
     public function deleteLayanan($id)
@@ -183,9 +171,11 @@ class Manajerteknis extends BaseController
         }
 
         $db = \Config\Database::connect();
-        $res = $db->table('simlab_r_layanan_pengujian')
-                  ->where('ujiKode', $ujiKode)
-                  ->update(['ujiManajerTeknis' => null]);
+        
+        // Hapus relasi dari tabel r_tim
+        $res = $db->table('r_tim')
+                  ->where('uji_kode', $ujiKode)
+                  ->delete();
 
         return $this->response->setJSON([
             'res' => $res ? 'ok' : 'fail',
@@ -222,25 +212,32 @@ class Manajerteknis extends BaseController
 
         $search = $this->request->getGet('search') ?? '';
 
-        $builder = $db->table('simlab_r_layanan_pengujian')
-                      ->select('ujiKode, ujiLayanan, ujiManajerTeknis')
-                      ->orderBy('ujiLayanan', 'ASC');
+        $builder = $db->table('r_layanan_pengujian')
+                      ->select('kode, nama_layanan')
+                      ->orderBy('nama_layanan', 'ASC');
 
         if ($search !== '') {
-            $builder->like('ujiLayanan', $search);
+            $builder->like('nama_layanan', $search);
         }
 
         $layanan = $builder->get()->getResult();
 
+        // Ambil semua layanan yang sudah dikelola manajer teknis ini
+        $assignedLayanan = $db->table('r_tim')
+                              ->select('uji_kode')
+                              ->where('user_id', $user_id)
+                              ->get()
+                              ->getResultArray();
+        $assignedKodes = array_column($assignedLayanan, 'uji_kode');
+
         $items = [];
         foreach ($layanan as $l) {
-            if ($l->ujiManajerTeknis !== null && $l->ujiManajerTeknis != $account->user_id) continue;
+            $idEnc = bin2hex($this->encrypter->encrypt($l->kode));
+            $isAssigned = in_array($l->kode, $assignedKodes);
 
-            $idEnc = bin2hex($this->encrypter->encrypt($l->ujiKode));
-
-            if ($l->ujiManajerTeknis == $account->user_id) {
+            if ($isAssigned) {
                 $items[] = [
-                    'nama'   => $l->ujiLayanan,
+                    'nama'   => $l->nama_layanan,
                     'status' => '<span class="text-primary"><i class="bi bi-check-circle"></i> Sudah Dikelola</span>',
                     'aksi'   => '<button class="btn btn-sm btn-danger" data-id="'.$idEnc.'" onclick="deleteItem(event)">
                                     <i class="bi bi-trash"></i> Hapus
@@ -248,7 +245,7 @@ class Manajerteknis extends BaseController
                 ];
             } else { 
                 $items[] = [
-                    'nama'   => $l->ujiLayanan,
+                    'nama'   => $l->nama_layanan,
                     'status' => '<span class="text-muted"><i class="bi bi-dash-circle"></i> Belum Ditambahkan</span>',
                     'aksi'   => '<button class="btn btn-sm btn-success" onclick="pilihLayanan(\''.$idEnc.'\', \''.$id.'\')">
                                     <i class="bi bi-plus-circle"></i> Tambah
@@ -298,8 +295,9 @@ class Manajerteknis extends BaseController
             ]);
         }
 
-        $model = new MyModel('simlab_r_layanan_pengujian');
-        $exists = $model->getDataById('ujiKode', $idLayanan);
+        // Cek apakah layanan ada di r_layanan_pengujian
+        $model = new MyModel('r_layanan_pengujian');
+        $exists = $model->getDataById('kode', $idLayanan);
         if (!$exists) {
             return $this->response->setJSON([
                 'res' => 'fail',
@@ -309,7 +307,15 @@ class Manajerteknis extends BaseController
             ]);
         }
 
-        if ($exists->ujiManajerTeknis == $idManajer) {
+        // Cek apakah relasi sudah ada di r_tim
+        $db = \Config\Database::connect();
+        $existing = $db->table('r_tim')
+                       ->where('uji_kode', $idLayanan)
+                       ->where('user_id', $idManajer)
+                       ->get()
+                       ->getRow();
+
+        if ($existing) {
             return $this->response->setJSON([
                 'res' => 'fail',
                 'msg' => 'Layanan sudah ditambahkan ke Manajer Teknis ini!',
@@ -318,7 +324,12 @@ class Manajerteknis extends BaseController
             ]);
         }
 
-        $res = $model->updateData(['ujiManajerTeknis' => $idManajer], 'ujiKode', $idLayanan);
+        // Insert relasi baru ke tabel r_tim
+        $timModel = new MyModel('r_tim');
+        $res = $timModel->insertData([
+            'uji_kode' => $idLayanan,
+            'user_id'  => $idManajer
+        ]);
 
         return $this->response->setJSON([
             'res' => $res ? 'ok' : 'fail',
