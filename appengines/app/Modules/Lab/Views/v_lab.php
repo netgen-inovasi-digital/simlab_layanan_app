@@ -78,10 +78,19 @@
         let val = this.value;
         let newUrl = apiUrl + "?page=" + currentPage + "&limit=" + currentLimit;
         if (val !== "") {
-            newUrl = apiUrl + "?ujiJenKode=" + encodeURIComponent(val) + "&page=" + currentPage + "&limit=" + currentLimit;
+            newUrl = apiUrl + "?kode_jenis=" + encodeURIComponent(val) + "&page=" + currentPage + "&limit=" + currentLimit;
         }
         table = loadTable(newUrl);
         addAction();
+    });
+
+    // Event listener untuk button lihat tim
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.btn-lihat-tim')) {
+            const btn = e.target.closest('.btn-lihat-tim');
+            const id = btn.getAttribute('data-id');
+            lihatTim(id);
+        }
     });
 
     document.querySelector('#formDiskonULM').addEventListener('submit', function(e) {
@@ -186,17 +195,15 @@
         fetch('<?php echo site_url("lab/getoptions") ?>')
             .then(res => res.json())
             .then(data => {
-                let jenis = document.querySelector('[name="ujiJenKode"]');
-                let alat  = document.querySelector('[name="ujiAlatKode"]');
-                let para  = document.querySelector('[name="ujiParaKode"]');
-                let penyelia = document.querySelector('[name="ujiPenyelia"]');
-                let manajer  = document.querySelector('[name="ujiManajerTeknis"]');
+                let jenis = document.querySelector('[name="kode_jenis"]');
+                let alat  = document.querySelector('[name="kode_alat"]');
+                let para  = document.querySelector('[name="kode_parameter"]');
+                let timContainer = document.querySelector('#timContainer');
 
                 jenis.innerHTML = '<option value="">-- Pilih Jenis --</option>';
                 alat.innerHTML  = '<option value="">-- Pilih Alat --</option>';
                 para.innerHTML  = '<option value="">-- Pilih Parameter --</option>';
-                penyelia.innerHTML = '<option value="">-- Pilih Penyelia --</option>';
-                manajer.innerHTML  = '<option value="">-- Pilih Manajer Teknis --</option>';
+                timContainer.innerHTML = '';
 
                 data.jenis.forEach(j => {
                     jenis.innerHTML += `<option value="${j.jenKode}" ${selected.jenis==j.jenKode?"selected":""}>${j.jenNama}</option>`;
@@ -207,14 +214,21 @@
                 data.parameter.forEach(p => {
                     para.innerHTML += `<option value="${p.paraKode}" ${selected.para==p.paraKode?"selected":""}>${p.paraNama}</option>`;
                 });
-                data.penyelia.forEach(sp => {
-                    penyelia.innerHTML += `<option value="${sp.user_id}" ${selected.penyelia==sp.user_id?"selected":""}>${sp.username}</option>`;
-                });
-                data.manajer.forEach(sm => {
-                    manajer.innerHTML += `<option value="${sm.user_id}" ${selected.manajer==sm.user_id?"selected":""}>${sm.username}</option>`;
+                
+                // Render checkbox list for tim
+                data.users.forEach(user => {
+                    let checked = (selected.tim && selected.tim.includes(user.user_id)) ? 'checked' : '';
+                    timContainer.innerHTML += `
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="tim[]" value="${user.user_id}" id="tim_${user.user_id}" ${checked}>
+                            <label class="form-check-label" for="tim_${user.user_id}">
+                                ${user.nama || user.username}
+                            </label>
+                        </div>
+                    `;
                 });
 
-                let namaLayananInput = document.querySelector('[name="ujiLayanan"]');
+                let namaLayananInput = document.querySelector('[name="nama_layanan"]');
                 function autoFillNamaLayanan() {
                     let alatText = alat.options[alat.selectedIndex]?.text || "";
                     let paraText = para.options[para.selectedIndex]?.text || "";
@@ -225,12 +239,10 @@
                 alat.addEventListener('change', autoFillNamaLayanan);
                 para.addEventListener('change', autoFillNamaLayanan);
 
-                // Aktifkan search untuk semua dropdown
-                selectSearch('[name="ujiJenKode"]');
-                selectSearch('[name="ujiAlatKode"]');
-                selectSearch('[name="ujiParaKode"]');
-                selectSearch('[name="ujiPenyelia"]');
-                selectSearch('[name="ujiManajerTeknis"]');
+                // Aktifkan search untuk dropdown
+                selectSearch('[name="kode_jenis"]');
+                selectSearch('[name="kode_alat"]');
+                selectSearch('[name="kode_parameter"]');
             });
     }
 
@@ -247,19 +259,57 @@
             .then(res => res.json())
             .then(data => {
                 document.querySelector('[name="id"]').value = data.id;
-                document.querySelector('[name="ujiLayanan"]').value = data.ujiLayanan;
-                document.querySelector('[name="ujiSatuan"]').value = data.ujiSatuan;
-                document.querySelector('[name="ujiBiaya"]').value = data.ujiBiaya;
-                document.querySelector('[name="ujiDiskon"]').value = data.ujiDiskon;
+                document.querySelector('[name="nama_layanan"]').value = data.nama_layanan;
+                document.querySelector('[name="satuan"]').value = data.satuan;
+                document.querySelector('[name="biaya"]').value = data.biaya;
+                document.querySelector('[name="diskon"]').value = data.diskon;
                 loadOptions({
-                    jenis: data.ujiJenKode,
-                    alat: data.ujiAlatKode,
-                    para: data.ujiParaKode,
-                    penyelia: data.ujiPenyelia,
-                    manajer: data.ujiManajerTeknis
+                    jenis: data.kode_jenis,
+                    alat: data.kode_alat,
+                    para: data.kode_parameter,
+                    tim: data.tim || []
                 });
                 $('#modalForm').modal('show');
             });
+    }
+
+    function lihatTim(id) {
+        showLoading();
+        fetch('<?php echo site_url("lab/getTim/") ?>' + id)
+            .then(res => res.json())
+            .then(data => {
+                if (data.res && data.data) {
+                    let tbody = document.querySelector('#timTableBody');
+                    tbody.innerHTML = '';
+                    
+                    if (data.data.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Belum ada tim penanggung jawab</td></tr>';
+                    } else {
+                        data.data.forEach((member, idx) => {
+                            // Determine if Manajer Teknis or Penyelia
+                            let isManajer = member.role_id == 4; // role_id 4 = Manajer Teknis
+                            let isPenyelia = member.role_id == 6; // role_id 6 = Penyelia
+                            
+                            tbody.innerHTML += `
+                                <tr>
+                                    <td>${idx + 1}</td>
+                                    <td>${member.username}</td>
+                                    <td class="text-center">${isManajer ? '<i class="bi bi-check-circle-fill text-success"></i>' : '-'}</td>
+                                    <td class="text-center">${isPenyelia ? '<i class="bi bi-check-circle-fill text-success"></i>' : '-'}</td>
+                                </tr>
+                            `;
+                        });
+                    }
+                    
+                    $('#modalTim').modal('show');
+                } else {
+                    sayAlert('errorModal', 'Error', 'Gagal memuat data tim.', 'warning');
+                }
+            })
+            .catch(err => {
+                sayAlert('errorModal', 'Error', 'Terjadi kesalahan sistem.', 'warning');
+            })
+            .finally(() => hideLoading());
     }
 
     // ===== Dropdown dengan Search =====
@@ -383,32 +433,20 @@
                         <p class="text-muted small fw-bold">KLASIFIKASI LAYANAN</p>
                         <div class="mb-3">
                             <label class="form-label">Jenis Layanan</label>
-                            <select name="ujiJenKode" class="form-select" required>
+                            <select name="kode_jenis" class="form-select" required>
                                 <option value="">-- Pilih Jenis --</option>
                             </select>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Alat</label>
-                            <select name="ujiAlatKode" class="form-select" required>
+                            <select name="kode_alat" class="form-select" required>
                                 <option value="">-- Pilih Alat --</option>
                             </select>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Parameter</label>
-                            <select name="ujiParaKode" class="form-select" required>
+                            <select name="kode_parameter" class="form-select" required>
                                 <option value="">-- Pilih Parameter --</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Penyelia</label>
-                            <select name="ujiPenyelia" class="form-select">
-                                <option value="">-- Pilih Penyelia --</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Manajer Teknis</label>
-                            <select name="ujiManajerTeknis" class="form-select">
-                                <option value="">-- Pilih Manajer Teknis --</option>
                             </select>
                         </div>
                     </div>
@@ -416,7 +454,7 @@
                         <p class="text-muted small fw-bold">DETAIL LAYANAN</p>
                         <div class="mb-3">
                             <label class="form-label">Nama Layanan</label>
-                            <input name="ujiLayanan" type="text" class="form-control" required placeholder="Masukkan nama layanan">
+                            <input name="nama_layanan" type="text" class="form-control" required placeholder="Masukkan nama layanan">
                         </div>
                         <div class="row">
                             <div class="col-sm-7">
@@ -424,21 +462,30 @@
                                     <label class="form-label">Biaya</label>
                                     <div class="input-group">
                                         <span class="input-group-text">Rp</span>
-                                        <input name="ujiBiaya" type="number" class="form-control" required placeholder="Masukkan biaya">
+                                        <input name="biaya" type="number" class="form-control" required placeholder="Masukkan biaya">
                                     </div>
                                 </div>
                             </div>
                             <div class="col-sm-5">
                                 <div class="mb-3">
                                     <label class="form-label">Satuan</label>
-                                    <input name="ujiSatuan" type="text" class="form-control" required placeholder="Sampel/Jam/Ruangan">
+                                    <input name="satuan" type="text" class="form-control" required placeholder="Sampel/Jam/Ruangan">
                                 </div>
                             </div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Diskon (%)</label>
-                            <input name="ujiDiskon" type="number" class="form-control" min="0" max="100" placeholder="Masukkan diskon">
+                            <input name="diskon" type="number" class="form-control" min="0" max="100" placeholder="Masukkan diskon">
                         </div>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <p class="text-muted small fw-bold mb-2">TIM PENANGGUNG JAWAB</p>
+                        <div class="border rounded p-3" style="max-height: 200px; overflow-y: auto;" id="timContainer">
+                            <!-- Checkbox list will be populated here -->
+                        </div>
+                        <small class="text-muted">Pilih satu atau lebih penanggung jawab untuk layanan ini</small>
                     </div>
                 </div>
             </div>
@@ -447,6 +494,44 @@
                 <button class="btn btn-primary" id="btnSimpan" type="submit"><i class="bi bi-check2-circle"></i> Simpan</button>
             </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Lihat Tim -->
+<div class="modal fade" id="modalTim" tabindex="-1" aria-labelledby="modalTimLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="modalTimLabel">
+                    <i class="bi bi-people-fill"></i> Tim Penanggung Jawab
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th width="8%">No</th>
+                            <th width="35%">Username</th>
+                            <th width="28%" class="text-center">Manajer Teknis</th>
+                            <th width="29%" class="text-center">Penyelia</th>
+                        </tr>
+                    </thead>
+                    <tbody id="timTableBody">
+                        <tr>
+                            <td colspan="4" class="text-center">
+                                <div class="spinner-border spinner-border-sm" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+            </div>
         </div>
     </div>
 </div>

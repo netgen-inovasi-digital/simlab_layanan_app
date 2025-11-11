@@ -12,6 +12,7 @@ $routes->group('lab', ['namespace' => 'Modules\Lab\Controllers'], function ($sub
     $subroutes->post('submit', 'Lab::submit');
     $subroutes->get('edit/(:any)', 'Lab::edit/$1');
     $subroutes->get('delete/(:any)', 'Lab::delete/$1');
+    $subroutes->get('getTim/(:any)', 'Lab::getTim/$1');
     $subroutes->get('getoptions', 'Lab::getoptions'); 
     $subroutes->post('update_diskon', 'Lab::update_diskon');
 });
