@@ -88,7 +88,6 @@
                 </div>
 
                 <div id="rekap-hasil" class="mt-4">
-                    <!-- Hasil tabel akan dimuat di sini oleh JavaScript -->
                 </div>
             </div>
         </div>
@@ -137,17 +136,17 @@
     </div>
 </div>
 <script>
-    const jenisLayananSelect = document.getElementById('jenis_layanan');
-    const periodeSelect = document.getElementById('periode');
-    const awalInput = document.getElementById('awal');
-    const akhirInput = document.getElementById('akhir');
-    const bulanWrapper = document.getElementById('bulan-wrapper');
-    const tahunWrapper = document.getElementById('tahun-wrapper');
-    const bulanSelect = document.getElementById('bulan');
-    const tahunInput = document.getElementById('tahun');
-    const awalWrapper = document.getElementById('awal-wrapper');
-    const akhirWrapper = document.getElementById('akhir-wrapper');
-    const rekapHasilContainer = document.getElementById('rekap-hasil');
+    var jenisLayananSelect = document.getElementById('jenis_layanan');
+    var periodeSelect = document.getElementById('periode');
+    var awalInput = document.getElementById('awal');
+    var akhirInput = document.getElementById('akhir');
+    var bulanWrapper = document.getElementById('bulan-wrapper');
+    var tahunWrapper = document.getElementById('tahun-wrapper');
+    var bulanSelect = document.getElementById('bulan');
+    var tahunInput = document.getElementById('tahun');
+    var awalWrapper = document.getElementById('awal-wrapper');
+    var akhirWrapper = document.getElementById('akhir-wrapper');
+    var rekapHasilContainer = document.getElementById('rekap-hasil');
 
     function formatDate(date) {
         return date.toISOString().split('T')[0];
@@ -162,7 +161,6 @@
         };
     }
 
-    // --- PENGELOLAAN FILTER TANGGAL ---
     function setTanggalOtomatis() {
         const now = new Date();
         let awal, akhir;
@@ -210,7 +208,7 @@
         if (!dataArray || dataArray.length === 0) {
             return '<div class="alert alert-info">Tidak ada data rekap untuk ditampilkan.</div>';
         }
-
+        
         dataArray.forEach(data => {
             const { title, kolom_header, ulm_detail, non_ulm_detail, total_ulm, total_non_ulm } = data;
 
@@ -278,8 +276,7 @@
             `;
         });
         
-
-        return allTablesHTML;
+        return allTablesHTML; 
     }
 
     function tampilkanRekap() {
@@ -381,7 +378,7 @@
                 throw new Error('Server error saat cek data: ' + response.statusText);
             }
             
-            const result = await response.json(); 
+            const result = await response.json();
 
             if (result.success === false || !result.data || result.data.length === 0) {
                 if (typeof sayAlert === 'function') {
@@ -405,7 +402,7 @@
                 } else {
                     alert('Tidak ada data untuk diekspor (total 0).');
                 }
-                return; 
+                return;
             }
 
             const downloadUrl = `<?php echo site_url('rekap/download'); ?>?jenis_layanan=${jenis}&tanggal_awal=${tanggal_awal}&tanggal_akhir=${tanggal_akhir}`;
@@ -423,23 +420,22 @@
         }
     }
 
+
     
     document.querySelector('.download').addEventListener('click', function(e) {
         e.preventDefault();
         confirmDownload(); 
     });
 
-
     jenisLayananSelect.addEventListener('change', tampilkanRekap);
     
     periodeSelect.addEventListener('change', () => {
         setTanggalOtomatis();
-        tampilkanRekap();
+        tampilkanRekap(); 
     });
     
     bulanSelect.addEventListener('change', tampilkanRekap);
     
-    // Gunakan debounce untuk input ketik agar tidak memanggil API di setiap ketukan
     tahunInput.addEventListener('input', debounce(tampilkanRekap, 500));
     
     awalInput.addEventListener('change', tampilkanRekap);
@@ -447,5 +443,5 @@
 
 
     setTanggalOtomatis();
-    tampilkanRekap(); 
+    tampilkanRekap();
 </script>
