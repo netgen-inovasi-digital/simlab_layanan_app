@@ -9,7 +9,6 @@ require_once APPPATH . 'Libraries/SimpleXLSXGen/src/SimpleXLSXGen.php';
 
 class Rekap extends BaseController
 {
-    // Nama tabel disesuaikan dengan simlab_terpadu (1).sql
     private $table_pembayaran = 't_pembayaran';
     private $table_layanan = 'simlab_t_layanan';
     private $table_detil = 't_layanan_detil';
@@ -36,69 +35,58 @@ class Rekap extends BaseController
         return view('Modules\Rekap\Views\v_rekap', $data);
     }
 
-    /**
-     * [VERSI DINAMIS - UNTUK TAMPILAN WEB]
-     * Endpoint untuk AJAX men-generate ringkasan (dipakai oleh tampilan)
-     */
     public function dataList()
     {
-        $jenis_layanan = $this->request->getGet('jenis_layanan');
+        $jenis_layanan_filter = $this->request->getGet('jenis_layanan');
         $tanggal_awal = $this->request->getGet('tanggal_awal');
         $tanggal_akhir = $this->request->getGet('tanggal_akhir');
 
         $db = \Config\Database::connect();
 
-        // --- QUERY UNTUK MENGHITUNG TOTAL DARI DETAIL ---
-        $builder = $db->table($this->table_detil . ' d');
-        $builder->select("
-            SUM(CASE WHEN u.user_identity = 'ULM' THEN (d.biaya * d.jumlah) ELSE 0 END) AS total_ulm,
-            SUM(CASE WHEN u.user_identity != 'ULM' THEN (d.biaya * d.jumlah) ELSE 0 END) AS total_non_ulm
-        ");
-        $builder->join($this->table_layanan . ' l', 'd.kode_layanan = l.lnKode', 'inner');
-        $builder->join('simlab_account_users u', 'l.user_id = u.user_id', 'inner');
-        $builder->join($this->table_pembayaran . ' p', 'l.lnKode = p.bayarLnKode', 'inner');
-
-        if (!empty($jenis_layanan) && $jenis_layanan !== 'semua') {
-            $builder->where('d.kode_jenis', $jenis_layanan);
-        }
-        if (!empty($tanggal_awal) && !empty($tanggal_akhir)) {
-            $builder->where('p.bayarInvoiceTgl >=', $tanggal_awal);
-            $builder->where('p.bayarInvoiceTgl <=', $tanggal_akhir);
-        }
-        $result = $builder->get()->getRow();
-
-        // --- PERSIAPAN DATA UNTUK RESPONSE ---
-
-        // 1. Ambil Judul Halaman (BARU)
+        // 1. Ambil daftar Jenis Layanan yang akan ditampilkan
         $model_jenis = new MyModel($this->table_jenis);
-        $jenis_info = null;
-        if (!empty($jenis_layanan) && $jenis_layanan !== 'semua') {
-            $jenis_info = $model_jenis->getDataById('jenKode', $jenis_layanan);
-            $judul_halaman = $jenis_info ? ($jenis_info->jenKode . '. ' . $jenis_info->jenNama) : 'Rekap Pembayaran';
-        } else {
-            $judul_halaman = 'Rekap Pembayaran (Semua Layanan)';
+        if (!empty($jenis_layanan_filter) && $jenis_layanan_filter !== 'semua') {
+            $model_jenis->where('jenKode', $jenis_layanan_filter);
+        }
+        $daftar_jenis = $model_jenis->getAllData('jenKode', 'ASC');
+
+        // 2. Ambil semua total, digabungkan berdasarkan kode_jenis
+        $totals_lookup = $this->getTotalsLookup($tanggal_awal, $tanggal_akhir);
+
+        // 3. Ambil semua template kolom keuangan, digabungkan berdasarkan kdJenKode
+        $kolom_lookup = $this->getKolomKeuanganLookup();
+
+        // 4. Bangun Array Respon
+        $rekap_data = [];
+        
+        if (empty($daftar_jenis)) {
+             return $this->response->setJSON(['success' => false, 'message' => 'Jenis layanan tidak ditemukan.']);
         }
 
-        // 2. Ambil template kolom dinamis (LOGIKA BARU)
-        $kolom_template = $this->getKolomKeuangan($jenis_layanan);
+        foreach ($daftar_jenis as $jenis) {
+            $jenKode = $jenis->jenKode;
 
-        // 3. Siapkan total
-        $total_ulm = $result->total_ulm ?? 0;
-        $total_non_ulm = $result->total_non_ulm ?? 0;
+            // Ambil total untuk jenis ini (atau 0 jika tidak ada)
+            $total_ulm = $totals_lookup[$jenKode]['total_ulm'] ?? 0;
+            $total_non_ulm = $totals_lookup[$jenKode]['total_non_ulm'] ?? 0;
 
-        // 4. Buat data rekap dinamis
-        $rekap = [
-            'title' => $judul_halaman, // Kirim judul ke JS
-            'kolom_header' => $kolom_template,
-            'total_ulm' => (float) $total_ulm,
-            'total_non_ulm' => (float) $total_non_ulm,
-            'ulm_detail' => $this->hitungPembagianDinamis($total_ulm, $kolom_template),
-            'non_ulm_detail' => $this->hitungPembagianDinamis($total_non_ulm, $kolom_template),
-        ];
+            // Ambil template kolom untuk jenis ini (atau [] jika tidak ada)
+            $kolom_template = $kolom_lookup[$jenKode] ?? [];
+
+            // Buat objek data untuk tabel ini
+            $rekap_data[] = [
+                'title' => $jenis->jenKode . '. ' . $jenis->jenNama,
+                'kolom_header' => $kolom_template,
+                'total_ulm' => (float) $total_ulm,
+                'total_non_ulm' => (float) $total_non_ulm,
+                'ulm_detail' => $this->hitungPembagianDinamis($total_ulm, $kolom_template),
+                'non_ulm_detail' => $this->hitungPembagianDinamis($total_non_ulm, $kolom_template),
+            ];
+        }
 
         $response_data = [
             'success' => true,
-            'data' => $rekap,
+            'data' => $rekap_data, 
             'xname' => csrf_token(),
             'xhash' => csrf_hash(),
         ];
@@ -106,33 +94,54 @@ class Rekap extends BaseController
         return $this->response->setJSON($response_data);
     }
 
-    /**
-     * [BARU - DIMODIFIKASI] Ambil template kolom keuangan dari DB
-     *
-     * [PERUBAHAN] Tampilkan SEMUA kolom jika 'Semua' dipilih.
-     */
-    private function getKolomKeuangan($jenis_layanan = null)
+    private function getTotalsLookup($tanggal_awal, $tanggal_akhir)
     {
-        $model = new MyModel($this->table_kolom_keuangan);
+        $db = \Config\Database::connect();
+        $builder = $db->table($this->table_detil . ' d');
+        $builder->select("
+            d.kode_jenis,
+            SUM(CASE WHEN u.user_identity = 'ULM' THEN (d.biaya * d.jumlah) ELSE 0 END) AS total_ulm,
+            SUM(CASE WHEN u.user_identity != 'ULM' THEN (d.biaya * d.jumlah) ELSE 0 END) AS total_non_ulm
+        ");
+        $builder->join($this->table_layanan . ' l', 'd.kode_layanan = l.lnKode', 'inner');
+        $builder->join('simlab_account_users u', 'l.user_id = u.user_id', 'inner');
+        $builder->join($this->table_pembayaran . ' p', 'l.lnKode = p.bayarLnKode', 'inner');
 
-        // JIKA 'Semua' dipilih, JANGAN filter. Tampilkan semua kolom.
-        if (empty($jenis_layanan) || $jenis_layanan === 'semua') {
-            // Tidak ada $model->where()
-        } else {
-            // Jika B, C, D, dll. dipilih, ambil kolom spesifik
-            $model->where('kdJenKode', $jenis_layanan);
+        if (!empty($tanggal_awal) && !empty($tanggal_akhir)) {
+            $builder->where('p.bayarInvoiceTgl >=', $tanggal_awal);
+            $builder->where('p.bayarInvoiceTgl <=', $tanggal_akhir);
         }
+        
+        $builder->groupBy('d.kode_jenis');
+        $results = $builder->get()->getResult();
 
-        // Urutkan berdasarkan kdKode agar urutannya konsisten
-        return $model->getAllData('kdKode', 'ASC');
+        $lookup = [];
+        foreach ($results as $row) {
+            $lookup[$row->kode_jenis] = [
+                'total_ulm' => $row->total_ulm,
+                'total_non_ulm' => $row->total_non_ulm
+            ];
+        }
+        return $lookup;
     }
 
-    /**
-     * [BARU] Hitung pembagian biaya dinamis berdasarkan template DB
-     */
+    private function getKolomKeuanganLookup()
+    {
+        $model = new MyModel($this->table_kolom_keuangan);
+        $all_kolom = $model->getAllData('kdJenKode, kdKode', 'ASC');
+        
+        $lookup = [];
+        foreach ($all_kolom as $kolom) {
+            if (!isset($lookup[$kolom->kdJenKode])) {
+                $lookup[$kolom->kdJenKode] = [];
+            }
+            $lookup[$kolom->kdJenKode][] = $kolom;
+        }
+        return $lookup;
+    }
+
     private function hitungPembagianDinamis($total, $kolom_template)
     {
-        // ... (Fungsi ini tidak perlu diubah, sudah benar) ...
         $total = (float) $total;
         $pembagian = [];
 
@@ -152,10 +161,6 @@ class Rekap extends BaseController
     }
 
 
-    /**
-     * [VERSI BARU - UNTUK EXCEL DOWNLOAD]
-     * Fungsi Download REKAP PENDAPATAN per Layanan
-     */
     public function download()
     {
         // 1. Ambil Filter Tanggal & Jenis
@@ -217,7 +222,6 @@ class Rekap extends BaseController
 
         // 6. Siapkan Data Excel
         try {
-            // --- Style Definitions (Tetap Sama) ---
             $headerStyle = '<style bgcolor="#f2f2f2" border="thin" font-style="bold"><b><center>_TEXT_</center></b></style>';
             $categoryStyle = '<style bgcolor="#ffff00" border="thin" font-style="bold"><b>_TEXT_</b></style>'; 
             $categoryStyleEmpty = '<style bgcolor="#ffff00" border="thin"></style>'; 
@@ -231,7 +235,6 @@ class Rekap extends BaseController
             $formatCurrency = function ($number) {
                 return 'Rp ' . number_format((float)$number, 2, ',', '.');
             };
-            // ------------------------------------
 
             $excelData = [];
 
@@ -242,13 +245,13 @@ class Rekap extends BaseController
             
             $excelData[] = ['<style font-size="14"><b>' . $titleText . '</b></style>', '', '', ''];
             $excelData[] = ['<style font-size="12"><b>' . $periodText . '</b></style>', '', '', ''];
-            $excelData[] = []; // Baris kosong
+            $excelData[] = []; 
 
             // Header Utama (4 Kolom)
             $excelData[] = [
                 str_replace('_TEXT_', 'No.', $headerStyle),
                 str_replace('_TEXT_', 'Uraian Kegiatan', $headerStyle),
-                str_replace('_TEXT_', 'ULM (Rp)', $headerStyle),
+                str_replace('_TEXT_', 'ULM', $headerStyle),
                 str_replace('_TEXT_', 'NON-ULM', $headerStyle),
             ];
 
@@ -332,7 +335,7 @@ class Rekap extends BaseController
             // Atur lebar kolom
             $xlsx->setColWidth(1, 6); // No.
             $xlsx->setColWidth(2, 45); // Uraian
-            $xlsx->setColWidth(3, 25); // ULM (Rp)
+            $xlsx->setColWidth(3, 25); // ULM 
             $xlsx->setColWidth(4, 25); // NON-ULM
 
             $rowIndex = 5; 
@@ -348,7 +351,7 @@ class Rekap extends BaseController
                 }
 
                 $rowIndex += $layanan_count; 
-                $rowIndex++; // Lewati baris subtotal
+                $rowIndex++; 
             }
             
             ob_clean();

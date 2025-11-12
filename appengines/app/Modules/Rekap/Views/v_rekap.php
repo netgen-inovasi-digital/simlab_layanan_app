@@ -36,8 +36,8 @@
                                     <div class="col-md-2">
                                         <label for="periode" class="form-label small">Periode</label>
                                         <select id="periode" class="form-select">
-                                            <option value="hari_ini">Hari Ini</option>
-                                            <option value="7_hari" selected>7 Hari Terakhir</option>
+                                            <option value="hari_ini" selected>Hari Ini</option>
+                                            <option value="7_hari">7 Hari Terakhir</option>
                                             <option value="pilih_bulan">Pilih Bulan</option>
                                             <option value="custom">Pilih Tanggal</option>
                                         </select>
@@ -76,10 +76,6 @@
 
                                     <div class="col-md-3 d-flex align-items-end">
                                         <div class="d-flex gap-2 w-100">
-                                            <button type="button" class="btn btn-primary w-100 rounded-pill py-2 tampil">
-                                                <i class="bi bi-search me-1"></i> Tampilkan
-                                            </button>
-                                            
                                             <button type="button" class="btn btn-success w-100 rounded-pill py-2 download">
                                                 <i class="bi bi-file-earmark-excel me-1"></i> Download
                                             </button>
@@ -141,7 +137,6 @@
     </div>
 </div>
 <script>
-    // --- ELEMENT SELECTORS ---
     const jenisLayananSelect = document.getElementById('jenis_layanan');
     const periodeSelect = document.getElementById('periode');
     const awalInput = document.getElementById('awal');
@@ -153,17 +148,11 @@
     const awalWrapper = document.getElementById('awal-wrapper');
     const akhirWrapper = document.getElementById('akhir-wrapper');
     const rekapHasilContainer = document.getElementById('rekap-hasil');
-    const tampilkanButton = document.querySelector('.tampil'); // Ambil tombol tampilkan
 
-    // --- HELPER FUNCTIONS ---
     function formatDate(date) {
         return date.toISOString().split('T')[0];
     }
 
-    /**
-     * [BARU] Fungsi Debounce
-     * Menunda eksekusi fungsi agar tidak dipanggil terlalu sering.
-     */
     function debounce(func, delay) {
         let timeout;
         return function(...args) {
@@ -214,76 +203,91 @@
         akhirInput.value = akhir;
     }
 
-    // --- FUNGSI UNTUK MERENDER TABEL (VERSI DINAMIS) ---
-    function renderRekapTable(data) {
-        // Ekstrak data dari respons JSON baru
-        // [PERUBAHAN] Tambahkan 'title'
-        const { title, kolom_header, ulm_detail, non_ulm_detail, total_ulm, total_non_ulm } = data;
+    function renderAllTables(dataArray) {
         const formatCurrency = (number) => `Rp ${Intl.NumberFormat('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(number)}`;
+        let allTablesHTML = ''; 
 
-        // 1. Bangun Kolom Header (THEAD) secara dinamis
-        let headerHTML = '';
-        if (kolom_header && kolom_header.length > 0) {
-            kolom_header.forEach(kolom => {
-                // Ambil label dan persen dari DB
-                headerHTML += `<th class="text-nowrap">${kolom.kdKolomLabel} (${kolom.kdPersenNONULM}%)</th>`;
-            });
+        if (!dataArray || dataArray.length === 0) {
+            return '<div class="alert alert-info">Tidak ada data rekap untuk ditampilkan.</div>';
         }
 
-        // 2. Bangun sel data (TD) untuk baris ULM
-        let ulmRowHTML = '';
-        if (ulm_detail && ulm_detail.length > 0) {
-            ulm_detail.forEach(detail => {
-                ulmRowHTML += `<td>${formatCurrency(detail.value)}</td>`;
-            });
-        }
+        dataArray.forEach(data => {
+            const { title, kolom_header, ulm_detail, non_ulm_detail, total_ulm, total_non_ulm } = data;
 
-        // 3. Bangun sel data (TD) untuk baris Non-ULM
-        let nonUlmRowHTML = '';
-        if (non_ulm_detail && non_ulm_detail.length > 0) {
-            non_ulm_detail.forEach(detail => {
-                nonUlmRowHTML += `<td>${formatCurrency(detail.value)}</td>`;
-            });
-        }
+            let headerHTML = '';
+            if (kolom_header && kolom_header.length > 0) {
+                kolom_header.forEach(kolom => {
+                    headerHTML += `<th class="text-nowrap">${kolom.kdKolomLabel} (${kolom.kdPersenNONULM}%)</th>`;
+                });
+            }
 
-        // 4. Gabungkan semuanya menjadi tabel HTML
-        // [PERUBAHAN] Ganti <h5> statis dengan data.title
-        const tableHTML = `
-        <h5 class="mb-3">${title}</h5>
-        <div class="table-responsive">
-            <table class="table table-bordered text-center">
-                <thead class="table-light">
-                    <tr>
-                        <th class="text-start">Pendapatan</th>
-                        <th class="text-nowrap">Total Pembayaran</th>
-                        ${headerHTML} 
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td class="text-start fw-bold">ULM</td>
-                        <td>${formatCurrency(total_ulm)}</td>
-                        ${ulmRowHTML}
-                    </tr>
-                    <tr>
-                        <td class="text-start fw-bold">Non-ULM</td>
-                        <td>${formatCurrency(total_non_ulm)}</td>
-                        ${nonUlmRowHTML}
-                    </tr>
-                </tbody>
-            </table>
-        </div>`;
+            let ulmRowHTML = '';
+            if (kolom_header && kolom_header.length > 0) {
+                if (ulm_detail && ulm_detail.length > 0) {
+                    ulm_detail.forEach(detail => {
+                        ulmRowHTML += `<td>${formatCurrency(detail.value)}</td>`;
+                    });
+                } else {
+                    kolom_header.forEach(() => {
+                         ulmRowHTML += `<td>${formatCurrency(0)}</td>`;
+                    });
+                }
+            }
+
+
+            let nonUlmRowHTML = '';
+             if (kolom_header && kolom_header.length > 0) {
+                if (non_ulm_detail && non_ulm_detail.length > 0) {
+                    non_ulm_detail.forEach(detail => {
+                        nonUlmRowHTML += `<td>${formatCurrency(detail.value)}</td>`;
+                    });
+                } else {
+                    kolom_header.forEach(() => {
+                         nonUlmRowHTML += `<td>${formatCurrency(0)}</td>`;
+                    });
+                }
+            }
+            
+            allTablesHTML += `
+            <div class="mb-4"> 
+                <h5 class="mb-3">${title}</h5>
+                <div class="table-responsive">
+                    <table class="table table-bordered text-center">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="text-start">Pendapatan</th>
+                                <th class="text-nowrap">Total Pembayaran</th>
+                                ${headerHTML} 
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="text-start fw-bold">ULM</td>
+                                <td>${formatCurrency(total_ulm)}</td>
+                                ${ulmRowHTML}
+                            </tr>
+                            <tr>
+                                <td class="text-start fw-bold">Non-ULM</td>
+                                <td>${formatCurrency(total_non_ulm)}</td>
+                                ${nonUlmRowHTML}
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            `;
+        });
         
-        return tableHTML;
+
+        return allTablesHTML;
     }
 
-    // --- FUNGSI UTAMA UNTUK MENGAMBIL DAN MENAMPILKAN DATA ---
     function tampilkanRekap() {
-        // [PERUBAHAN] Tampilkan loading di tombol
-        if(tampilkanButton) {
-            tampilkanButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Memuat...';
-            tampilkanButton.disabled = true;
-        }
+        rekapHasilContainer.innerHTML = `
+            <div class="d-flex justify-content-center align-items-center" style="min-height: 150px;">
+                <span class="spinner-border text-primary" role="status" aria-hidden="true"></span>
+                <span class="ms-2">Memuat data...</span>
+            </div>`;
 
         const jenis = jenisLayananSelect.value;
         let tanggal_awal = awalInput.value;
@@ -298,11 +302,7 @@
         }
 
         if (!tanggal_awal || !tanggal_akhir) {
-            // [PERUBAHAN] Sembunyikan loading jika gagal validasi
-            if(tampilkanButton) {
-                tampilkanButton.innerHTML = '<i class="bi bi-search me-1"></i> Tampilkan';
-                tampilkanButton.disabled = false;
-            }
+            rekapHasilContainer.innerHTML = ''; 
             if (typeof sayAlert === 'function') {
                 sayAlert('errorModal', 'Error', 'Mohon pilih tanggal awal dan akhir', 'warning');
             } else {
@@ -317,10 +317,8 @@
             .then(res => res.json())
             .then(response => {
                 if (response.success) {
-                    // Data ada (meskipun mungkin 0), render tabel
-                    rekapHasilContainer.innerHTML = renderRekapTable(response.data);
+                    rekapHasilContainer.innerHTML = renderAllTables(response.data);
                 } else {
-                    // Handle jika data.success == false (data tidak ditemukan)
                     const notificationHTML = `<div class="alert alert-info">${response.message || 'Tidak ada data pembayaran yang ditemukan.'}</div>`;
                     rekapHasilContainer.innerHTML = notificationHTML;
                 }
@@ -328,21 +326,10 @@
             .catch(err => {
                 console.error('Fetch Error:', err);
                 rekapHasilContainer.innerHTML = `<div class="alert alert-danger">Terjadi kesalahan saat mengambil data. Silakan coba lagi.</div>`;
-            })
-            .finally(() => {
-                // [PERUBAHAN] Kembalikan tombol ke state normal
-                if(tampilkanButton) {
-                    tampilkanButton.innerHTML = '<i class="bi bi-search me-1"></i> Tampilkan';
-                    tampilkanButton.disabled = false;
-                }
             });
     }
 
-    // --- FUNGSI UNTUK MODAL DAN DOWNLOAD ---
 
-    /**
-     * 1. Fungsi ini dipanggil saat tombol download utama diklik.
-     */
     function confirmDownload() {
         const jenis = jenisLayananSelect.value;
         let tanggal_awal = awalInput.value;
@@ -372,18 +359,11 @@
         $('#modalDownloadRekap').modal('show');
     }
 
-    /**
-     * 2. (INI YANG DIUBAH)
-     * Fungsi ini dipanggil oleh tombol "Download Excel" DI DALAM MODAL.
-     * Sekarang akan mengecek data dulu sebelum men-download.
-     */
     async function executeDownload() {
-        // Ambil nilai dari MODAL
         const jenis = document.getElementById('downloadJenisLayanan').value;
         const tanggal_awal = document.getElementById('downloadTanggalAwal').value;
         const tanggal_akhir = document.getElementById('downloadTanggalAkhir').value;
 
-        // Validasi
         if (!tanggal_awal || !tanggal_akhir) {
             if (typeof sayAlert === 'function') {
                  sayAlert('errorModal', 'Error', 'Tanggal Awal dan Tanggal Akhir di modal harus diisi!', 'warning');
@@ -393,38 +373,44 @@
             return;
         }
 
-        // BUAT URL UNTUK CEK DATA (KE dataList)
         const checkUrl = `<?php echo site_url('rekap/datalist'); ?>?jenis_layanan=${jenis}&tanggal_awal=${tanggal_awal}&tanggal_akhir=${tanggal_akhir}`;
 
         try {
-            // Panggil API untuk cek data
             const response = await fetch(checkUrl);
             if (!response.ok) {
                 throw new Error('Server error saat cek data: ' + response.statusText);
             }
             
-            const data = await response.json();
+            const result = await response.json(); 
 
-            // Cek jika data.success == false (artinya data kosong ATAU total 0)
-            // Kita cek totalnya langsung
-            if (data.success === false || (data.data.total_ulm == 0 && data.data.total_non_ulm == 0)) {
-                
-                // TAMPILKAN SAYALERT DAN BERHENTI
+            if (result.success === false || !result.data || result.data.length === 0) {
                 if (typeof sayAlert === 'function') {
                     sayAlert('errorModal', 'Info', 'Tidak ada data untuk diekspor pada periode yang dipilih.', 'info');
                 } else {
                     alert('Tidak ada data untuk diekspor pada periode yang dipilih.');
                 }
-                return; // Berhenti di sini, jangan download
+                return;
             }
 
-            // Jika data.success == true, LANJUTKAN DOWNLOAD
-            
-            // Buat URL untuk download
+            let grandTotalUlm = 0;
+            let grandTotalNonUlm = 0;
+            result.data.forEach(item => {
+                grandTotalUlm += item.total_ulm;
+                grandTotalNonUlm += item.total_non_ulm;
+            });
+
+            if (grandTotalUlm == 0 && grandTotalNonUlm == 0) {
+                if (typeof sayAlert === 'function') {
+                    sayAlert('errorModal', 'Info', 'Tidak ada data untuk diekspor (total 0).', 'info');
+                } else {
+                    alert('Tidak ada data untuk diekspor (total 0).');
+                }
+                return; 
+            }
+
             const downloadUrl = `<?php echo site_url('rekap/download'); ?>?jenis_layanan=${jenis}&tanggal_awal=${tanggal_awal}&tanggal_akhir=${tanggal_akhir}`;
             window.open(downloadUrl, '_blank');
             
-            // Tutup modal
             $('#modalDownloadRekap').modal('hide');
 
         } catch (error) {
@@ -437,27 +423,18 @@
         }
     }
 
-
-    // --- EVENT LISTENERS ---
     
-    // [PERUBAHAN] Tombol Tampilkan sekarang hanya salah satu cara untuk memicu
-    tampilkanButton.addEventListener('click', function(e) {
-        e.preventDefault();
-        tampilkanRekap();
-    });
-
     document.querySelector('.download').addEventListener('click', function(e) {
         e.preventDefault();
         confirmDownload(); 
     });
 
 
-    // [PERUBAHAN] Event listener otomatis untuk filter
     jenisLayananSelect.addEventListener('change', tampilkanRekap);
     
     periodeSelect.addEventListener('change', () => {
         setTanggalOtomatis();
-        tampilkanRekap(); // Panggil rekap setelah tanggal di-set
+        tampilkanRekap();
     });
     
     bulanSelect.addEventListener('change', tampilkanRekap);
@@ -469,7 +446,6 @@
     akhirInput.addEventListener('change', tampilkanRekap);
 
 
-    // --- INITIALIZATION ---
     setTanggalOtomatis();
-    tampilkanRekap(); // [PERUBAHAN] Langsung panggil saat halaman dimuat
+    tampilkanRekap(); 
 </script>
