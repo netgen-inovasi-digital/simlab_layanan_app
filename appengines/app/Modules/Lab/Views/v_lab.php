@@ -18,13 +18,13 @@
                     <div class="col-md-6">
                         <form id="formDiskonULM" action="<?= base_url('lab/update_diskon') ?>" method="post" class="d-flex align-items-end">
                             <?= csrf_field() ?>
-                            <div class="flex-grow-1">
+                            <!-- <div class="flex-grow-1">
                                 <label for="diskon_ulm" class="form-label">Diskon Civitas ULM (%)</label>
                                 <input type="number" name="diskon" id="diskon_ulm" class="form-control" value="<?= isset($diskon_ulm) ? $diskon_ulm : '' ?>" min="0" max="100">
                             </div>
                             <div class="ms-2">
                                 <button type="submit" class="btn btn-outline-primary">Update</button>
-                            </div>
+                            </div> -->
                         </form>
                     </div>
                 </div>
@@ -68,15 +68,15 @@
     fetch('<?php echo site_url("lab/getoptions") ?>')
         .then(res => res.json())
         .then(data => {
-            let filterSelect = document.getElementById('filter_jenKode');
+            var filterSelect = document.getElementById('filter_jenKode');
             data.jenis.forEach(j => {
                 filterSelect.innerHTML += `<option value="${j.jenKode}">${j.jenKode} - ${j.jenNama}</option>`;
             });
         });
 
     document.getElementById('filter_jenKode').addEventListener('change', function() {
-        let val = this.value;
-        let newUrl = apiUrl + "?page=" + currentPage + "&limit=" + currentLimit;
+        var val = this.value;
+        var newUrl = apiUrl + "?page=" + currentPage + "&limit=" + currentLimit;
         if (val !== "") {
             newUrl = apiUrl + "?kode_jenis=" + encodeURIComponent(val) + "&page=" + currentPage + "&limit=" + currentLimit;
         }
@@ -151,7 +151,7 @@
         
         // Log semua data di FormData
         console.log('===== ALL FORM DATA =====');
-        for (let pair of formData.entries()) {
+        for (var pair of formData.entries()) {
             console.log(pair[0] + ': ' + pair[1]);
         }
         console.log('========================');
@@ -216,15 +216,15 @@
     }
 
     // Global variables untuk menyimpan data tim
-    let penyeliaList = [];
-    let manajerList = [];
-    let allPenyelia = [];
-    let allManajer = [];
+    var penyeliaList = [];
+    var manajerList = [];
+    var allPenyelia = [];
+    var allManajer = [];
 
     function loadOptions(selected = {}) {
         //  reset wrapper lama sebelum isi ulang
         document.querySelectorAll('[data-enhanced="true"]').forEach(el => {
-            let wrapper = el.parentNode;
+            var wrapper = el.parentNode;
             if (wrapper.classList.contains("position-relative")) {
                 wrapper.replaceWith(el); // balikin select ke posisi asli
                 el.style.display = "";   // munculin select
@@ -235,11 +235,11 @@
         fetch('<?php echo site_url("lab/getoptions") ?>')
             .then(res => res.json())
             .then(data => {
-                let jenis = document.querySelector('[name="kode_jenis"]');
-                let alat  = document.querySelector('[name="kode_alat"]');
-                let para  = document.querySelector('[name="kode_parameter"]');
-                let selectPenyelia = document.querySelector('#selectPenyelia');
-                let selectManajer = document.querySelector('#selectManajer');
+                var jenis = document.querySelector('[name="kode_jenis"]');
+                var alat  = document.querySelector('[name="kode_alat"]');
+                var para  = document.querySelector('[name="kode_parameter"]');
+                var selectPenyelia = document.querySelector('#selectPenyelia');
+                var selectManajer = document.querySelector('#selectManajer');
 
                 jenis.innerHTML = '<option value="">-- Pilih Jenis --</option>';
                 alat.innerHTML  = '<option value="">-- Pilih Alat --</option>';
@@ -275,13 +275,13 @@
                         // Cek berdasarkan role_id
                         if (tm.role_id == 6) {
                             // Penyelia
-                            let user = allPenyelia.find(u => u.user_id == tm.user_id);
+                            var user = allPenyelia.find(u => u.user_id == tm.user_id);
                             if (user && !penyeliaList.find(p => p.user_id == user.user_id)) {
                                 penyeliaList.push(user);
                             }
                         } else if (tm.role_id == 4) {
                             // Manajer Teknis
-                            let user = allManajer.find(u => u.user_id == tm.user_id);
+                            var user = allManajer.find(u => u.user_id == tm.user_id);
                             if (user && !manajerList.find(m => m.user_id == user.user_id)) {
                                 manajerList.push(user);
                             }
@@ -291,10 +291,10 @@
                     renderManajerTable();
                 }
 
-                let namaLayananInput = document.querySelector('[name="nama_layanan"]');
+                var namaLayananInput = document.querySelector('[name="nama_layanan"]');
                 function autoFillNamaLayanan() {
-                    let alatText = alat.options[alat.selectedIndex]?.text || "";
-                    let paraText = para.options[para.selectedIndex]?.text || "";
+                    var alatText = alat.options[alat.selectedIndex]?.text || "";
+                    var paraText = para.options[para.selectedIndex]?.text || "";
                     if (alatText && paraText) {
                         namaLayananInput.value = alatText + " - " + paraText;
                     }
@@ -316,11 +316,11 @@
         console.log('Change event detected on:', e.target.id, 'Value:', e.target.value);
         
         if (e.target.id === 'selectPenyelia' && e.target.value) {
-            let userId = parseInt(e.target.value);
+            var userId = parseInt(e.target.value);
             console.log('Penyelia selected, userId:', userId);
             console.log('Available penyelia:', allPenyelia);
             
-            let user = allPenyelia.find(u => u.user_id == userId);
+            var user = allPenyelia.find(u => u.user_id == userId);
             console.log('Found user:', user);
             
             if (user && !penyeliaList.find(p => p.user_id == userId)) {
@@ -334,11 +334,11 @@
         }
         
         if (e.target.id === 'selectManajer' && e.target.value) {
-            let userId = parseInt(e.target.value);
+            var userId = parseInt(e.target.value);
             console.log('Manajer selected, userId:', userId);
             console.log('Available manajer:', allManajer);
             
-            let user = allManajer.find(u => u.user_id == userId);
+            var user = allManajer.find(u => u.user_id == userId);
             console.log('Found user:', user);
             
             if (user && !manajerList.find(m => m.user_id == userId)) {
@@ -353,7 +353,7 @@
     });
 
     function renderPenyeliaTable() {
-        let tbody = document.querySelector('#tablePenyelia');
+        var tbody = document.querySelector('#tablePenyelia');
         tbody.innerHTML = '';
         
         if (penyeliaList.length === 0) {
@@ -376,7 +376,7 @@
     }
 
     function renderManajerTable() {
-        let tbody = document.querySelector('#tableManajer');
+        var tbody = document.querySelector('#tableManajer');
         tbody.innerHTML = '';
         
         if (manajerList.length === 0) {
@@ -402,14 +402,14 @@
     document.addEventListener('click', function(e) {
         const target = e.target.closest('.btn-hapus-penyelia');
         if (target) {
-            let userId = parseInt(target.getAttribute('data-id'));
+            var userId = parseInt(target.getAttribute('data-id'));
             penyeliaList = penyeliaList.filter(p => p.user_id != userId);
             renderPenyeliaTable();
         }
         
         const targetManajer = e.target.closest('.btn-hapus-manajer');
         if (targetManajer) {
-            let userId = parseInt(targetManajer.getAttribute('data-id'));
+            var userId = parseInt(targetManajer.getAttribute('data-id'));
             manajerList = manajerList.filter(m => m.user_id != userId);
             renderManajerTable();
         }
@@ -451,22 +451,22 @@
             .then(res => res.json())
             .then(data => {
                 if (data.res && data.data) {
-                    let tbody = document.querySelector('#timTableBody');
+                    var tbody = document.querySelector('#timTableBody');
                     tbody.innerHTML = '';
                     
                     if (data.data.length === 0) {
                         tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">Belum ada tim penanggung jawab</td></tr>';
                     } else {
                         // Group by role
-                        let manajerList = data.data.filter(m => m.role_id == 4);
-                        let penyeliaList = data.data.filter(m => m.role_id == 6);
+                        var manajerList = data.data.filter(m => m.role_id == 4);
+                        var penyeliaList = data.data.filter(m => m.role_id == 6);
                         
                         // Get max length to show all pairs
-                        let maxLength = Math.max(manajerList.length, penyeliaList.length);
+                        var maxLength = Math.max(manajerList.length, penyeliaList.length);
                         
-                        for (let i = 0; i < maxLength; i++) {
-                            let manajer = manajerList[i] ? manajerList[i].username : '';
-                            let penyelia = penyeliaList[i] ? penyeliaList[i].username : '';
+                        for (var i = 0; i < maxLength; i++) {
+                            var manajer = manajerList[i] ? manajerList[i].username : '';
+                            var penyelia = penyeliaList[i] ? penyeliaList[i].username : '';
                             
                             tbody.innerHTML += `
                                 <tr>
@@ -585,7 +585,7 @@
     //  reset dropdown custom setiap kali modal ditutup
     $('#modalForm').on('hidden.bs.modal', function () {
         document.querySelectorAll('[data-enhanced="true"]').forEach(el => {
-            let wrapper = el.parentNode;
+            var wrapper = el.parentNode;
             if (wrapper.classList.contains("position-relative")) {
                 wrapper.replaceWith(el);
                 el.style.display = "";
