@@ -190,6 +190,75 @@ abstract class KeranjangBase extends BaseController
             ],
 
             // ========================================
+            // RAPAT JAS (Meeting Room Services)
+            // ========================================
+            'rapat_jas' => [
+                'title' => 'Keranjang Layanan Rapat JAS',
+                'session_key' => 'keranjang_rapat_jas',
+
+                // Table names
+                'table_layanan' => 'simlab_t_layanan',
+                'table_detail' => 't_layanan_detil',
+                'table_pengujian' => 'r_layanan_pengujian',
+                'table_pembayaran' => 't_pembayaran',
+
+                // Column mappings
+                'columns' => [
+                    'kode' => 'kode',
+                    'nama' => 'nama_layanan',
+                    'alat' => 'kode_alat',
+                    'parameter' => 'kode_parameter',
+                    'jenis' => 'kode_jenis',
+                    'satuan' => 'satuan',
+                    'biaya' => 'biaya',
+                    'diskon' => 'diskon',
+                ],
+
+                // Joins untuk query
+                'joins' => [
+                    [
+                        'table' => 'simlab_r_parameter',
+                        'alias' => 'p',
+                        'on' => 'p.paraKode = lp.kode_parameter',
+                        'type' => 'left'
+                    ],
+                    [
+                        'table' => 'simlab_r_alat',
+                        'alias' => 'a',
+                        'on' => 'a.alatKode = lp.kode_alat',
+                        'type' => 'left'
+                    ],
+                    [
+                        'table' => 'simlab_r_jenis',
+                        'alias' => 'j',
+                        'on' => 'j.jenKode = lp.kode_jenis',
+                        'type' => 'left'
+                    ],
+                ],
+
+                // Fields untuk modal form
+                'modal_fields' => [
+                    ['label' => 'Parameter', 'name' => 'detParameter', 'type' => 'text', 'readonly' => true],
+                    ['label' => 'Instrumen/Alat', 'name' => 'detAlat', 'type' => 'text', 'readonly' => true],
+                    ['label' => 'Biaya', 'name' => 'detBiaya', 'type' => 'number', 'readonly' => true],
+                    ['label' => 'Jumlah', 'name' => 'detJumlah', 'type' => 'number', 'min' => 1, 'max' => 100],
+                    ['label' => 'Keterangan', 'name' => 'detKeterangan', 'type' => 'textarea'],
+                ],
+
+                // Validation rules
+                'validation' => [
+                    'min_jumlah' => 1,
+                    'max_jumlah' => 100,
+                    'require_keterangan' => false,
+                ],
+
+                // Filter khusus untuk Rapat JAS
+                'filter' => [
+                    'kode_jenis' => 'D'
+                ]
+            ],
+
+            // ========================================
             // SEWA RUANGAN LAB (Lab Room Rental)
             // ========================================
             'lab' => [
@@ -269,6 +338,7 @@ abstract class KeranjangBase extends BaseController
         return [
             'pengujian' => 'Layanan Pengujian',
             'sewa' => 'Sewa Alat',
+            'rapat_jas' => 'Layanan Rapat JAS',
         ];
     }
 

@@ -53,6 +53,46 @@ $routes->group('keranjang', ['namespace' => 'Modules\Keranjang\Controllers'], fu
     });
 
     // ================================================================
+    // RAPAT JAS ROUTES (kode_jenis = 'D')
+    // ================================================================
+
+    $subroutes->group('rapatjas', function ($rapatjasRoutes) {
+        // Halaman utama keranjang rapat jas
+        $rapatjasRoutes->get('/', 'KeranjangRapatJas::index');
+
+        // API endpoints untuk rapat jas
+        $rapatjasRoutes->get('datalist', 'KeranjangRapatJas::keranjangDataList');
+        $rapatjasRoutes->get('dataListLayanan', 'KeranjangRapatJas::keranjangDataListLayanan');
+        $rapatjasRoutes->get('kategoriList', 'KeranjangRapatJas::kategoriList');
+        $rapatjasRoutes->post('submit', 'KeranjangRapatJas::keranjangSubmit');
+        $rapatjasRoutes->get('delete/(:any)', 'KeranjangRapatJas::keranjangDelete/$1');
+        $rapatjasRoutes->post('checkout', 'KeranjangRapatJas::keranjangCheckout');
+
+        // Verifikasi user
+        $rapatjasRoutes->get('checkVerified', 'KeranjangRapatJas::checkVerified');
+    });
+
+    // ================================================================
+    // RAPAT JAS ROUTES (kode_jenis = 'D')
+    // ================================================================
+
+    $subroutes->group('rapatjas', function ($rapatjasRoutes) {
+        // Halaman utama keranjang rapat jas
+        $rapatjasRoutes->get('/', 'KeranjangRapatJas::index');
+
+        // API endpoints untuk rapat jas
+        $rapatjasRoutes->get('datalist', 'KeranjangRapatJas::keranjangDataList');
+        $rapatjasRoutes->get('dataListLayanan', 'KeranjangRapatJas::keranjangDataListLayanan');
+        $rapatjasRoutes->get('kategoriList', 'KeranjangRapatJas::kategoriList');
+        $rapatjasRoutes->post('submit', 'KeranjangRapatJas::keranjangSubmit');
+        $rapatjasRoutes->get('delete/(:any)', 'KeranjangRapatJas::keranjangDelete/$1');
+        $rapatjasRoutes->post('checkout', 'KeranjangRapatJas::keranjangCheckout');
+
+        // Verifikasi user
+        $rapatjasRoutes->get('checkVerified', 'KeranjangRapatJas::checkVerified');
+    });
+
+    // ================================================================
     // SEWA ALAT ROUTES (Alternative naming - keranjang_alat)
     // ================================================================
     // Note: Ini sama dengan sewa, tapi menggunakan path terpisah untuk clarity
@@ -107,6 +147,11 @@ $routes->group('keranjang_lab', ['namespace' => 'Modules\Keranjang\Controllers']
  * - GET  /keranjang/sewa                   → KeranjangSewa::index()
  * - GET  /keranjang/sewa/dataListLayanan   → KeranjangSewa::keranjangDataListLayanan()
  * - POST /keranjang/sewa/submit            → KeranjangSewa::keranjangSubmit()
+ * 
+ * Rapat JAS (New - Filter kode_jenis = 'D'):
+ * - GET  /keranjang/rapatjas               → KeranjangRapatJas::index()
+ * - GET  /keranjang/rapatjas/dataListLayanan → KeranjangRapatJas::keranjangDataListLayanan()
+ * - POST /keranjang/rapatjas/submit        → KeranjangRapatJas::keranjangSubmit()
  * 
  * Konsultasi (Future):
  * - GET  /keranjang/konsultasi             → KeranjangKonsultasi::index()

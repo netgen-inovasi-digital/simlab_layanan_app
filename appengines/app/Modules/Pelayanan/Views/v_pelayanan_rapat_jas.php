@@ -1,8 +1,8 @@
-<!-- Include Modal Tracking -->
-<?php require_once(__DIR__ . '/v_track_modal.php'); ?>
+<!-- Include Modal Tracking Rapat JAS -->
+<?php require_once(__DIR__ . '/v_track_modal_rapat_jas.php'); ?>
 
-<!-- Include Modal Keranjang -->
-<?php echo view('Modules\Keranjang\Views\v_keranjang', ['categories' => $categories ?? []]); ?>
+<!-- Include Modal Keranjang Rapat JAS -->
+<?php echo view('Modules\Keranjang\Views\v_keranjang_rapat_jas', ['categories' => $categories ?? []]); ?>
 
 <!-- modal tabel utama -->
 <div class="row">
@@ -20,9 +20,8 @@
                         <tr>
                             <th show width="5%">No.</th>
                             <th show width="20%">No. transaksi</th>
-                            <th show width="20%">Status & Detail Pesanan</th>
-                            <th show width="15%">Status Pembayaran</th>
-                            <th show width="15%">File LHU</th>
+                            <th show width="25%">Status & Detail Pesanan</th>
+                            <th show width="20%">Status Pembayaran</th>
                             <!-- <th show >Detail pesanan</th> -->
                         </tr>
                     </thead>
@@ -72,7 +71,7 @@
     function normalizeDoubleQuestion(url) {
         if (typeof url !== 'string') return url;
         // ubah pertama kali "?...?" -> "?...&"
-        var n = url.replace(/\?([^?]*)\?/, '?$1&');
+        let n = url.replace(/\?([^?]*)\?/, '?$1&');
         // collapse duplicate ampersand
         n = n.replace(/&{2,}/g, '&');
         return n;
@@ -85,11 +84,11 @@
 
     // Inisialisasi tabel utama menggunakan createTable
 
-    const baseMainPath = '<?= site_url("pelayanan/datalist") ?>';
+    const baseMainPath = '<?= site_url("pelayananrapatjas/datalist") ?>';
 
     // Prioritas: kategoriLayanan > jenKode
-    var initialParamKey = null;
-    var initialParamValue = null;
+    let initialParamKey = null;
+    let initialParamValue = null;
     if (kategoriLayananFromUrl && kategoriLayananFromUrl !== '') {
         initialParamKey = 'kategoriLayanan';
         initialParamValue = kategoriLayananFromUrl;
@@ -190,14 +189,14 @@
             .finally(() => hideLoading());
     }
 
-    // Fungsi untuk menampilkan tracking modal
+    // Fungsi untuk menampilkan tracking modal Rapat JAS
     function showTrackingModal(id, lnKode, lnStatus) {
-        // Panggil fungsi dari v_track_modal.php
-        showFullTrackingModal(id, lnKode, lnStatus);
+        // Panggil fungsi dari v_track_modal_rapat_jas.php
+        showFullTrackingModalRapatJas(id, lnKode, lnStatus);
     }
 
     function loadDetail(id) {
-        const url = '<?php echo site_url("pelayanan/detailList/") ?>' + id;
+        const url = '<?php echo site_url("pelayananrapatjas/detailList/") ?>' + id;
         const tbody = document.querySelector('#detail-body');
         tbody.innerHTML = '<tr><td colspan="7" class="text-center">Loading...</td></tr>';
 
@@ -207,7 +206,7 @@
                 tbody.innerHTML = '';
                 if (data.items && data.items.length > 0) {
                     data.items.forEach(function(row) {
-                        var tr = '<tr>';
+                        let tr = '<tr>';
                         row.forEach(function(col) {
                             tr += '<td>' + col + '</td>';
                         });
