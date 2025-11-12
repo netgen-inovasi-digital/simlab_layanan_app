@@ -9,7 +9,7 @@ class FormulirManajer extends BaseController
 {
     private $table = 'simlab_t_layanan';
     private $id    = 'lnKode';
-    private $encrypter;
+    protected $encrypter;
 
     public function __construct()
     {
