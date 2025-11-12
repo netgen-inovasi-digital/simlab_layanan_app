@@ -39,9 +39,20 @@
                             <i class="bi bi-cart3"></i> Keranjang Anda
                             (<span id="jumlahItemKeranjang">0</span> Item)
                         </h6>
-                        <!-- <button type="button" id="btnRefreshKeranjang" class="btn btn-sm btn-outline-secondary">
-                            <i class="bi bi-arrow-clockwise"></i> Refresh
-                        </button> -->
+                        <!-- Upload File Surat untuk Rapat JAS -->
+                        <div class="d-flex align-items-center gap-2">
+                            <label for="fileSuratRapatJas" class="mb-0 fw-semibold text-primary">
+                                <i class="bi bi-file-earmark-pdf"></i> Upload Surat:
+                            </label>
+                            <input type="file" 
+                                   class="form-control form-control-sm" 
+                                   id="fileSuratRapatJas" 
+                                   name="fileSuratRapatJas"
+                                   accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                                   style="max-width: 300px;"
+                                   title="Upload file surat (PDF, DOC, DOCX, JPG, PNG)">
+                            <small class="text-muted" id="fileUploadStatus"></small>
+                        </div>
                     </div>
 
                     <div id="keranjangKosong" class="alert alert-warning text-center" style="display:none;">
@@ -620,6 +631,12 @@
         const csrfInput = document.querySelector('input[name="<?= csrf_token() ?>"]');
         if (csrfInput) formData.append('<?= csrf_token() ?>', csrfInput.value);
 
+        // Ambil file surat jika ada
+        const fileSuratInput = document.getElementById('fileSuratRapatJas');
+        if (fileSuratInput && fileSuratInput.files.length > 0) {
+            formData.append('file_surat_rapat_jas', fileSuratInput.files[0]);
+        }
+
         fetch('<?= site_url("keranjang/rapatjas/checkout") ?>', {
                 method: 'POST',
                 body: formData
@@ -641,6 +658,12 @@
                             updateKeranjangCounter();
                             calculateGrandTotal();
                         }, 400);
+                    }
+                    // Reset file input setelah berhasil checkout
+                    if (fileSuratInput) {
+                        fileSuratInput.value = '';
+                        const statusEl = document.getElementById('fileUploadStatus');
+                        if (statusEl) statusEl.textContent = '';
                     }
                     const modalForm = bootstrap.Modal.getInstance(document.getElementById('modalForm'));
                     if (modalForm) modalForm.hide();
@@ -688,4 +711,41 @@
             if (typeof applyJenFilter === 'function') applyJenFilter();
         }
     })();
+
+    /* Event listener untuk upload file surat */
+    document.addEventListener('DOMContentLoaded', function() {
+        const fileInput = document.getElementById('fileSuratRapatJas');
+        const statusEl = document.getElementById('fileUploadStatus');
+        
+        if (fileInput) {
+            fileInput.addEventListener('change', function() {
+                if (this.files.length > 0) {
+                    const file = this.files[0];
+                    const fileName = file.name;
+                    const fileSize = (file.size / 1024).toFixed(2); // KB
+                    
+                    // Validasi ukuran file (max 5MB)
+                    if (file.size > 5 * 1024 * 1024) {
+                        if (statusEl) statusEl.innerHTML = '<span class="text-danger">File terlalu besar (max 5MB)</span>';
+                        this.value = '';
+                        return;
+                    }
+                    
+                    // Validasi tipe file
+                    const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'image/jpeg', 'image/jpg', 'image/png'];
+                    if (!allowedTypes.includes(file.type)) {
+                        if (statusEl) statusEl.innerHTML = '<span class="text-danger">Tipe file tidak diizinkan</span>';
+                        this.value = '';
+                        return;
+                    }
+                    
+                    if (statusEl) {
+                        statusEl.innerHTML = '<span class="text-success"><i class="bi bi-check-circle"></i> ' + fileName + ' (' + fileSize + ' KB)</span>';
+                    }
+                } else {
+                    if (statusEl) statusEl.textContent = '';
+                }
+            });
+        }
+    });
 </script>

@@ -220,6 +220,164 @@ class KeranjangRapatJas extends KeranjangBase
     }
 
     /**
+     * Override checkout untuk handle upload file surat
+     */
+    public function keranjangCheckout()
+    {
+        $session = session();
+        $user_id = $session->get('id_user');
+
+        $modelUser = new MyModel('simlab_account_users');
+        $userRow   = $modelUser->getDataById('user_id', $user_id);
+
+        $keranjang = $session->get($this->sessionKey) ?? [];
+        if (empty($keranjang)) {
+            return $this->response->setJSON([
+                'res'   => false,
+                'msg'   => 'Keranjang kosong',
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        }
+
+        $totalBiaya = array_sum(array_column($keranjang, 'biaya'));
+
+        $modelPembayaran = new MyModel($this->tablePembayaran);
+        $modelLayanan    = new MyModel($this->tableLayanan);
+        $modelDetil      = new MyModel($this->tableLayananDetail);
+        $db = \Config\Database::connect();
+
+        $db->transStart();
+
+        try {
+            // Simpan data utama layanan
+            $lnKode = $this->saveMainLayanan($userRow, $totalBiaya);
+
+            if (!$lnKode) {
+                throw new \RuntimeException('Gagal menyimpan data layanan utama');
+            }
+
+            // Simpan data pembayaran
+            $this->savePembayaran($lnKode, $totalBiaya);
+
+            // Simpan detail layanan
+            $this->saveDetailLayanan($lnKode, $keranjang);
+
+            // 🔥 Upload file surat jika ada
+            $uploadedFilePath = null;
+            $file = $this->request->getFile('file_surat_rapat_jas');
+            
+            if ($file && $file->isValid() && !$file->hasMoved()) {
+                // Validasi tipe file
+                $allowedMimes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'image/jpeg', 'image/jpg', 'image/png'];
+                if (!in_array($file->getMimeType(), $allowedMimes)) {
+                    throw new \RuntimeException('Tipe file tidak diizinkan. Hanya PDF, DOC, DOCX, JPG, PNG yang diperbolehkan.');
+                }
+
+                // Validasi ukuran file (max 5MB)
+                if ($file->getSize() > 5 * 1024 * 1024) {
+                    throw new \RuntimeException('Ukuran file terlalu besar. Maksimal 5MB.');
+                }
+
+                // Generate nama file unik
+                $newFileName = 'surat_rapat_jas_' . $lnKode . '_' . time() . '.' . $file->getExtension();
+                
+                // Upload ke folder rapatJas
+                $uploadPath = FCPATH . 'uploads/rapatJas/';
+                
+                // Buat folder jika belum ada
+                if (!is_dir($uploadPath)) {
+                    mkdir($uploadPath, 0755, true);
+                }
+
+                // Pindahkan file
+                $file->move($uploadPath, $newFileName);
+                $uploadedFilePath = 'rapatJas/' . $newFileName;
+
+                // 🔥 Ambil kode_detail_layanan (kode dari t_layanan_detil) yang baru saja di-insert
+                $kodeDetailLayanan = null;
+                $detailLayanan = $db->table($this->tableLayananDetail)
+                    ->select('kode')
+                    ->where('kode_layanan', $lnKode)
+                    ->orderBy('kode', 'DESC')
+                    ->limit(1)
+                    ->get()
+                    ->getRow();
+                
+                if ($detailLayanan) {
+                    $kodeDetailLayanan = $detailLayanan->kode;
+                }
+
+                // 🔥 Cek apakah sudah ada file untuk kode_layanan ini (1 kode_layanan = 1 file)
+                $modelFilesLabJas = new MyModel('t_files_lab_jas');
+                $existingFile = $modelFilesLabJas->getWhere(['kode_layanan' => $lnKode])->getRow();
+
+                if ($existingFile) {
+                    // Hapus file lama jika ada
+                    $oldFilePath = FCPATH . 'uploads/' . $existingFile->file_lab_jas;
+                    if (file_exists($oldFilePath)) {
+                        @unlink($oldFilePath);
+                    }
+
+                    // Update record
+                    $modelFilesLabJas->updateData([
+                        'kode_detail_layanan' => $kodeDetailLayanan,
+                        'file_lab_jas' => $uploadedFilePath,
+                        'status_file'  => 0,
+                        'kirim_by'     => $user_id,
+                    ], 'file_id', $existingFile->file_id);
+                } else {
+                    // Insert record baru
+                    $modelFilesLabJas->insertData([
+                        'kode_detail_layanan' => $kodeDetailLayanan,
+                        'kode_layanan' => $lnKode,
+                        'file_lab_jas' => $uploadedFilePath,
+                        'status_file'  => 0,
+                        'kirim_by'     => $user_id,
+                    ]);
+                }
+
+                log_message('info', 'File surat rapat JAS uploaded successfully: ' . $uploadedFilePath . ' for layanan: ' . $lnKode . ' with detail: ' . $kodeDetailLayanan);
+            }
+
+            // Commit dan bersihkan keranjang
+            $db->transComplete();
+
+            if ($db->transStatus() === false) {
+                throw new \RuntimeException('Transaksi database gagal.');
+            }
+
+            $session->remove($this->sessionKey);
+
+            $successMsg = 'Checkout berhasil! Data Anda sedang diproses.';
+            if ($uploadedFilePath) {
+                $successMsg .= ' File surat berhasil diunggah.';
+            }
+
+            return $this->response->setJSON([
+                'res' => true,
+                'msg' => $successMsg,
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        } catch (\Exception $e) {
+            if ($db->transStatus() === FALSE) {
+                $db->transRollback();
+            }
+
+            log_message('error', 'Checkout exception (Rapat JAS): ' . $e->getMessage());
+            log_message('error', 'Stack trace: ' . $e->getTraceAsString());
+
+            return $this->response->setJSON([
+                'res'   => false,
+                'msg'   => 'Checkout gagal: ' . $e->getMessage(),
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        }
+    }
+
+    /**
      * Get data list layanan (override untuk filter kode_jenis = 'D')
      */
     public function keranjangDataListLayanan()
