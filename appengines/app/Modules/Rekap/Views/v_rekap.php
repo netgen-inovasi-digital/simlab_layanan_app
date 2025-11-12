@@ -37,7 +37,7 @@
                                         <label for="periode" class="form-label small">Periode</label>
                                         <select id="periode" class="form-select">
                                             <option value="hari_ini">Hari Ini</option>
-                                            <option value="7_hari">7 Hari Terakhir</option>
+                                            <option value="7_hari" selected>7 Hari Terakhir</option>
                                             <option value="pilih_bulan">Pilih Bulan</option>
                                             <option value="custom">Pilih Tanggal</option>
                                         </select>
@@ -76,7 +76,9 @@
 
                                     <div class="col-md-3 d-flex align-items-end">
                                         <div class="d-flex gap-2 w-100">
-                                            <button type="button" class="btn btn-primary w-100 rounded-pill py-2 tampil">Tampilkan</button>
+                                            <button type="button" class="btn btn-primary w-100 rounded-pill py-2 tampil">
+                                                <i class="bi bi-search me-1"></i> Tampilkan
+                                            </button>
                                             
                                             <button type="button" class="btn btn-success w-100 rounded-pill py-2 download">
                                                 <i class="bi bi-file-earmark-excel me-1"></i> Download
@@ -89,7 +91,9 @@
                     </div>
                 </div>
 
-                <div id="rekap-hasil" class="mt-4"></div>
+                <div id="rekap-hasil" class="mt-4">
+                    <!-- Hasil tabel akan dimuat di sini oleh JavaScript -->
+                </div>
             </div>
         </div>
     </div>
@@ -138,6 +142,7 @@
 </div>
 <script>
     // --- ELEMENT SELECTORS ---
+    const jenisLayananSelect = document.getElementById('jenis_layanan');
     const periodeSelect = document.getElementById('periode');
     const awalInput = document.getElementById('awal');
     const akhirInput = document.getElementById('akhir');
@@ -148,10 +153,24 @@
     const awalWrapper = document.getElementById('awal-wrapper');
     const akhirWrapper = document.getElementById('akhir-wrapper');
     const rekapHasilContainer = document.getElementById('rekap-hasil');
+    const tampilkanButton = document.querySelector('.tampil'); // Ambil tombol tampilkan
 
     // --- HELPER FUNCTIONS ---
     function formatDate(date) {
         return date.toISOString().split('T')[0];
+    }
+
+    /**
+     * [BARU] Fungsi Debounce
+     * Menunda eksekusi fungsi agar tidak dipanggil terlalu sering.
+     */
+    function debounce(func, delay) {
+        let timeout;
+        return function(...args) {
+            const context = this;
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(context, args), delay);
+        };
     }
 
     // --- PENGELOLAAN FILTER TANGGAL ---
@@ -198,21 +217,22 @@
     // --- FUNGSI UNTUK MERENDER TABEL (VERSI DINAMIS) ---
     function renderRekapTable(data) {
         // Ekstrak data dari respons JSON baru
-        const { kolom_header, ulm_detail, non_ulm_detail, total_ulm, total_non_ulm } = data;
-        const formatCurrency = (number) => `Rp ${Intl.NumberFormat('id-ID').format(number)}`;
+        // [PERUBAHAN] Tambahkan 'title'
+        const { title, kolom_header, ulm_detail, non_ulm_detail, total_ulm, total_non_ulm } = data;
+        const formatCurrency = (number) => `Rp ${Intl.NumberFormat('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(number)}`;
 
         // 1. Bangun Kolom Header (THEAD) secara dinamis
         let headerHTML = '';
-        if (kolom_header) {
+        if (kolom_header && kolom_header.length > 0) {
             kolom_header.forEach(kolom => {
                 // Ambil label dan persen dari DB
-                headerHTML += `<th>${kolom.kdKolomLabel} (${kolom.kdPersenNONULM}%)</th>`;
+                headerHTML += `<th class="text-nowrap">${kolom.kdKolomLabel} (${kolom.kdPersenNONULM}%)</th>`;
             });
         }
 
         // 2. Bangun sel data (TD) untuk baris ULM
         let ulmRowHTML = '';
-        if (ulm_detail) {
+        if (ulm_detail && ulm_detail.length > 0) {
             ulm_detail.forEach(detail => {
                 ulmRowHTML += `<td>${formatCurrency(detail.value)}</td>`;
             });
@@ -220,21 +240,22 @@
 
         // 3. Bangun sel data (TD) untuk baris Non-ULM
         let nonUlmRowHTML = '';
-        if (non_ulm_detail) {
+        if (non_ulm_detail && non_ulm_detail.length > 0) {
             non_ulm_detail.forEach(detail => {
                 nonUlmRowHTML += `<td>${formatCurrency(detail.value)}</td>`;
             });
         }
 
         // 4. Gabungkan semuanya menjadi tabel HTML
+        // [PERUBAHAN] Ganti <h5> statis dengan data.title
         const tableHTML = `
-        <h5 class="mb-3">A. Layanan Pengujian Sampel</h5>
+        <h5 class="mb-3">${title}</h5>
         <div class="table-responsive">
             <table class="table table-bordered text-center">
                 <thead class="table-light">
                     <tr>
                         <th class="text-start">Pendapatan</th>
-                        <th>Total Pembayaran</th>
+                        <th class="text-nowrap">Total Pembayaran</th>
                         ${headerHTML} 
                     </tr>
                 </thead>
@@ -258,7 +279,13 @@
 
     // --- FUNGSI UTAMA UNTUK MENGAMBIL DAN MENAMPILKAN DATA ---
     function tampilkanRekap() {
-        const jenis = document.getElementById('jenis_layanan').value;
+        // [PERUBAHAN] Tampilkan loading di tombol
+        if(tampilkanButton) {
+            tampilkanButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Memuat...';
+            tampilkanButton.disabled = true;
+        }
+
+        const jenis = jenisLayananSelect.value;
         let tanggal_awal = awalInput.value;
         let tanggal_akhir = akhirInput.value;
 
@@ -271,6 +298,11 @@
         }
 
         if (!tanggal_awal || !tanggal_akhir) {
+            // [PERUBAHAN] Sembunyikan loading jika gagal validasi
+            if(tampilkanButton) {
+                tampilkanButton.innerHTML = '<i class="bi bi-search me-1"></i> Tampilkan';
+                tampilkanButton.disabled = false;
+            }
             if (typeof sayAlert === 'function') {
                 sayAlert('errorModal', 'Error', 'Mohon pilih tanggal awal dan akhir', 'warning');
             } else {
@@ -284,7 +316,6 @@
         fetch(apiUrl)
             .then(res => res.json())
             .then(response => {
-                // MODIFIKASI DI SINI
                 if (response.success) {
                     // Data ada (meskipun mungkin 0), render tabel
                     rekapHasilContainer.innerHTML = renderRekapTable(response.data);
@@ -297,6 +328,13 @@
             .catch(err => {
                 console.error('Fetch Error:', err);
                 rekapHasilContainer.innerHTML = `<div class="alert alert-danger">Terjadi kesalahan saat mengambil data. Silakan coba lagi.</div>`;
+            })
+            .finally(() => {
+                // [PERUBAHAN] Kembalikan tombol ke state normal
+                if(tampilkanButton) {
+                    tampilkanButton.innerHTML = '<i class="bi bi-search me-1"></i> Tampilkan';
+                    tampilkanButton.disabled = false;
+                }
             });
     }
 
@@ -306,7 +344,7 @@
      * 1. Fungsi ini dipanggil saat tombol download utama diklik.
      */
     function confirmDownload() {
-        const jenis = document.getElementById('jenis_layanan').value;
+        const jenis = jenisLayananSelect.value;
         let tanggal_awal = awalInput.value;
         let tanggal_akhir = akhirInput.value;
 
@@ -367,8 +405,9 @@
             
             const data = await response.json();
 
-            // Cek jika data.success == false (artinya data kosong)
-            if (data.success === false) {
+            // Cek jika data.success == false (artinya data kosong ATAU total 0)
+            // Kita cek totalnya langsung
+            if (data.success === false || (data.data.total_ulm == 0 && data.data.total_non_ulm == 0)) {
                 
                 // TAMPILKAN SAYALERT DAN BERHENTI
                 if (typeof sayAlert === 'function') {
@@ -400,7 +439,9 @@
 
 
     // --- EVENT LISTENERS ---
-    document.querySelector('.tampil').addEventListener('click', function(e) {
+    
+    // [PERUBAHAN] Tombol Tampilkan sekarang hanya salah satu cara untuk memicu
+    tampilkanButton.addEventListener('click', function(e) {
         e.preventDefault();
         tampilkanRekap();
     });
@@ -411,7 +452,24 @@
     });
 
 
+    // [PERUBAHAN] Event listener otomatis untuk filter
+    jenisLayananSelect.addEventListener('change', tampilkanRekap);
+    
+    periodeSelect.addEventListener('change', () => {
+        setTanggalOtomatis();
+        tampilkanRekap(); // Panggil rekap setelah tanggal di-set
+    });
+    
+    bulanSelect.addEventListener('change', tampilkanRekap);
+    
+    // Gunakan debounce untuk input ketik agar tidak memanggil API di setiap ketukan
+    tahunInput.addEventListener('input', debounce(tampilkanRekap, 500));
+    
+    awalInput.addEventListener('change', tampilkanRekap);
+    akhirInput.addEventListener('change', tampilkanRekap);
+
+
     // --- INITIALIZATION ---
     setTanggalOtomatis();
-    periodeSelect.addEventListener('change', setTanggalOtomatis);
+    tampilkanRekap(); // [PERUBAHAN] Langsung panggil saat halaman dimuat
 </script>
