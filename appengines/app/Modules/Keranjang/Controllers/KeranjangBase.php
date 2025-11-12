@@ -189,6 +189,70 @@ abstract class KeranjangBase extends BaseController
                 ]
             ],
 
+            // ========================================
+            // SEWA RUANGAN LAB (Lab Room Rental)
+            // ========================================
+            'lab' => [
+                'title' => 'Keranjang Sewa Ruangan Lab',
+                'session_key' => 'keranjang_lab',
+
+                // Table names - MENGGUNAKAN TABEL YANG SAMA
+                'table_layanan' => 'simlab_t_layanan',
+                'table_detail' => 't_layanan_detil',
+                'table_pengujian' => 'r_layanan_pengujian',
+                'table_pembayaran' => 't_pembayaran',
+
+                // Column mappings
+                'columns' => [
+                    'kode' => 'uji_kode',
+                    'nama' => 'nama_layanan',
+                    'ruangan' => 'kode_ruangan',
+                    'parameter' => 'kode_parameter',
+                    'jenis' => 'kode_jenis',
+                    'satuan' => 'satuan',
+                    'biaya' => 'biaya',
+                    'diskon' => 'diskon',
+                ],
+
+                // Joins untuk query - filter untuk kode_jenis = 'C' (ruangan lab)
+                'joins' => [
+                    [
+                        'table' => 'simlab_r_parameter',
+                        'alias' => 'p',
+                        'on' => 'p.paraKode = lp.kode_parameter',
+                        'type' => 'left'
+                    ],
+                    [
+                        'table' => 'simlab_r_ruangan',
+                        'alias' => 'r',
+                        'on' => 'r.ruanganKode = lp.kode_ruangan',
+                        'type' => 'left'
+                    ],
+                    [
+                        'table' => 'simlab_r_jenis',
+                        'alias' => 'j',
+                        'on' => 'j.jenKode = lp.kode_jenis',
+                        'type' => 'left'
+                    ],
+                ],
+
+                // Fields untuk modal form
+                'modal_fields' => [
+                    ['label' => 'Parameter', 'name' => 'detParameter', 'type' => 'text', 'readonly' => true],
+                    ['label' => 'Nama Ruangan', 'name' => 'detRuangan', 'type' => 'text', 'readonly' => true],
+                    ['label' => 'Biaya/Hari', 'name' => 'detBiaya', 'type' => 'number', 'readonly' => true],
+                    ['label' => 'Jumlah Hari', 'name' => 'detJumlah', 'type' => 'number', 'min' => 1, 'max' => 365],
+                    ['label' => 'Keterangan', 'name' => 'detKeterangan', 'type' => 'textarea'],
+                ],
+
+                // Validation rules
+                'validation' => [
+                    'min_jumlah' => 1,
+                    'max_jumlah' => 365,
+                    'require_keterangan' => true,
+                ]
+            ],
+
         ];
 
         // Return config untuk jenis layanan yang diminta, default ke pengujian
@@ -224,8 +288,8 @@ abstract class KeranjangBase extends BaseController
      */
     public function index()
     {
-        $session  = session();
-        $user_id  = $session->get('id_user');
+        $session = session();
+        $user_id = $session->get('id_user');
 
         $modelUser = new MyModel('simlab_account_users');
 
@@ -233,8 +297,8 @@ abstract class KeranjangBase extends BaseController
         $categories = $this->getCategories();
 
         $data = [
-            'title'      => $this->config['title'],
-            'user'       => $modelUser->getDataById('user_id', $user_id),
+            'title' => $this->config['title'],
+            'user' => $modelUser->getDataById('user_id', $user_id),
             'categories' => $categories,
             'jenisLayanan' => $this->jenisLayanan,
         ];
@@ -267,11 +331,11 @@ abstract class KeranjangBase extends BaseController
         $normalized = [];
         if (!empty($categories)) {
             foreach ($categories as $c) {
-                $kode = isset($c->jenKode) ? trim((string)$c->jenKode) : '';
-                $nama = (isset($c->jenNama) && trim((string)$c->jenNama) !== '') ? trim((string)$c->jenNama) : $kode;
+                $kode = isset($c->jenKode) ? trim((string) $c->jenKode) : '';
+                $nama = (isset($c->jenNama) && trim((string) $c->jenNama) !== '') ? trim((string) $c->jenNama) : $kode;
 
                 if ($kode !== '') {
-                    $normalized[] = (object)[
+                    $normalized[] = (object) [
                         'jenKode' => $kode,
                         'jenNama' => $nama
                     ];
@@ -297,7 +361,7 @@ abstract class KeranjangBase extends BaseController
             return $this->response->setJSON(['verified' => false, 'msg' => 'User tidak ditemukan.']);
         }
 
-        if ((int)$user->verifikasi === 1) {
+        if ((int) $user->verifikasi === 1) {
             return $this->response->setJSON(['verified' => true, 'msg' => 'Akun sudah terverifikasi.']);
         } else {
             return $this->response->setJSON([
@@ -312,9 +376,9 @@ abstract class KeranjangBase extends BaseController
      */
     public function keranjangDataList()
     {
-        $session   = session();
+        $session = session();
         $keranjang = $session->get($this->sessionKey) ?? [];
-        $data      = [];
+        $data = [];
 
         // Clean duplicates
         $cleanedKeranjang = $this->cleanDuplicates($keranjang);
@@ -354,9 +418,9 @@ abstract class KeranjangBase extends BaseController
      */
     protected function generateItemKey(array $row): string
     {
-        $kode = isset($row['kode']) ? trim((string)$row['kode']) : '';
-        $alat = isset($row['alat']) ? trim((string)$row['alat']) : '';
-        $ket  = isset($row['keterangan']) ? trim((string)$row['keterangan']) : '';
+        $kode = isset($row['kode']) ? trim((string) $row['kode']) : '';
+        $alat = isset($row['alat']) ? trim((string) $row['alat']) : '';
+        $ket = isset($row['keterangan']) ? trim((string) $row['keterangan']) : '';
 
         return md5($kode . '|' . $alat . '|' . $ket);
     }
@@ -378,8 +442,8 @@ abstract class KeranjangBase extends BaseController
         $validationResult = $this->validateSubmitData($post);
         if (!$validationResult['valid']) {
             return $this->response->setJSON([
-                'res'   => false,
-                'msg'   => $validationResult['message'],
+                'res' => false,
+                'msg' => $validationResult['message'],
                 'xname' => csrf_token(),
                 'xhash' => csrf_hash()
             ]);
@@ -418,7 +482,7 @@ abstract class KeranjangBase extends BaseController
         $validation = $this->config['validation'];
 
         $kode = $post['detUjiKode'] ?? null;
-        $jumlah = isset($post['detJumlah']) ? (int)$post['detJumlah'] : 1;
+        $jumlah = isset($post['detJumlah']) ? (int) $post['detJumlah'] : 1;
 
         if (empty($kode)) {
             return ['valid' => false, 'message' => 'Kode tidak valid.'];
@@ -454,13 +518,13 @@ abstract class KeranjangBase extends BaseController
         $user_id = $session->get('id_user');
 
         $modelUser = new MyModel('simlab_account_users');
-        $userRow   = $modelUser->getDataById('user_id', $user_id);
+        $userRow = $modelUser->getDataById('user_id', $user_id);
 
         $keranjang = $session->get($this->sessionKey) ?? [];
         if (empty($keranjang)) {
             return $this->response->setJSON([
-                'res'   => false,
-                'msg'   => 'Keranjang kosong',
+                'res' => false,
+                'msg' => 'Keranjang kosong',
                 'xname' => csrf_token(),
                 'xhash' => csrf_hash()
             ]);
@@ -469,8 +533,8 @@ abstract class KeranjangBase extends BaseController
         $totalBiaya = array_sum(array_column($keranjang, 'biaya'));
 
         $modelPembayaran = new MyModel($this->tablePembayaran);
-        $modelLayanan    = new MyModel($this->tableLayanan);
-        $modelDetil      = new MyModel($this->tableLayananDetail);
+        $modelLayanan = new MyModel($this->tableLayanan);
+        $modelDetil = new MyModel($this->tableLayananDetail);
         $db = \Config\Database::connect();
 
         $db->transStart();
@@ -505,8 +569,8 @@ abstract class KeranjangBase extends BaseController
             }
 
             return $this->response->setJSON([
-                'res'   => false,
-                'msg'   => 'Checkout gagal: ' . $e->getMessage(),
+                'res' => false,
+                'msg' => 'Checkout gagal: ' . $e->getMessage(),
                 'xname' => csrf_token(),
                 'xhash' => csrf_hash()
             ]);
@@ -521,14 +585,14 @@ abstract class KeranjangBase extends BaseController
         $modelLayanan = new MyModel($this->tableLayanan);
 
         $insertLayananId = $modelLayanan->insertData([
-            'user_id'       => session()->get('id_user'),
-            'lnAccEmail'    => $userRow->user_email ?? '',
-            'lnTgl'         => date('Y-m-d H:i:s'),
-            'lnStatus'      => 1,
-            'kuisioner'     => 0
+            'user_id' => session()->get('id_user'),
+            'lnAccEmail' => $userRow->user_email ?? '',
+            'lnTgl' => date('Y-m-d H:i:s'),
+            'lnStatus' => 1,
+            'kuisioner' => 0
         ], true);
 
-        return (int)$insertLayananId;
+        return (int) $insertLayananId;
     }
 
     /**
@@ -540,14 +604,14 @@ abstract class KeranjangBase extends BaseController
         $today = date('Y-m-d');
 
         $modelPembayaran->insertData([
-            'bayarLnKode'      => $lnKode,
-            'bayarTotalBiaya'  => $totalBiaya,
-            'bayarStatus'      => 0,
-            'bayarInvoiceTgl'  => $today,
+            'bayarLnKode' => $lnKode,
+            'bayarTotalBiaya' => $totalBiaya,
+            'bayarStatus' => 0,
+            'bayarInvoiceTgl' => $today,
             'bayarInvoiceFile' => null,
-            'bayarBuktiFile'   => null,
-            'bayarCatatan'     => null,
-            'bayarInvoiceNo'   => null,
+            'bayarBuktiFile' => null,
+            'bayarCatatan' => null,
+            'bayarInvoiceNo' => null,
         ], true);
     }
 
@@ -561,7 +625,7 @@ abstract class KeranjangBase extends BaseController
      */
     public function keranjangDelete($id)
     {
-        $session   = session();
+        $session = session();
         $keranjang = $session->get($this->sessionKey) ?? [];
 
         if (isset($keranjang[$id])) {
@@ -570,16 +634,16 @@ abstract class KeranjangBase extends BaseController
             $session->set($this->sessionKey, $keranjang);
 
             return $this->response->setJSON([
-                'res'   => true,
-                'msg'   => 'Item berhasil dihapus dari keranjang.',
+                'res' => true,
+                'msg' => 'Item berhasil dihapus dari keranjang.',
                 'xname' => csrf_token(),
                 'xhash' => csrf_hash()
             ]);
         }
 
         return $this->response->setJSON([
-            'res'   => true,
-            'msg'   => 'Item tidak ditemukan di keranjang.',
+            'res' => true,
+            'msg' => 'Item tidak ditemukan di keranjang.',
             'xname' => csrf_token(),
             'xhash' => csrf_hash()
         ]);

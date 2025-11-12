@@ -27,3 +27,13 @@ $routes->group('pelayanan_alat', ['namespace' => 'Modules\Pelayanan\Controllers'
     $subroutes->get('getTrackingData/(:any)', 'PelayananAlat::getTrackingData/$1');
     $subroutes->get('checkVerified', 'PelayananAlat::checkVerified');
 });
+
+// Routes untuk Pelayanan Sewa Ruangan Lab
+$routes->group('pelayanan_lab', ['namespace' => 'Modules\Pelayanan\Controllers'], function ($subroutes) {
+
+    $subroutes->get('/', 'PelayananLab::index');
+    $subroutes->get('datalist', 'PelayananLab::dataList');
+    $subroutes->get('detailList/(:any)', 'PelayananLab::detailList/$1');
+    $subroutes->get('getTrackingData/(:any)', 'PelayananLab::getTrackingData/$1');
+    $subroutes->get('checkVerified', 'PelayananLab::checkVerified');
+});

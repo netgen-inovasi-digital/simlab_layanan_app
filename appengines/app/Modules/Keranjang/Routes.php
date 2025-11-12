@@ -56,7 +56,7 @@ $routes->group('keranjang', ['namespace' => 'Modules\Keranjang\Controllers'], fu
     // SEWA ALAT ROUTES (Alternative naming - keranjang_alat)
     // ================================================================
     // Note: Ini sama dengan sewa, tapi menggunakan path terpisah untuk clarity
-    
+
 });
 
 // ROUTES UNTUK KERANJANG ALAT (Separate group untuk clarity)
@@ -74,7 +74,25 @@ $routes->group('keranjang_alat', ['namespace' => 'Modules\Keranjang\Controllers'
 
     // Verifikasi user
     $subroutes->get('checkVerified', 'KeranjangAlat::checkVerified');
-    
+
+});
+
+// ROUTES UNTUK KERANJANG LAB (Separate group untuk sewa ruangan lab)
+$routes->group('keranjang_lab', ['namespace' => 'Modules\Keranjang\Controllers'], function ($subroutes) {
+    // Halaman utama keranjang lab
+    $subroutes->get('/', 'KeranjangLab::index');
+
+    // API endpoints untuk keranjang lab
+    $subroutes->get('datalist', 'KeranjangLab::keranjangDataList');
+    $subroutes->get('dataListLayanan', 'KeranjangLab::keranjangDataListLayanan');
+    $subroutes->get('kategoriList', 'KeranjangLab::kategoriList');
+    $subroutes->post('submit', 'KeranjangLab::keranjangSubmit');
+    $subroutes->get('delete/(:any)', 'KeranjangLab::keranjangDelete/$1');
+    $subroutes->post('checkout', 'KeranjangLab::keranjangCheckout');
+
+    // Verifikasi user
+    $subroutes->get('checkVerified', 'KeranjangLab::checkVerified');
+
 });
 
 /*
