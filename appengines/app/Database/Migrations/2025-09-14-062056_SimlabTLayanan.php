@@ -45,6 +45,10 @@ class CreateSimlabTLayanan extends Migration
                 'null' => true,
                 'comment' => '0=Belum isi; 1=Sudah isi',
             ],
+            'tgl_pelaksanaan' => [
+                'type' => 'DATETIME',
+                'null' => true,
+            ],
             'lhu_id' => [
                 'type' => 'INT',
                 'unsigned' => true, // jika nanti mau jadikan FK ke t_files_lhu.file_id

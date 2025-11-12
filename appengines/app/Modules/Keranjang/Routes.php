@@ -72,7 +72,67 @@ $routes->group('keranjang', ['namespace' => 'Modules\Keranjang\Controllers'], fu
         $rapatjasRoutes->get('checkVerified', 'KeranjangRapatJas::checkVerified');
     });
 
-    
+    // ================================================================
+    // RAPAT JAS ROUTES (kode_jenis = 'D')
+    // ================================================================
+
+    $subroutes->group('rapatjas', function ($rapatjasRoutes) {
+        // Halaman utama keranjang rapat jas
+        $rapatjasRoutes->get('/', 'KeranjangRapatJas::index');
+
+        // API endpoints untuk rapat jas
+        $rapatjasRoutes->get('datalist', 'KeranjangRapatJas::keranjangDataList');
+        $rapatjasRoutes->get('dataListLayanan', 'KeranjangRapatJas::keranjangDataListLayanan');
+        $rapatjasRoutes->get('kategoriList', 'KeranjangRapatJas::kategoriList');
+        $rapatjasRoutes->post('submit', 'KeranjangRapatJas::keranjangSubmit');
+        $rapatjasRoutes->get('delete/(:any)', 'KeranjangRapatJas::keranjangDelete/$1');
+        $rapatjasRoutes->post('checkout', 'KeranjangRapatJas::keranjangCheckout');
+
+        // Verifikasi user
+        $rapatjasRoutes->get('checkVerified', 'KeranjangRapatJas::checkVerified');
+    });
+
+    // ================================================================
+    // SEWA ALAT ROUTES (Alternative naming - keranjang_alat)
+    // ================================================================
+    // Note: Ini sama dengan sewa, tapi menggunakan path terpisah untuk clarity
+
+});
+
+// ROUTES UNTUK KERANJANG ALAT (Separate group untuk clarity)
+$routes->group('keranjang_alat', ['namespace' => 'Modules\Keranjang\Controllers'], function ($subroutes) {
+    // Halaman utama keranjang alat
+    $subroutes->get('/', 'KeranjangAlat::index');
+
+    // API endpoints untuk keranjang alat
+    $subroutes->get('datalist', 'KeranjangAlat::keranjangDataList');
+    $subroutes->get('dataListLayanan', 'KeranjangAlat::keranjangDataListLayanan');
+    $subroutes->get('kategoriList', 'KeranjangAlat::kategoriList');
+    $subroutes->post('submit', 'KeranjangAlat::keranjangSubmit');
+    $subroutes->get('delete/(:any)', 'KeranjangAlat::keranjangDelete/$1');
+    $subroutes->post('checkout', 'KeranjangAlat::keranjangCheckout');
+
+    // Verifikasi user
+    $subroutes->get('checkVerified', 'KeranjangAlat::checkVerified');
+
+});
+
+// ROUTES UNTUK KERANJANG LAB (Separate group untuk sewa ruangan lab)
+$routes->group('keranjang_lab', ['namespace' => 'Modules\Keranjang\Controllers'], function ($subroutes) {
+    // Halaman utama keranjang lab
+    $subroutes->get('/', 'KeranjangLab::index');
+
+    // API endpoints untuk keranjang lab
+    $subroutes->get('datalist', 'KeranjangLab::keranjangDataList');
+    $subroutes->get('dataListLayanan', 'KeranjangLab::keranjangDataListLayanan');
+    $subroutes->get('kategoriList', 'KeranjangLab::kategoriList');
+    $subroutes->post('submit', 'KeranjangLab::keranjangSubmit');
+    $subroutes->get('delete/(:any)', 'KeranjangLab::keranjangDelete/$1');
+    $subroutes->post('checkout', 'KeranjangLab::keranjangCheckout');
+
+    // Verifikasi user
+    $subroutes->get('checkVerified', 'KeranjangLab::checkVerified');
+
 });
 
 /*

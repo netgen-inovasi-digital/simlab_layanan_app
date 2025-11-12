@@ -34,3 +34,23 @@ $routes->group('pelayananrapatjas', ['namespace' => 'Modules\Pelayanan\Controlle
     $subroutes->get('kuesioner/(:any)', 'PelayananRapatJas::kuesioner/$1');
     $subroutes->post('submit_kuesioner', 'PelayananRapatJas::submit_kuesioner');
 });
+
+// Routes untuk Pelayanan Sewa Alat
+$routes->group('pelayanan_alat', ['namespace' => 'Modules\Pelayanan\Controllers'], function ($subroutes) {
+
+    $subroutes->get('/', 'PelayananAlat::index');
+    $subroutes->get('datalist', 'PelayananAlat::dataList');
+    $subroutes->get('detailList/(:any)', 'PelayananAlat::detailList/$1');
+    $subroutes->get('getTrackingData/(:any)', 'PelayananAlat::getTrackingData/$1');
+    $subroutes->get('checkVerified', 'PelayananAlat::checkVerified');
+});
+
+// Routes untuk Pelayanan Sewa Ruangan Lab
+$routes->group('pelayanan_lab', ['namespace' => 'Modules\Pelayanan\Controllers'], function ($subroutes) {
+
+    $subroutes->get('/', 'PelayananLab::index');
+    $subroutes->get('datalist', 'PelayananLab::dataList');
+    $subroutes->get('detailList/(:any)', 'PelayananLab::detailList/$1');
+    $subroutes->get('getTrackingData/(:any)', 'PelayananLab::getTrackingData/$1');
+    $subroutes->get('checkVerified', 'PelayananLab::checkVerified');
+});

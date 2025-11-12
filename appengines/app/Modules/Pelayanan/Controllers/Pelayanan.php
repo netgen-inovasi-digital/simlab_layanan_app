@@ -33,9 +33,9 @@ class Pelayanan extends BaseController
     {
         return match ($status) {
             0 => 'Pendaftaran',
-            1 => 'Review Manajer',
+            1 => 'Review Petugas',
             2 => 'Ditolak',
-            3 => 'Review Admin',
+            3 => 'Review Petugas',
             4 => 'Dalam Pengujian',
             5 => 'Proses LHUS',
             6 => 'LHUS Disetujui',
@@ -177,19 +177,26 @@ class Pelayanan extends BaseController
             return $this->response->setJSON(["items" => []]);
         }
 
-        $model = new MyModel($this->table);
-        $data  = [];
+        $db = \Config\Database::connect();
+        $data = [];
 
-        //  Filter utama: milik user yang sedang login
-        $where = ['user_id' => $user_id];
-        $list  = $model->getAllDataById($where, ['lnTgl' => 'DESC']);
+        // Query dengan JOIN ke t_layanan_detil untuk filter kode_jenis = 'A' (sampel)
+        // Gunakan GROUP BY untuk menghindari duplikasi row jika ada multiple detail items
+        $builder = $db->table($this->table . ' as t');
+        $builder->select('t.lnKode, t.user_id, t.lnAccEmail, t.lnNoTransaksi, t.lnTgl, t.lnStatus, t.kuisioner, t.lhu_id');
+        $builder->join('t_layanan_detil d', 'd.kode_layanan = t.lnKode', 'inner');
+        $builder->where('t.user_id', $user_id);
+        $builder->where('d.kode_jenis', 'A');  // Filter hanya sampel (kode_jenis = 'A')
+        $builder->groupBy('t.lnKode, t.user_id, t.lnAccEmail, t.lnNoTransaksi, t.lnTgl, t.lnStatus, t.kuisioner, t.lhu_id');
+        $builder->orderBy('t.lnTgl', 'DESC');
+
+        $list = $builder->get()->getResult();
 
         if (empty($list)) {
             return $this->response->setJSON(["items" => []]);
         }
 
         // --- Siapkan map pembayaran terakhir per lnKode (satu query) ---
-        $db = \Config\Database::connect();
         $lnKodes = array_map(fn($r) => (int)$r->lnKode, $list);
 
         $payRows = $db->table('t_pembayaran')

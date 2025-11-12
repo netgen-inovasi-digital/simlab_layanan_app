@@ -33,6 +33,11 @@ class CreateTFilesRuangan extends Migration
                 'unsigned' => true, // <-- samakan dengan simlab_account_users.user_id
                 'null' => true,
             ],
+            'file_pendukung' => [
+                'type' => 'VARCHAR',
+                'constraint' => 255,
+                'null' => true,
+            ],
         ]);
 
         $this->forge->addKey('file_id', true);
