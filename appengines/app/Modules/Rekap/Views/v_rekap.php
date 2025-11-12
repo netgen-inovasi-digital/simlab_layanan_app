@@ -6,6 +6,14 @@
             </div>
 
             <div class="card-body">
+
+                <?php if (!empty($error)): ?>
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <?php echo esc($error); ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                <?php endif; ?>
                 <div class="row mb-3">
                     <div class="col-12">
                         <div class="card border-0 bg-light">
@@ -66,10 +74,13 @@
                                         <input type="date" id="akhir" class="form-control" disabled>
                                     </div>
 
-                                    <div class="col-md-2 d-flex align-items-end">
+                                    <div class="col-md-3 d-flex align-items-end">
                                         <div class="d-flex gap-2 w-100">
                                             <button type="button" class="btn btn-primary w-100 rounded-pill py-2 tampil">Tampilkan</button>
-                                            <button type="button" class="btn btn-success w-100 rounded-pill py-2 download">Download</button>
+                                            
+                                            <button type="button" class="btn btn-success w-100 rounded-pill py-2 download">
+                                                <i class="bi bi-file-earmark-excel me-1"></i> Download
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -84,6 +95,47 @@
     </div>
 </div>
 
+<div class="modal fade" id="modalDownloadRekap" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="modalDownloadRekapLabel" aria-hidden="true">
+    <div class="modal-dialog modal-md" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalDownloadRekapLabel"><i class="bi bi-file-earmark-excel me-2"></i>Download Rekap Pembayaran</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label for="downloadJenisLayanan" class="form-label">Jenis Layanan</label>
+                        <select id="downloadJenisLayanan" class="form-select">
+                            <option value="semua">Semua</option>
+                            <?php foreach ($jenis_layanan_options as $option): ?>
+                            <option value="<?php echo esc($option->jenKode); ?>">
+                                <?php echo esc($option->jenKode . ' - ' . $option->jenNama); ?>
+                            </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="downloadTanggalAwal" class="form-label">Tanggal Awal</label>
+                        <input type="date" id="downloadTanggalAwal" class="form-control">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="downloadTanggalAkhir" class="form-label">Tanggal Akhir</label>
+                        <input type="date" id="downloadTanggalAkhir" class="form-control">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-light" type="button" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i> Batal
+                </button>
+                <button class="btn btn-success" type="button" onclick="executeDownload()">
+                    <i class="bi bi-download me-1"></i> Download Excel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 <script>
     // --- ELEMENT SELECTORS ---
     const periodeSelect = document.getElementById('periode');
@@ -107,7 +159,6 @@
         const now = new Date();
         let awal, akhir;
 
-        // Reset semua dulu
         awalWrapper.classList.remove('d-none');
         akhirWrapper.classList.remove('d-none');
         bulanWrapper.classList.add('d-none');
@@ -116,11 +167,9 @@
         switch (periodeSelect.value) {
             case 'hari_ini':
                 awal = akhir = formatDate(now);
-                // DIKEMBALIKAN: Logika disabled/enabled dikembalikan seperti kode asli Anda
                 awalInput.disabled = true;
                 akhirInput.disabled = true;
                 break;
-
             case '7_hari':
                 const tujuhHariLalu = new Date(now);
                 tujuhHariLalu.setDate(now.getDate() - 6);
@@ -129,45 +178,55 @@
                 awalInput.disabled = true;
                 akhirInput.disabled = true;
                 break;
-
             case 'pilih_bulan':
                 awalWrapper.classList.add('d-none');
                 akhirWrapper.classList.add('d-none');
                 bulanWrapper.classList.remove('d-none');
                 tahunWrapper.classList.remove('d-none');
-                return; // Langsung keluar agar value tidak di-set
-
+                return;
             case 'custom':
                 awalInput.disabled = false;
                 akhirInput.disabled = false;
                 awalInput.value = '';
                 akhirInput.value = '';
-                return; // Langsung keluar agar value tidak di-set
+                return;
         }
-
         awalInput.value = awal;
         akhirInput.value = akhir;
     }
 
-    // --- FUNGSI UNTUK MERENDER TABEL ---
+    // --- FUNGSI UNTUK MERENDER TABEL (VERSI DINAMIS) ---
     function renderRekapTable(data) {
-        const {
-            ulm,
-            non_ulm
-        } = data;
+        // Ekstrak data dari respons JSON baru
+        const { kolom_header, ulm_detail, non_ulm_detail, total_ulm, total_non_ulm } = data;
         const formatCurrency = (number) => `Rp ${Intl.NumberFormat('id-ID').format(number)}`;
 
-        const createRow = (title, dataRow) => `
-            <tr>
-                <td class="text-start fw-bold">${title}</td>
-                <td>${formatCurrency(dataRow.total_pembayaran)}</td>
-                <td>${formatCurrency(dataRow.bahan_kimia)}</td>
-                <td>${formatCurrency(dataRow.operasional)}</td>
-                <td>${formatCurrency(dataRow.jasa_profesi)}</td>
-                <td>${formatCurrency(dataRow.pendapatan_instansi)}</td>
-            </tr>
-        `;
+        // 1. Bangun Kolom Header (THEAD) secara dinamis
+        let headerHTML = '';
+        if (kolom_header) {
+            kolom_header.forEach(kolom => {
+                // Ambil label dan persen dari DB
+                headerHTML += `<th>${kolom.kdKolomLabel} (${kolom.kdPersenNONULM}%)</th>`;
+            });
+        }
 
+        // 2. Bangun sel data (TD) untuk baris ULM
+        let ulmRowHTML = '';
+        if (ulm_detail) {
+            ulm_detail.forEach(detail => {
+                ulmRowHTML += `<td>${formatCurrency(detail.value)}</td>`;
+            });
+        }
+
+        // 3. Bangun sel data (TD) untuk baris Non-ULM
+        let nonUlmRowHTML = '';
+        if (non_ulm_detail) {
+            non_ulm_detail.forEach(detail => {
+                nonUlmRowHTML += `<td>${formatCurrency(detail.value)}</td>`;
+            });
+        }
+
+        // 4. Gabungkan semuanya menjadi tabel HTML
         const tableHTML = `
         <h5 class="mb-3">A. Layanan Pengujian Sampel</h5>
         <div class="table-responsive">
@@ -176,18 +235,24 @@
                     <tr>
                         <th class="text-start">Pendapatan</th>
                         <th>Total Pembayaran</th>
-                        <th>Bahan Kimia (35%)</th>
-                        <th>Operasional (10%)</th>
-                        <th>Jasa Profesi (45%)</th>
-                        <th>Pendapatan Instansi (10%)</th>
+                        ${headerHTML} 
                     </tr>
                 </thead>
                 <tbody>
-                    ${createRow('ULM', ulm)}
-                    ${createRow('Non-ULM', non_ulm)}
+                    <tr>
+                        <td class="text-start fw-bold">ULM</td>
+                        <td>${formatCurrency(total_ulm)}</td>
+                        ${ulmRowHTML}
+                    </tr>
+                    <tr>
+                        <td class="text-start fw-bold">Non-ULM</td>
+                        <td>${formatCurrency(total_non_ulm)}</td>
+                        ${nonUlmRowHTML}
+                    </tr>
                 </tbody>
             </table>
         </div>`;
+        
         return tableHTML;
     }
 
@@ -219,23 +284,15 @@
         fetch(apiUrl)
             .then(res => res.json())
             .then(response => {
-                let notificationHTML = '';
-                let tableData;
-
-                // PERUBAHAN: Menampilkan notifikasi DAN tabel berisi nol sesuai permintaan
+                // MODIFIKASI DI SINI
                 if (response.success) {
-                    tableData = response.data;
+                    // Data ada (meskipun mungkin 0), render tabel
+                    rekapHasilContainer.innerHTML = renderRekapTable(response.data);
                 } else {
-                    // Buat notifikasi
-                    notificationHTML = `<div class="alert alert-info">Tidak ada data pembayaran yang ditemukan untuk periode yang dipilih.</div>`;
-                    // Buat data kosong untuk tabel
-                    tableData = {
-                        ulm: { total_pembayaran: 0, bahan_kimia: 0, operasional: 0, jasa_profesi: 0, pendapatan_instansi: 0 },
-                        non_ulm: { total_pembayaran: 0, bahan_kimia: 0, operasional: 0, jasa_profesi: 0, pendapatan_instansi: 0 }
-                    };
+                    // Handle jika data.success == false (data tidak ditemukan)
+                    const notificationHTML = `<div class="alert alert-info">${response.message || 'Tidak ada data pembayaran yang ditemukan.'}</div>`;
+                    rekapHasilContainer.innerHTML = notificationHTML;
                 }
-                // Gabungkan notifikasi (jika ada) dengan tabel
-                rekapHasilContainer.innerHTML = notificationHTML + renderRekapTable(tableData);
             })
             .catch(err => {
                 console.error('Fetch Error:', err);
@@ -243,19 +300,18 @@
             });
     }
 
-    // --- EVENT LISTENERS ---
-    document.querySelector('.tampil').addEventListener('click', function(e) {
-        e.preventDefault();
-        tampilkanRekap();
-    });
+    // --- FUNGSI UNTUK MODAL DAN DOWNLOAD ---
 
-    document.querySelector('.download').addEventListener('click', function() {
+    /**
+     * 1. Fungsi ini dipanggil saat tombol download utama diklik.
+     */
+    function confirmDownload() {
         const jenis = document.getElementById('jenis_layanan').value;
         let tanggal_awal = awalInput.value;
         let tanggal_akhir = akhirInput.value;
 
         if (periodeSelect.value === 'pilih_bulan') {
-             const bulan = bulanSelect.value;
+            const bulan = bulanSelect.value;
             const tahun = tahunInput.value;
             tanggal_awal = `${tahun}-${bulan}-01`;
             const lastDayOfMonth = new Date(tahun, parseInt(bulan), 0);
@@ -264,19 +320,98 @@
 
         if (!tanggal_awal || !tanggal_akhir) {
             if (typeof sayAlert === 'function') {
-                sayAlert('errorModal', 'Error', 'Mohon pilih tanggal untuk di-download', 'warning');
+                sayAlert('errorModal', 'Error', 'Mohon atur periode filter utama terlebih dahulu', 'warning');
             } else {
-                alert('Mohon pilih tanggal untuk di-download');
+                alert('Mohon atur periode filter utama terlebih dahulu');
             }
             return;
         }
+
+        document.getElementById('downloadJenisLayanan').value = jenis;
+        document.getElementById('downloadTanggalAwal').value = tanggal_awal;
+        document.getElementById('downloadTanggalAkhir').value = tanggal_akhir;
         
-        const url = `<?php echo site_url('rekap/download'); ?>?jenis_layanan=${jenis}&tanggal_awal=${tanggal_awal}&tanggal_akhir=${tanggal_akhir}`;
-        window.open(url, '_blank');
+        $('#modalDownloadRekap').modal('show');
+    }
+
+    /**
+     * 2. (INI YANG DIUBAH)
+     * Fungsi ini dipanggil oleh tombol "Download Excel" DI DALAM MODAL.
+     * Sekarang akan mengecek data dulu sebelum men-download.
+     */
+    async function executeDownload() {
+        // Ambil nilai dari MODAL
+        const jenis = document.getElementById('downloadJenisLayanan').value;
+        const tanggal_awal = document.getElementById('downloadTanggalAwal').value;
+        const tanggal_akhir = document.getElementById('downloadTanggalAkhir').value;
+
+        // Validasi
+        if (!tanggal_awal || !tanggal_akhir) {
+            if (typeof sayAlert === 'function') {
+                 sayAlert('errorModal', 'Error', 'Tanggal Awal dan Tanggal Akhir di modal harus diisi!', 'warning');
+            } else {
+                alert('Tanggal Awal dan Tanggal Akhir di modal harus diisi!');
+            }
+            return;
+        }
+
+        // BUAT URL UNTUK CEK DATA (KE dataList)
+        const checkUrl = `<?php echo site_url('rekap/datalist'); ?>?jenis_layanan=${jenis}&tanggal_awal=${tanggal_awal}&tanggal_akhir=${tanggal_akhir}`;
+
+        try {
+            // Panggil API untuk cek data
+            const response = await fetch(checkUrl);
+            if (!response.ok) {
+                throw new Error('Server error saat cek data: ' + response.statusText);
+            }
+            
+            const data = await response.json();
+
+            // Cek jika data.success == false (artinya data kosong)
+            if (data.success === false) {
+                
+                // TAMPILKAN SAYALERT DAN BERHENTI
+                if (typeof sayAlert === 'function') {
+                    sayAlert('errorModal', 'Info', 'Tidak ada data untuk diekspor pada periode yang dipilih.', 'info');
+                } else {
+                    alert('Tidak ada data untuk diekspor pada periode yang dipilih.');
+                }
+                return; // Berhenti di sini, jangan download
+            }
+
+            // Jika data.success == true, LANJUTKAN DOWNLOAD
+            
+            // Buat URL untuk download
+            const downloadUrl = `<?php echo site_url('rekap/download'); ?>?jenis_layanan=${jenis}&tanggal_awal=${tanggal_awal}&tanggal_akhir=${tanggal_akhir}`;
+            window.open(downloadUrl, '_blank');
+            
+            // Tutup modal
+            $('#modalDownloadRekap').modal('hide');
+
+        } catch (error) {
+            console.error('Error during download check:', error);
+            if (typeof sayAlert === 'function') {
+                sayAlert('errorModal', 'Error', 'Gagal memverifikasi data: '(error.message || 'Unknown error'), 'error');
+            } else {
+                alert('Gagal memverifikasi data: ' + (error.message || 'Unknown error'));
+            }
+        }
+    }
+
+
+    // --- EVENT LISTENERS ---
+    document.querySelector('.tampil').addEventListener('click', function(e) {
+        e.preventDefault();
+        tampilkanRekap();
     });
 
+    document.querySelector('.download').addEventListener('click', function(e) {
+        e.preventDefault();
+        confirmDownload(); 
+    });
+
+
     // --- INITIALIZATION ---
-    // DIKEMBALIKAN: Memanggil fungsi langsung saat script dimuat, sama seperti kode asli
     setTanggalOtomatis();
     periodeSelect.addEventListener('change', setTanggalOtomatis);
 </script>
