@@ -12,8 +12,8 @@
             <div class="card-body">
                 <table id="data-table" class="saytable border-top-bottom">
                     <thead>
-                         <tr>
-                            <th show width="3%">No.</th> 
+                        <tr>
+                            <th show width="3%">No.</th>
                             <th show width="60%">Pertanyaan</th>
                             <th show width="15%">Tipe</th>
                             <th show width="10%">Wajib</th>
@@ -27,17 +27,18 @@
     </div>
 </div>
 
-<div class="modal fade" id="modalForm" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+<div class="modal fade" id="modalForm" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+    aria-labelledby="staticBackdropLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Form Master Kuesioner</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            
+
             <?php echo form_open('kuesioner/submit', array('id' => 'myform', 'novalidate' => '')) ?>
             <div class="modal-body p-4">
-                
+
                 <input type="hidden" value="" name="id" />
 
                 <div class="mb-3">
@@ -51,12 +52,12 @@
                             <select name="pertanyaan_tipe" class="form-select" required>
                                 <option value="isian">Isian Teks</option>
                                 <option value="pilihan">Pilihan Ganda</option>
-                                <option value="rating">Rating (Bintang)</option>
+                                <option value="rating">Rating</option>
                             </select>
                         </div>
                     </div>
                     <div class="col-md-6">
-                         <div class="mb-3">
+                        <div class="mb-3">
                             <label class="form-label">Wajib Diisi</label>
                             <select name="pertanyaan_wajib" class="form-select" required>
                                 <option value="1">Ya</option>
@@ -67,33 +68,24 @@
                 </div>
 
                 <div id="wrapperOpsi" style="display: none;">
-                    <label class="form-label">Opsi Jawaban (A-E)</label>
-                    <div class="input-group mb-2">
-                        <span class="input-group-text" style="width: 40px;">A</span>
-                        <input type="text" name="opsi_a" class="form-control" placeholder="Teks Opsi A">
+                    <label class="form-label">Opsi Jawaban</label>
+
+                    <div id="dynamicOpsiContainer">
                     </div>
-                     <div class="input-group mb-2">
-                        <span class="input-group-text" style="width: 40px;">B</span>
-                        <input type="text" name="opsi_b" class="form-control" placeholder="Teks Opsi B">
-                    </div>
-                     <div class="input-group mb-2">
-                        <span class="input-group-text" style="width: 40px;">C</span>
-                        <input type="text" name="opsi_c" class="form-control" placeholder="Teks Opsi C">
-                    </div>
-                     <div class="input-group mb-2">
-                        <span class="input-group-text" style="width: 40px;">D</span>
-                        <input type="text" name="opsi_d" class="form-control" placeholder="Teks Opsi D">
-                    </div>
-                     <div class="input-group mb-3">
-                        <span class="input-group-text" style="width: 40px;">E</span>
-                        <input type="text" name="opsi_e" class="form-control" placeholder="Teks Opsi E">
+
+                    <div class="mt-2 mb-3">
+                        <button type="button" class="btn btn-sm btn-outline-primary" id="btnAddOpsi">
+                            <i class="bi bi-plus-circle"></i> Tambah Opsi Jawaban
+                        </button>
                     </div>
                 </div>
 
             </div>
             <div class="modal-footer">
-                <button class="btn btn-light" type="button" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i> Batal</button>
-                <button class="btn btn-primary" id="btnSimpan" type="submit"><i class="bi bi-check2-circle"></i> Simpan</button>
+                <button class="btn btn-light" type="button" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i>
+                    Batal</button>
+                <button class="btn btn-primary" id="btnSimpan" type="submit"><i class="bi bi-check2-circle"></i>
+                    Simpan</button>
             </div>
             </form>
         </div>
@@ -121,7 +113,7 @@
     kuesionerTable = loadTable(apiUrl + "?page=" + currentPage + "&limit=" + currentLimit);
 
     // 2. Listener tombol Simpan
-    const btnSimpan = document.querySelector('#btnSimpan');
+    var btnSimpan = document.querySelector('#btnSimpan');
     if (btnSimpan) {
         btnSimpan.addEventListener('click', function(e) {
             e.preventDefault();
@@ -143,11 +135,16 @@
             
             const tipe = form.querySelector('[name="pertanyaan_tipe"]').value;
             if (tipe === 'pilihan') {
-                const opsiA = form.querySelector('[name="opsi_a"]').value.trim();
-                const opsiB = form.querySelector('[name="opsi_b"]').value.trim();
+                var allOpsiInputs = form.querySelectorAll('input[name="opsi[]"]');
+                var filledOpsi = 0;
+                allOpsiInputs.forEach(input => {
+                    if (input.value.trim() !== '') {
+                        filledOpsi++;
+                    }
+                });
 
-                if (opsiA === '' || opsiB === '') {
-                    sayAlert('errorModal', 'Gagal', 'Untuk Tipe Pilihan Ganda, minimal Opsi A dan Opsi B wajib diisi.', 'warning');
+                if (filledOpsi < 2) {
+                    sayAlert('errorModal', 'Gagal', 'Untuk Tipe Pilihan Ganda, minimal 2 opsi jawaban wajib diisi.', 'warning');
                     return; 
                 }
             }
@@ -262,11 +259,29 @@
                 document.querySelector('[name="pertanyaan_teks"]').value = data.pertanyaan_teks;
                 document.querySelector('[name="pertanyaan_wajib"]').value = data.pertanyaan_wajib;
                 document.querySelector('[name="pertanyaan_tipe"]').value = data.pertanyaan_tipe;
-                document.querySelector('[name="opsi_a"]').value = data.opsi_a;
-                document.querySelector('[name="opsi_b"]').value = data.opsi_b;
-                document.querySelector('[name="opsi_c"]').value = data.opsi_c;
-                document.querySelector('[name="opsi_d"]').value = data.opsi_d;
-                document.querySelector('[name="opsi_e"]').value = data.opsi_e;
+
+                if (dynamicOpsiContainer) {
+                    dynamicOpsiContainer.innerHTML = ''; 
+                }
+
+                if (data.pertanyaan_tipe === 'pilihan' && data.opsi_list && data.opsi_list.length > 0) {
+                    let hasValidOpsi = false;
+                    data.opsi_list.forEach(opsiValue => {
+                        if (opsiValue.trim() !== '') {
+                            tambahInputOpsi(opsiValue);
+                            hasValidOpsi = true;
+                        }
+                    });
+                    
+                    if (!hasValidOpsi || dynamicOpsiContainer.children.length < 2) {
+                        while(dynamicOpsiContainer.children.length < 2) {
+                            tambahInputOpsi();
+                        }
+                    }
+                } else {
+                    resetOpsiContainer();
+                }
+
                 toggleOpsiWrapper(data.pertanyaan_tipe);
                 $('#modalForm').modal('show');
             })
@@ -276,9 +291,9 @@
             });
     }
 
-    // --- LOGIKA FORM (Variabel Unik) ---
-    const kuesionerTipeSelect = document.querySelector('[name="pertanyaan_tipe"]'); 
-    const kuesionerWrapperOpsi = document.getElementById('wrapperOpsi'); 
+    var kuesionerTipeSelect = document.querySelector('[name="pertanyaan_tipe"]'); 
+    var kuesionerWrapperOpsi = document.getElementById('wrapperOpsi'); 
+    var dynamicOpsiContainer = document.getElementById('dynamicOpsiContainer');
 
     function toggleOpsiWrapper(tipe) {
         if (kuesionerWrapperOpsi) {
@@ -296,7 +311,7 @@
         });
     }
 
-    const addButton = document.querySelector('#add');
+    var addButton = document.querySelector('#add');
     if (addButton) {
         addButton.addEventListener('click', function() {
             document.querySelector('#myform').reset();
@@ -304,13 +319,76 @@
             if (kuesionerTipeSelect) {
                 kuesionerTipeSelect.value = 'isian'; 
             }
+            resetOpsiContainer();
             toggleOpsiWrapper('isian');
             $('#modalForm').modal('show');
         });
     }
 
     $('#modalForm').on('hidden.bs.modal', function () {
+        resetOpsiContainer(); 
         toggleOpsiWrapper('isian');
     });
+
+    function tambahInputOpsi(value = '') {
+        if (!dynamicOpsiContainer) return;
+        var placeholderText = 'Teks Opsi ' + (dynamicOpsiContainer.children.length + 1);
+
+        var newOpsiHTML = `
+            <div class="input-group mb-2 dynamic-opsi-item">
+                <span class="input-group-text" style="cursor: grab;"><i class="bi bi-grip-vertical"></i></span>
+                <input type="text" name="opsi[]" class="form-control" placeholder="${placeholderText}" value="${value}">
+                
+                <span class="input-group-text text-danger btn-remove-opsi" style="cursor: pointer;" title="Hapus Opsi">
+                    <i class="bi bi-trash"></i>
+                </span>
+                </div>`;
+        
+        dynamicOpsiContainer.insertAdjacentHTML('beforeend', newOpsiHTML);
+    }
+
+    function resetOpsiContainer() {
+        if (!dynamicOpsiContainer) return;
+        dynamicOpsiContainer.innerHTML = ''; 
+        tambahInputOpsi(); 
+        tambahInputOpsi(); 
+    }
+
+    function updateOpsiPlaceholders() {
+        if (!dynamicOpsiContainer) return;
+        var allItems = dynamicOpsiContainer.querySelectorAll('.dynamic-opsi-item');
+        allItems.forEach((item, index) => {
+            var input = item.querySelector('input[name="opsi[]"]');
+            if (input) {
+                input.placeholder = 'Teks Opsi ' + (index + 1);
+            }
+        });
+    }
+
+    var btnAddOpsi = document.getElementById('btnAddOpsi');
+    if (btnAddOpsi) {
+        btnAddOpsi.addEventListener('click', function() {
+            tambahInputOpsi();
+        });
+    }
+
+    if (dynamicOpsiContainer) {
+        dynamicOpsiContainer.addEventListener('click', function(e) {
+            var removeButton = e.target.closest('.btn-remove-opsi');
+            if (removeButton) {
+                
+                if (dynamicOpsiContainer.querySelectorAll('.dynamic-opsi-item').length <= 2) {
+                    sayAlert('errorModal', 'Gagal', 'Minimal harus ada 2 opsi jawaban untuk Pilihan Ganda.', 'warning');
+                    return;
+                }
+                
+                removeButton.closest('.dynamic-opsi-item').remove();
+                
+                updateOpsiPlaceholders();
+            }
+        });
+    }
+
+    resetOpsiContainer();
 
 </script>
