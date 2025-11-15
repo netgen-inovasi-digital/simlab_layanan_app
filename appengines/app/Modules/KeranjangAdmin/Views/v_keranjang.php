@@ -73,8 +73,8 @@
                                 <th width="25%">Parameter</th>
                                 <th width="25%">Instrumen/Alat/Tempat</th>
                                 <th width="15%">Biaya</th>
-                                <th width="5%">Jumlah</th>
-                                <th width="20%">Keterangan</th>
+                                <th width="3%">Jumlah</th>
+                                <th width="20%">Metode Uji</th>
                                 <th style="width:5%" class="text-center">Aksi</th>
                             </tr>
                         </thead>
@@ -107,9 +107,9 @@
                                 <th width="22%">Parameter</th>
                                 <th width="22%">Instrumen/Alat/Tempat</th>
                                 <th width="10%">Diskon</th>
-                                <th width="15%">Biaya</th>
-                                <th width="5%">Jumlah</th>
-                                <th width="25%">Keterangan</th>
+                                <th width="12%">Biaya</th>
+                                <th width="7%">Jumlah</th>
+                                <th width="25%">Metode Uji</th>
                                 <th style="width:10%" class="text-center">Aksi</th>
                             </tr>
                         </thead>
@@ -128,6 +128,89 @@
                         </tfoot>
 
                     </table>
+                </div>
+
+                <hr class="my-4">
+
+                <!-- Form Detail Identitas Sampel -->
+                <div id="formIdentitasSampel" style="display: none;">
+                    <h6 class="fw-bold text-primary mb-3">
+                        <i class="bi bi-file-earmark-text"></i> Detail Identitas Sampel
+                    </h6>
+                    <div class="alert alert-info mb-3">
+                        <i class="bi bi-info-circle"></i> Lengkapi informasi sampel yang akan diuji
+                    </div>
+
+                    <div class="row g-3">
+                        <!-- Jenis Sampel -->
+                        <div class="col-md-6">
+                            <label for="jenisSampel" class="form-label">
+                                Jenis Sampel <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control" id="jenisSampel" name="jenisSampel"
+                                placeholder="Contoh: Air Minum, Makanan, Tanah, dll" required>
+                            <div class="form-text">Sebutkan jenis sampel yang akan diuji</div>
+                        </div>
+
+                        <!-- Kemasan Sampel -->
+                        <div class="col-md-6">
+                            <label for="kemasanSampel" class="form-label">
+                                Kemasan Sampel <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control" id="kemasanSampel" name="kemasanSampel"
+                                placeholder="Contoh: Botol plastik, Kantong plastik, Wadah kaca, dll" required>
+                            <div class="form-text">Sebutkan jenis kemasan sampel</div>
+                        </div>
+
+                        <!-- Sifat Sampel -->
+                        <div class="col-md-6">
+                            <label for="sifatSampel" class="form-label">
+                                Sifat Sampel <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select" id="sifatSampel" name="sifatSampel" required>
+                                <option value="" selected>-- Pilih Sifat Sampel --</option>
+                                <option value="Cair">Cair</option>
+                                <option value="Korosif">Korosif</option>
+                                <option value="Beracun">Beracun</option>
+                                <option value="Mudah menguap">Mudah menguap</option>
+                                <option value="Higroskopis">Higroskopis</option>
+                                <option value="Tidak mudah menguap">Tidak mudah menguap</option>
+                                <option value="Padat kering">Padat kering</option>
+                                <option value="Cairan kental">Cairan kental</option>
+                            </select>
+                        </div>
+
+                        <!-- Sisa Sampel -->
+                        <div class="col-md-6">
+                            <label for="sisaSampel" class="form-label">
+                                Sisa Sampel <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select" id="sisaSampel" name="sisaSampel" required>
+                                <option value="" selected>-- Pilih Status Sisa Sampel --</option>
+                                <option value="Tidak diambil">Tidak diambil</option>
+                                <option value="Diambil">Diambil</option>
+                            </select>
+                            <div class="form-text">Apakah sisa sampel akan diambil kembali?</div>
+                        </div>
+
+                        <!-- Deskripsi Sampel -->
+                        <div class="col-md-12">
+                            <label for="deskripsiSampel" class="form-label">
+                                Deskripsi Sampel
+                            </label>
+                            <textarea class="form-control" id="deskripsiSampel" name="deskripsiSampel" rows="3"
+                                placeholder="Tambahkan deskripsi detail sampel jika diperlukan"></textarea>
+                        </div>
+
+                        <!-- Keterangan Khusus -->
+                        <div class="col-md-12">
+                            <label for="keteranganKhusus" class="form-label">
+                                Keterangan Khusus
+                            </label>
+                            <textarea class="form-control" id="keteranganKhusus" name="keteranganKhusus" rows="3"
+                                placeholder="Informasi tambahan yang perlu diketahui"></textarea>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -558,15 +641,18 @@
                 const keranjangKosong = document.getElementById('keranjangKosong');
                 const previewTable = document.getElementById('preview-keranjang-table');
                 const btnCheckout = document.getElementById('btnCheckoutFromModal');
+                const formIdentitas = document.getElementById('formIdentitasSampel');
 
                 if (jumlahItem === 0) {
                     if (keranjangKosong) keranjangKosong.style.display = 'block';
                     if (previewTable) previewTable.style.display = 'none';
                     if (btnCheckout) btnCheckout.disabled = true;
+                    if (formIdentitas) formIdentitas.style.display = 'none';
                 } else {
                     if (keranjangKosong) keranjangKosong.style.display = 'none';
                     if (previewTable) previewTable.style.display = 'table';
                     if (btnCheckout) btnCheckout.disabled = false;
+                    if (formIdentitas) formIdentitas.style.display = 'block';
                 }
             })
             .catch(err => {
@@ -648,6 +734,9 @@
             if (jumlah < 1) jumlah = 1;
             let total = (biaya * jumlah) * (1 - (diskon / 100));
 
+            let metodeSelect = tr.querySelector('.metode-select');
+            let metodeValue = metodeSelect ? metodeSelect.value : '';
+
             let data = {
                 detUjiKode: btn.dataset.kode,
                 detAlat: btn.dataset.alat,
@@ -655,7 +744,7 @@
                 detParameter: btn.dataset.parameter,
                 detDiskon: diskon,
                 detJumlah: jumlah,
-                detKeterangan: tr.querySelector('.keterangan') ? tr.querySelector('.keterangan').value : '',
+                detMetode: metodeValue,
                 detTotal: total
             };
 
@@ -666,6 +755,10 @@
             }
             if (parseInt(data.detJumlah) < 1) {
                 sayAlert('errorModal', 'Gagal', 'Jumlah minimal 1.', 'error');
+                return;
+            }
+            if (!data.detMetode) {
+                sayAlert('errorModal', 'Gagal', 'Metode Uji harus dipilih.', 'warning');
                 return;
             }
 
@@ -697,7 +790,7 @@
                             }, 400);
                         }
                         if (jumlahInput) jumlahInput.value = 1;
-                        if (tr.querySelector('.keterangan')) tr.querySelector('.keterangan').value = '';
+                        if (metodeSelect) metodeSelect.value = '';
                         sayAlert('successModal', 'Berhasil', res.msg ?? 'Layanan berhasil ditambahkan ke keranjang.', 'success');
                     } else {
                         sayAlert('errorModal', 'Gagal', res.msg ?? 'Terjadi kesalahan saat menambahkan ke keranjang.', 'error');
@@ -777,7 +870,37 @@
     function doCheckout() {
         const pelangganSelect = document.getElementById('ker_pelanggan_select');
         if (!pelangganSelect || !pelangganSelect.value) {
-            alert('Silakan pilih pelanggan terlebih dahulu!');
+            sayAlert('errorModal', 'Gagal', 'Silakan pilih pelanggan terlebih dahulu!', 'warning');
+            return;
+        }
+
+        // Validasi form identitas sampel
+        const jenisSampel = document.getElementById('jenisSampel');
+        const kemasanSampel = document.getElementById('kemasanSampel');
+        const sifatSampel = document.getElementById('sifatSampel');
+        const sisaSampel = document.getElementById('sisaSampel');
+
+        if (!jenisSampel || !jenisSampel.value.trim()) {
+            sayAlert('errorModal', 'Gagal', 'Harap isi Jenis Sampel!', 'warning');
+            if (jenisSampel) jenisSampel.focus();
+            return;
+        }
+
+        if (!kemasanSampel || !kemasanSampel.value.trim()) {
+            sayAlert('errorModal', 'Gagal', 'Harap isi Kemasan Sampel!', 'warning');
+            if (kemasanSampel) kemasanSampel.focus();
+            return;
+        }
+
+        if (!sifatSampel || !sifatSampel.value) {
+            sayAlert('errorModal', 'Gagal', 'Harap pilih Sifat Sampel!', 'warning');
+            if (sifatSampel) sifatSampel.focus();
+            return;
+        }
+
+        if (!sisaSampel || !sisaSampel.value) {
+            sayAlert('errorModal', 'Gagal', 'Harap pilih status Sisa Sampel!', 'warning');
+            if (sisaSampel) sisaSampel.focus();
             return;
         }
         
@@ -785,6 +908,17 @@
         const csrfInput = document.querySelector('input[name="<?= csrf_token() ?>"]');
         if (csrfInput) formData.append('<?= csrf_token() ?>', csrfInput.value);
         formData.append('pelanggan_id', pelangganSelect.value);
+
+        // Tambahkan data identitas sampel
+        formData.append('jenisSampel', jenisSampel.value.trim());
+        formData.append('kemasanSampel', kemasanSampel.value.trim());
+        formData.append('sifatSampel', sifatSampel.value);
+        formData.append('sisaSampel', sisaSampel.value);
+        
+        const deskripsiSampel = document.getElementById('deskripsiSampel');
+        const keteranganKhusus = document.getElementById('keteranganKhusus');
+        if (deskripsiSampel) formData.append('deskripsiSampel', deskripsiSampel.value.trim());
+        if (keteranganKhusus) formData.append('keteranganKhusus', keteranganKhusus.value.trim());
 
         fetch('<?= site_url("keranjangadmin/checkout") ?>', {
                 method: 'POST',
@@ -808,6 +942,15 @@
                             calculateGrandTotal();
                         }, 400);
                     }
+                    
+                    // Reset form identitas sampel
+                    if (jenisSampel) jenisSampel.value = '';
+                    if (kemasanSampel) kemasanSampel.value = '';
+                    if (sifatSampel) sifatSampel.value = '';
+                    if (sisaSampel) sisaSampel.value = '';
+                    if (deskripsiSampel) deskripsiSampel.value = '';
+                    if (keteranganKhusus) keteranganKhusus.value = '';
+                    
                     const modalForm = bootstrap.Modal.getInstance(document.getElementById('modalForm'));
                     if (modalForm) modalForm.hide();
                     sayAlert('successModal', 'Sukses', data.msg, 'success');
