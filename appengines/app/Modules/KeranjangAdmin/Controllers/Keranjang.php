@@ -204,17 +204,18 @@ class Keranjang extends KeranjangBase
 
             // Build data detil - sesuai struktur tabel t_layanan_detil
             $detil = [
-                'kode_layanan'      => $lnKode,                    // FK ke simlab_t_layanan
-                'uji_kode'          => $item['kode'] ?? null,      // FK ke r_layanan_pengujian
-                'biaya'             => $item['biaya'] ?? 0,        // Total biaya item ini
-                'jumlah'            => $item['jumlah'] ?? 1,       // Jumlah item
-                'catatan_pelanggan' => $item['keterangan'] ?? null, // Keterangan dari pelanggan
-                'nama_layanan'      => $item['layanan'] ?? null,   // Nama layanan
-                'status_layanan'    => 0,                          // Status default: 0
-                'kode_jenis'        => $jenKodeValue,              // Kode jenis (2 char)
-                'catatan_manajer'   => null,                       // Default null
-                'terima_layanan_by' => null,                       // Default null
-                'files'             => null,                       // Default null
+                'kode_layanan'      => $lnKode,                           // FK ke simlab_t_layanan
+                'uji_kode'          => $item['kode'] ?? null,             // FK ke r_layanan_pengujian
+                'biaya'             => $item['biaya'] ?? 0,               // Total biaya item ini
+                'jumlah'            => $item['jumlah'] ?? 1,              // Jumlah item
+                'catatan_pelanggan' => null,                              // Tidak pakai keterangan lagi
+                'nama_layanan'      => $item['layanan'] ?? null,          // Nama layanan
+                'status_layanan'    => 0,                                 // Status default: 0
+                'kode_jenis'        => $jenKodeValue,                     // Kode jenis (2 char)
+                'catatan_manajer'   => null,                              // Default null
+                'terima_layanan_by' => null,                              // Default null
+                'files'             => null,                              // Default null
+                'metode_pengujian'  => isset($item['metode_kode']) ? (int)$item['metode_kode'] : null, // FK ke r_metode
             ];
 
             // Log data yang akan di-insert untuk debugging
