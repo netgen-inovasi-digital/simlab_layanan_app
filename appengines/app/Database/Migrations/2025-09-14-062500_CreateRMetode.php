@@ -11,7 +11,7 @@ class CreateRMetode extends Migration
         $this->forge->addField([
             'metode_kode' => [
                 'type' => 'INT',
-                'unsigned' => false,
+                'unsigned' => true,
                 'auto_increment' => true,
             ],
             'nama' => [
