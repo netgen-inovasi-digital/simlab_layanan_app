@@ -16,6 +16,7 @@ $routes->group('keranjang', ['namespace' => 'Modules\Keranjang\Controllers'], fu
     $subroutes->get('datalist', 'Keranjang::keranjangDataList');
     $subroutes->get('dataListLayanan', 'Keranjang::keranjangDataListLayanan');
     $subroutes->get('kategoriList', 'Keranjang::kategoriList');
+    $subroutes->get('metodeList', 'Keranjang::getMetodeList');
     $subroutes->post('submit', 'Keranjang::keranjangSubmit');
     $subroutes->get('delete/(:any)', 'Keranjang::keranjangDelete/$1');
     $subroutes->post('checkout', 'Keranjang::keranjangCheckout');

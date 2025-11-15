@@ -45,6 +45,11 @@ class CreateTLayananDetil extends Migration
                 'type' => 'TEXT',
                 'null' => true,
             ],
+            'metode_pengujian' => [
+                'type' => 'INT',
+                'unsigned' => true,
+                'null' => true,
+            ],
             'catatan_pelanggan' => [
                 'type' => 'VARCHAR',
                 'constraint' => 255,
@@ -77,6 +82,7 @@ class CreateTLayananDetil extends Migration
         $this->forge->addForeignKey('kode_jenis', 'simlab_r_jenis', 'jenKode', 'RESTRICT', 'RESTRICT');
         $this->forge->addForeignKey('kode_layanan', 'simlab_t_layanan', 'lnKode', 'RESTRICT', 'RESTRICT');
         $this->forge->addForeignKey('uji_kode', 'r_layanan_pengujian', 'kode', 'SET NULL', 'SET NULL');
+        $this->forge->addForeignKey('metode_pengujian', 'r_metode', 'metode_kode', 'SET NULL', 'SET NULL');
 
         $this->forge->createTable('t_layanan_detil', true);
     }

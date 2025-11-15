@@ -183,7 +183,7 @@ class HasilPengujian extends BaseController
         foreach ($list as $row) {
             if ((int)$row->lnStatus < 4) continue;
 
-            $id = bin2hex($this->encrypter->encrypt($row->lnKode));
+            $id = bin2hex(service('encrypter')->encrypt($row->lnKode));
             $pemesanNama = !empty($row->pemesan_name) ? $row->pemesan_name : '-';
             $tipe        = !empty($row->pemesan_identity) ? $row->pemesan_identity : '-';
             $tanggal     = !empty($row->lnTgl) ? date('d-m-Y H:i', strtotime($row->lnTgl)) : '-';
@@ -216,9 +216,9 @@ class HasilPengujian extends BaseController
 
         try {
             if (preg_match('/^[0-9a-f]+$/i', $id)) {
-                $kode = $this->encrypter->decrypt(hex2bin($id));
+                $kode = service('encrypter')->decrypt(hex2bin($id));
             } else {
-                $kode = $this->encrypter->decrypt($id);
+                $kode = service('encrypter')->decrypt($id);
             }
         } catch (\Exception $e) {
             return $this->response->setJSON(['items' => []]);
@@ -239,7 +239,7 @@ class HasilPengujian extends BaseController
         }
 
         // Encrypted ln
-        $encLnId = bin2hex($this->encrypter->encrypt($kode));
+        $encLnId = bin2hex(service('encrypter')->encrypt($kode));
 
         $builder = $db->table('t_layanan_detil as d');
 
@@ -399,7 +399,7 @@ class HasilPengujian extends BaseController
 
     public function submit($idParam = null)
     {
-        $encId = $this->request->getPost('id') ?? $idParam ?? $this->request->uri->getSegment(3);
+        $encId = $this->request->getPost('id') ?? $idParam ?? service('uri')->getSegment(3);
 
         if (empty($encId)) {
             return $this->response->setJSON([
@@ -412,9 +412,9 @@ class HasilPengujian extends BaseController
 
         try {
             if (preg_match('/^[0-9a-f]+$/i', $encId)) {
-                $lnKode = $this->encrypter->decrypt(hex2bin($encId));
+                $lnKode = service('encrypter')->decrypt(hex2bin($encId));
             } else {
-                $lnKode = $this->encrypter->decrypt($encId);
+                $lnKode = service('encrypter')->decrypt($encId);
             }
         } catch (\Throwable $e) {
             return $this->response->setJSON([
@@ -676,7 +676,7 @@ try {
         }
 
         try {
-            $lnKode = $this->encrypter->decrypt(hex2bin($encId));
+            $lnKode = service('encrypter')->decrypt(hex2bin($encId));
         } catch (\Throwable $e) {
             return $this->response->setJSON([
                 'res' => 'error',
