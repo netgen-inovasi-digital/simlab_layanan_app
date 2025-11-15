@@ -35,11 +35,12 @@
                     <thead>
                         <tr>
                             <th show width="5%">No.</th>
-                            <th show width="30%">Pemesan</th>
+                            <th show width="25%">Pemesan</th>
                             <th show width="15%">No Invoice</th>
-                            <th show width="15%">Status</th>
-                            <th show width="15%">Detail Layanan</th>
-                            <th show width="15%" class="action text-end">Aksi<i class="bi bi-code sort-icon"></i></th>
+                            <th show width="12%">Status</th>
+                            <th show width="12%">Status Pembayaran</th>
+                            <th show width="13%">Detail Layanan</th>
+                            <th show width="13%" class="action text-end">Aksi<i class="bi bi-code sort-icon"></i></th>
                         </tr>
                     </thead>
                     <tbody id="table-body"></tbody>
@@ -389,6 +390,11 @@
                 tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error load data</td></tr>';
                 $('#modalDetail').modal('show');
             });
+    }
+
+    // Fungsi untuk pembayaran (sama seperti di Pelayanan)
+    function lokasiPembayaran(lnKode) {
+        window.location.href = '<?= site_url('pembayaran?kode=') ?>' + lnKode;
     }
 
     // ======= Pastiin #add membuka modalForm (dari KeranjangAdmin) =======

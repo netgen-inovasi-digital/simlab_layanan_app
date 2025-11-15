@@ -145,6 +145,27 @@ class FormulirAdmin extends BaseController
         $layananDet = new MyModel('t_layanan_detil');
         $db = \Config\Database::connect();
 
+        // Siapkan map pembayaran terakhir per lnKode (sama seperti di Pelayanan)
+        $lnKodes = array_map(fn($r) => (int) $r->lnKode, $list);
+
+        $payRows = $db->table('t_pembayaran')
+            ->select('bayarLnKode, bayarStatus, bayarInvoiceNo, MAX(bayarKode) AS lastKode')
+            ->whereIn('bayarLnKode', $lnKodes)
+            ->groupBy('bayarLnKode, bayarStatus, bayarInvoiceNo')
+            ->orderBy('lastKode', 'DESC')
+            ->get()->getResult();
+
+        $payMap = [];
+        foreach ($payRows as $p) {
+            $ln = (int) $p->bayarLnKode;
+            if (!isset($payMap[$ln])) {
+                $payMap[$ln] = [
+                    'status' => (int) $p->bayarStatus,
+                    'inv' => $p->bayarInvoiceNo ?? null,
+                ];
+            }
+        }
+
         foreach ($list as $row) {
             $lnStatusInt = (int) $row->lnStatus;
 
@@ -248,6 +269,20 @@ class FormulirAdmin extends BaseController
             $response[] = $combined;
             $response[] = esc($invoiceNo);
             $response[] = $this->formatStatus($row->lnStatus);
+
+            // Status Pembayaran (sama seperti di Pelayanan)
+            $lnKodeInt = (int) $row->lnKode;
+            $bayarStatusVal = isset($payMap[$lnKodeInt]) ? $payMap[$lnKodeInt]['status'] : 0;
+
+            if ($bayarStatusVal === 3) {
+                $response[] = '<span class="badge bg-success">Lunas</span>';
+            } elseif ($bayarStatusVal === 1) {
+                $response[] = '<span class="badge bg-warning">Menunggu Verifikasi</span>';
+            } elseif ($bayarStatusVal === 2) {
+                $response[] = '<span class="badge bg-danger">Ditolak</span>';
+            } else {
+                $response[] = '<button class="btn btn-sm btn-info" onclick="lokasiPembayaran(' . $lnKodeInt . ')"><i class="bi bi-credit-card"></i> Belum Bayar</button>';
+            }
 
             $lihatDetailBtn = '<button type="button" class="btn btn-sm btn-info" 
                                 title="Lihat Detail Item Layanan" 

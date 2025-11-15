@@ -509,6 +509,18 @@
         }, 400);
     });
 
+    // Event listener untuk membersihkan backdrop saat modal ditutup
+    document.getElementById('modalForm').addEventListener('hidden.bs.modal', function() {
+        // Bersihkan semua backdrop yang tersisa
+        const backdrops = document.querySelectorAll('.modal-backdrop');
+        backdrops.forEach(backdrop => backdrop.remove());
+        
+        // Kembalikan scroll pada body
+        document.body.classList.remove('modal-open');
+        document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
+    });
+
 
     /* =========================
        Event tombol "Pesan Layanan Baru"
