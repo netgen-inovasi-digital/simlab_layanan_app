@@ -868,6 +868,24 @@
 
     /* doCheckout */
     function doCheckout() {
+        // Tutup modal konfirmasi dan bersihkan backdrop
+        const confirmModalEl = document.getElementById('confirmModal');
+        if (confirmModalEl) {
+            const confirmModalInstance = bootstrap.Modal.getInstance(confirmModalEl);
+            if (confirmModalInstance) {
+                confirmModalInstance.hide();
+            }
+        }
+        
+        // Bersihkan semua backdrop yang tersisa
+        const backdrops = document.querySelectorAll('.modal-backdrop');
+        backdrops.forEach(backdrop => backdrop.remove());
+        
+        // Reset body styling
+        document.body.classList.remove('modal-open');
+        document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
+        
         const pelangganSelect = document.getElementById('ker_pelanggan_select');
         if (!pelangganSelect || !pelangganSelect.value) {
             sayAlert('errorModal', 'Gagal', 'Silakan pilih pelanggan terlebih dahulu!', 'warning');
@@ -903,6 +921,9 @@
             if (sisaSampel) sisaSampel.focus();
             return;
         }
+        
+        // Show loading indicator
+        showLoading();
         
         const formData = new FormData();
         const csrfInput = document.querySelector('input[name="<?= csrf_token() ?>"]');
@@ -959,7 +980,21 @@
                 }
             })
             .catch(err => {
+                console.error('Checkout error:', err);
                 sayAlert('errorModal', 'Error', 'Terjadi kesalahan koneksi ke server.', 'error');
+            })
+            .finally(() => {
+                // Always hide loading indicator
+                hideLoading();
+                
+                // Bersihkan semua backdrop yang mungkin tersisa
+                setTimeout(() => {
+                    const backdrops = document.querySelectorAll('.modal-backdrop');
+                    backdrops.forEach(backdrop => backdrop.remove());
+                    document.body.classList.remove('modal-open');
+                    document.body.style.overflow = '';
+                    document.body.style.paddingRight = '';
+                }, 100);
             });
     }
 
