@@ -11,6 +11,58 @@
                 <!-- CSRF Token -->
                 <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" />
 
+                <div class="mb-3">
+                    <h6 class="fw-bold text-primary mb-0">
+                        <i class="bi bi-list-check"></i> Daftar Layanan Tersedia
+                    </h6>
+                </div>
+
+                <hr class="my-3">
+
+                <!-- Pilih Kategori dan Pelanggan -->
+                <div class="row mb-4 align-items-end">
+                    <!-- Kategori -->
+                    <div class="col-md-8">
+                        <label class="form-label mb-1 fw-semibold">Kategori</label>
+                        <div class="d-flex gap-2 align-items-center">
+                            <select id="jenFilter" class="form-select form-select-sm" style="max-width:60px;">
+                                <option value="">— Semua —</option>
+                                <?php if (!empty($categories) && (is_array($categories) || is_object($categories))): ?>
+                                    <?php foreach ($categories as $c): ?>
+                                        <?php
+                                        $kode = isset($c->jenKode) ? $c->jenKode : (isset($c['jenKode']) ? $c['jenKode'] : '');
+                                        $nama = isset($c->jenNama) && trim((string)$c->jenNama) !== '' ? $c->jenNama : $kode;
+                                        ?>
+                                        <option value="<?= esc($kode) ?>"><?= esc($nama) ?></option>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Pelanggan -->
+                    <div class="col-md-4 d-flex flex-column justify-content-end" style="padding-left: 20px;">
+                        <label class="form-label mb-1 fw-semibold">Pelanggan</label>
+                        <div class="d-flex justify-content-end align-items-center gap-2">
+                            <select id="ker_pelanggan_select" class="form-select form-select-sm" style="max-width:400px;">
+                                <option value="">-- pilih pelanggan --</option>
+                                <?php if (!empty($users) && is_array($users)): ?>
+                                    <?php foreach ($users as $u):
+                                        $status = (isset($u->user_identity) && strtoupper($u->user_identity) === 'ULM') ? 'ULM' : 'NON ULM';
+                                    ?>
+                                        <option value="<?= esc($u->user_id) ?>"
+                                            data-email="<?= esc($u->user_email) ?>"
+                                            data-status="<?= esc($status) ?>"
+                                            data-name="<?= esc($u->user_name) ?>">
+                                            <?= esc($u->user_name) ?> — <?= esc($u->user_email) ?> — <?= esc($status) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Tabel Pilih Layanan -->
                 <div class="mb-4">
                     <!-- tabel list keranjang -->
@@ -96,7 +148,7 @@
 <script>
     /**
      * buildApiUrlWithOptionalParam
-     * - path: path ke endpoint, mis. '<?= site_url("keranjang/datalist") ?>'
+     * - path: path ke endpoint, mis. '<?= site_url("keranjangadmin/datalist") ?>'
      * - key/value: jika diberikan, tambahkan sebagai query string (tanpa page/limit)
      *
      * Output: path atau path + '?key=value'
@@ -145,7 +197,7 @@
     /* Helper build URL layanan (untuk modal)
     - memastikan jika jen diberikan -> url ...?jenKode=A*/
     function buildLayananUrl(jen = '') {
-        const base = '<?= site_url("keranjang/dataListLayanan") ?>';
+        const base = '<?= site_url("keranjangadmin/dataListLayanan") ?>';
         return buildApiUrlWithOptionalParam(base, (jen && jen !== '') ? 'jenKode' : '', jen || '');
     }
 
@@ -223,6 +275,101 @@
         });
     }
 
+    /**
+     * Ambil CSRF token dari input hidden di halaman (nama token dinamis)
+     * Return { name: string, value: string } or null
+     */
+    function getCsrfTokenFromPage() {
+        try {
+            // Cari input hidden yang berisi token (nama dinamis)
+            const inputs = document.querySelectorAll('input[type="hidden"]');
+            for (let i = 0; i < inputs.length; i++) {
+                const inp = inputs[i];
+                if (!inp.name) continue;
+                if (inp.name.toLowerCase() === '_method') continue;
+                if ((inp.value || '').toString().length > 8) {
+                    return {
+                        name: inp.name,
+                        value: inp.value
+                    };
+                }
+            }
+        } catch (err) {
+            console.warn('getCsrfTokenFromPage error', err);
+        }
+        return null;
+    }
+
+    // Handle select pelanggan change
+    (function() {
+        const sel = document.getElementById('ker_pelanggan_select');
+        if (!sel) return;
+
+        sel.addEventListener('change', async function() {
+            const opt = sel.options[sel.selectedIndex];
+            const val = sel.value || '';
+            if (!val) return;
+
+            const form = new FormData();
+            form.append('selectedUserId', val);
+            form.append('name', opt?.dataset?.name || '');
+            form.append('email', opt?.dataset?.email || '');
+            form.append('status', opt?.dataset?.status || '');
+
+            // CSRF jika ada
+            const csrf = getCsrfTokenFromPage();
+            if (csrf && csrf.name && csrf.value) form.append(csrf.name, csrf.value);
+
+            try {
+                const res = await fetch('<?= site_url("keranjangadmin/setPelanggan") ?>', {
+                    method: 'POST',
+                    body: form,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                const j = await res.json();
+
+                // update CSRF token jika server kembalikan
+                if (j.xname && j.xhash) {
+                    let f = document.querySelector('input[name="' + j.xname + '"]');
+                    if (f) f.value = j.xhash;
+                    else {
+                        let h = document.createElement('input');
+                        h.type = 'hidden';
+                        h.name = j.xname;
+                        h.value = j.xhash;
+                        document.body.appendChild(h);
+                    }
+                }
+
+                // Refresh preview keranjang
+                if (previewKeranjangTable && typeof previewKeranjangTable.fetchData === 'function') {
+                    previewKeranjangTable.fetchData({
+                        reload: true
+                    });
+                }
+
+                // Update tombol checkout
+                const btnCheckout = document.getElementById('btnCheckoutFromModal');
+                if (btnCheckout && j.items_count && j.items_count > 0) {
+                    btnCheckout.disabled = false;
+                } else if (btnCheckout) {
+                    btnCheckout.disabled = true;
+                }
+
+                // Update counter dan total
+                setTimeout(function() {
+                    updateKeranjangCounter();
+                    calculateGrandTotal();
+                }, 300);
+
+            } catch (err) {
+                console.error('Error setting pelanggan:', err);
+            }
+        });
+    })();
+
     document.getElementById('modalForm').addEventListener('shown.bs.modal', function() {
         const currentJen = (jenFilter && jenFilter.value) ? jenFilter.value.trim() : '';
         createOrRefreshLayananTable(currentJen);
@@ -243,7 +390,7 @@
 
         //  Buat ulang tabel preview tanpa append
         previewKeranjangTable = createModal({
-            apiUrl: '<?= site_url("keranjang/datalist") ?>',
+            apiUrl: '<?= site_url("keranjangadmin/datalist") ?>',
             tableId: 'preview-keranjang-table',
             showFilter: false,
             numbering: true,
@@ -284,7 +431,7 @@
        Event tombol "Pesan Layanan Baru"
        ========================= */
     document.querySelector('#add').addEventListener('click', function() {
-        fetch('<?php echo site_url("keranjang/checkVerified") ?>', {
+        fetch('<?php echo site_url("keranjangadmin/checkVerified") ?>', {
                 method: 'GET',
                 headers: {
                     'Accept': 'application/json'
@@ -371,7 +518,7 @@
     }
 
     function loadDetail(id) {
-        const url = '<?php echo site_url("keranjang/detailList/") ?>' + id;
+        const url = '<?php echo site_url("keranjangadmin/detailList/") ?>' + id;
         const tbody = document.querySelector('#detail-body');
         tbody.innerHTML = '<tr><td colspan="7" class="text-center">Loading...</td></tr>';
 
@@ -402,7 +549,7 @@
 
     /* updateKeranjangCounter & calculateGrandTotal (sama seperti implementasi Anda) */
     function updateKeranjangCounter() {
-        fetch('<?= site_url("keranjang/datalist") ?>')
+        fetch('<?= site_url("keranjangadmin/datalist") ?>')
             .then(res => res.json())
             .then(data => {
                 const jumlahItem = data.items ? data.items.length : 0;
@@ -428,7 +575,7 @@
     }
 
     function calculateGrandTotal() {
-        fetch('<?= site_url("keranjang/datalist") ?>')
+        fetch('<?= site_url("keranjangadmin/datalist") ?>')
             .then(res => res.json())
             .then(data => {
                 if (data.items && data.items.length > 0) {
@@ -482,6 +629,18 @@
             let btn = e.target.closest('.btnMasukkan');
             let tr = btn.closest('tr');
 
+            // Validasi: pastikan pelanggan sudah dipilih
+            const selPel = document.getElementById('ker_pelanggan_select');
+            const selectedPel = selPel ? selPel.value : '';
+            if (!selectedPel) {
+                if (typeof sayAlert === 'function') {
+                    sayAlert('errorModal', 'Pelanggan belum dipilih', 'Pilih pelanggan di bagian atas modal sebelum menambahkan layanan.', 'warning');
+                } else {
+                    alert('Pilih pelanggan di bagian atas modal sebelum menambahkan layanan.');
+                }
+                return;
+            }
+
             let biaya = parseFloat(btn.dataset.biaya) || 0;
             let diskon = parseFloat(btn.dataset.diskon) || 0;
             let jumlahInput = tr.querySelector('.jumlah');
@@ -517,7 +676,7 @@
             if (csrfInput) formData.append('<?= csrf_token() ?>', csrfInput.value);
 
             saveData({
-                url: "<?= site_url('keranjang/submit') ?>",
+                url: "<?= site_url('keranjangadmin/submit') ?>",
                 formData: formData,
                 onSuccess: function(res) {
                     if (res.xname && res.xhash) {
@@ -585,7 +744,7 @@
             return;
         }
 
-        fetch("<?= site_url('keranjang/delete/') ?>" + idx)
+        fetch("<?= site_url('keranjangadmin/delete/') ?>" + idx)
             .then(res => res.json())
             .then(data => {
                 if (data.xname && data.xhash) {
@@ -616,11 +775,18 @@
 
     /* doCheckout */
     function doCheckout() {
+        const pelangganSelect = document.getElementById('ker_pelanggan_select');
+        if (!pelangganSelect || !pelangganSelect.value) {
+            alert('Silakan pilih pelanggan terlebih dahulu!');
+            return;
+        }
+        
         const formData = new FormData();
         const csrfInput = document.querySelector('input[name="<?= csrf_token() ?>"]');
         if (csrfInput) formData.append('<?= csrf_token() ?>', csrfInput.value);
+        formData.append('pelanggan_id', pelangganSelect.value);
 
-        fetch('<?= site_url("keranjang/checkout") ?>', {
+        fetch('<?= site_url("keranjangadmin/checkout") ?>', {
                 method: 'POST',
                 body: formData
             })
@@ -660,7 +826,7 @@
         if (!select) return;
 
         if (select.options.length <= 1) {
-            fetch('<?= site_url("keranjang/kategoriList") ?>', {
+            fetch('<?= site_url("keranjangadmin/kategoriList") ?>', {
                     method: 'GET',
                     headers: {
                         'Accept': 'application/json'
@@ -688,4 +854,25 @@
             if (typeof applyJenFilter === 'function') applyJenFilter();
         }
     })();
+
+    /* Initialize selectSearch untuk dropdown yang bisa dicari */
+    if (typeof selectSearch === 'function') {
+        // Inisialisasi untuk pelanggan select
+        const pelangganSelect = document.getElementById('ker_pelanggan_select');
+        if (pelangganSelect) {
+            selectSearch(pelangganSelect, {
+                placeholder: 'Cari pelanggan...',
+                searchable: true
+            });
+        }
+
+        // Inisialisasi untuk kategori select
+        const jenFilterSelect = document.getElementById('jenFilter');
+        if (jenFilterSelect) {
+            selectSearch(jenFilterSelect, {
+                placeholder: 'Pilih kategori...',
+                searchable: true
+            });
+        }
+    }
 </script>
