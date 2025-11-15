@@ -38,7 +38,7 @@ class Keranjang extends KeranjangBase
         $parameter = $row['layanan'] ?? '-';
         $alat = $row['alat'] ?? '-';
         $jumlah = (int) ($row['jumlah'] ?? 0);
-        $keterangan = $row['keterangan'] ?? '';
+        $metodeKode = $row['metode_kode'] ?? null;
         $diskon = (float) ($row['diskon'] ?? 0);
         $biayaAsli = (float) ($row['biaya_asli'] ?? 0);
         $biayaTotal = (float) ($row['biaya'] ?? 0);
@@ -66,8 +66,16 @@ class Keranjang extends KeranjangBase
         // Jumlah
         $response[] = $jumlah;
 
-        // Keterangan
-        $response[] = esc($keterangan);
+        // Metode Uji
+        $metodeNama = '-';
+        if ($metodeKode) {
+            $modelMetode = new MyModel('r_metode');
+            $metode = $modelMetode->getDataById('metode_kode', $metodeKode);
+            if ($metode && isset($metode->nama)) {
+                $metodeNama = esc($metode->nama);
+            }
+        }
+        $response[] = $metodeNama;
 
         // Aksi + total hidden
         $hiddenTotal = '<span class="d-none row-total">Rp ' . number_format($biayaTotal, 0, ',', '.') . '</span>';
@@ -88,7 +96,7 @@ class Keranjang extends KeranjangBase
         $detParameter = $post['detParameter'] ?? null;
         $detDiskon = isset($post['detDiskon']) ? (float) $post['detDiskon'] : 0;
         $detJumlah = isset($post['detJumlah']) ? (int) $post['detJumlah'] : 1;
-        $detKeterangan = trim($post['detKeterangan'] ?? '');
+        $detMetode = isset($post['detMetode']) ? (int) $post['detMetode'] : null;
 
         // Dapatkan diskon yang sebenarnya diterapkan
         $appliedDiskon = $this->getUserDiscount($detDiskon);
@@ -106,7 +114,7 @@ class Keranjang extends KeranjangBase
             'biaya_asli' => $biayaPerItem,
             'diskon' => $appliedDiskon,
             'jumlah' => $jumlah,
-            'keterangan' => $detKeterangan,
+            'metode_kode' => $detMetode,
             'biaya' => $biayaTotalBaru,
         ];
     }
@@ -122,13 +130,12 @@ class Keranjang extends KeranjangBase
         foreach ($keranjang as $idx => $item) {
             $sameKode = isset($item['kode']) && (string) $item['kode'] === (string) $itemData['kode'];
             $sameAlat = (isset($item['alat']) ? trim((string) $item['alat']) : '') === trim((string) $itemData['alat']);
+            $sameMetode = (isset($item['metode_kode']) ? (int) $item['metode_kode'] : null) === (isset($itemData['metode_kode']) ? (int) $itemData['metode_kode'] : null);
 
-            if ($sameKode && $sameAlat) {
+            // Item dianggap sama hanya jika kode, alat, DAN metode sama
+            if ($sameKode && $sameAlat && $sameMetode) {
                 // Tambah jumlah
                 $keranjang[$idx]['jumlah'] = (int) ($item['jumlah'] ?? 0) + (int) $itemData['jumlah'];
-
-                // Ganti keterangan (bukan gabung)
-                $keranjang[$idx]['keterangan'] = $itemData['keterangan'];
 
                 // Pastikan biaya asli & diskon tetap
                 $biayaAsli = isset($item['biaya_asli']) ? (float) $item['biaya_asli'] : (float) $itemData['biaya_asli'];
@@ -193,7 +200,7 @@ class Keranjang extends KeranjangBase
                 'uji_kode' => $item['kode'] ?? null,      // FK ke r_layanan_pengujian
                 'biaya' => $item['biaya'] ?? 0,        // Total biaya item ini
                 'jumlah' => $item['jumlah'] ?? 1,       // Jumlah item
-                'catatan_pelanggan' => $item['keterangan'] ?? null, // Keterangan dari pelanggan
+                'metode_pengujian' => isset($item['metode_kode']) ? (int) $item['metode_kode'] : null, // FK ke r_metode
                 'nama_layanan' => $item['layanan'] ?? null,   // Nama layanan
                 'status_layanan' => 0,                          // Status default: 0
                 'kode_jenis' => $jenKodeValue,              // Kode jenis (2 char)
@@ -322,6 +329,10 @@ class Keranjang extends KeranjangBase
             // Build response data
             $data = [];
 
+            // Get metode list untuk dropdown
+            $modelMetode = new MyModel('r_metode');
+            $metodeList = $modelMetode->getAllData();
+
             foreach ($listUji as $row) {
                 $response = [];
 
@@ -348,8 +359,14 @@ class Keranjang extends KeranjangBase
                 $inputJumlah = '<input type="number" class="form-control form-control-sm text-center jumlah" value="1" min="1" style="width:80px;">';
                 $response[] = $inputJumlah;
 
-                // Input Keterangan
-                $response[] = '<input type="text" class="form-control form-control-sm keterangan" placeholder="Keterangan...">';
+                // Dropdown Metode Uji
+                $selectMetode = '<select class="form-select form-select-sm metode-select" required>';
+                $selectMetode .= '<option value="">-- Pilih Metode --</option>';
+                foreach ($metodeList as $metode) {
+                    $selectMetode .= '<option value="' . esc($metode->metode_kode) . '">' . esc($metode->nama) . '</option>';
+                }
+                $selectMetode .= '</select>';
+                $response[] = $selectMetode;
 
                 // Tombol Aksi
                 $jenKodeClean = isset($row->kode_jenis) ? trim(substr($row->kode_jenis, 0, 2)) : '';
@@ -525,5 +542,17 @@ class Keranjang extends KeranjangBase
                 'xhash' => csrf_hash()
             ]);
         }
+    }
+
+    /**
+     * Generate unique key untuk item - override untuk include metode_kode
+     */
+    protected function generateItemKey(array $row): string
+    {
+        $kode = isset($row['kode']) ? trim((string) $row['kode']) : '';
+        $alat = isset($row['alat']) ? trim((string) $row['alat']) : '';
+        $metode = isset($row['metode_kode']) ? (int) $row['metode_kode'] : 0;
+
+        return md5($kode . '|' . $alat . '|' . $metode);
     }
 }

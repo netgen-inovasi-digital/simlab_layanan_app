@@ -21,8 +21,8 @@
                                 <th width="25%">Parameter</th>
                                 <th width="25%">Instrumen/Alat/Tempat</th>
                                 <th width="15%">Biaya</th>
-                                <th width="5%">Jumlah</th>
-                                <th width="20%">Keterangan</th>
+                                <th width="3%">Jumlah</th>
+                                <th width="20%">Metode Uji</th>
                                 <th style="width:5%" class="text-center">Aksi</th>
                             </tr>
                         </thead>
@@ -55,9 +55,9 @@
                                 <th width="22%">Parameter</th>
                                 <th width="22%">Instrumen/Alat/Tempat</th>
                                 <th width="10%">Diskon</th>
-                                <th width="15%">Biaya</th>
-                                <th width="5%">Jumlah</th>
-                                <th width="25%">Keterangan</th>
+                                <th width="12%">Biaya</th>
+                                <th width="7%">Jumlah</th>
+                                <th width="25%">Metode Uji</th>
                                 <th style="width:10%" class="text-center">Aksi</th>
                             </tr>
                         </thead>
@@ -575,6 +575,9 @@
             if (jumlah < 1) jumlah = 1;
             let total = (biaya * jumlah) * (1 - (diskon / 100));
 
+            let metodeSelect = tr.querySelector('.metode-select');
+            let metodeValue = metodeSelect ? metodeSelect.value : '';
+
             let data = {
                 detUjiKode: btn.dataset.kode,
                 detAlat: btn.dataset.alat,
@@ -582,7 +585,7 @@
                 detParameter: btn.dataset.parameter,
                 detDiskon: diskon,
                 detJumlah: jumlah,
-                detKeterangan: tr.querySelector('.keterangan') ? tr.querySelector('.keterangan').value : '',
+                detMetode: metodeValue,
                 detTotal: total
             };
 
@@ -593,6 +596,10 @@
             }
             if (parseInt(data.detJumlah) < 1) {
                 sayAlert('errorModal', 'Gagal', 'Jumlah minimal 1.', 'error');
+                return;
+            }
+            if (!data.detMetode) {
+                sayAlert('errorModal', 'Gagal', 'Metode Uji harus dipilih.', 'warning');
                 return;
             }
 
@@ -624,7 +631,7 @@
                             }, 400);
                         }
                         if (jumlahInput) jumlahInput.value = 1;
-                        if (tr.querySelector('.keterangan')) tr.querySelector('.keterangan').value = '';
+                        if (metodeSelect) metodeSelect.value = '';
                         sayAlert('successModal', 'Berhasil', res.msg ?? 'Layanan berhasil ditambahkan ke keranjang.', 'success');
                     } else {
                         sayAlert('errorModal', 'Gagal', res.msg ?? 'Terjadi kesalahan saat menambahkan ke keranjang.', 'error');
