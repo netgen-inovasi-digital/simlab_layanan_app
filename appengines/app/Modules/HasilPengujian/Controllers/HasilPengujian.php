@@ -101,7 +101,17 @@ class HasilPengujian extends BaseController
                     SELECT 1 FROM r_tim rt2
                     WHERE rt2.uji_kode = d.uji_kode
                       AND rt2.user_id = {$user_id}
-                ) AND (d.files IS NULL OR d.files = 0) THEN 1 ELSE 0 END) AS pending_for_user
+                ) AND d.files = 0 THEN 1 ELSE 0 END) AS user_sent_total,
+                SUM(CASE WHEN d.status_layanan=1 AND EXISTS(
+                    SELECT 1 FROM r_tim rt2
+                    WHERE rt2.uji_kode = d.uji_kode
+                      AND rt2.user_id = {$user_id}
+                ) AND d.files = 3 THEN 1 ELSE 0 END) AS user_uploaded_total,
+                SUM(CASE WHEN d.status_layanan=1 AND EXISTS(
+                    SELECT 1 FROM r_tim rt2
+                    WHERE rt2.uji_kode = d.uji_kode
+                      AND rt2.user_id = {$user_id}
+                ) AND (d.files IS NULL) THEN 1 ELSE 0 END) AS pending_for_user
             ", false)
             ->groupBy('d.kode_layanan')
             ->getCompiledSelect(false);
@@ -140,13 +150,15 @@ class HasilPengujian extends BaseController
                           ->groupEnd();
                         break;
 
-                    case 5: // "LHUS sedang diverifikasi manajer"
+                    case 5: // "LHUS sedang diverifikasi manajer (terkirim)"
+                        // Kondisi: ada item yang files=0 (terkirim) dan tidak ada yang ditolak
+                        // dan tidak semua sudah diterima (accepted)
                         $b->orGroupStart()
                             ->where('COALESCE(agg.has_reject_for_user,0) =', 0)
-                            ->where('COALESCE(agg.pending_for_user,0) =', 0)
+                            ->where('COALESCE(agg.user_sent_total,0) >', 0)
                             ->groupStart()
-                                ->where('COALESCE(agg.user_active_total,0) =', 0)
-                                ->orWhere('COALESCE(agg.user_accepted_total,0) < COALESCE(agg.user_active_total,0)', null, false)
+                                ->where('COALESCE(agg.user_accepted_total,0) < COALESCE(agg.user_active_total,0)', null, false)
+                                ->orWhere('COALESCE(agg.user_active_total,0) =', 0)
                             ->groupEnd()
                           ->groupEnd();
                         break;
