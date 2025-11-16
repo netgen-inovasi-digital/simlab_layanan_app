@@ -37,15 +37,20 @@ class TinjauLHUS extends BaseController
         $session = session();
         $user_id = (int)$session->get('id_user');
 
-        // [ADDED] Parse lnStatus filter (?lnStatus=tolak,5,6)
+        // [ADDED] Parse lnStatus filter (?lnStatus=tolak,5,6,diproses)
         $lnStatusParam  = (string) ($this->request->getGet('lnStatus') ?? '');
         $wantReject     = false;          // token: tolak/reject/ditolak
+        $wantReprocess  = false;          // token: diproses/reprocess
         $statusNums     = [];             // angka: 5/6/...
         if ($lnStatusParam !== '') {
             foreach (preg_split('/[,\s]+/', $lnStatusParam, -1, PREG_SPLIT_NO_EMPTY) as $p) {
                 $tp = strtolower(trim($p));
                 if (in_array($tp, ['tolak','reject','ditolak'], true)) {
                     $wantReject = true;
+                    continue;
+                }
+                if (in_array($tp, ['diproses','reprocess','proseskembali'], true)) {
+                    $wantReprocess = true;
                     continue;
                 }
                 if ($tp !== '' && is_numeric($tp)) {
@@ -157,11 +162,12 @@ class TinjauLHUS extends BaseController
             }
 
             // [ADDED] Terapkan FILTER (?lnStatus=...)
-            if ($wantReject || !empty($statusNums)) {
+            if ($wantReject || $wantReprocess || !empty($statusNums)) {
                 $hasRejectForUser = (isset($userSummary[$lnKode]) && $userSummary[$lnKode]['cnt2'] > 0);
                 $match = false;
 
                 if ($wantReject && $hasRejectForUser) $match = true;
+                if ($wantReprocess && (int)$derivedStatus === 2) $match = true;
                 if (!$match && !empty($statusNums) && in_array((int)$derivedStatus, $statusNums, true)) $match = true;
 
                 if (!$match) continue; // tidak match filter → skip
@@ -329,7 +335,8 @@ class TinjauLHUS extends BaseController
 
         return $this->response->setJSON([
             'items' => $data,
-            'encLn' => bin2hex($this->encrypter->encrypt($lnKode))
+            'encLn' => bin2hex($this->encrypter->encrypt($lnKode)),
+            'lnKode' => $lnKode
         ]);
     }
 
@@ -623,6 +630,65 @@ class TinjauLHUS extends BaseController
             case 9: return '<span class="badge bg-dark">Pengujian Selesai</span>';
             case 2: return '<span class="badge bg-info">LHUS diproses kembali</span>';
             default: return '<span class="badge bg-secondary">Unknown</span>';
+        }
+    }
+
+    public function getSampleIdentity($lnKode = null)
+    {
+        if (!$lnKode) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Kode layanan tidak ditemukan'
+            ]);
+        }
+
+        $session = session();
+        $user_id = (int) ($session->get('id_user') ?? 0);
+
+        // Cek akses user sebagai anggota tim untuk Ln ini via r_tim
+        $db = \Config\Database::connect();
+        $checkBuilder = $db->table('t_layanan_detil as d');
+        $checkBuilder->select('1');
+        $checkBuilder->join('r_tim as rt', 'rt.uji_kode = d.uji_kode', 'inner');
+        $checkBuilder->where('d.kode_layanan', $lnKode);
+        $checkBuilder->where('rt.user_id', $user_id);
+        $exists = $checkBuilder->limit(1)->get()->getRow();
+
+        if (!$exists) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Anda tidak berwenang melihat data ini'
+            ]);
+        }
+
+        try {
+            $modelSample = new MyModel('t_identitas_sampel');
+            $sampleData = $modelSample->getWhere(['kode_layanan' => $lnKode])->getRow();
+
+            if (!$sampleData) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Data identitas sampel tidak ditemukan'
+                ]);
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'data' => [
+                    'jenis' => $sampleData->jenis ?? '-',
+                    'kemasan' => $sampleData->kemasan ?? '-',
+                    'sifat' => $sampleData->sifat ?? '-',
+                    'sisa' => $sampleData->sisa ?? '-',
+                    'deskripsi' => $sampleData->deskripsi ?? '-',
+                    'keterangan_khusus' => $sampleData->keterangan_khusus ?? '-'
+                ]
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Error fetching sample identity: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat memuat data identitas sampel'
+            ]);
         }
     }
 }
