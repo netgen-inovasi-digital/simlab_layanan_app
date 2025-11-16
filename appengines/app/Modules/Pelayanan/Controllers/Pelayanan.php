@@ -449,10 +449,10 @@ class Pelayanan extends BaseController
             $db = \Config\Database::connect();
             $builder = $db->table('t_files_lhu as lhu');
 
-            // Join dengan simlab_account untuk mendapatkan info uploader (opsional)
-            $builder->select('lhu.kode, lhu.file_path, lhu.file_name, lhu.upload_by, acc.user_name as uploader_name');
-            $builder->join('simlab_account as acc', 'acc.user_id = lhu.upload_by', 'left');
-            $builder->where('lhu.kode', $row->lhu_id);
+            // Join dengan simlab_account_users untuk mendapatkan info uploader
+            $builder->select('lhu.file_id, lhu.kode, lhu.file, lhu.upload_by, acc.user_name as uploader_name');
+            $builder->join('simlab_account_users as acc', 'acc.user_id = lhu.upload_by', 'left');
+            $builder->where('lhu.file_id', $row->lhu_id);
             $builder->limit(1);
 
             $lhuFile = $builder->get()->getRow();
@@ -461,8 +461,8 @@ class Pelayanan extends BaseController
                 return ['has' => false, 'url' => '#'];
             }
 
-            // Prioritas: gunakan file_path jika ada, kalau tidak gunakan file_name
-            $filePath = $lhuFile->file_path ?? $lhuFile->file_name ?? null;
+            // Gunakan kolom file
+            $filePath = $lhuFile->file ?? null;
 
             if (empty($filePath)) {
                 return ['has' => false, 'url' => '#'];
