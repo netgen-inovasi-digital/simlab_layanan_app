@@ -391,7 +391,7 @@ class HasilPengujian extends BaseController
             $data[] = $response;
         }
 
-        return $this->response->setJSON(['items' => $data, 'encLn' => $encLnId, 'allFilesUploaded' => $allUploaded]);
+        return $this->response->setJSON(['items' => $data, 'encLn' => $encLnId, 'allFilesUploaded' => $allUploaded, 'lnKode' => $kode]);
     }
 
     // submit, upload, doUpload, formatStatus, formatStatusForPenyelia remain identical to previous implementation
@@ -929,5 +929,64 @@ try {
 
         // Fallback ke mapping lnStatus
         return $this->formatStatus((int)$lnStatus);
+    }
+
+    public function getSampleIdentity($lnKode = null)
+    {
+        if (!$lnKode) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Kode layanan tidak ditemukan'
+            ]);
+        }
+
+        $session = session();
+        $user_id = (int) ($session->get('id_user') ?? 0);
+
+        // Cek akses user sebagai anggota tim untuk Ln ini via r_tim
+        $db = \Config\Database::connect();
+        $checkBuilder = $db->table('t_layanan_detil as d');
+        $checkBuilder->select('1');
+        $checkBuilder->join('r_tim as rt', 'rt.uji_kode = d.uji_kode', 'inner');
+        $checkBuilder->where('d.kode_layanan', $lnKode);
+        $checkBuilder->where('rt.user_id', $user_id);
+        $exists = $checkBuilder->limit(1)->get()->getRow();
+
+        if (!$exists) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Anda tidak berwenang melihat data ini'
+            ]);
+        }
+
+        try {
+            $modelSample = new MyModel('t_identitas_sampel');
+            $sampleData = $modelSample->getWhere(['kode_layanan' => $lnKode])->getRow();
+
+            if (!$sampleData) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Data identitas sampel tidak ditemukan'
+                ]);
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'data' => [
+                    'jenis' => $sampleData->jenis ?? '-',
+                    'kemasan' => $sampleData->kemasan ?? '-',
+                    'sifat' => $sampleData->sifat ?? '-',
+                    'sisa' => $sampleData->sisa ?? '-',
+                    'deskripsi' => $sampleData->deskripsi ?? '-',
+                    'keterangan_khusus' => $sampleData->keterangan_khusus ?? '-'
+                ]
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Error fetching sample identity: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat memuat data identitas sampel'
+            ]);
+        }
     }
 }
