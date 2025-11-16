@@ -40,14 +40,18 @@ class Auth extends Controller
 				if ($data['status_user'] == 1) {
 					date_default_timezone_set('Asia/Singapore');
 					$datenow = date('Y-m-d H:i:s');
-					// $model->update(array('id_user' => $data['user_id']), array('last_login' => $datenow));
+
+					$modelRoles = new MyModel('roles');
+					$role = $modelRoles->where('id_role', $data['role_id'])->first();
+					$nama_role = $role ? $role['nama_role'] : 'Role'; 
 
 					$ses_data = [
-						'id_user'        => $data['user_id'],
-						// 'username'      => $data['user_name'],
-						'email'			=> $data['user_email'],
-						'role_id'        => $data['role_id'],
-						'logged_in'     => TRUE
+						'id_user' => $data['user_id'],
+						'nama' => $data['user_name'],
+						'email' => $data['user_email'],
+						'role_id' => $data['role_id'],
+						'nama_role' => $nama_role, 
+						'logged_in' => TRUE
 					];
 
 					$getMenu = $model->getMenu($data['role_id']);
@@ -75,24 +79,24 @@ class Auth extends Controller
 
 					return redirect()->route('home');
 				} else {
-				$session->setFlashdata('login_error', '* Akun anda belum aktif!');
-                $session->setFlashdata('login_email', $email); 
-                return redirect()->back();
+					$session->setFlashdata('login_error', '* Akun anda belum aktif!');
+					$session->setFlashdata('login_email', $email);
+					return redirect()->back();
 				}
 			} else {
 				$session->setFlashdata('login_error', '* Password Salah!');
-				$session->setFlashdata('login_email', $email); 
+				$session->setFlashdata('login_email', $email);
 				return redirect()->back();
 			}
 		} else {
-			  $session->setFlashdata('login_error', '* Email salah atau belum terdaftar!');
-			  $session->setFlashdata('login_email', $email); 
-		    	return redirect()->back();
+			$session->setFlashdata('login_error', '* Email salah atau belum terdaftar!');
+			$session->setFlashdata('login_email', $email);
+			return redirect()->back();
 		}
 	}
 
-		public function actAdmin()
-		{
+	public function actAdmin()
+	{
 		helper('form');
 		$session = session();
 		$adminModel = new AuthModelAdmin();
@@ -108,11 +112,15 @@ class Auth extends Controller
 
 			if (password_verify($password, $hash)) {
 				if ($admin['status_user'] == 1) {
-					// Data login admin
+					$modelRoles = new MyModel('roles'); 
+					$role = $modelRoles->where('id_role', $admin['role_id'])->first();
+					$nama_role = $role ? $role['nama_role'] : 'Admin Role';
+
 					$ses_data = [
-						'id_user'   => $admin['user_id'],
-						'role_id'   => $admin['role_id'],
-						// 'lab_kode'  => $admin['lab_kode'],
+						'id_user' => $admin['user_id'],
+						'nama' => $admin['user_name'], 
+						'role_id' => $admin['role_id'],
+						'nama_role' => $nama_role, 
 						'logged_in' => TRUE
 					];
 
@@ -148,7 +156,7 @@ class Auth extends Controller
 		return redirect()->back();
 	}
 
-	
+
 
 	public function register()
 	{
@@ -168,7 +176,8 @@ class Auth extends Controller
 	// 	return redirect()->to(base_url('/'));
 	// }
 
-		public function logout(){
+	public function logout()
+	{
 		$session = session();
 
 		// Simpan role sebelum session dihancurkan
@@ -189,63 +198,63 @@ class Auth extends Controller
 
 	public function actRegister()
 	{
-    $session = session();
-    $model = new AuthModel();
+		$session = session();
+		$model = new AuthModel();
 
-    // Ambil data dari form
-    $username   = $this->request->getPost('nama');
-    $email      = $this->request->getPost('email');
-    $password   = $this->request->getPost('pwd');
-    $repassword = $this->request->getPost('repwd');
+		// Ambil data dari form
+		$username = $this->request->getPost('nama');
+		$email = $this->request->getPost('email');
+		$password = $this->request->getPost('pwd');
+		$repassword = $this->request->getPost('repwd');
 
-    // Validasi field kosong
-    if (empty($username) || empty($email) || empty($password) || empty($repassword)) {
-        $session->setFlashdata('error', 'Semua field wajib diisi!');
-        return redirect()->back()->withInput();
-    }
+		// Validasi field kosong
+		if (empty($username) || empty($email) || empty($password) || empty($repassword)) {
+			$session->setFlashdata('error', 'Semua field wajib diisi!');
+			return redirect()->back()->withInput();
+		}
 
-    // Cek username sudah ada
-    // if ($model->checkUsername($username) > 0) {
-    //     $session->setFlashdata('error', 'Username sudah terdaftar!');
-    //     return redirect()->back()->withInput();
-    // }
+		// Cek username sudah ada
+		// if ($model->checkUsername($username) > 0) {
+		//     $session->setFlashdata('error', 'Username sudah terdaftar!');
+		//     return redirect()->back()->withInput();
+		// }
 
-    // Cek email sudah ada
-    if ($model->checkEmail($email) > 0) {
-        $session->setFlashdata('error', 'Email sudah terdaftar!');
-        return redirect()->back()->withInput();
-    }
+		// Cek email sudah ada
+		if ($model->checkEmail($email) > 0) {
+			$session->setFlashdata('error', 'Email sudah terdaftar!');
+			return redirect()->back()->withInput();
+		}
 
-    // Cek password 2 kali
-    if ($password !== $repassword) {
-        $session->setFlashdata('error', 'Password tidak sama!');
-        return redirect()->back()->withInput();
-    }
+		// Cek password 2 kali
+		if ($password !== $repassword) {
+			$session->setFlashdata('error', 'Password tidak sama!');
+			return redirect()->back()->withInput();
+		}
 
-    // Hash password
-    $hash = password_hash($password, PASSWORD_DEFAULT);
+		// Hash password
+		$hash = password_hash($password, PASSWORD_DEFAULT);
 
-    // Tentukan identitas otomatis
-    $identity = (strpos($email, '@ulm.ac.id') !== false) ? 'ULM' : 'NON ULM';
+		// Tentukan identitas otomatis
+		$identity = (strpos($email, '@ulm.ac.id') !== false) ? 'ULM' : 'NON ULM';
 
-    $data = [
-        'user_name'     => $username,
-        'user_email'    => $email,
-        'user_password' => $hash,
-        'user_identity' => $identity,
-        'status_user'   => 1,
-        'role_id'       => 2, //pengaturan user role id
-    ];
+		$data = [
+			'user_name' => $username,
+			'user_email' => $email,
+			'user_password' => $hash,
+			'user_identity' => $identity,
+			'status_user' => 1,
+			'role_id' => 2, //pengaturan user role id
+		];
 
-    // Simpan ke database
-    try {
-        $model->registerUser($data);
-        $session->setFlashdata('success', 'Registrasi berhasil! Silakan login.');
-        return redirect()->to('/');
-    } catch (\Exception $e) {
-        $session->setFlashdata('error', 'Registrasi gagal: ' . $e->getMessage());
-        return redirect()->back()->withInput();
-    }
+		// Simpan ke database
+		try {
+			$model->registerUser($data);
+			$session->setFlashdata('success', 'Registrasi berhasil! Silakan login.');
+			return redirect()->to('/');
+		} catch (\Exception $e) {
+			$session->setFlashdata('error', 'Registrasi gagal: ' . $e->getMessage());
+			return redirect()->back()->withInput();
+		}
 
 	}
 
@@ -278,9 +287,9 @@ class Auth extends Controller
 
 		$modelResetPassword = new MyModel('password_resets');
 		$data = [
-			'user_id'    => $user['id_user'],
-			'token'      => $token,
-			'used'       => 0,
+			'user_id' => $user['id_user'],
+			'token' => $token,
+			'used' => 0,
 			'expired_at' => date('Y-m-d H:i:s', strtotime('+1 hour')),
 		];
 		$modelResetPassword->insertData($data);
@@ -303,10 +312,10 @@ class Auth extends Controller
 
 		$emailService->send([
 			'from_email' => $get->email,     // bisa dinamis juga kalau mau
-			'from_name'  => 'Notification',
-			'to'         => $email,
-			'subject'    => 'Reset Password Anda',
-			'message'    => $message
+			'from_name' => 'Notification',
+			'to' => $email,
+			'subject' => 'Reset Password Anda',
+			'message' => $message
 		]);
 
 		return redirect()->back()->with('success', 'Link reset telah dikirim ke email Anda.');
@@ -362,5 +371,5 @@ class Auth extends Controller
 		return redirect()->to('login')->with('success', 'Password berhasil diubah');
 	}
 
-	
+
 }
