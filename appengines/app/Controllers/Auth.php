@@ -118,7 +118,7 @@ class Auth extends Controller
 
 					$ses_data = [
 						'id_user' => $admin['user_id'],
-						'nama' => $admin['user_name'], 
+						'nama' => $admin['nama'] ?? $admin['username'],
 						'role_id' => $admin['role_id'],
 						'nama_role' => $nama_role, 
 						'logged_in' => TRUE
