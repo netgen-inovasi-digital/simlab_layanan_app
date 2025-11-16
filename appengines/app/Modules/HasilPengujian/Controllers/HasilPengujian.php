@@ -38,15 +38,20 @@ class HasilPengujian extends BaseController
 
         $model = new MyModel($this->table);
 
-        // --- Parse lnStatus filter: "4", "4,5,6", atau token khusus "tolak"
+        // --- Parse lnStatus filter: "4", "4,5,6", atau token khusus "tolak" dan "terunggah"
         $lnStatusParam = (string) ($this->request->getGet('lnStatus') ?? '');
         $lnStatusFilter = [];
         $wantReject = false;
+        $wantUploaded = false;
         if ($lnStatusParam !== '') {
             foreach (preg_split('/[,\s]+/', $lnStatusParam, -1, PREG_SPLIT_NO_EMPTY) as $p) {
                 $tp = strtolower(trim($p));
                 if (in_array($tp, ['tolak','reject','ditolak'], true)) {
                     $wantReject = true;
+                    continue;
+                }
+                if (in_array($tp, ['terunggah','uploaded'], true)) {
+                    $wantUploaded = true;
                     continue;
                 }
                 if ($tp !== '' && is_numeric($tp)) {
@@ -131,12 +136,20 @@ class HasilPengujian extends BaseController
         // =======================
         // FILTER “VIEW STATUS” = algoritma formatStatusForPenyelia (+ 'tolak')
         // =======================
-        if ($wantReject || !empty($lnStatusFilter)) {
+        if ($wantReject || $wantUploaded || !empty($lnStatusFilter)) {
             $b->groupStart();
 
             if ($wantReject) {
                 $b->orGroupStart()
                     ->where('COALESCE(agg.has_reject_for_user,0) =', 1)
+                ->groupEnd();
+            }
+
+            if ($wantUploaded) {
+                // Kondisi: ada item yang files=3 (terunggah belum dikirim)
+                $b->orGroupStart()
+                    ->where('COALESCE(agg.has_reject_for_user,0) =', 0)
+                    ->where('COALESCE(agg.user_uploaded_total,0) >', 0)
                 ->groupEnd();
             }
 
@@ -313,22 +326,24 @@ class HasilPengujian extends BaseController
 
             $files = [];
             $rowHasFile = false;
+            $fileUrl = null;
 
-            // jika ada nilai files (3/1/2) di kolom, treat accordingly
-            if ($detFilesMax !== null && $detFilesMax > 0) {
-                // jika ada file status > 0, anggap ada file
-                $rowHasFile = true;
-            } else {
-                // cek tabel t_files_lhus
-                try {
-                    $fileRow = $db->table('t_files_lhus')->where('kode', $row->kode)->limit(1)->get()->getRow();
-                    if ($fileRow && !empty($fileRow->file_lhus)) {
-                        $rowHasFile = true;
-                        $files[] = ['label' => $fileRow->file_lhus, 'url' => base_url('uploads/lhus/' . ltrim($fileRow->file_lhus, '/')), 'exists' => true];
-                    }
-                } catch (\Throwable $e) {
-                    // ignore
+            // Selalu cek tabel t_files_lhus untuk mendapatkan file yang sudah diupload
+            try {
+                $fileRow = $db->table('t_files_lhus')->where('kode', $row->kode)->limit(1)->get()->getRow();
+                if ($fileRow && !empty($fileRow->file_lhus)) {
+                    $rowHasFile = true;
+                    $fileUrl = base_url('uploads/lhus/' . ltrim($fileRow->file_lhus, '/'));
+                    $files[] = ['label' => $fileRow->file_lhus, 'url' => $fileUrl, 'exists' => true];
                 }
+            } catch (\Throwable $e) {
+                // ignore
+            }
+
+            // Jika tidak ada di t_files_lhus, cek status files
+            if (!$rowHasFile && $detFilesMax !== null && $detFilesMax > 0) {
+                // Ada indikasi file tapi tidak ditemukan di t_files_lhus
+                $rowHasFile = false; // tetap false karena tidak ada file nyata
             }
 
             if (!$rowHasFile) {
@@ -337,16 +352,9 @@ class HasilPengujian extends BaseController
 
             $combinedHtml = '<div class="d-flex justify-content-center gap-2 align-items-center">';
 
-            if (!empty($files)) {
-                $firstViewUrl = null;
-                foreach ($files as $fi) {
-                    if ($fi['exists']) { $firstViewUrl = $fi['url']; break; }
-                }
-                if ($firstViewUrl) {
-                    $eyeButton = '<span class="text-primary btn-action" title="Lihat File" onclick="window.open(\'' . esc($firstViewUrl) . '\', \'_blank\')"><i class="bi bi-eye"></i></span>';
-                } else {
-                    $eyeButton = '<span class="text-secondary btn-action" title="File tidak ditemukan"><i class="bi bi-eye"></i></span>';
-                }
+            // Tombol lihat file
+            if ($rowHasFile && $fileUrl) {
+                $eyeButton = '<span class="text-primary btn-action" title="Lihat File" onclick="window.open(\'' . esc($fileUrl) . '\', \'_blank\')"><i class="bi bi-eye"></i></span>';
             } else {
                 $eyeButton = '<span class="text-secondary btn-action" title="Belum ada file"><i class="bi bi-eye"></i></span>';
             }

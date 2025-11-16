@@ -8,10 +8,11 @@
                 <!-- [ADDED] Filter Status (LnStatus) -->
                 <div class="d-flex align-items-center" style="gap:8px;">
                     <label class="mb-0 small text-muted">Status:</label>
-                   <select id="statusFilter" class="form-select form-select-sm" style="width:260px;">
+                   <select id="statusFilter" class="form-select form-select-sm" style="width:300px;">
                         <option value="">— Semua status —</option>
                         <option value="tolak">LHUS ditolak</option> <!-- [NEW] -->
                         <option value="4">Sedang dalam pengujian</option>
+                        <option value="terunggah">LHUS terunggah (belum dikirim)</option> <!-- [NEW] -->
                         <option value="5">LHUS diverifikasi manajer (terkirim)</option>
                         <option value="6">LHUS disetujui</option>
                     </select>
@@ -509,54 +510,48 @@ async function autoUploadFile(input) {
 
         if (json && (json.res === true || json.res === 'true')) {
             const fileUrl = json.url || null;
-            // Replace uploader area with "Lihat File" button
-            if (fileUrl) {
-                if (parent) {
-                    parent.innerHTML = '<div class="mb-2">'
-                    + '<button type="button" class="btn btn-sm btn-outline-primary w-100 text-start" onclick="window.open(' + JSON.stringify(fileUrl) + ', \'_blank\')">'
-                    + '<i class="bi bi-eye me-1"></i> Lihat File</button>'
-                    + '</div>';
-                }
-            } else {
-                if (btn) {
-                    btn.innerHTML = 'Terunggah';
-                    btn.classList.remove('btn-outline-secondary');
-                    btn.classList.add('btn-outline-success');
-                }
-            }
-
-            // Enable send button in same row if exists
+            
+            // Update tombol lihat file di kolom LHUS
             const tr = input.closest('tr');
-            if (tr) {
-                const sendElem = tr.querySelector('.btn-action[title="Tidak ada file LHUS"], .btn-action[title="Kirim LHUS"]');
-                if (sendElem) {
-                    // ganti menjadi aktif send
-                    const enc = encLn || '';
-                    const wrapper = document.createElement('span');
-                    wrapper.className = 'text-success btn-action';
-                    wrapper.title = 'Kirim LHUS';
-                    wrapper.innerHTML = '<i class="bi bi-check-circle"></i>';
-                    wrapper.setAttribute('onclick', 'confirmApprove(event, \'' + enc + '\')');
-                    sendElem.parentNode.replaceChild(wrapper, sendElem);
+            if (tr && fileUrl) {
+                // Cari tombol eye (lihat file) di row yang sama
+                const eyeIcon = tr.querySelector('.bi-eye');
+                if (eyeIcon && eyeIcon.parentElement) {
+                    const eyeSpan = eyeIcon.parentElement;
+                    // Update tombol eye menjadi aktif dengan URL file
+                    eyeSpan.className = 'text-primary btn-action';
+                    eyeSpan.title = 'Lihat File';
+                    eyeSpan.setAttribute('onclick', 'window.open(\'' + fileUrl + '\', \'_blank\')');
+                    eyeSpan.style.cursor = 'pointer';
+                }
+
+                // Update status badge ke "lhus ter-unggah"
+                const statusCell = tr.querySelector('td:nth-child(5)'); // kolom Status File
+                if (statusCell) {
+                    statusCell.innerHTML = '<div class="text-center"><span class="badge bg-info">lhus ter-unggah</span></div>';
                 }
             }
 
+            // Reset input file
+            input.value = '';
+            
             if (typeof sayAlert === 'function') {
-                    sayAlert('successModal','Berhasil', json.msg || 'File berhasil diunggah.','success');
-                    loadDetail(encLn); 
-                } else {
-                    alert(json.msg || 'File berhasil diunggah.');
-                }
+                sayAlert('successModal','Berhasil', json.msg || 'File berhasil diunggah.','success');
+                // Reload detail untuk memastikan semua data terupdate
+                setTimeout(() => {
+                    loadDetail(encLn);
+                }, 500);
             } else {
-                const message = (json && json.msg) ? json.msg : 'Gagal mengunggah file.';
-                if (typeof sayAlert === 'function') sayAlert('errorModal','Gagal', message, 'warning'); else alert(message);
-                if (btn) { btn.disabled = false; btn.innerHTML = originalHtml; }
-                input.value = '';
+                alert(json.msg || 'File berhasil diunggah.');
             }
+        } else {
+            const message = (json && json.msg) ? json.msg : 'Gagal mengunggah file.';
+            if (typeof sayAlert === 'function') sayAlert('errorModal','Gagal', message, 'warning'); else alert(message);
+            input.value = '';
+        }
     } catch (err) {
         console.error(err);
         if (typeof sayAlert === 'function') sayAlert('errorModal','Error','Terjadi kesalahan saat mengunggah file.','warning'); else alert('Terjadi kesalahan saat mengunggah file.');
-        if (btn) { btn.disabled = false; btn.innerHTML = originalHtml; }
         input.value = '';
     }
 }
