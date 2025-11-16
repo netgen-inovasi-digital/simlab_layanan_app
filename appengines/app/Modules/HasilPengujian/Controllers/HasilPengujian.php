@@ -38,15 +38,20 @@ class HasilPengujian extends BaseController
 
         $model = new MyModel($this->table);
 
-        // --- Parse lnStatus filter: "4", "4,5,6", atau token khusus "tolak"
+        // --- Parse lnStatus filter: "4", "4,5,6", atau token khusus "tolak" dan "terunggah"
         $lnStatusParam = (string) ($this->request->getGet('lnStatus') ?? '');
         $lnStatusFilter = [];
         $wantReject = false;
+        $wantUploaded = false;
         if ($lnStatusParam !== '') {
             foreach (preg_split('/[,\s]+/', $lnStatusParam, -1, PREG_SPLIT_NO_EMPTY) as $p) {
                 $tp = strtolower(trim($p));
                 if (in_array($tp, ['tolak','reject','ditolak'], true)) {
                     $wantReject = true;
+                    continue;
+                }
+                if (in_array($tp, ['terunggah','uploaded'], true)) {
+                    $wantUploaded = true;
                     continue;
                 }
                 if ($tp !== '' && is_numeric($tp)) {
@@ -101,7 +106,17 @@ class HasilPengujian extends BaseController
                     SELECT 1 FROM r_tim rt2
                     WHERE rt2.uji_kode = d.uji_kode
                       AND rt2.user_id = {$user_id}
-                ) AND (d.files IS NULL OR d.files = 0) THEN 1 ELSE 0 END) AS pending_for_user
+                ) AND d.files = 0 THEN 1 ELSE 0 END) AS user_sent_total,
+                SUM(CASE WHEN d.status_layanan=1 AND EXISTS(
+                    SELECT 1 FROM r_tim rt2
+                    WHERE rt2.uji_kode = d.uji_kode
+                      AND rt2.user_id = {$user_id}
+                ) AND d.files = 3 THEN 1 ELSE 0 END) AS user_uploaded_total,
+                SUM(CASE WHEN d.status_layanan=1 AND EXISTS(
+                    SELECT 1 FROM r_tim rt2
+                    WHERE rt2.uji_kode = d.uji_kode
+                      AND rt2.user_id = {$user_id}
+                ) AND (d.files IS NULL) THEN 1 ELSE 0 END) AS pending_for_user
             ", false)
             ->groupBy('d.kode_layanan')
             ->getCompiledSelect(false);
@@ -121,12 +136,20 @@ class HasilPengujian extends BaseController
         // =======================
         // FILTER “VIEW STATUS” = algoritma formatStatusForPenyelia (+ 'tolak')
         // =======================
-        if ($wantReject || !empty($lnStatusFilter)) {
+        if ($wantReject || $wantUploaded || !empty($lnStatusFilter)) {
             $b->groupStart();
 
             if ($wantReject) {
                 $b->orGroupStart()
                     ->where('COALESCE(agg.has_reject_for_user,0) =', 1)
+                ->groupEnd();
+            }
+
+            if ($wantUploaded) {
+                // Kondisi: ada item yang files=3 (terunggah belum dikirim)
+                $b->orGroupStart()
+                    ->where('COALESCE(agg.has_reject_for_user,0) =', 0)
+                    ->where('COALESCE(agg.user_uploaded_total,0) >', 0)
                 ->groupEnd();
             }
 
@@ -140,13 +163,15 @@ class HasilPengujian extends BaseController
                           ->groupEnd();
                         break;
 
-                    case 5: // "LHUS sedang diverifikasi manajer"
+                    case 5: // "LHUS sedang diverifikasi manajer (terkirim)"
+                        // Kondisi: ada item yang files=0 (terkirim) dan tidak ada yang ditolak
+                        // dan tidak semua sudah diterima (accepted)
                         $b->orGroupStart()
                             ->where('COALESCE(agg.has_reject_for_user,0) =', 0)
-                            ->where('COALESCE(agg.pending_for_user,0) =', 0)
+                            ->where('COALESCE(agg.user_sent_total,0) >', 0)
                             ->groupStart()
-                                ->where('COALESCE(agg.user_active_total,0) =', 0)
-                                ->orWhere('COALESCE(agg.user_accepted_total,0) < COALESCE(agg.user_active_total,0)', null, false)
+                                ->where('COALESCE(agg.user_accepted_total,0) < COALESCE(agg.user_active_total,0)', null, false)
+                                ->orWhere('COALESCE(agg.user_active_total,0) =', 0)
                             ->groupEnd()
                           ->groupEnd();
                         break;
@@ -183,7 +208,7 @@ class HasilPengujian extends BaseController
         foreach ($list as $row) {
             if ((int)$row->lnStatus < 4) continue;
 
-            $id = bin2hex($this->encrypter->encrypt($row->lnKode));
+            $id = bin2hex(service('encrypter')->encrypt($row->lnKode));
             $pemesanNama = !empty($row->pemesan_name) ? $row->pemesan_name : '-';
             $tipe        = !empty($row->pemesan_identity) ? $row->pemesan_identity : '-';
             $tanggal     = !empty($row->lnTgl) ? date('d-m-Y H:i', strtotime($row->lnTgl)) : '-';
@@ -216,9 +241,9 @@ class HasilPengujian extends BaseController
 
         try {
             if (preg_match('/^[0-9a-f]+$/i', $id)) {
-                $kode = $this->encrypter->decrypt(hex2bin($id));
+                $kode = service('encrypter')->decrypt(hex2bin($id));
             } else {
-                $kode = $this->encrypter->decrypt($id);
+                $kode = service('encrypter')->decrypt($id);
             }
         } catch (\Exception $e) {
             return $this->response->setJSON(['items' => []]);
@@ -239,7 +264,7 @@ class HasilPengujian extends BaseController
         }
 
         // Encrypted ln
-        $encLnId = bin2hex($this->encrypter->encrypt($kode));
+        $encLnId = bin2hex(service('encrypter')->encrypt($kode));
 
         $builder = $db->table('t_layanan_detil as d');
 
@@ -301,22 +326,24 @@ class HasilPengujian extends BaseController
 
             $files = [];
             $rowHasFile = false;
+            $fileUrl = null;
 
-            // jika ada nilai files (3/1/2) di kolom, treat accordingly
-            if ($detFilesMax !== null && $detFilesMax > 0) {
-                // jika ada file status > 0, anggap ada file
-                $rowHasFile = true;
-            } else {
-                // cek tabel t_files_lhus
-                try {
-                    $fileRow = $db->table('t_files_lhus')->where('kode', $row->kode)->limit(1)->get()->getRow();
-                    if ($fileRow && !empty($fileRow->file_lhus)) {
-                        $rowHasFile = true;
-                        $files[] = ['label' => $fileRow->file_lhus, 'url' => base_url('uploads/lhus/' . ltrim($fileRow->file_lhus, '/')), 'exists' => true];
-                    }
-                } catch (\Throwable $e) {
-                    // ignore
+            // Selalu cek tabel t_files_lhus untuk mendapatkan file yang sudah diupload
+            try {
+                $fileRow = $db->table('t_files_lhus')->where('kode', $row->kode)->limit(1)->get()->getRow();
+                if ($fileRow && !empty($fileRow->file_lhus)) {
+                    $rowHasFile = true;
+                    $fileUrl = base_url('uploads/lhus/' . ltrim($fileRow->file_lhus, '/'));
+                    $files[] = ['label' => $fileRow->file_lhus, 'url' => $fileUrl, 'exists' => true];
                 }
+            } catch (\Throwable $e) {
+                // ignore
+            }
+
+            // Jika tidak ada di t_files_lhus, cek status files
+            if (!$rowHasFile && $detFilesMax !== null && $detFilesMax > 0) {
+                // Ada indikasi file tapi tidak ditemukan di t_files_lhus
+                $rowHasFile = false; // tetap false karena tidak ada file nyata
             }
 
             if (!$rowHasFile) {
@@ -325,16 +352,9 @@ class HasilPengujian extends BaseController
 
             $combinedHtml = '<div class="d-flex justify-content-center gap-2 align-items-center">';
 
-            if (!empty($files)) {
-                $firstViewUrl = null;
-                foreach ($files as $fi) {
-                    if ($fi['exists']) { $firstViewUrl = $fi['url']; break; }
-                }
-                if ($firstViewUrl) {
-                    $eyeButton = '<span class="text-primary btn-action" title="Lihat File" onclick="window.open(\'' . esc($firstViewUrl) . '\', \'_blank\')"><i class="bi bi-eye"></i></span>';
-                } else {
-                    $eyeButton = '<span class="text-secondary btn-action" title="File tidak ditemukan"><i class="bi bi-eye"></i></span>';
-                }
+            // Tombol lihat file
+            if ($rowHasFile && $fileUrl) {
+                $eyeButton = '<span class="text-primary btn-action" title="Lihat File" onclick="window.open(\'' . esc($fileUrl) . '\', \'_blank\')"><i class="bi bi-eye"></i></span>';
             } else {
                 $eyeButton = '<span class="text-secondary btn-action" title="Belum ada file"><i class="bi bi-eye"></i></span>';
             }
@@ -391,7 +411,7 @@ class HasilPengujian extends BaseController
             $data[] = $response;
         }
 
-        return $this->response->setJSON(['items' => $data, 'encLn' => $encLnId, 'allFilesUploaded' => $allUploaded]);
+        return $this->response->setJSON(['items' => $data, 'encLn' => $encLnId, 'allFilesUploaded' => $allUploaded, 'lnKode' => $kode]);
     }
 
     // submit, upload, doUpload, formatStatus, formatStatusForPenyelia remain identical to previous implementation
@@ -399,7 +419,7 @@ class HasilPengujian extends BaseController
 
     public function submit($idParam = null)
     {
-        $encId = $this->request->getPost('id') ?? $idParam ?? $this->request->uri->getSegment(3);
+        $encId = $this->request->getPost('id') ?? $idParam ?? service('uri')->getSegment(3);
 
         if (empty($encId)) {
             return $this->response->setJSON([
@@ -412,9 +432,9 @@ class HasilPengujian extends BaseController
 
         try {
             if (preg_match('/^[0-9a-f]+$/i', $encId)) {
-                $lnKode = $this->encrypter->decrypt(hex2bin($encId));
+                $lnKode = service('encrypter')->decrypt(hex2bin($encId));
             } else {
-                $lnKode = $this->encrypter->decrypt($encId);
+                $lnKode = service('encrypter')->decrypt($encId);
             }
         } catch (\Throwable $e) {
             return $this->response->setJSON([
@@ -676,7 +696,7 @@ try {
         }
 
         try {
-            $lnKode = $this->encrypter->decrypt(hex2bin($encId));
+            $lnKode = service('encrypter')->decrypt(hex2bin($encId));
         } catch (\Throwable $e) {
             return $this->response->setJSON([
                 'res' => 'error',
@@ -929,5 +949,64 @@ try {
 
         // Fallback ke mapping lnStatus
         return $this->formatStatus((int)$lnStatus);
+    }
+
+    public function getSampleIdentity($lnKode = null)
+    {
+        if (!$lnKode) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Kode layanan tidak ditemukan'
+            ]);
+        }
+
+        $session = session();
+        $user_id = (int) ($session->get('id_user') ?? 0);
+
+        // Cek akses user sebagai anggota tim untuk Ln ini via r_tim
+        $db = \Config\Database::connect();
+        $checkBuilder = $db->table('t_layanan_detil as d');
+        $checkBuilder->select('1');
+        $checkBuilder->join('r_tim as rt', 'rt.uji_kode = d.uji_kode', 'inner');
+        $checkBuilder->where('d.kode_layanan', $lnKode);
+        $checkBuilder->where('rt.user_id', $user_id);
+        $exists = $checkBuilder->limit(1)->get()->getRow();
+
+        if (!$exists) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Anda tidak berwenang melihat data ini'
+            ]);
+        }
+
+        try {
+            $modelSample = new MyModel('t_identitas_sampel');
+            $sampleData = $modelSample->getWhere(['kode_layanan' => $lnKode])->getRow();
+
+            if (!$sampleData) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Data identitas sampel tidak ditemukan'
+                ]);
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'data' => [
+                    'jenis' => $sampleData->jenis ?? '-',
+                    'kemasan' => $sampleData->kemasan ?? '-',
+                    'sifat' => $sampleData->sifat ?? '-',
+                    'sisa' => $sampleData->sisa ?? '-',
+                    'deskripsi' => $sampleData->deskripsi ?? '-',
+                    'keterangan_khusus' => $sampleData->keterangan_khusus ?? '-'
+                ]
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Error fetching sample identity: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat memuat data identitas sampel'
+            ]);
+        }
     }
 }

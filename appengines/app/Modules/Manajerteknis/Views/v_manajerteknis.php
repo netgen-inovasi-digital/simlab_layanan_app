@@ -13,11 +13,10 @@
                         <thead>
                             <tr>
                                 <th width="8%">No.</th>
-                                <th>Username</th>
-                                <th>Layanan yang Dikelola</th>
-                                <th>Nama</th>
-                                <th>Status</th>
-                                <th class="action text-end">Aksi</th>
+                                <th width="15%">Username</th>
+                                <th width="15%">Nama</th>
+                                <th width="15%"> Status</th>
+                                <th width="5%">Aksi</th>
                             </tr>
                         </thead>
                         <tbody id="table-body"></tbody>
@@ -35,16 +34,6 @@ var csrfHash = '<?= csrf_hash() ?>';
 table = createTable({
     apiUrl: '<?= site_url("manajerteknis/datalist") ?>',
     showFilter: true
-});
-addAction();
-
-var modal = document.getElementById('modalForm');
-modal.addEventListener('shown.bs.modal', function () {
-    const pwd = document.querySelector('[name="password"]');
-    pwd.value = "";
-    const id = document.querySelector('[name="id"]').value;
-    if (id === "") pwd.setAttribute('required', true);
-    else pwd.removeAttribute('required');
 });
 
 var modalLayananInstance = null;
@@ -86,36 +75,6 @@ function lihatLayanan(id) {
     modalLayananInstance.show();
 }
 
-// Hapus data manajerteknis (konsisten dengan deleteItem)
-function deleteManajerteknis(event) {
-    let el = event.currentTarget.closest('div');
-    let id = el?.id || event.currentTarget.getAttribute('data-id');
-    if (!id) return sayAlert('errorModal', 'Error', 'ID Manajer Teknis tidak ditemukan!', 'warning');
-
-    sayAlert('confirmModal', 'Konfirmasi', 'Yakin ingin menghapus Manajer Teknis ini?', 'danger', true, () => {
-        showLoading();
-        fetch("<?= site_url('manajerteknis/delete') ?>/" + id, {
-            method: 'GET',
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.xhash) csrfHash = data.xhash;
-            if (data.res === 'ok') {
-                if (typeof table !== 'undefined') table.fetchData({ reload: true });
-                sayAlert('successModal', 'Berhasil', data.msg ?? 'Manajer Teknis berhasil dihapus.', 'success');
-            } else {
-                sayAlert('errorModal', 'Gagal', data.msg ?? 'Gagal menghapus Manajer Teknis.', 'warning');
-            }
-        })
-        .catch(err => {
-            sayAlert('errorModal', 'Error', 'Terjadi kesalahan: ' + err.message, 'warning');
-        })
-        .finally(() => hideLoading());
-    });
-}
-
-
 function deleteItem(event) {
     let el = event.currentTarget.closest('div');
     let id = el?.id || event.currentTarget.getAttribute('data-id');
@@ -134,11 +93,15 @@ function deleteItem(event) {
         .then(data => {
             if (data.xhash) csrfHash = data.xhash;
             if (data.res === 'ok') {
-                if (typeof table !== 'undefined') table.fetchData({ reload: true });
                 sayAlert('successModal', 'Berhasil', data.msg ?? 'Layanan berhasil dihapus.', 'success');
-                let idManajer = document.getElementById('modallayanan').getAttribute('data-manajerteknis');
-                if (idManajer) lihatLayanan(idManajer); // refresh modal
-                table.refresh(); // refresh tabel utama
+                
+                // Refresh tabel utama
+                if (typeof table !== 'undefined') table.fetchData({ reload: true });
+                
+                // Refresh data modal tanpa recreate tabel
+                if (layananTable && typeof layananTable.fetchData === 'function') {
+                    layananTable.fetchData({ reload: true });
+                }
             } else {
                 sayAlert('errorModal', 'Gagal', data.msg ?? 'Gagal menghapus layanan.', 'warning');
             }
@@ -151,7 +114,50 @@ function deleteItem(event) {
 }
 
 function tambahlayanan(idLayanan) {
-    sayAlert('confirmModal', 'Konfirmasi', 'Yakin ingin menambahkan layanan ini?', 'primary', true, () => {
+    // Buat modal konfirmasi custom untuk tambah layanan
+    const modalId = 'confirmTambahModal';
+    let modalElement = document.getElementById(modalId);
+    
+    if (!modalElement) {
+        const modalHtml = `
+          <div class="modal fade" id="${modalId}" tabindex="-1" aria-labelledby="${modalId}Label" aria-hidden="true">
+            <div class="modal-dialog" style="margin: 5% auto">
+              <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                  <h5 class="modal-title" id="${modalId}Label">Konfirmasi</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="sayalert d-flex align-items-stretch">
+                        <div class="me-3 d-flex align-items-center text-primary">
+                            <i class="bi bi-patch-question icon"></i>
+                        </div>
+                        <div class="flex-grow-1 align-self-center">
+                            <div class="alert-title">Konfirmasi</div>
+                            <div class="alert-subtitle">Yakin ingin menambahkan layanan ini?</div>
+                        </div>
+                        <div class="button-container justify-content-center">
+                            <button type="button" class="btn btn-sm btn-primary ms-4 me-2" id="${modalId}ConfirmButton">Tambah</button>
+                            <div class="button-divider"></div>
+                            <button type="button" class="btn btn-sm btn-light ms-4 me-2" data-bs-dismiss="modal">Batal</button>
+                        </div>
+                    </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        modalElement = document.getElementById(modalId);
+    }
+    
+    const modalInstance = bootstrap.Modal.getOrCreateInstance(modalElement);
+    modalInstance.show();
+    
+    const confirmButton = document.getElementById(`${modalId}ConfirmButton`);
+    confirmButton.onclick = () => {
+        modalInstance.hide();
+        
         let idManajer = document.getElementById('modallayanan').getAttribute('data-manajerteknis');
         showLoading();
         fetch("<?= site_url('manajerteknis/tambahLayananManajerteknis') ?>", {
@@ -170,11 +176,17 @@ function tambahlayanan(idLayanan) {
         .then(data => {
             if (data.xhash) csrfHash = data.xhash;
             if (data.res === 'ok') {
-                lihatLayanan(idManajer);
+                sayAlert('successModal', 'Berhasil', data.msg ?? 'Layanan berhasil ditambahkan.', 'success');
+                
+                // Refresh tabel utama
                 if (typeof table !== 'undefined') {
                     table.fetchData({ reload: true });
                 }
-                sayAlert('successModal', 'Berhasil', data.msg ?? 'Layanan berhasil ditambahkan.', 'success');
+                
+                // Refresh data modal tanpa recreate tabel
+                if (layananTable && typeof layananTable.fetchData === 'function') {
+                    layananTable.fetchData({ reload: true });
+                }
             } else {
                 sayAlert('errorModal', 'Gagal', data.msg ?? 'Gagal menambahkan layanan.', 'warning');
             }
@@ -183,70 +195,13 @@ function tambahlayanan(idLayanan) {
             sayAlert('errorModal', 'Error', 'Terjadi kesalahan: ' + err.message, 'warning');
         })
         .finally(() => hideLoading());
-    });
+    };
 }
 
 function pilihLayanan(idLayanan) {
     tambahlayanan(idLayanan);
 }
 </script>
-
-<!-- Modal Form Manajer Teknis -->
-<div class="modal fade" id="modalForm" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
-    <div class="modal-dialog" role="document" style="margin: 2% auto">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Data Manajer Teknis</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            
-            <?= form_open('manajerteknis/submit', ['id' => 'myform', 'novalidate' => '']) ?>
-                <div class="modal-body">
-                    <input type="hidden" value="" name="id"/>
-                    <div class="row mb-2">
-                        <label class="col-md-4 col-form-label">Username</label>
-                        <div class="col">
-                            <input name="username" type="text" class="form-control" required>
-                        </div>
-                    </div>
-                    <div class="row mb-2">
-                        <label class="col-md-4 col-form-label">Nama</label>
-                        <div class="col">
-                            <input name="nama" type="text" class="form-control" required>
-                        </div>
-                    </div>
-                    <div class="row mb-2">
-                        <label class="col-md-4 col-form-label">Password</label>
-                        <div class="col">
-                            <input name="password" type="password" class="form-control">
-                        </div>
-                    </div>
-                    <div class="row mb-2">
-                        <label class="col-4 col-form-label">Status</label>
-                        <div class="col">
-                            <div class="form-check mt-2 form-check-inline">
-                                <input class="form-check-input" type="radio" name="status" value="1" checked>
-                                <label class="form-check-label">Aktif</label>
-                            </div>
-                            <div class="form-check mt-2 form-check-inline">
-                                <input class="form-check-input" type="radio" name="status" value="0">
-                                <label class="form-check-label text-danger">Tidak Aktif</label>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-light" type="button" data-bs-dismiss="modal">
-                        <i class="bi bi-x-circle"></i> Batal
-                    </button>
-                    <button class="btn btn-success" type="submit">
-                        <i class="bi bi-check2-circle"></i> Simpan
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
 
 <!-- Modal Manajemen Layanan Manajer Teknis -->
 <div class="modal fade" id="modallayanan" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">

@@ -7,8 +7,8 @@ use App\Models\MyModel;
 
 class Lab extends BaseController
 {
-	private $table = 'simlab_r_layanan_pengujian';
-	private $id = 'ujiKode';   
+	private $table = 'r_layanan_pengujian';
+	private $id = 'kode';   
 
 	public function index()
 	{
@@ -38,18 +38,26 @@ class Lab extends BaseController
     $alatModel  = new MyModel('simlab_r_alat');
     $paraModel  = new MyModel('simlab_r_parameter');
     $accModel   = new MyModel('simlab_account');
+    $timModel   = new MyModel('r_tim');
+
+    // Get tim members for this layanan with role info
+    $join = [
+        'simlab_account a' => 'a.user_id = r_tim.user_id'
+    ];
+    $select = 'r_tim.*, a.username, a.nama, a.role_id';
+    $where = ['r_tim.uji_kode' => $id];
+    $timMembers = $timModel->getAllDataWithJoinWhereOrder($join, $where, [], $select, 'left');
 
     $data[csrf_token()] = csrf_hash();
     $data['id']           = $idenc;
-    $data['ujiJenKode']   = $get->ujiJenKode;
-    $data['ujiAlatKode']  = $get->ujiAlatKode;
-    $data['ujiParaKode']  = $get->ujiParaKode;
-    $data['ujiLayanan']   = $get->ujiLayanan;
-    $data['ujiSatuan']    = $get->ujiSatuan;
-    $data['ujiBiaya']     = $get->ujiBiaya;
-    $data['ujiDiskon']    = $get->ujiDiskon;
-    $data['ujiPenyelia']  = $get->ujiPenyelia;
-    $data['ujiManajerTeknis'] = $get->ujiManajerTeknis;
+    $data['kode_jenis']   = $get->kode_jenis;
+    $data['kode_alat']    = $get->kode_alat;
+    $data['kode_parameter'] = $get->kode_parameter;
+    $data['nama_layanan'] = $get->nama_layanan;
+    $data['satuan']       = $get->satuan;
+    $data['biaya']        = $get->biaya;
+    $data['diskon']       = $get->diskon;
+    $data['tim']          = $timMembers; // Send full tim data with role info
 
     $data['options'] = [
         'jenis'     => $jenisModel->getAllData(),
@@ -65,29 +73,35 @@ class Lab extends BaseController
 public function submit()
 {
     $idenc = $this->request->getPost('id');
-    $ujiJenKode  = $this->request->getPost('ujiJenKode');
-    $ujiAlatKode = $this->request->getPost('ujiAlatKode');
-    $ujiParaKode = $this->request->getPost('ujiParaKode');
+    $kode_jenis  = $this->request->getPost('kode_jenis');
+    $kode_alat = $this->request->getPost('kode_alat');
+    $kode_parameter = $this->request->getPost('kode_parameter');
+    
+    // Ambil data tim sebagai array
+    $timMembers = $this->request->getPost('tim');
 
     $data = [
-        'ujiJenKode'       => $ujiJenKode,
-        'ujiAlatKode'      => $ujiAlatKode,
-        'ujiParaKode'      => $ujiParaKode,
-        'ujiLayanan'       => $this->request->getPost('ujiLayanan'),
-        'ujiSatuan'        => $this->request->getPost('ujiSatuan'),
-        'ujiBiaya'         => $this->request->getPost('ujiBiaya'),
-        'ujiDiskon'        => $this->request->getPost('ujiDiskon'),
-        'ujiPenyelia'      => $this->request->getPost('ujiPenyelia'),
-        'ujiManajerTeknis' => $this->request->getPost('ujiManajerTeknis'),
+        'kode_jenis'       => $kode_jenis,
+        'kode_alat'        => $kode_alat,
+        'kode_parameter'   => $kode_parameter,
+        'nama_layanan'     => $this->request->getPost('nama_layanan'),
+        'satuan'           => $this->request->getPost('satuan'),
+        'biaya'            => $this->request->getPost('biaya'),
+        'diskon'           => $this->request->getPost('diskon'),
     ];
 
     $model = new MyModel($this->table);
+    $timModel = new MyModel('r_tim');
+    $db = \Config\Database::connect();
+    
+    $timInsertedCount = 0;
+    $errorMsg = '';
 
     if ($idenc == "") {
         //cek duplikat insert
         $cek = $model->getWhere([
-            'ujiAlatKode' => $ujiAlatKode,
-            'ujiParaKode' => $ujiParaKode
+            'kode_alat' => $kode_alat,
+            'kode_parameter' => $kode_parameter
         ])->getRow();
 
         if ($cek) {
@@ -99,14 +113,40 @@ public function submit()
             ]);
         }
 
-        $res = $model->insertData($data);
+        // Insert with lastID = true to get the inserted ID
+        $insertedId = $model->insertData($data, true);
+        
+        if ($insertedId) {
+            // Insert tim members jika ada
+            if (!empty($timMembers) && is_array($timMembers)) {
+                foreach ($timMembers as $userId) {
+                    if (!empty($userId)) {
+                        try {
+                            $timData = [
+                                'uji_kode' => $insertedId,
+                                'user_id' => (int)$userId
+                            ];
+                            $timRes = $timModel->insertData($timData);
+                            if ($timRes) {
+                                $timInsertedCount++;
+                            }
+                        } catch (\Exception $e) {
+                            $errorMsg .= "Error inserting user_id {$userId}: " . $e->getMessage() . "; ";
+                        }
+                    }
+                }
+            }
+            $res = true;
+        } else {
+            $res = false;
+        }
     } else {
         //cek duplikat update
         $id = $this->encrypter->decrypt(hex2bin($idenc));
 
         $cek = $model->getWhere([
-            'ujiAlatKode' => $ujiAlatKode,
-            'ujiParaKode' => $ujiParaKode,
+            'kode_alat' => $kode_alat,
+            'kode_parameter' => $kode_parameter,
             $this->id.' !=' => $id
         ])->getRow();
 
@@ -120,10 +160,44 @@ public function submit()
         }
 
         $res = $model->updateData($data, $this->id, $id);
+        
+        // Update tim members
+        if ($res) {
+            // Delete existing tim members
+            $timModel->deleteData('uji_kode', $id);
+            
+            // Insert new tim members jika ada
+            if (!empty($timMembers) && is_array($timMembers)) {
+                foreach ($timMembers as $userId) {
+                    if (!empty($userId)) {
+                        try {
+                            $timData = [
+                                'uji_kode' => $id,
+                                'user_id' => (int)$userId
+                            ];
+                            $timRes = $timModel->insertData($timData);
+                            if ($timRes) {
+                                $timInsertedCount++;
+                            }
+                        } catch (\Exception $e) {
+                            $errorMsg .= "Error inserting user_id {$userId}: " . $e->getMessage() . "; ";
+                        }
+                    }
+                }
+            }
+        }
     }
 
     return $this->response->setJSON([
         'res' => $res,
+        'msg' => $res ? 'Data berhasil disimpan' : 'Gagal menyimpan data',
+        'debug_info' => [
+            'tim_received' => $timMembers,
+            'tim_is_array' => is_array($timMembers),
+            'tim_count' => is_array($timMembers) ? count($timMembers) : 0,
+            'tim_inserted' => $timInsertedCount,
+            'errors' => $errorMsg
+        ],
         'xname' => csrf_token(),
         'xhash' => csrf_hash()
     ]);
@@ -143,11 +217,50 @@ public function getoptions()
         'jenis'     => $jenisModel->getAllData(),
         'alat'      => $alatModel->getAllData(),
         'parameter' => $paraModel->getAllData(),
-        'penyelia'  => $accModel->getWhere(['role_id' => 6])->getResult(),
-        'manajer'   => $accModel->getWhere(['role_id' => 4])->getResult(),
+        'penyelia'  => $accModel->getWhere(['role_id' => 6])->getResult(), // role_id=6 penyelia
+        'manajer'   => $accModel->getWhere(['role_id' => 4])->getResult(), // role_id=4 manajer teknis
     ];
 
     return $this->response->setJSON($data);
+}
+
+public function getTim($id)
+{
+    try {
+        $id = $this->encrypter->decrypt(hex2bin($id));
+        $timModel = new MyModel('r_tim');
+        
+        $join = [
+            'simlab_account a' => 'a.user_id = r_tim.user_id'
+        ];
+        
+        $select = 'r_tim.*, a.username, a.nama, a.role_id';
+        $where = ['r_tim.uji_kode' => $id];
+        
+        $timList = $timModel->getAllDataWithJoinWhereOrder($join, $where, [], $select, 'left');
+        
+        // Get role names
+        $roleModel = new MyModel('roles');
+        $roles = $roleModel->getAllData();
+        $roleMap = [];
+        foreach ($roles as $role) {
+            $roleMap[$role->id_role] = $role->nama_role ?? 'Unknown';
+        }
+        
+        foreach ($timList as &$member) {
+            $member->role_name = $roleMap[$member->role_id] ?? 'Unknown';
+        }
+        
+        return $this->response->setJSON([
+            'res' => true,
+            'data' => $timList
+        ]);
+    } catch (\Exception $e) {
+        return $this->response->setJSON([
+            'res' => false,
+            'msg' => 'Gagal memuat data tim: ' . $e->getMessage()
+        ]);
+    }
 }
 
 
@@ -170,53 +283,59 @@ public function getoptions()
 
     // daftar JOIN
     $join = [
-        'simlab_r_jenis j'     => 'j.jenKode = ' . $this->table . '.ujiJenKode',
-        'simlab_r_alat a'      => 'a.alatKode = ' . $this->table . '.ujiAlatKode',
-        'simlab_r_parameter p' => 'p.paraKode = ' . $this->table . '.ujiParaKode',
-        'simlab_account sp'    => 'sp.user_id = ' . $this->table . '.ujiPenyelia',
-        'simlab_account sm'    => 'sm.user_id = ' . $this->table . '.ujiManajerTeknis',
+        'simlab_r_jenis j'     => 'j.jenKode = ' . $this->table . '.kode_jenis',
+        'simlab_r_alat a'      => 'a.alatKode = ' . $this->table . '.kode_alat',
+        'simlab_r_parameter p' => 'p.paraKode = ' . $this->table . '.kode_parameter',
     ];
 
     // kolom yang di-select
     $select = $this->table . '.*, 
         j.jenKode, j.jenNama, 
         a.alatNama, 
-        p.paraNama, 
-        sp.username AS nama_penyelia, 
-        sm.username AS nama_manajer';
+        p.paraNama';
 
     // filter
     $where = [];
-    $ujiJenKode = $this->request->getGet('ujiJenKode');
-    if (!empty($ujiJenKode)) {
-        $where[$this->table . '.ujiJenKode'] = $ujiJenKode;
+    $kode_jenis = $this->request->getGet('kode_jenis');
+    if (!empty($kode_jenis)) {
+        $where[$this->table . '.kode_jenis'] = $kode_jenis;
     }
 
     // ambil data dengan LEFT JOIN
     $list = $model->getAllDataWithJoinWhereOrder($join, $where, [], $select, 'left');
 
+    // Get tim counts for each layanan
+    $timModel = new MyModel('r_tim');
+    $timCounts = [];
     foreach ($list as $row) {
-        $id = bin2hex($this->encrypter->encrypt($row->ujiKode));
+        $count = $timModel->getWhere(['uji_kode' => $row->kode])->getNumRows();
+        $timCounts[$row->kode] = $count;
+    }
+
+    foreach ($list as $row) {
+        $id = bin2hex($this->encrypter->encrypt($row->kode));
         $response = [];
 
         // kolom kategori
         $response[] = '<span class="badge bg-info">' . esc($row->jenKode) . '</span>';
 
         // kolom nama layanan
-        $response[] = $row->ujiLayanan . '<br>'
+        $response[] = $row->nama_layanan . '<br>'
             . '<strong>Alat : </strong>' . $row->alatNama . '<br>'
             . '<strong>Parameter : </strong>' . $row->paraNama;
 
-        // kolom penanggung jawab
-        $response[] = 
-             'P : ' . ($row->nama_penyelia ?? '-') . '<br>'
-            . 'MT : ' . ($row->nama_manajer ?? '-');
+        // kolom penanggung jawab dengan button lihat
+        $timCount = $timCounts[$row->kode] ?? 0;
+        $btnLihatTim = '<button class="btn btn-sm btn-outline-primary btn-lihat-tim" data-id="' . $id . '" title="Lihat Tim Penanggung Jawab">
+            <i class="bi bi-eye"></i> Lihat (' . $timCount . ')
+        </button>';
+        $response[] = $btnLihatTim;
 
         // kolom biaya
-        $response[] = $row->ujiBiaya . ' / ' . $row->ujiSatuan;
+        $response[] = $row->biaya . ' / ' . $row->satuan;
 
         // kolom diskon
-        $response[] = ($row->ujiDiskon ?? 0) . '%';
+        $response[] = ($row->diskon ?? 0) . '%';
 
         // kolom aksi
         $response[] = $this->aksi($id);

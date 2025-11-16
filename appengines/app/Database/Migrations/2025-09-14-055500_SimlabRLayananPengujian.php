@@ -59,9 +59,9 @@ class CreateRLayananPengujian extends Migration
         // foreign keys (pastikan tabel referensi sudah ada saat migration dijalankan)
         $db = \Config\Database::connect();
         $db->query('ALTER TABLE `r_layanan_pengujian`
-            ADD CONSTRAINT `fk_paraKode` FOREIGN KEY (`kode_parameter`) REFERENCES `simlab_r_parameter` (`paraKode`) ON DELETE RESTRICT ON UPDATE RESTRICT,
-            ADD CONSTRAINT `fk_ujiAlatKode` FOREIGN KEY (`kode_alat`) REFERENCES `simlab_r_alat` (`alatKode`) ON DELETE RESTRICT ON UPDATE RESTRICT,
-            ADD CONSTRAINT `fk_ujiJenKode` FOREIGN KEY (`kode_jenis`) REFERENCES `simlab_r_jenis` (`jenKode`) ON DELETE RESTRICT ON UPDATE RESTRICT
+            ADD CONSTRAINT `fk_rlaypeng_paraKode` FOREIGN KEY (`kode_parameter`) REFERENCES `simlab_r_parameter` (`paraKode`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+            ADD CONSTRAINT `fk_rlaypeng_alatKode` FOREIGN KEY (`kode_alat`) REFERENCES `simlab_r_alat` (`alatKode`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+            ADD CONSTRAINT `fk_rlaypeng_jenKode` FOREIGN KEY (`kode_jenis`) REFERENCES `simlab_r_jenis` (`jenKode`) ON DELETE RESTRICT ON UPDATE RESTRICT
         ;');
     }
 

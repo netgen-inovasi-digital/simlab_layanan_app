@@ -488,11 +488,57 @@ abstract class KeranjangBase extends BaseController
             ]);
         }
 
+        // Ambil data identitas sampel dari POST
+        $jenisSampel = $this->request->getPost('jenisSampel');
+        $kemasanSampel = $this->request->getPost('kemasanSampel');
+        $sifatSampel = $this->request->getPost('sifatSampel');
+        $sisaSampel = $this->request->getPost('sisaSampel');
+        $deskripsiSampel = $this->request->getPost('deskripsiSampel');
+        $keteranganKhusus = $this->request->getPost('keteranganKhusus');
+
+        // Validasi data identitas sampel
+        if (empty($jenisSampel)) {
+            return $this->response->setJSON([
+                'res' => false,
+                'msg' => 'Jenis Sampel harus diisi',
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        }
+
+        if (empty($kemasanSampel)) {
+            return $this->response->setJSON([
+                'res' => false,
+                'msg' => 'Kemasan Sampel harus diisi',
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        }
+
+        if (empty($sifatSampel)) {
+            return $this->response->setJSON([
+                'res' => false,
+                'msg' => 'Sifat Sampel harus dipilih',
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        }
+
+        if (empty($sisaSampel)) {
+            return $this->response->setJSON([
+                'res' => false,
+                'msg' => 'Status Sisa Sampel harus dipilih',
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        }
+
         $totalBiaya = array_sum(array_column($keranjang, 'biaya'));
 
         $modelPembayaran = new MyModel($this->tablePembayaran);
         $modelLayanan    = new MyModel($this->tableLayanan);
         $modelDetil      = new MyModel($this->tableLayananDetail);
+        $modelIdentitasSampel = new MyModel('t_identitas_sampel');
         $db = \Config\Database::connect();
 
         $db->transStart();
@@ -510,6 +556,22 @@ abstract class KeranjangBase extends BaseController
 
             // Simpan detail layanan
             $this->saveDetailLayanan($lnKode, $keranjang);
+
+            // Simpan identitas sampel
+            $identitasSampelData = [
+                'kode_layanan' => $lnKode,
+                'jenis' => trim($jenisSampel),
+                'kemasan' => trim($kemasanSampel),
+                'sifat' => $sifatSampel,
+                'sisa' => $sisaSampel,
+                'deskripsi' => !empty($deskripsiSampel) ? trim($deskripsiSampel) : null,
+                'keterangan_khusus' => !empty($keteranganKhusus) ? trim($keteranganKhusus) : null,
+            ];
+
+            $insertIdentitasResult = $modelIdentitasSampel->insertData($identitasSampelData);
+            if (!$insertIdentitasResult) {
+                throw new \RuntimeException('Gagal menyimpan identitas sampel');
+            }
 
             // Commit dan bersihkan keranjang + pelanggan
             $db->transComplete();

@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 namespace Modules\FormulirAdmin\Controllers;
 
@@ -8,7 +8,7 @@ use App\Models\MyModel;
 class FormulirAdmin extends BaseController
 {
     private $table = 'simlab_t_layanan';
-    private $id    = 'lnKode';
+    private $id = 'lnKode';
     protected $encrypter;
     private $sessionKey = 'keranjang_formadmin';
 
@@ -34,7 +34,7 @@ class FormulirAdmin extends BaseController
         if (method_exists($modelUser, 'getAllData')) {
             $users = $modelUser->getAllData();
         } elseif (method_exists($modelUser, 'getAllDataWithOrder')) {
-            $users = $modelUser->getAllDataWithOrder([], ['user_name' => 'ASC']);
+            $users = $modelUser->getAllDataWithOrder(['user_name' => 'ASC']);
         } else {
             // fallback ke query builder jika MyModel tidak punya helper
             $db = \Config\Database::connect();
@@ -57,17 +57,17 @@ class FormulirAdmin extends BaseController
         $categories = [];
         if (!empty($categoriesRaw)) {
             foreach ($categoriesRaw as $c) {
-                $kode = isset($c->jenKode) ? trim((string)$c->jenKode) : '';
-                $nama = (isset($c->jenNama) && trim((string)$c->jenNama) !== '') ? trim((string)$c->jenNama) : $kode;
+                $kode = isset($c->jenKode) ? trim((string) $c->jenKode) : '';
+                $nama = (isset($c->jenNama) && trim((string) $c->jenNama) !== '') ? trim((string) $c->jenNama) : $kode;
                 if ($kode !== '') {
-                    $categories[] = (object)[ 'jenKode' => $kode, 'jenNama' => $nama ];
+                    $categories[] = (object) ['jenKode' => $kode, 'jenNama' => $nama];
                 }
             }
         }
 
         $data = [
             'title' => 'Data Formulir Admin',
-            'user'  => (new MyModel('simlab_account_users'))->getDataById('user_id', $user_id),
+            'user' => (new MyModel('simlab_account_users'))->getDataById('user_id', $user_id),
             'users' => $users,
             'categories' => $categories
         ];
@@ -77,12 +77,12 @@ class FormulirAdmin extends BaseController
 
     public function delete($id)
     {
-        $id    = $this->encrypter->decrypt(hex2bin($id));
+        $id = $this->encrypter->decrypt(hex2bin($id));
         $model = new MyModel($this->table);
-        $res   = $model->deleteData($this->id, $id);
+        $res = $model->deleteData($this->id, $id);
 
         return $this->response->setJSON([
-            'res'   => $res,
+            'res' => $res,
             'xname' => csrf_token(),
             'xhash' => csrf_hash()
         ]);
@@ -91,9 +91,9 @@ class FormulirAdmin extends BaseController
     public function submit()
     {
         $idenc = $this->request->getPost('id');
-        $data  = [
+        $data = [
             'lnOrangNama' => $this->request->getPost('lnOrangNama'),
-            'lnInstansi'  => $this->request->getPost('lnInstansi'),
+            'lnInstansi' => $this->request->getPost('lnInstansi'),
         ];
 
         $model = new MyModel($this->table);
@@ -101,12 +101,12 @@ class FormulirAdmin extends BaseController
         if ($idenc == "") {
             $res = $model->insertData($data);
         } else {
-            $id  = $this->encrypter->decrypt(hex2bin($idenc));
+            $id = $this->encrypter->decrypt(hex2bin($idenc));
             $res = $model->updateData($data, $this->id, $id);
         }
 
         return $this->response->setJSON([
-            'res'   => $res,
+            'res' => $res,
             'xname' => csrf_token(),
             'xhash' => csrf_hash()
         ]);
@@ -120,7 +120,7 @@ class FormulirAdmin extends BaseController
     public function datalist()
     {
         $model = new MyModel($this->table);
-        $data  = [];
+        $data = [];
 
         // Ambil parameter kategoriLayanan dari query string (status filtering)
         $kategoriParam = $this->request->getGet('kategoriLayanan');
@@ -141,19 +141,42 @@ class FormulirAdmin extends BaseController
             $list = $model->getAllDataByWhere([], ['lnTgl' => 'DESC']);
         }
 
-        $userModel  = new MyModel('simlab_account_users');
+        $userModel = new MyModel('simlab_account_users');
         $layananDet = new MyModel('t_layanan_detil');
         $db = \Config\Database::connect();
 
+        // Siapkan map pembayaran terakhir per lnKode (sama seperti di Pelayanan)
+        $lnKodes = array_map(fn($r) => (int) $r->lnKode, $list);
+
+        $payRows = $db->table('t_pembayaran')
+            ->select('bayarLnKode, bayarStatus, bayarInvoiceNo, MAX(bayarKode) AS lastKode')
+            ->whereIn('bayarLnKode', $lnKodes)
+            ->groupBy('bayarLnKode, bayarStatus, bayarInvoiceNo')
+            ->orderBy('lastKode', 'DESC')
+            ->get()->getResult();
+
+        $payMap = [];
+        foreach ($payRows as $p) {
+            $ln = (int) $p->bayarLnKode;
+            if (!isset($payMap[$ln])) {
+                $payMap[$ln] = [
+                    'status' => (int) $p->bayarStatus,
+                    'inv' => $p->bayarInvoiceNo ?? null,
+                ];
+            }
+        }
+
         foreach ($list as $row) {
-            $lnStatusInt = (int)$row->lnStatus;
+            $lnStatusInt = (int) $row->lnStatus;
 
             // Jika ada filterStatuses, hanya proses baris yang cocok
             if (is_array($filterStatuses)) {
-                if (!in_array($lnStatusInt, $filterStatuses, true)) continue;
+                if (!in_array($lnStatusInt, $filterStatuses, true))
+                    continue;
             } else {
                 // Perilaku default lama: lewati status tertentu (0,2)
-                if (in_array($lnStatusInt, [0, 2], true)) continue;
+                if (in_array($lnStatusInt, [0, 2], true))
+                    continue;
             }
 
             // jika ada jenKodeParam, kita cek di detil apakah baris ini memiliki layanan yang termasuk jenKodeParam
@@ -189,10 +212,10 @@ class FormulirAdmin extends BaseController
             }
 
             // ambil data user (logika tetap dipertahankan)
-            $personName   = null;
+            $personName = null;
             $userIdentity = '-';
-            $instansi     = '-';
-            $u            = null;
+            $instansi = '-';
+            $u = null;
 
             // 1) Cek langsung dari user_id (FK)
             if (!empty($row->user_id)) {
@@ -202,32 +225,33 @@ class FormulirAdmin extends BaseController
             // 2) Jika belum ada, cek berdasarkan email (lnAccEmail)
             if (!$u && !empty($row->lnAccEmail)) {
                 $users = $userModel->getAllDataById(['user_email' => $row->lnAccEmail]);
-                if (!empty($users)) $u = is_array($users) ? $users[0] : $users;
+                if (!empty($users))
+                    $u = is_array($users) ? $users[0] : $users;
             }
 
             // 3) Jika masih belum ketemu, cari user_id dari invoice (lnNoTransaksi)
             if (!$u && !empty($row->lnNoTransaksi)) {
                 $qb = $db->table($this->table);
                 $qb->select('user_id')
-                   ->where('lnNoTransaksi', $row->lnNoTransaksi)
-                   ->where('user_id IS NOT NULL', null, false);
+                    ->where('lnNoTransaksi', $row->lnNoTransaksi)
+                    ->where('user_id IS NOT NULL', null, false);
                 $res = $qb->get()->getResult();
                 if (!empty($res)) {
-                    $foundUserId = (int)$res[0]->user_id;
+                    $foundUserId = (int) $res[0]->user_id;
                     $u = $userModel->getDataById('user_id', $foundUserId);
                 }
             }
 
             // 4) Jika user ditemukan, ambil info
             if ($u) {
-                $personName   = $u->user_name ?? $u->user_email ?? '-';
-                $instansi     = $u->user_instansi ?? '-';
+                $personName = $u->user_name ?? $u->user_email ?? '-';
+                $instansi = $u->user_instansi ?? '-';
                 $userIdentity = $u->user_identity ?? '-';
             } else {
                 $personName = $row->lnAccEmail ?? '-';
             }
 
-            
+
 
             // Gunakan lnNoTransaksi hanya untuk ditampilkan, bukan dasar sorting
             $invoiceNo = !empty($row->lnNoTransaksi) ? $row->lnNoTransaksi : 'Belum tersedia';
@@ -245,6 +269,20 @@ class FormulirAdmin extends BaseController
             $response[] = $combined;
             $response[] = esc($invoiceNo);
             $response[] = $this->formatStatus($row->lnStatus);
+
+            // Status Pembayaran (sama seperti di Pelayanan)
+            $lnKodeInt = (int) $row->lnKode;
+            $bayarStatusVal = isset($payMap[$lnKodeInt]) ? $payMap[$lnKodeInt]['status'] : 0;
+
+            if ($bayarStatusVal === 3) {
+                $response[] = '<span class="badge bg-success">Lunas</span>';
+            } elseif ($bayarStatusVal === 1) {
+                $response[] = '<span class="badge bg-warning">Menunggu Verifikasi</span>';
+            } elseif ($bayarStatusVal === 2) {
+                $response[] = '<span class="badge bg-danger">Ditolak</span>';
+            } else {
+                $response[] = '<button class="btn btn-sm btn-info" onclick="lokasiPembayaran(' . $lnKodeInt . ')"><i class="bi bi-credit-card"></i> Belum Bayar</button>';
+            }
 
             $lihatDetailBtn = '<button type="button" class="btn btn-sm btn-info" 
                                 title="Lihat Detail Item Layanan" 
@@ -264,24 +302,24 @@ class FormulirAdmin extends BaseController
     }
 
     public function detaillist($id = null)
-{
-    if (!$id) {
-        return $this->response->setJSON(['items' => []]);
-    }
+    {
+        if (!$id) {
+            return $this->response->setJSON(['items' => []]);
+        }
 
-    try {
-        $kode = $this->encrypter->decrypt(hex2bin($id));
-    } catch (\Exception $e) {
-        return $this->response->setJSON(['items' => []]);
-    }
+        try {
+            $kode = $this->encrypter->decrypt(hex2bin($id));
+        } catch (\Exception $e) {
+            return $this->response->setJSON(['items' => []]);
+        }
 
-    // Encrypted hex parent (disimpan jika perlu dipakai di tempat lain)
-    $encLnId = bin2hex($this->encrypter->encrypt($kode));
+        // Encrypted hex parent (disimpan jika perlu dipakai di tempat lain)
+        $encLnId = bin2hex($this->encrypter->encrypt($kode));
 
-    $db = \Config\Database::connect();
-    $builder = $db->table('t_layanan_detil as d');
+        $db = \Config\Database::connect();
+        $builder = $db->table('t_layanan_detil as d');
 
-    $builder->select("
+        $builder->select("
         d.uji_kode,
         d.kode_layanan,
         d.nama_layanan,
@@ -294,24 +332,25 @@ class FormulirAdmin extends BaseController
         GROUP_CONCAT(DISTINCT acc.username SEPARATOR ' | ') AS accUsernames
     ");
 
-    // join untuk ambil username dari terima_layanan_by
-    $builder->join('simlab_account acc', 'acc.user_id = d.terima_layanan_by', 'left');
+        // join untuk ambil username dari terima_layanan_by
+        $builder->join('simlab_account acc', 'acc.user_id = d.terima_layanan_by', 'left');
 
-    $builder->where('d.kode_layanan', $kode);
-    $builder->groupBy('d.uji_kode, d.kode_layanan, d.nama_layanan, d.kode_jenis');    $rows = $builder->get()->getResult();
+        $builder->where('d.kode_layanan', $kode);
+        $builder->groupBy('d.uji_kode, d.kode_layanan, d.nama_layanan, d.kode_jenis');
+        $rows = $builder->get()->getResult();
 
-    $data = [];
-    $no = 1;
+        $data = [];
+        $no = 1;
 
-    foreach ($rows as $row) {
-        $response   = [];
-        $response[] = $no++;
-        $response[] = $row->nama_layanan ?? '-';
-        $response[] = isset($row->detBiaya) ? number_format($row->detBiaya, 0, ',', '.') : '-';
-        $response[] = isset($row->jumlah) ? (int)$row->jumlah : 0;
+        foreach ($rows as $row) {
+            $response = [];
+            $response[] = $no++;
+            $response[] = $row->nama_layanan ?? '-';
+            $response[] = isset($row->detBiaya) ? number_format($row->detBiaya, 0, ',', '.') : '-';
+            $response[] = isset($row->jumlah) ? (int) $row->jumlah : 0;
 
-        // detKet (keterangan item)
-        $response[] = '<div 
+            // detKet (keterangan item)
+            $response[] = '<div 
                 style="display:block; max-width:240px; min-width:160px; width:100%;
                     max-height:120px; min-height:48px; overflow-y:auto; overflow-x:hidden;
                     padding:4px 6px; border:1px solid #ddd; border-radius:4px; background:#f9f9f9;
@@ -319,35 +358,35 @@ class FormulirAdmin extends BaseController
                 . htmlspecialchars($row->detKet ?? '', ENT_QUOTES, 'UTF-8') .
                 '</div>';
 
-        // status hasil grouping (1 = diterima, 2 = ditolak, lainnya = pending)
-        $statusGroup = isset($row->detStatusGroup) ? (int)$row->detStatusGroup : null;
-        if ($statusGroup === 1) {
-            $statusHtml = '<span class="badge bg-success">Diterima</span>';
-        } elseif ($statusGroup === 2) {
-            $statusHtml = '<span class="badge bg-danger">Ditolak</span>';
-        } else {
-            $statusHtml = '<span class="badge bg-secondary">Pending</span>';
-        }
-        $response[] = $statusHtml;
-        
-        // detKetLn (keterangan level layanan)
-        $response[] = '<div 
+            // status hasil grouping (1 = diterima, 2 = ditolak, lainnya = pending)
+            $statusGroup = isset($row->detStatusGroup) ? (int) $row->detStatusGroup : null;
+            if ($statusGroup === 1) {
+                $statusHtml = '<span class="badge bg-success">Diterima</span>';
+            } elseif ($statusGroup === 2) {
+                $statusHtml = '<span class="badge bg-danger">Ditolak</span>';
+            } else {
+                $statusHtml = '<span class="badge bg-secondary">Pending</span>';
+            }
+            $response[] = $statusHtml;
+
+            // detKetLn (keterangan level layanan)
+            $response[] = '<div 
         style="display:block; max-width:240px; min-width:160px; width:100%;
         max-height:120px; min-height:48px; overflow-y:auto; overflow-x:hidden;
         padding:4px 6px; border:1px solid #ddd; border-radius:4px; background:#f9f9f9;
         white-space:pre-wrap; word-break:break-word; font-size:0.9rem;">'
-        . htmlspecialchars($row->detKetLn ?? '', ENT_QUOTES, 'UTF-8') .
-        '</div>';
-        
-        
-                // Username yang melakukan accept layanan (bisa >1 username bila multi-row dalam satu grup)
-                $accUsernames = trim((string)($row->accUsernames ?? ''));
-                $response[] = $accUsernames !== '' ? htmlspecialchars($accUsernames, ENT_QUOTES, 'UTF-8') : '-';
-                $data[] = $response;
-    }
+                . htmlspecialchars($row->detKetLn ?? '', ENT_QUOTES, 'UTF-8') .
+                '</div>';
 
-    return $this->response->setJSON(['items' => $data]);
-}
+
+            // Username yang melakukan accept layanan (bisa >1 username bila multi-row dalam satu grup)
+            $accUsernames = trim((string) ($row->accUsernames ?? ''));
+            $response[] = $accUsernames !== '' ? htmlspecialchars($accUsernames, ENT_QUOTES, 'UTF-8') : '-';
+            $data[] = $response;
+        }
+
+        return $this->response->setJSON(['items' => $data]);
+    }
 
 
 
@@ -377,13 +416,13 @@ class FormulirAdmin extends BaseController
                 // ambil header layanan untuk menemukan user_id / lnAccEmail
                 $db = \Config\Database::connect();
                 $row = $db->table($this->table)
-                        ->select('user_id, lnAccEmail')
-                        ->where($this->id, $lnKode)
-                        ->get()
-                        ->getRow();
+                    ->select('user_id, lnAccEmail')
+                    ->where($this->id, $lnKode)
+                    ->get()
+                    ->getRow();
 
                 $phoneRaw = '';
-                $userObj  = null;
+                $userObj = null;
 
                 if ($row) {
                     $modelUser = new MyModel('simlab_account_users');
@@ -396,15 +435,20 @@ class FormulirAdmin extends BaseController
                     // 2) jika belum ada, coba cari berdasarkan lnAccEmail
                     if (!$userObj && !empty($row->lnAccEmail)) {
                         $users = $modelUser->getAllDataById(['user_email' => $row->lnAccEmail]);
-                        if (!empty($users)) $userObj = is_array($users) ? $users[0] : $users;
+                        if (!empty($users))
+                            $userObj = is_array($users) ? $users[0] : $users;
                     }
 
                     // Ambil field telepon dari objek user (cek beberapa nama kolom umum)
                     if ($userObj) {
-                        if (isset($userObj->user_phone) && !empty($userObj->user_phone)) $phoneRaw = $userObj->user_phone;
-                        elseif (isset($userObj->user_telpon) && !empty($userObj->user_telpon)) $phoneRaw = $userObj->user_telpon;
-                        elseif (isset($userObj->user_telp) && !empty($userObj->user_telp)) $phoneRaw = $userObj->user_telp;
-                        elseif (isset($userObj->phone) && !empty($userObj->phone)) $phoneRaw = $userObj->phone;
+                        if (isset($userObj->user_phone) && !empty($userObj->user_phone))
+                            $phoneRaw = $userObj->user_phone;
+                        elseif (isset($userObj->user_telpon) && !empty($userObj->user_telpon))
+                            $phoneRaw = $userObj->user_telpon;
+                        elseif (isset($userObj->user_telp) && !empty($userObj->user_telp))
+                            $phoneRaw = $userObj->user_telp;
+                        elseif (isset($userObj->phone) && !empty($userObj->phone))
+                            $phoneRaw = $userObj->phone;
                         // tambahkan nama kolom lain jika DB anda memakai nama berbeda
                     }
                 }
@@ -447,84 +491,96 @@ class FormulirAdmin extends BaseController
     private function formatStatus($status)
     {
         switch ($status) {
-            case 0: return '<span class="badge bg-secondary">Draft</span>';
-            case 1: return '<span class="badge bg-warning">In Review Manajer</span>';
-            case 2: return '<span class="badge bg-danger">Ditolak</span>';
-            case 3: return '<span class="badge bg-info">Belum direview</span>';
-            case 4: return '<span class="badge bg-primary">Dalam pengujian</span>';
-            case 5: return '<span class="badge bg-primary">LHUS diproses</span>';
-            case 6: return '<span class="badge bg-success">LHUS disetujui</span>';
-            case 7: return '<span class="badge bg-primary">LHU diproses</span>';
-            case 8: return '<span class="badge bg-success">LHU disetujui</span>';
-            case 9: return '<span class="badge bg-dark">Pengujian selesai</span>';
-            default: return '<span class="badge bg-dark">Unknown</span>';
+            case 0:
+                return '<span class="badge bg-secondary">Draft</span>';
+            case 1:
+                return '<span class="badge bg-warning">In Review Manajer</span>';
+            case 2:
+                return '<span class="badge bg-danger">Ditolak</span>';
+            case 3:
+                return '<span class="badge bg-info">Belum direview</span>';
+            case 4:
+                return '<span class="badge bg-primary">Dalam pengujian</span>';
+            case 5:
+                return '<span class="badge bg-primary">LHUS diproses</span>';
+            case 6:
+                return '<span class="badge bg-success">LHUS disetujui</span>';
+            case 7:
+                return '<span class="badge bg-primary">LHU diproses</span>';
+            case 8:
+                return '<span class="badge bg-success">LHU disetujui</span>';
+            case 9:
+                return '<span class="badge bg-dark">Pengujian selesai</span>';
+            default:
+                return '<span class="badge bg-dark">Unknown</span>';
         }
     }
 
     /**
- * Approve endpoint (dipanggil via AJAX POST)
- * URL: /formuliradmin/approve/{encId}
- */
-public function approve($encId = null)
-{
-    $response = [
-        'res' => false,
-        'msg' => 'Approve gagal dilakukan.',
-        'xname' => csrf_token(),
-        'xhash' => csrf_hash()
-    ];
+     * Approve endpoint (dipanggil via AJAX POST)
+     * URL: /formuliradmin/approve/{encId}
+     */
+    public function approve($encId = null)
+    {
+        $response = [
+            'res' => false,
+            'msg' => 'Approve gagal dilakukan.',
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
+        ];
 
-    if (!$encId) {
-        $response['msg'] = 'ID tidak diberikan.';
-        return $this->response->setJSON($response);
-    }
-
-    try {
-        // decrypt id (sama cara yg Anda pakai di tempat lain)
-        $lnKode = $this->encrypter->decrypt(hex2bin($encId));
-
-        // simple validation
-        if (empty($lnKode)) {
-            $response['msg'] = 'ID tidak valid.';
+        if (!$encId) {
+            $response['msg'] = 'ID tidak diberikan.';
             return $this->response->setJSON($response);
         }
 
-        $model = new MyModel($this->table);
+        try {
+            // decrypt id (sama cara yg Anda pakai di tempat lain)
+            $lnKode = $this->encrypter->decrypt(hex2bin($encId));
 
-        // Anda bisa men-set status apa yg "approve" maksudnya.
-        // Contoh ini set lnStatus => 1 (In Review Manajer).
-        // Ubah menjadi status lain jika bisnis logic menghendaki.
-        $update = [
-            'lnStatus' => 4,
-            // 'lnTglUpdate' => date('Y-m-d H:i:s') .
-        ];
+            // simple validation
+            if (empty($lnKode)) {
+                $response['msg'] = 'ID tidak valid.';
+                return $this->response->setJSON($response);
+            }
 
-        $res = $model->updateData($update, $this->id, $lnKode);
+            $model = new MyModel($this->table);
 
-        if ($res) {
-            $response['res'] = true;
-            $response['msg'] = 'Data berhasil diapprove.';
-            // bila perlu kirim status baru juga
-            $response['newStatus'] = $update['lnStatus'];
-        } else {
-            $response['msg'] = 'Gagal update database (tidak ada perubahan atau error).';
-            // log db error bila model expose
-            try {
-                $err = $model->db->error();
-                log_message('error', 'Approve gagal: ' . json_encode($err));
-            } catch (\Throwable $e) {}
+            // Anda bisa men-set status apa yg "approve" maksudnya.
+            // Contoh ini set lnStatus => 1 (In Review Manajer).
+            // Ubah menjadi status lain jika bisnis logic menghendaki.
+            $update = [
+                'lnStatus' => 4,
+                // 'lnTglUpdate' => date('Y-m-d H:i:s') .
+            ];
+
+            $res = $model->updateData($update, $this->id, $lnKode);
+
+            if ($res) {
+                $response['res'] = true;
+                $response['msg'] = 'Data berhasil diapprove.';
+                // bila perlu kirim status baru juga
+                $response['newStatus'] = $update['lnStatus'];
+            } else {
+                $response['msg'] = 'Gagal update database (tidak ada perubahan atau error).';
+                // log db error bila model expose
+                try {
+                    $err = $model->db->error();
+                    log_message('error', 'Approve gagal: ' . json_encode($err));
+                } catch (\Throwable $e) {
+                }
+            }
+        } catch (\Exception $e) {
+            log_message('error', 'Approve exception: ' . $e->getMessage());
+            $response['msg'] = 'Approve exception: ' . $e->getMessage();
         }
-    } catch (\Exception $e) {
-        log_message('error', 'Approve exception: ' . $e->getMessage());
-        $response['msg'] = 'Approve exception: ' . $e->getMessage();
+
+        // kirim token CSRF baru juga supaya frontend bisa mengupdate
+        $response['xname'] = csrf_token();
+        $response['xhash'] = csrf_hash();
+
+        return $this->response->setJSON($response);
     }
-
-    // kirim token CSRF baru juga supaya frontend bisa mengupdate
-    $response['xname'] = csrf_token();
-    $response['xhash'] = csrf_hash();
-
-    return $this->response->setJSON($response);
-}
 
 
     // --- MULAI: WhatsApp button helper (paste sebelum pembuatan $combined) ---
@@ -533,18 +589,22 @@ public function approve($encId = null)
      * Normalisasi: hapus semua selain digit, ubah leading 0 -> 62 (Indonesia) jika perlu.
      * Jika kosong / tidak valid -> return empty string.
      */
-    public function normalize_phone_for_whatsapp($rawPhone) {
-        if (empty($rawPhone)) return '';
+    public function normalize_phone_for_whatsapp($rawPhone)
+    {
+        if (empty($rawPhone))
+            return '';
         // keep digits only
-        $digits = preg_replace('/\D+/', '', (string)$rawPhone);
-        if ($digits === '') return '';
+        $digits = preg_replace('/\D+/', '', (string) $rawPhone);
+        if ($digits === '')
+            return '';
         // jika mulai dengan 0 -> ganti 0 dengan 62 (Indonesia)
         if (strpos($digits, '0') === 0) {
             $digits = '62' . substr($digits, 1);
         }
         // jika mulai dengan 62 sudah ok; jika mulai dengan +62 (already removed +), ok
         // jika panjang terlalu pendek, bail out
-        if (strlen($digits) < 8) return '';
+        if (strlen($digits) < 8)
+            return '';
         return $digits;
     }
 
@@ -552,8 +612,10 @@ public function approve($encId = null)
      * Buat tombol HTML untuk membuka WhatsApp (wa.me). Aman untuk output view.
      * $name digunakan untuk pesan pembuka (opsional).
      */
-    public function whatsapp_button_html($phoneDigits, $name = null) {
-        if (empty($phoneDigits)) return '';
+    public function whatsapp_button_html($phoneDigits, $name = null)
+    {
+        if (empty($phoneDigits))
+            return '';
         $text = $name ? "Halo%20" . rawurlencode($name) . "%2C%20saya%20ingin%20bertanya%20tentang%20layanan." : "Halo%2C%20saya%20ingin%20bertanya%20tentang%20layanan.";
         $url = "https://wa.me/" . $phoneDigits . "?text=" . $text;
         // tombol kecil dengan icon bootstrap (bi bi-whatsapp)

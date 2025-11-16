@@ -72,7 +72,7 @@
     function normalizeDoubleQuestion(url) {
         if (typeof url !== 'string') return url;
         // ubah pertama kali "?...?" -> "?...&"
-        let n = url.replace(/\?([^?]*)\?/, '?$1&');
+        var n = url.replace(/\?([^?]*)\?/, '?$1&');
         // collapse duplicate ampersand
         n = n.replace(/&{2,}/g, '&');
         return n;
@@ -88,8 +88,8 @@
     const baseMainPath = '<?= site_url("pelayanan/datalist") ?>';
 
     // Prioritas: kategoriLayanan > jenKode
-    let initialParamKey = null;
-    let initialParamValue = null;
+    var initialParamKey = null;
+    var initialParamValue = null;
     if (kategoriLayananFromUrl && kategoriLayananFromUrl !== '') {
         initialParamKey = 'kategoriLayanan';
         initialParamValue = kategoriLayananFromUrl;
@@ -207,7 +207,7 @@
                 tbody.innerHTML = '';
                 if (data.items && data.items.length > 0) {
                     data.items.forEach(function(row) {
-                        let tr = '<tr>';
+                        var tr = '<tr>';
                         row.forEach(function(col) {
                             tr += '<td>' + col + '</td>';
                         });
