@@ -64,7 +64,7 @@ class PembayaranAdmin extends BaseController
                 $sessionKey = 'temp_invoice_' . $row->bayarKode;
                 $tempInvoiceFile = session()->get($sessionKey);
 
-                // Status berdasarkan lnNoTransaksi dan bayarBuktiFile (seperti di Tagihan dengan tambahan status verifikasi)
+                // Status berdasarkan lnNoTransaksi dan bayarBuktiFile
                 // 0 = Menunggu Proses (lnNoTransaksi kosong)
                 // 1 = Terkirim (lnNoTransaksi terisi, bukti bayar belum ada)
                 // 2 = Belum Diverifikasi (lnNoTransaksi terisi, bukti bayar ada, bayarStatus = 0)

@@ -274,10 +274,10 @@ class FormulirAdmin extends BaseController
             $lnKodeInt = (int) $row->lnKode;
             $bayarStatusVal = isset($payMap[$lnKodeInt]) ? $payMap[$lnKodeInt]['status'] : 0;
 
-            if ($bayarStatusVal === 3) {
-                $response[] = '<span class="badge bg-success">Lunas</span>';
-            } elseif ($bayarStatusVal === 1) {
+            if ($bayarStatusVal === 0) {
                 $response[] = '<span class="badge bg-warning">Menunggu Verifikasi</span>';
+            } elseif ($bayarStatusVal === 1) {
+                $response[] = '<span class="badge bg-success">Lunas</span>';
             } elseif ($bayarStatusVal === 2) {
                 $response[] = '<span class="badge bg-danger">Ditolak</span>';
             } else {
