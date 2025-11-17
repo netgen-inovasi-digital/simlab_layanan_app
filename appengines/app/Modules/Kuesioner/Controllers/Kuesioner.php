@@ -25,16 +25,14 @@ class Kuesioner extends BaseController
         $opsi_string = null;
 
         if ($tipe == 'pilihan') {
-            $opsi_array = [
-                $this->request->getPost('opsi_a'),
-                $this->request->getPost('opsi_b'),
-                $this->request->getPost('opsi_c'),
-                $this->request->getPost('opsi_d'),
-                $this->request->getPost('opsi_e'),
-            ];
-            $opsi_string = implode("\n", array_filter($opsi_array, function($value) { 
-                return $value !== null && $value !== ''; 
-            }));
+            $opsi_array = $this->request->getPost('opsi');
+
+            if (is_array($opsi_array)) {
+                $filtered_opsi = array_filter($opsi_array, function($value) { 
+                    return $value !== null && trim($value) !== ''; 
+                });
+                $opsi_string = implode("\n", $filtered_opsi);
+            }
         }
 
         $data = [
@@ -76,12 +74,12 @@ class Kuesioner extends BaseController
             $data['pertanyaan_tipe'] = $get->pertanyaan_tipe;
             $data['pertanyaan_wajib'] = $get->pertanyaan_wajib;
 
-            $opsi_array = explode("\n", $get->pertanyaan_opsi ?? '');
-            $data['opsi_a'] = $opsi_array[0] ?? '';
-            $data['opsi_b'] = $opsi_array[1] ?? '';
-            $data['opsi_c'] = $opsi_array[2] ?? '';
-            $data['opsi_d'] = $opsi_array[3] ?? '';
-            $data['opsi_e'] = $opsi_array[4] ?? '';
+            if ($get->pertanyaan_tipe == 'pilihan') {
+                $data['opsi_list'] = explode("\n", $get->pertanyaan_opsi ?? '');
+            } else {
+                $data['opsi_list'] = []; 
+            }
+            
         }
 
         return $this->response->setJSON($data);
@@ -116,24 +114,22 @@ class Kuesioner extends BaseController
             $response[] = esc($row->pertanyaan_teks);
 
             $tipe = '';
-            // === PERUBAHAN WARNA TIPE ===
             switch ($row->pertanyaan_tipe) {
                 case 'pilihan':
-                    $tipe = '<span class="badge bg-primary">Pilihan Ganda</span>'; // Tetap Biru
+                    $tipe = '<span class="badge bg-primary">Pilihan Ganda</span>';
                     break;
                 case 'rating':
-                    $tipe = '<span class="badge bg-primary">Rating (Bintang)</span>'; // GANTI JADI BIRU
+                    $tipe = '<span class="badge bg-primary">Rating</span>'; 
                     break;
                 default:
-                    $tipe = '<span class="badge bg-primary">Isian Teks</span>'; // GANTI JADI BIRU
+                    $tipe = '<span class="badge bg-primary">Isian Teks</span>';
                     break;
             }
             $response[] = $tipe;
             
-            // === PERUBAHAN WARNA WAJIB ===
             $response[] = ($row->pertanyaan_wajib == 1)
                 ? '<span class="badge bg-success">Ya</span>'
-                : '<span class="badge bg-danger">Tidak</span>'; // GANTI JADI MERAH
+                : '<span class="badge bg-danger">Tidak</span>'; 
 
             $response[] = $this->aksi($id);
 

@@ -26,7 +26,7 @@ class DatabaseSeeder extends Seeder
         $this->call('RMetodeSeeder');
         
         //ngasih transaksi
-        $this->call('TransaksiSeeder');
+        // $this->call('TransaksiSeeder');
         // Seeder tambahan jika ada:
         // $this->call('UsersSeeder');
         // $this->call('MenusSeeder');

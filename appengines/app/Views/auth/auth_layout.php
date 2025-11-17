@@ -26,7 +26,7 @@
         <!-- Footer -->
         <footer class="mt-3 small footer">
           <div class="d-flex flex-column flex-md-row justify-content-between align-items-center">
-            <div>&copy; 2025. Simlab.</div>
+            <div class="text-dark">&copy; 2025. Simlab.</div>
             <div class="mt-2 mt-md-0">
               <a href="<?= base_url() ?>" class=" mx-2">Ke Beranda</a>
 

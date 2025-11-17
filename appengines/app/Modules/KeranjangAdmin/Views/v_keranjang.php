@@ -23,7 +23,7 @@
                 <div class="row mb-4 align-items-end">
                     <!-- Kategori -->
                     <div class="col-md-8">
-                        <label class="form-label mb-1 fw-semibold">Kategori</label>
+                        <!-- <label class="form-label mb-1 fw-semibold">Kategori</label>
                         <div class="d-flex gap-2 align-items-center">
                             <select id="jenFilter" class="form-select form-select-sm" style="max-width:60px;">
                                 <option value="">— Semua —</option>
@@ -37,7 +37,7 @@
                                     <?php endforeach; ?>
                                 <?php endif; ?>
                             </select>
-                        </div>
+                        </div> -->
                     </div>
 
                     <!-- Pelanggan -->
