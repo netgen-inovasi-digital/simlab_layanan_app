@@ -361,45 +361,59 @@ echo view($content, [
 </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const authModal = new bootstrap.Modal(document.getElementById('authModal'));
+    document.addEventListener('DOMContentLoaded', function () {
+        const authModal = new bootstrap.Modal(document.getElementById('authModal'));
 
-            <?php if (session()->getFlashdata('login_error')): ?>
-                authModal.show();
-            <?php endif; ?>
+        let adaAksiFormulir = false;
 
-            const loginView = document.getElementById('login-view');
-            const forgotView = document.getElementById('forgot-view');
-            const showForgotLink = document.getElementById('show-forgot-view');
-            const showLoginLink = document.getElementById('show-login-view');
+        <?php if (session()->getFlashdata('login_error')): ?>
+            authModal.show();
+            adaAksiFormulir = true; 
+        <?php endif; ?>
+        
+        <?php if (
+            session()->getFlashdata('error') || 
+            session()->getFlashdata('success') 
+        ): ?>
+            adaAksiFormulir = true; 
+        <?php endif; ?>
 
-            showForgotLink.addEventListener('click', function (e) {
-                e.preventDefault();
-                loginView.style.display = 'none';
-                forgotView.style.display = 'block';
-            });
 
-            showLoginLink.addEventListener('click', function (e) {
-                e.preventDefault();
-                forgotView.style.display = 'none';
-                loginView.style.display = 'block';
-            });
+        const loginView = document.getElementById('login-view');
+        const forgotView = document.getElementById('forgot-view');
+        const showForgotLink = document.getElementById('show-forgot-view');
+        const showLoginLink = document.getElementById('show-login-view');
 
-            const authModalElement = document.getElementById('authModal');
-            authModalElement.addEventListener('hidden.bs.modal', function (event) {
-                forgotView.style.display = 'none';
-                loginView.style.display = 'block';
-            });
-
-            const pengumumanModalElement = document.getElementById('pengumumanModal');
-            if (pengumumanModalElement) {
-                const pengumumanModal = new bootstrap.Modal(pengumumanModalElement);
-                <?php if (!empty($getPengumuman)): ?>
-                    pengumumanModal.show();
-                <?php endif; ?>
-            }
+        showForgotLink.addEventListener('click', function (e) {
+            e.preventDefault(); 
+            loginView.style.display = 'none';
+            forgotView.style.display = 'block';
         });
-    </script>
+
+        showLoginLink.addEventListener('click', function (e) {
+            e.preventDefault(); 
+            forgotView.style.display = 'none';
+            loginView.style.display = 'block';
+        });
+
+        const authModalElement = document.getElementById('authModal');
+        authModalElement.addEventListener('hidden.bs.modal', function (event) {
+            forgotView.style.display = 'none';
+            loginView.style.display = 'block';
+        });
+        
+        const pengumumanModalElement = document.getElementById('pengumumanModal');
+        if (pengumumanModalElement) {
+            const pengumumanModal = new bootstrap.Modal(pengumumanModalElement);
+            
+            <?php if (!empty($getPengumuman)): ?>
+                if (adaAksiFormulir == false) {
+                    pengumumanModal.show(); 
+                }
+            <?php endif; ?>
+        }
+    });
+</script>
 </body>
 
 </html>
