@@ -573,6 +573,18 @@ abstract class KeranjangBase extends BaseController
                 throw new \RuntimeException('Gagal menyimpan identitas sampel');
             }
 
+            // Simpan log sampel dengan tanggal dan waktu checkout pada kolom pengecekan
+            $modelLogSampel = new MyModel('t_log_sampel');
+            $logSampelData = [
+                'kode_layanan' => $lnKode,
+                'pengecekan' => date('Y-m-d H:i:s'),
+            ];
+
+            $insertLogResult = $modelLogSampel->insertData($logSampelData);
+            if (!$insertLogResult) {
+                throw new \RuntimeException('Gagal menyimpan log sampel');
+            }
+
             // Commit dan bersihkan keranjang + pelanggan
             $db->transComplete();
             $session->remove($this->sessionKey);
