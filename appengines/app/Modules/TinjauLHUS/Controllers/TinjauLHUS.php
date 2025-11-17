@@ -473,6 +473,20 @@ class TinjauLHUS extends BaseController
             $db->table('simlab_t_layanan')
                ->where('lnKode', $lnKode)
                ->update(['lnStatus' => 6]);
+            
+            // Update log sampel: set kolom penerbitan_lhus dan verifikasi_lhu dengan waktu saat ini
+            try {
+                $currentTime = date('Y-m-d H:i:s');
+                $logUpdate = [
+                    'penerbitan_lhus' => $currentTime,
+                    'verifikasi_lhu' => $currentTime
+                ];
+                
+                $db->table('t_log_sampel')->where('kode_layanan', $lnKode)->update($logUpdate);
+            } catch (\Exception $logEx) {
+                // Log error tapi jangan gagalkan proses terima
+                log_message('error', 'Error update log sampel penerbitan_lhus & verifikasi_lhu: ' . $logEx->getMessage());
+            }
         }
 
         $db->transComplete();
@@ -567,6 +581,21 @@ class TinjauLHUS extends BaseController
                 // Global semua diterima -> lnStatus = 6
                 if ($gTotal > 0 && $gCnt1 === $gTotal) {
                     $db->table('simlab_t_layanan')->where('lnKode', $lnKode)->update(['lnStatus' => 6]);
+                    
+                    // Update log sampel: set kolom penerbitan_lhus dan verifikasi_lhu dengan waktu saat ini
+                    try {
+                        $currentTime = date('Y-m-d H:i:s');
+                        $logUpdate = [
+                            'penerbitan_lhus' => $currentTime,
+                            'verifikasi_lhu' => $currentTime
+                        ];
+                        
+                        $db->table('t_log_sampel')->where('kode_layanan', $lnKode)->update($logUpdate);
+                    } catch (\Exception $logEx) {
+                        // Log error tapi jangan gagalkan proses terima
+                        log_message('error', 'Error update log sampel penerbitan_lhus & verifikasi_lhu (proses): ' . $logEx->getMessage());
+                    }
+                    
                     return $this->response->setJSON([
                         'success' => true,
                         'msg'     => 'Berhasil. Semua layanan aktif telah diterima. LHUS disetujui (lnStatus = 6) dan dikirim ke admin.',
