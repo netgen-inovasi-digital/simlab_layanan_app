@@ -287,7 +287,7 @@ class FormulirAdmin extends BaseController
             $lihatDetailBtn = '<button type="button" class="btn btn-sm btn-info" 
                                 title="Lihat Detail Item Layanan" 
                                 onclick="loadDetail(\'' . $id . '\')">
-                                <i class="bi bi-eye"></i> Lihat Layanan</button>';
+                                <i class="bi bi-eye"></i> Lihat </button>';
             $response[] = $lihatDetailBtn;
 
             $response[] = $this->aksi($id, $row->lnStatus);
