@@ -8,10 +8,11 @@
                 <!-- [ADDED] Filter Status -->
                 <div class="d-flex align-items-center" style="gap:8px;">
                     <label class="mb-0 small text-muted">Status:</label>
-                    <select id="statusFilter" class="form-select form-select-sm" style="width:260px;">
+                    <select id="statusFilter" class="form-select form-select-sm" style="width:280px;">
                         <option value="">— Semua status —</option>
                         <option value="tolak">LHUS ditolak</option>
                         <option value="5">LHUS belum ditinjau</option>
+                        <option value="diproses">LHUS diproses kembali</option>
                         <option value="6">LHUS disetujui</option>
                     </select>
                 </div>
@@ -66,6 +67,41 @@
               <tr><td colspan="8" class="text-center">Loading...</td></tr>
             </tbody>
           </table>
+        </div>
+
+        <!-- Sample Identity Details Section -->
+        <div class="detail-table mt-4" id="sampleIdentitySection" style="display: none;">
+          <h6 class="mb-3">Identitas Sampel:</h6>
+          <div class="card">
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="fw-bold text-muted small">Jenis Sampel:</label>
+                  <p class="mb-0" id="sampleJenis">-</p>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="fw-bold text-muted small">Kemasan Sampel:</label>
+                  <p class="mb-0" id="sampleKemasan">-</p>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="fw-bold text-muted small">Sifat Sampel:</label>
+                  <p class="mb-0" id="sampleSifat">-</p>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="fw-bold text-muted small">Sisa Sampel:</label>
+                  <p class="mb-0" id="sampleSisa">-</p>
+                </div>
+                <div class="col-12 mb-3">
+                  <label class="fw-bold text-muted small">Deskripsi:</label>
+                  <p class="mb-0 text-wrap" id="sampleDeskripsi">-</p>
+                </div>
+                <div class="col-12">
+                  <label class="fw-bold text-muted small">Keterangan Khusus:</label>
+                  <p class="mb-0 text-wrap" id="sampleKeteranganKhusus">-</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -193,6 +229,57 @@
         });
     }
 
+    // Cache untuk data identitas sampel
+    const cachedSampleData = {};
+
+    function loadSampleIdentity(lnKode) {
+        const sampleSection = document.getElementById('sampleIdentitySection');
+        
+        if (!lnKode) {
+            if (sampleSection) sampleSection.style.display = 'none';
+            return;
+        }
+
+        // Cek apakah data sudah di-cache
+        if (cachedSampleData[lnKode]) {
+            // Gunakan data dari cache
+            const data = cachedSampleData[lnKode];
+            document.getElementById('sampleJenis').textContent = data.jenis || '-';
+            document.getElementById('sampleKemasan').textContent = data.kemasan || '-';
+            document.getElementById('sampleSifat').textContent = data.sifat || '-';
+            document.getElementById('sampleSisa').textContent = data.sisa || '-';
+            document.getElementById('sampleDeskripsi').textContent = data.deskripsi || '-';
+            document.getElementById('sampleKeteranganKhusus').textContent = data.keterangan_khusus || '-';
+            sampleSection.style.display = 'block';
+        } else {
+            // Fetch data baru dari server
+            fetch(`<?php echo site_url("tinjaulhus/getSampleIdentity/") ?>${lnKode}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.data) {
+                        // Simpan ke cache
+                        cachedSampleData[lnKode] = data.data;
+                        
+                        // Populate sample identity fields
+                        document.getElementById('sampleJenis').textContent = data.data.jenis || '-';
+                        document.getElementById('sampleKemasan').textContent = data.data.kemasan || '-';
+                        document.getElementById('sampleSifat').textContent = data.data.sifat || '-';
+                        document.getElementById('sampleSisa').textContent = data.data.sisa || '-';
+                        document.getElementById('sampleDeskripsi').textContent = data.data.deskripsi || '-';
+                        document.getElementById('sampleKeteranganKhusus').textContent = data.data.keterangan_khusus || '-';
+                        sampleSection.style.display = 'block';
+                    } else {
+                        // Jika tidak ada data, sembunyikan section
+                        sampleSection.style.display = 'none';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading sample identity:', error);
+                    sampleSection.style.display = 'none';
+                });
+        }
+    }
+
     // Load detail LN -> tampilkan modal
     function loadDetail(id) {
         const url = '<?php echo site_url("tinjaulhus/detaillist/") ?>' + id;
@@ -217,6 +304,11 @@
                     });
                 } else {
                     tbody.innerHTML = '<tr><td colspan="8" class="text-center">Tidak ada data</td></tr>';
+                }
+
+                // Load identitas sampel
+                if (data.lnKode) {
+                    loadSampleIdentity(data.lnKode);
                 }
 
                 const modalEl = document.getElementById('modalDetail');

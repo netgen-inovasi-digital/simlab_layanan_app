@@ -199,7 +199,8 @@
 </style>
 
 <!-- Modal Tracking -->
-<div class="modal fade" id="modalTracking" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="modalTrackingLabel" aria-hidden="true">
+<div class="modal fade" id="modalTracking" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+    aria-labelledby="modalTrackingLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
@@ -214,15 +215,15 @@
                         $steps = [
                             1 => ['icon' => 'bi-person-check', 'text' => 'In Review Petugas'],
                             2 => ['icon' => 'bi-gear', 'text' => 'Pengujian Dilakukan'],
-                            3 => ['icon' => 'bi-file-text', 'text' => 'Proses LHUS'],
-                            4 => ['icon' => 'bi-check-circle', 'text' => 'LHUS Disetujui'],
-                            5 => ['icon' => 'bi-file-earmark-text', 'text' => 'Proses LHU'],
-                            6 => ['icon' => 'bi-check-circle', 'text' => 'LHU Disetujui'],
+                            3 => ['icon' => 'bi-file-text', 'text' => 'Verifikasi Hasil Uji'],
+                            4 => ['icon' => 'bi-check-circle', 'text' => 'Penerbitan LHUS'],
+                            5 => ['icon' => 'bi-file-earmark-text', 'text' => 'Verifikasi LHU'],
+                            6 => ['icon' => 'bi-check-circle', 'text' => 'LHU Diterbitkan'],
                             7 => ['icon' => 'bi-flag', 'text' => 'Selesai']
                         ];
 
                         foreach ($steps as $step => $info):
-                        ?>
+                            ?>
                             <div class="step" data-step="<?= $step ?>">
                                 <span class="icon">
                                     <i class="bi <?= $info['icon'] ?>"></i>
@@ -251,12 +252,49 @@
                                     <th>Parameter</th>
                                     <th>Biaya</th>
                                     <th>Jumlah</th>
-                                    <th>Keterangan</th>
+                                    <th>Metode Uji</th>
                                     <th>Status</th>
                                 </tr>
                             </thead>
                             <tbody></tbody>
                         </table>
+                    </div>
+                </div>
+
+                <!-- Sample Identity Details Section -->
+                <div class="detail-table mt-4" id="sampleIdentitySection" style="display: none;">
+                    <h6 class="mb-3">
+                        Identitas Sampel:
+                    </h6>
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="fw-bold text-muted small">Jenis Sampel:</label>
+                                    <p class="mb-0" id="sampleJenis">-</p>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="fw-bold text-muted small">Kemasan Sampel:</label>
+                                    <p class="mb-0" id="sampleKemasan">-</p>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="fw-bold text-muted small">Sifat Sampel:</label>
+                                    <p class="mb-0" id="sampleSifat">-</p>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="fw-bold text-muted small">Sisa Sampel:</label>
+                                    <p class="mb-0" id="sampleSisa">-</p>
+                                </div>
+                                <div class="col-12 mb-3">
+                                    <label class="fw-bold text-muted small">Deskripsi:</label>
+                                    <p class="mb-0 text-wrap" id="sampleDeskripsi">-</p>
+                                </div>
+                                <div class="col-12">
+                                    <label class="fw-bold text-muted small">Keterangan Khusus:</label>
+                                    <p class="mb-0 text-wrap" id="sampleKeteranganKhusus">-</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -281,7 +319,7 @@
 
         // mapping lnStatus -> step index
         const statusToStep = {
-            1: 1, 
+            1: 1,
             2: 1,
             3: 1,
             4: 2,
@@ -294,7 +332,7 @@
 
         // mapping untuk status "reject"
         const rejectMap = {
-            2: 1 
+            2: 1
         };
 
         // tentukan target step berdasarkan mapping (fallback ke lnStatus jika tidak ada)
@@ -348,6 +386,29 @@
                 apiUrl: `<?= site_url('pelayanan/detailList/') ?>${id}`
             });
         }
+
+        // Fetch sample identity data
+        fetch(`<?= site_url('pelayanan/getSampleIdentity/') ?>${lnKode}`)
+            .then(response => response.json())
+            .then(data => {
+                const sampleSection = document.getElementById('sampleIdentitySection');
+                if (data.success && data.data) {
+                    // Populate sample identity fields
+                    document.getElementById('sampleJenis').textContent = data.data.jenis || '-';
+                    document.getElementById('sampleKemasan').textContent = data.data.kemasan || '-';
+                    document.getElementById('sampleSifat').textContent = data.data.sifat || '-';
+                    document.getElementById('sampleSisa').textContent = data.data.sisa || '-';
+                    document.getElementById('sampleDeskripsi').textContent = data.data.deskripsi || '-';
+                    document.getElementById('sampleKeteranganKhusus').textContent = data.data.keterangan_khusus || '-';
+                    sampleSection.style.display = 'block';
+                } else {
+                    sampleSection.style.display = 'none';
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching sample identity:', error);
+                document.getElementById('sampleIdentitySection').style.display = 'none';
+            });
 
         // Tampilkan modal
         const trackingModal = new bootstrap.Modal(document.getElementById('modalTracking'));

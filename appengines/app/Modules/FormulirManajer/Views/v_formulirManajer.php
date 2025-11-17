@@ -42,22 +42,57 @@
       <div class="modal-body">
         <!-- responsive wrapper: jika tabel lebar maka muncul scroll -->
         <div class="table-responsive">
-          <table class="table table-bordered align-middle">
+          <table id="tableDetail" class="saytable table table-bordered align-middle">
             <thead>
              <tr>
-                  <th style="min-width:40px; width:5%;">No</th>
-                  <th style="min-width:300px; width:15%;">Layanan</th>
-                  <th style="min-width:60px; width:5%;">Jumlah</th>
-                  <th style="min-width:200px; width:25%;">Keterangan</th>
-                  <th style="min-width:120px; width:5%;">Status</th>
-                  <th style="min-width:300px; width:20%;">Berikan keterangan</th>
-                  <th style="min-width:110px; width:5%;" class="text-center">Aksi</th>
+                  <th show style="min-width:40px; width:5%;">No</th>
+                  <th show style="min-width:300px; width:15%;">Layanan</th>
+                  <th show style="min-width:60px; width:5%;">Jumlah</th>
+                  <th show style="min-width:200px; width:25%;">Keterangan</th>
+                  <th show style="min-width:120px; width:5%;">Status</th>
+                  <th show style="min-width:300px; width:20%;">Berikan keterangan</th>
+                  <th show style="min-width:110px; width:5%;" class="text-center">Aksi</th>
               </tr>
             </thead>
             <tbody id="detail-body">
               <tr><td colspan="7" class="text-center">Loading...</td></tr>
             </tbody>
           </table>
+        </div>
+
+        <!-- Sample Identity Details Section -->
+        <div class="detail-table mt-4" id="sampleIdentitySection" style="display: none;">
+          <h6 class="mb-3">Identitas Sampel:</h6>
+          <div class="card">
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="fw-bold text-muted small">Jenis Sampel:</label>
+                  <p class="mb-0" id="sampleJenis">-</p>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="fw-bold text-muted small">Kemasan Sampel:</label>
+                  <p class="mb-0" id="sampleKemasan">-</p>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="fw-bold text-muted small">Sifat Sampel:</label>
+                  <p class="mb-0" id="sampleSifat">-</p>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="fw-bold text-muted small">Sisa Sampel:</label>
+                  <p class="mb-0" id="sampleSisa">-</p>
+                </div>
+                <div class="col-12 mb-3">
+                  <label class="fw-bold text-muted small">Deskripsi:</label>
+                  <p class="mb-0 text-wrap" id="sampleDeskripsi">-</p>
+                </div>
+                <div class="col-12">
+                  <label class="fw-bold text-muted small">Keterangan Khusus:</label>
+                  <p class="mb-0 text-wrap" id="sampleKeteranganKhusus">-</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
       <!-- Modal footer DIHAPUS (tombol Kirim dihapus sesuai permintaan) -->
@@ -66,6 +101,19 @@
 </div>
 
 <script>
+    // ============================================================
+    // CREATE MODAL WRAPPER (untuk isolasi tabel di dalam modal)
+    // ============================================================
+    function createModal(customConfig = {}) {
+        // Gunakan createTable1 untuk isolasi tabel modal
+        if (typeof createTable1 === 'function') {
+            return createTable1(customConfig);
+        } else {
+            console.warn('createTable1 tidak ditemukan, fallback ke createTable');
+            return createTable(customConfig);
+        }
+    }
+
     // ============================================================
     // HELPERS URL
     // ============================================================
@@ -252,53 +300,97 @@
     // ============================================================
     // LOAD DETAIL LAYANAN
     // ============================================================
-    function loadDetail(id) {
-        const url = '<?php echo site_url("formulirmanajer/detailList/") ?>' + id;
-        const tbody = document.querySelector('#detail-body');
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center">Loading...</td></tr>';
+    let trackingDetailTable;
+    let cachedSampleData = {}; // Cache untuk identitas sampel
 
-        fetch(url)
-            .then(response => response.json())
-            .then(data => {
-                console.log('detailList response:', data);
-                tbody.innerHTML = '';
-
-                if (data.items && data.items.length > 0) {
-                    data.items.forEach(function(row) {
-                        let tr = '<tr>';
-                        row.forEach(function(col) {
-                            tr += '<td>' + col + '</td>';
-                        });
-                        tr += '</tr>';
-                        tbody.innerHTML += tr;
-                    });
-                } else {
-                    tbody.innerHTML = '<tr><td colspan="7" class="text-center">Tidak ada data</td></tr>';
-                }
-
-                // Simpan encLn ke modal dataset
-                const modalEl = document.getElementById('modalDetail');
-                if (modalEl) {
-                    if (data.encLn) modalEl.dataset.encLn = data.encLn;
-                    else modalEl.dataset.encLn = id;
-                }
-
-                // Show modal
-                try {
-                    if (_modalDetailInstance) _modalDetailInstance.show();
-                    else if (typeof $ === 'function') $('#modalDetail').modal('show');
-                } catch (err) {
-                    if (typeof $ === 'function' && $('#modalDetail').modal) $('#modalDetail').modal('show');
-                }
-            })
-            .catch(error => {
-                console.error(error);
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error load data</td></tr>';
-                try {
-                    if (_modalDetailInstance) _modalDetailInstance.show();
-                    else if (typeof $ === 'function') $('#modalDetail').modal('show');
-                } catch (e) {}
+    function loadDetail(id, lnKode) {
+        // Initialize or refresh the detail table with createModal (isolated)
+        if (!trackingDetailTable) {
+            trackingDetailTable = createModal({
+                tableId: 'tableDetail',
+                apiUrl: `<?php echo site_url("formulirmanajer/detailList/") ?>${id}`,
+                itemsPerPage: 10, // Maksimal 10 data
+                showFilter: false,
+                treeview: false,
+                numbering: false
             });
+        } else {
+            trackingDetailTable.refresh({
+                apiUrl: `<?php echo site_url("formulirmanajer/detailList/") ?>${id}`
+            });
+        }
+
+        // Simpan encLn dan lnKode ke modal dataset
+        const modalEl = document.getElementById('modalDetail');
+        if (modalEl) {
+            modalEl.dataset.encLn = id;
+            // Jika lnKode tidak diberikan, ambil dari dataset yang tersimpan
+            if (lnKode) {
+                modalEl.dataset.lnKode = lnKode;
+            } else {
+                lnKode = modalEl.dataset.lnKode || '';
+            }
+        }
+
+        // Load atau tampilkan identitas sampel
+        const sampleSection = document.getElementById('sampleIdentitySection');
+        
+        if (lnKode) {
+            // Cek apakah data sudah di-cache
+            if (cachedSampleData[lnKode]) {
+                // Gunakan data dari cache
+                const data = cachedSampleData[lnKode];
+                document.getElementById('sampleJenis').textContent = data.jenis || '-';
+                document.getElementById('sampleKemasan').textContent = data.kemasan || '-';
+                document.getElementById('sampleSifat').textContent = data.sifat || '-';
+                document.getElementById('sampleSisa').textContent = data.sisa || '-';
+                document.getElementById('sampleDeskripsi').textContent = data.deskripsi || '-';
+                document.getElementById('sampleKeteranganKhusus').textContent = data.keterangan_khusus || '-';
+                sampleSection.style.display = 'block';
+            } else {
+                // Fetch data baru dari server
+                fetch(`<?php echo site_url("formulirmanajer/getSampleIdentity/") ?>${lnKode}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success && data.data) {
+                            // Simpan ke cache
+                            cachedSampleData[lnKode] = data.data;
+                            
+                            // Populate sample identity fields
+                            document.getElementById('sampleJenis').textContent = data.data.jenis || '-';
+                            document.getElementById('sampleKemasan').textContent = data.data.kemasan || '-';
+                            document.getElementById('sampleSifat').textContent = data.data.sifat || '-';
+                            document.getElementById('sampleSisa').textContent = data.data.sisa || '-';
+                            document.getElementById('sampleDeskripsi').textContent = data.data.deskripsi || '-';
+                            document.getElementById('sampleKeteranganKhusus').textContent = data.data.keterangan_khusus || '-';
+                            sampleSection.style.display = 'block';
+                        } else {
+                            sampleSection.style.display = 'none';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching sample identity:', error);
+                        // Jangan sembunyikan section jika ada error, biarkan tampil dengan data terakhir
+                        if (!cachedSampleData[lnKode]) {
+                            sampleSection.style.display = 'none';
+                        }
+                    });
+            }
+        } else {
+            // Jika lnKode tidak ada, jangan sembunyikan jika section sudah visible
+            // (kemungkinan reload dari approve/reject)
+            if (sampleSection.style.display !== 'block') {
+                sampleSection.style.display = 'none';
+            }
+        }
+
+        // Show modal
+        try {
+            if (_modalDetailInstance) _modalDetailInstance.show();
+            else if (typeof $ === 'function') $('#modalDetail').modal('show');
+        } catch (err) {
+            if (typeof $ === 'function' && $('#modalDetail').modal) $('#modalDetail').modal('show');
+        }
     }
 
     // ============================================================
@@ -358,7 +450,9 @@
 
             if (data.res) {
                 // Reload detail dan table
-                try { loadDetail(ln); } catch (err) { console.error('loadDetail error', err); }
+                const modalEl = document.getElementById('modalDetail');
+                const savedLnKode = modalEl ? modalEl.dataset.lnKode : '';
+                try { loadDetail(ln, savedLnKode); } catch (err) { console.error('loadDetail error', err); }
                 if (typeof table !== 'undefined') table.fetchData({ reload: true });
             } else {
                 console.warn((isAccept ? 'Gagal menyetujui' : 'Gagal menolak'), data.msg || null);

@@ -9,6 +9,7 @@ $routes->group('formulirmanajer', ['namespace' => 'Modules\FormulirManajer\Contr
     $subroutes->get('/', 'FormulirManajer::index');
     $subroutes->get('datalist', 'FormulirManajer::datalist');
     $subroutes->get('detailList/(:any)', 'FormulirManajer::detailList/$1');
+    $subroutes->get('getSampleIdentity/(:any)', 'FormulirManajer::getSampleIdentity/$1');
 
     $subroutes->post('kirim', 'FormulirManajer::kirim');
     $subroutes->post('approveDetail', 'FormulirManajer::approveDetail');

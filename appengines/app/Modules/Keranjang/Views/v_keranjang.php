@@ -21,8 +21,8 @@
                                 <th width="25%">Parameter</th>
                                 <th width="25%">Instrumen/Alat/Tempat</th>
                                 <th width="15%">Biaya</th>
-                                <th width="5%">Jumlah</th>
-                                <th width="20%">Keterangan</th>
+                                <th width="3%">Jumlah</th>
+                                <th width="20%">Metode Uji</th>
                                 <th style="width:5%" class="text-center">Aksi</th>
                             </tr>
                         </thead>
@@ -55,9 +55,9 @@
                                 <th width="22%">Parameter</th>
                                 <th width="22%">Instrumen/Alat/Tempat</th>
                                 <th width="10%">Diskon</th>
-                                <th width="15%">Biaya</th>
-                                <th width="5%">Jumlah</th>
-                                <th width="25%">Keterangan</th>
+                                <th width="12%">Biaya</th>
+                                <th width="7%">Jumlah</th>
+                                <th width="25%">Metode Uji</th>
                                 <th style="width:10%" class="text-center">Aksi</th>
                             </tr>
                         </thead>
@@ -76,6 +76,89 @@
                         </tfoot>
 
                     </table>
+                </div>
+
+                <hr class="my-4">
+
+                <!-- Form Detail Identitas Sampel -->
+                <div id="formIdentitasSampel" style="display: none;">
+                    <h6 class="fw-bold text-primary mb-3">
+                        <i class="bi bi-file-earmark-text"></i> Detail Identitas Sampel
+                    </h6>
+                    <div class="alert alert-info mb-3">
+                        <i class="bi bi-info-circle"></i> Lengkapi informasi sampel yang akan diuji
+                    </div>
+
+                    <div class="row g-3">
+                        <!-- Jenis Sampel -->
+                        <div class="col-md-6">
+                            <label for="jenisSampel" class="form-label">
+                                Jenis Sampel <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control" id="jenisSampel" name="jenisSampel"
+                                placeholder="Contoh: Air Minum, Makanan, Tanah, dll" required>
+                            <div class="form-text">Sebutkan jenis sampel yang akan diuji</div>
+                        </div>
+
+                        <!-- Kemasan Sampel -->
+                        <div class="col-md-6">
+                            <label for="kemasanSampel" class="form-label">
+                                Kemasan Sampel <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control" id="kemasanSampel" name="kemasanSampel"
+                                placeholder="Contoh: Botol plastik, Kantong plastik, Wadah kaca, dll" required>
+                            <div class="form-text">Sebutkan jenis kemasan sampel</div>
+                        </div>
+
+                        <!-- Sifat Sampel -->
+                        <div class="col-md-6">
+                            <label for="sifatSampel" class="form-label">
+                                Sifat Sampel <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select" id="sifatSampel" name="sifatSampel" required>
+                                <option value="" selected>-- Pilih Sifat Sampel --</option>
+                                <option value="Cair">Cair</option>
+                                <option value="Korosif">Korosif</option>
+                                <option value="Beracun">Beracun</option>
+                                <option value="Mudah menguap">Mudah menguap</option>
+                                <option value="Higroskopis">Higroskopis</option>
+                                <option value="Tidak mudah menguap">Tidak mudah menguap</option>
+                                <option value="Padat kering">Padat kering</option>
+                                <option value="Cairan kental">Cairan kental</option>
+                            </select>
+                        </div>
+
+                        <!-- Sisa Sampel -->
+                        <div class="col-md-6">
+                            <label for="sisaSampel" class="form-label">
+                                Sisa Sampel <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select" id="sisaSampel" name="sisaSampel" required>
+                                <option value="" selected>-- Pilih Status Sisa Sampel --</option>
+                                <option value="Tidak diambil">Tidak diambil</option>
+                                <option value="Diambil">Diambil</option>
+                            </select>
+                            <div class="form-text">Apakah sisa sampel akan diambil kembali?</div>
+                        </div>
+
+                        <!-- Deskripsi Sampel -->
+                        <div class="col-md-12">
+                            <label for="deskripsiSampel" class="form-label">
+                                Deskripsi Sampel
+                            </label>
+                            <textarea class="form-control" id="deskripsiSampel" name="deskripsiSampel" rows="3"
+                                placeholder="Tambahkan deskripsi detail sampel jika diperlukan"></textarea>
+                        </div>
+
+                        <!-- Keterangan Khusus -->
+                        <div class="col-md-12">
+                            <label for="keteranganKhusus" class="form-label">
+                                Keterangan Khusus
+                            </label>
+                            <textarea class="form-control" id="keteranganKhusus" name="keteranganKhusus" rows="3"
+                                placeholder="Informasi tambahan yang perlu diketahui"></textarea>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -97,10 +180,10 @@
     /**
      * buildApiUrlWithOptionalParam
      * - path: path ke endpoint, mis. '<?= site_url("keranjang/datalist") ?>'
-     * - key/value: jika diberikan, tambahkan sebagai query string (tanpa page/limit)
-     *
+        * - key / value: jika diberikan, tambahkan sebagai query string(tanpa page / limit)
+            *
      * Output: path atau path + '?key=value'
-     */
+        */
     function buildApiUrlWithOptionalParam(path, key, value) {
         try {
             const u = new URL(path, window.location.origin);
@@ -195,7 +278,7 @@
         // patch fetchData supaya before request normalisasi apiUrl
         if (layananTable && typeof layananTable.fetchData === 'function' && typeof layananTable.getConfig === 'function') {
             const orig = layananTable.fetchData.bind(layananTable);
-            layananTable.fetchData = function(opts = {}) {
+            layananTable.fetchData = function (opts = {}) {
                 try {
                     const cfg = layananTable.getConfig();
                     if (cfg && cfg.apiUrl && typeof cfg.apiUrl === 'string') {
@@ -218,12 +301,12 @@
 
     // event listener select change
     if (jenFilter) {
-        jenFilter.addEventListener('change', function() {
+        jenFilter.addEventListener('change', function () {
             applyJenFilter();
         });
     }
 
-    document.getElementById('modalForm').addEventListener('shown.bs.modal', function() {
+    document.getElementById('modalForm').addEventListener('shown.bs.modal', function () {
         const currentJen = (jenFilter && jenFilter.value) ? jenFilter.value.trim() : '';
         createOrRefreshLayananTable(currentJen);
 
@@ -251,7 +334,7 @@
             itemsPerPage: 10,
             dataSrc: 'items',
             // Tambahkan hook ini supaya tidak duplikat
-            onData: function(items) {
+            onData: function (items) {
                 const tbody = document.querySelector('#preview-keranjang-table-body');
                 if (tbody) tbody.innerHTML = ''; // clear sebelum isi ulang
             }
@@ -260,7 +343,7 @@
         //  Paksa fetchData selalu reload penuh, bukan append
         if (previewKeranjangTable && typeof previewKeranjangTable.fetchData === 'function') {
             const origFetch = previewKeranjangTable.fetchData.bind(previewKeranjangTable);
-            previewKeranjangTable.fetchData = function(opts = {}) {
+            previewKeranjangTable.fetchData = function (opts = {}) {
                 return origFetch(Object.assign({}, opts, {
                     reload: true
                 }));
@@ -283,13 +366,13 @@
     /* =========================
        Event tombol "Pesan Layanan Baru"
        ========================= */
-    document.querySelector('#add').addEventListener('click', function() {
+    document.querySelector('#add').addEventListener('click', function () {
         fetch('<?php echo site_url("keranjang/checkVerified") ?>', {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json'
-                }
-            })
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json'
+            }
+        })
             .then(r => r.json())
             .then(data => {
                 if (data.verified) {
@@ -325,12 +408,12 @@
         const csrfToken = csrfInput ? csrfInput.value : '';
 
         fetch(url, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken
-                }
-            })
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRF-TOKEN': csrfToken
+            }
+        })
             .then(res => res.json())
             .then(data => {
                 if (data.xname && data.xhash) {
@@ -380,9 +463,9 @@
             .then(data => {
                 tbody.innerHTML = '';
                 if (data.items && data.items.length > 0) {
-                    data.items.forEach(function(row) {
+                    data.items.forEach(function (row) {
                         let tr = '<tr>';
-                        row.forEach(function(col) {
+                        row.forEach(function (col) {
                             tr += '<td>' + col + '</td>';
                         });
                         tr += '</tr>';
@@ -410,15 +493,18 @@
 
                 const keranjangKosong = document.getElementById('keranjangKosong');
                 const previewTable = document.getElementById('preview-keranjang-table');
+                const formIdentitasSampel = document.getElementById('formIdentitasSampel');
                 const btnCheckout = document.getElementById('btnCheckoutFromModal');
 
                 if (jumlahItem === 0) {
                     if (keranjangKosong) keranjangKosong.style.display = 'block';
                     if (previewTable) previewTable.style.display = 'none';
+                    if (formIdentitasSampel) formIdentitasSampel.style.display = 'none';
                     if (btnCheckout) btnCheckout.disabled = true;
                 } else {
                     if (keranjangKosong) keranjangKosong.style.display = 'none';
                     if (previewTable) previewTable.style.display = 'table';
+                    if (formIdentitasSampel) formIdentitasSampel.style.display = 'block';
                     if (btnCheckout) btnCheckout.disabled = false;
                 }
             })
@@ -476,7 +562,7 @@
     /* =========================
        Event delegation: masukkan item / checkout / delete
        ========================= */
-    document.addEventListener('click', function(e) {
+    document.addEventListener('click', function (e) {
         // Tombol masukkan
         if (e.target.closest('.btnMasukkan')) {
             let btn = e.target.closest('.btnMasukkan');
@@ -489,6 +575,9 @@
             if (jumlah < 1) jumlah = 1;
             let total = (biaya * jumlah) * (1 - (diskon / 100));
 
+            let metodeSelect = tr.querySelector('.metode-select');
+            let metodeValue = metodeSelect ? metodeSelect.value : '';
+
             let data = {
                 detUjiKode: btn.dataset.kode,
                 detAlat: btn.dataset.alat,
@@ -496,7 +585,7 @@
                 detParameter: btn.dataset.parameter,
                 detDiskon: diskon,
                 detJumlah: jumlah,
-                detKeterangan: tr.querySelector('.keterangan') ? tr.querySelector('.keterangan').value : '',
+                detMetode: metodeValue,
                 detTotal: total
             };
 
@@ -509,6 +598,10 @@
                 sayAlert('errorModal', 'Gagal', 'Jumlah minimal 1.', 'error');
                 return;
             }
+            if (!data.detMetode) {
+                sayAlert('errorModal', 'Gagal', 'Metode Uji harus dipilih.', 'warning');
+                return;
+            }
 
             let formData = new FormData();
             for (const key in data) formData.append(key, data[key]);
@@ -519,7 +612,7 @@
             saveData({
                 url: "<?= site_url('keranjang/submit') ?>",
                 formData: formData,
-                onSuccess: function(res) {
+                onSuccess: function (res) {
                     if (res.xname && res.xhash) {
                         let csrfField = document.querySelector('input[name="' + res.xname + '"]');
                         if (csrfField) csrfField.value = res.xhash;
@@ -532,19 +625,19 @@
                             previewKeranjangTable.fetchData({
                                 reload: true
                             });
-                            setTimeout(function() {
+                            setTimeout(function () {
                                 updateKeranjangCounter();
                                 calculateGrandTotal();
                             }, 400);
                         }
                         if (jumlahInput) jumlahInput.value = 1;
-                        if (tr.querySelector('.keterangan')) tr.querySelector('.keterangan').value = '';
+                        if (metodeSelect) metodeSelect.value = '';
                         sayAlert('successModal', 'Berhasil', res.msg ?? 'Layanan berhasil ditambahkan ke keranjang.', 'success');
                     } else {
                         sayAlert('errorModal', 'Gagal', res.msg ?? 'Terjadi kesalahan saat menambahkan ke keranjang.', 'error');
                     }
                 },
-                onError: function() {
+                onError: function () {
                     sayAlert('errorModal', 'Gagal', 'Terjadi kesalahan koneksi ke server.', 'error');
                 }
             });
@@ -599,7 +692,7 @@
                         previewKeranjangTable.fetchData({
                             reload: true
                         });
-                        setTimeout(function() {
+                        setTimeout(function () {
                             updateKeranjangCounter();
                             calculateGrandTotal();
                         }, 400);
@@ -616,14 +709,52 @@
 
     /* doCheckout */
     function doCheckout() {
+        // Validasi form identitas sampel
+        const jenisSampel = document.getElementById('jenisSampel').value.trim();
+        const kemasanSampel = document.getElementById('kemasanSampel').value.trim();
+        const sifatSampel = document.getElementById('sifatSampel').value;
+        const sisaSampel = document.getElementById('sisaSampel').value;
+
+        if (!jenisSampel) {
+            sayAlert('errorModal', 'Validasi', 'Jenis Sampel harus diisi!', 'warning');
+            document.getElementById('jenisSampel').focus();
+            return;
+        }
+
+        if (!kemasanSampel) {
+            sayAlert('errorModal', 'Validasi', 'Kemasan Sampel harus diisi!', 'warning');
+            document.getElementById('kemasanSampel').focus();
+            return;
+        }
+
+        if (!sifatSampel) {
+            sayAlert('errorModal', 'Validasi', 'Sifat Sampel harus dipilih!', 'warning');
+            document.getElementById('sifatSampel').focus();
+            return;
+        }
+
+        if (!sisaSampel) {
+            sayAlert('errorModal', 'Validasi', 'Status Sisa Sampel harus dipilih!', 'warning');
+            document.getElementById('sisaSampel').focus();
+            return;
+        }
+
         const formData = new FormData();
         const csrfInput = document.querySelector('input[name="<?= csrf_token() ?>"]');
         if (csrfInput) formData.append('<?= csrf_token() ?>', csrfInput.value);
 
+        // Tambahkan data identitas sampel
+        formData.append('jenisSampel', jenisSampel);
+        formData.append('kemasanSampel', kemasanSampel);
+        formData.append('sifatSampel', sifatSampel);
+        formData.append('sisaSampel', sisaSampel);
+        formData.append('deskripsiSampel', document.getElementById('deskripsiSampel').value.trim());
+        formData.append('keteranganKhusus', document.getElementById('keteranganKhusus').value.trim());
+
         fetch('<?= site_url("keranjang/checkout") ?>', {
-                method: 'POST',
-                body: formData
-            })
+            method: 'POST',
+            body: formData
+        })
             .then(res => res.json())
             .then(data => {
                 if (data.xname && data.xhash) {
@@ -637,13 +768,22 @@
                         previewKeranjangTable.fetchData({
                             reload: true
                         });
-                        setTimeout(function() {
+                        setTimeout(function () {
                             updateKeranjangCounter();
                             calculateGrandTotal();
                         }, 400);
                     }
                     const modalForm = bootstrap.Modal.getInstance(document.getElementById('modalForm'));
                     if (modalForm) modalForm.hide();
+
+                    // Reset form identitas sampel
+                    document.getElementById('jenisSampel').value = '';
+                    document.getElementById('kemasanSampel').value = '';
+                    document.getElementById('sifatSampel').value = '';
+                    document.getElementById('sisaSampel').value = '';
+                    document.getElementById('deskripsiSampel').value = '';
+                    document.getElementById('keteranganKhusus').value = '';
+
                     sayAlert('successModal', 'Sukses', data.msg, 'success');
                 } else {
                     sayAlert('errorModal', 'Gagal', data.msg ?? 'Checkout gagal.', 'error');
@@ -661,11 +801,11 @@
 
         if (select.options.length <= 1) {
             fetch('<?= site_url("keranjang/kategoriList") ?>', {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json'
-                    }
-                })
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json'
+                }
+            })
                 .then(r => r.json())
                 .then(resp => {
                     if (!resp || !resp.categories) return;
