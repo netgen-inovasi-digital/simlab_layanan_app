@@ -8,7 +8,7 @@ use App\Models\MyModel;
 class Pelayanan extends BaseController
 {
     private $table = 'simlab_t_layanan';
-    private $id    = 'lnKode';
+    private $id = 'lnKode';
     protected $encrypter;
     private $sessionKey = 'keranjang';
 
@@ -35,12 +35,12 @@ class Pelayanan extends BaseController
             0 => 'Pendaftaran',
             1 => 'Review Petugas',
             2 => 'Ditolak',
-            3 => 'Review Petugas',
-            4 => 'Dalam Pengujian',
-            5 => 'Proses LHUS',
-            6 => 'LHUS Disetujui',
-            7 => 'Proses LHU',
-            8 => 'LHU Disetujui',
+            3 => 'In Review Petugas',
+            4 => 'Pengujian Dilakukan',
+            5 => 'Verifikasi Hasil Uji',
+            6 => 'Penerbitan LHUS',
+            7 => 'Verifikasi LHU',
+            8 => 'Penerbitan LHU',
             9 => 'Selesai',
             default => 'Tidak Diketahui'
         };
@@ -87,11 +87,11 @@ class Pelayanan extends BaseController
                 'data' => [
                     'kode' => $data->lnKode,
                     // 'status' => (int)$data->lnStatus,
-                    'statusText' => $this->getStatusText((int)$data->lnStatus),
+                    'statusText' => $this->getStatusText((int) $data->lnStatus),
                     'tanggal' => date('d-m-Y', strtotime($data->lnTgl)),
                     'noTransaksi' => $data->lnNoTransaksi ?? 'Belum tersedia',
                     'details' => array_map(function ($detail) {
-                        $statusGroup = isset($detail->detStatus) ? (int)$detail->detStatus : null;
+                        $statusGroup = isset($detail->detStatus) ? (int) $detail->detStatus : null;
 
                         if ($statusGroup === 0) {
                             $statusHtml = '<span class="badge bg-warning">Pending</span>';
@@ -104,8 +104,8 @@ class Pelayanan extends BaseController
                         }
                         return [
                             'parameter' => $detail->detParameter ?? '-',
-                            'biaya' => number_format((float)($detail->detBiaya ?? 0), 0, ',', '.'),
-                            'jumlah' => (int)($detail->detJumlah ?? 0),
+                            'biaya' => number_format((float) ($detail->detBiaya ?? 0), 0, ',', '.'),
+                            'jumlah' => (int) ($detail->detJumlah ?? 0),
                             'keterangan' => $detail->detKeterangan ?? '-',
                             'status' => $statusHtml
                         ];
@@ -122,8 +122,8 @@ class Pelayanan extends BaseController
 
     public function index()
     {
-        $session  = session();
-        $user_id  = $session->get('id_user');
+        $session = session();
+        $user_id = $session->get('id_user');
 
         $modelUser = new MyModel('simlab_account_users');
 
@@ -144,10 +144,10 @@ class Pelayanan extends BaseController
         $normalized = [];
         if (!empty($categories)) {
             foreach ($categories as $c) {
-                $kode = isset($c->jenKode) ? trim((string)$c->jenKode) : '';
-                $nama = (isset($c->jenNama) && trim((string)$c->jenNama) !== '') ? trim((string)$c->jenNama) : $kode;
+                $kode = isset($c->jenKode) ? trim((string) $c->jenKode) : '';
+                $nama = (isset($c->jenNama) && trim((string) $c->jenNama) !== '') ? trim((string) $c->jenNama) : $kode;
                 if ($kode !== '') {
-                    $normalized[] = (object)[
+                    $normalized[] = (object) [
                         'jenKode' => $kode,
                         'jenNama' => $nama
                     ];
@@ -157,7 +157,7 @@ class Pelayanan extends BaseController
 
         $data = [
             'title' => 'Data Pelayanan',
-            'user'  => $modelUser->getDataById('user_id', $user_id),
+            'user' => $modelUser->getDataById('user_id', $user_id),
             'categories' => array_values($normalized),
         ];
 
@@ -166,12 +166,12 @@ class Pelayanan extends BaseController
 
     public function dataList()
     {
-        $session   = session();
-        $user_id   = (int)$session->get('id_user');
+        $session = session();
+        $user_id = (int) $session->get('id_user');
 
         // Ambil user login (opsional buat cek kuisioner fallback)
         $modelUser = new MyModel('simlab_account_users');
-        $user      = $modelUser->getDataById('user_id', $user_id);
+        $user = $modelUser->getDataById('user_id', $user_id);
 
         if (!$user || !$user_id) {
             return $this->response->setJSON(["items" => []]);
@@ -197,7 +197,7 @@ class Pelayanan extends BaseController
         }
 
         // --- Siapkan map pembayaran terakhir per lnKode (satu query) ---
-        $lnKodes = array_map(fn($r) => (int)$r->lnKode, $list);
+        $lnKodes = array_map(fn($r) => (int) $r->lnKode, $list);
 
         $payRows = $db->table('t_pembayaran')
             ->select('bayarLnKode, bayarStatus, bayarInvoiceNo, MAX(bayarKode) AS lastKode')
@@ -209,11 +209,11 @@ class Pelayanan extends BaseController
         // Simpan yang terbaru per lnKode
         $payMap = [];
         foreach ($payRows as $p) {
-            $ln = (int)$p->bayarLnKode;
+            $ln = (int) $p->bayarLnKode;
             if (!isset($payMap[$ln])) {
                 $payMap[$ln] = [
-                    'status' => (int)$p->bayarStatus,
-                    'inv'    => $p->bayarInvoiceNo ?? null,
+                    'status' => (int) $p->bayarStatus,
+                    'inv' => $p->bayarInvoiceNo ?? null,
                 ];
             }
         }
@@ -223,38 +223,38 @@ class Pelayanan extends BaseController
             $response = [];
 
             // No Transaksi + Tanggal
-            $noTransaksi = (isset($row->lnNoTransaksi) && trim((string)$row->lnNoTransaksi) !== '')
+            $noTransaksi = (isset($row->lnNoTransaksi) && trim((string) $row->lnNoTransaksi) !== '')
                 ? $row->lnNoTransaksi
                 : 'Belum tersedia';
 
-            $tanggal     = !empty($row->lnTgl) ? date('d-m-Y', strtotime($row->lnTgl)) : '-';
-            $response[]  = '<div>' . esc($noTransaksi) . '<br><small>' . esc($tanggal) . '</small></div>';
+            $tanggal = !empty($row->lnTgl) ? date('d-m-Y', strtotime($row->lnTgl)) : '-';
+            $response[] = '<div>' . esc($noTransaksi) . '<br><small>' . esc($tanggal) . '</small></div>';
 
             // Status layanan dengan tracking
-            $statusText = $this->getStatusText((int)($row->lnStatus ?? 0));
+            $statusText = $this->getStatusText((int) ($row->lnStatus ?? 0));
             $response[] = '<div class="d-flex gap-2 align-items-center">' .
-                '<button class="btn btn-sm btn-outline-primary" onclick="showTrackingModal(\'' . $id . '\', \'' . $row->lnKode . '\', ' . (int)($row->lnStatus ?? 0) . ')">' .
+                '<button class="btn btn-sm btn-outline-primary" onclick="showTrackingModal(\'' . $id . '\', \'' . $row->lnKode . '\', ' . (int) ($row->lnStatus ?? 0) . ')">' .
                 '<i class="bi bi-activity"></i> ' . $statusText . '</button>' .
                 '</div>';
 
             // Kuisioner (ambil dari row dulu, kalau kosong fallback dari user)
             $kuisionerVal = 0;
             if (isset($row->kuisioner) && $row->kuisioner !== '') {
-                $kuisionerVal = (int)$row->kuisioner;
+                $kuisionerVal = (int) $row->kuisioner;
             } else {
                 $kuFields = ['kuisioner', 'user_kuisioner', 'lnKuisioner', 'ln_kuisioner', 'kuisioner_user'];
                 foreach ($kuFields as $kf) {
                     if (isset($user->{$kf}) && $user->{$kf} !== '') {
-                        $kuisionerVal = (int)$user->{$kf};
+                        $kuisionerVal = (int) $user->{$kf};
                         break;
                     }
                 }
             }
 
             // Pembayaran terakhir untuk lnKode ini (pakai map hasil query)
-            $lnKodeInt = (int)$row->lnKode;
+            $lnKodeInt = (int) $row->lnKode;
             $bayarStatusVal = isset($payMap[$lnKodeInt]) ? $payMap[$lnKodeInt]['status'] : 0;
-            $bayarInvoiceNo = isset($payMap[$lnKodeInt]) ? $payMap[$lnKodeInt]['inv']    : null;
+            $bayarInvoiceNo = isset($payMap[$lnKodeInt]) ? $payMap[$lnKodeInt]['inv'] : null;
 
             // statusBayar: 1 = sudah bayar, 0 = belum
             if ($bayarStatusVal === 1) {
@@ -264,9 +264,9 @@ class Pelayanan extends BaseController
             }
 
             // Akses LHU
-            $lnStatusVal = (int)($row->lnStatus ?? 0);
-            $canViewLhu  = ($kuisionerVal === 1 && $bayarStatusVal === 1 && in_array($lnStatusVal, [7, 8], true));
-            $lhuInfo     = $this->detectLhuFile($row);
+            $lnStatusVal = (int) ($row->lnStatus ?? 0);
+            $canViewLhu = ($kuisionerVal === 1 && $bayarStatusVal === 1 && in_array($lnStatusVal, [7, 8], true));
+            $lhuInfo = $this->detectLhuFile($row);
 
             if ($lhuInfo['has'] && $canViewLhu) {
                 $response[] = '<button class="btn btn-sm btn-outline-primary" onclick="window.open(\'' . esc($lhuInfo['url']) . '\', \'_blank\')" title="Buka LHU"><i class="bi bi-eye"></i> Lihat File LHU</button>';
@@ -297,9 +297,9 @@ class Pelayanan extends BaseController
 
     public function detail($id)
     {
-        $id    = $this->encrypter->decrypt(hex2bin($id));
+        $id = $this->encrypter->decrypt(hex2bin($id));
         $model = new MyModel($this->table);
-        $get   = $model->getDataById($this->id, $id);
+        $get = $model->getDataById($this->id, $id);
 
         return view('Modules\Pelayanan\Views\v_detail', ['data' => $get]);
     }
@@ -328,13 +328,15 @@ class Pelayanan extends BaseController
         d.kode_layanan,
         d.nama_layanan,
         d.kode_jenis,
-        GROUP_CONCAT(DISTINCT d.catatan_pelanggan SEPARATOR ' | ') AS detKet,
+        d.metode_pengujian,
+        m.nama AS metode_nama,
         SUM(d.jumlah) AS jumlah,
         SUM(d.biaya) AS detBiaya,
         MAX(d.status_layanan) AS detStatusGroup
     ");
+        $builder->join('r_metode m', 'm.metode_kode = d.metode_pengujian', 'left');
         $builder->where('d.kode_layanan', $kode);
-        $builder->groupBy('d.uji_kode, d.kode_layanan, d.nama_layanan, d.kode_jenis');
+        $builder->groupBy('d.uji_kode, d.kode_layanan, d.nama_layanan, d.kode_jenis, d.metode_pengujian, m.nama');
         $rows = $builder->get()->getResult();
 
         $data = [];
@@ -345,17 +347,11 @@ class Pelayanan extends BaseController
             $response[] = $no++;
             $response[] = $row->nama_layanan ?? '-';
             $response[] = isset($row->detBiaya) ? number_format($row->detBiaya, 0, ',', '.') : '-';
-            $response[] = isset($row->jumlah) ? (int)$row->jumlah : 0;
-            $response[] = '<div 
-                    style="display:block; max-width:240px; min-width:160px; width:100%;
-                        max-height:120px; min-height:48px; overflow-y:auto; overflow-x:hidden;
-                        padding:4px 6px; border:1px solid #ddd; border-radius:4px; background:#f9f9f9;
-                        white-space:pre-wrap; word-break:break-word; font-size:0.9rem;">'
-                . htmlspecialchars($row->detKet ?? '', ENT_QUOTES, 'UTF-8') .
-                '</div>';
+            $response[] = isset($row->jumlah) ? (int) $row->jumlah : 0;
+            $response[] = isset($row->metode_nama) && !empty($row->metode_nama) ? esc($row->metode_nama) : '-';
 
             // Status grouping (0 = pending, 1 = diterima, 2 = ditolak)
-            $statusGroup = isset($row->detStatusGroup) ? (int)$row->detStatusGroup : null;
+            $statusGroup = isset($row->detStatusGroup) ? (int) $row->detStatusGroup : null;
 
             if ($statusGroup === 0) {
                 $statusHtml = '<span class="badge bg-warning ">Pending</span>';
@@ -369,7 +365,7 @@ class Pelayanan extends BaseController
 
             $response[] = $statusHtml;
 
-            $ujiKodeInt = (int)$row->uji_kode;
+            $ujiKodeInt = (int) $row->uji_kode;
             $encLnForBtn = $encLnId;
 
             $data[] = $response;
@@ -391,13 +387,53 @@ class Pelayanan extends BaseController
             return $this->response->setJSON(['verified' => false, 'msg' => 'User tidak ditemukan.']);
         }
 
-        if ((int)$user->verifikasi === 1) {
+        if ((int) $user->verifikasi === 1) {
             return $this->response->setJSON(['verified' => true, 'msg' => 'Akun sudah terverifikasi.']);
         } else {
             return $this->response->setJSON([
                 'verified' => false,
                 'msg' => 'Akun belum diverifikasi. Silakan unggah bukti atau tunggu verifikasi.
              '
+            ]);
+        }
+    }
+
+    public function getSampleIdentity($lnKode = null)
+    {
+        if (!$lnKode) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Kode layanan tidak ditemukan'
+            ]);
+        }
+
+        try {
+            $modelSample = new MyModel('t_identitas_sampel');
+            $sampleData = $modelSample->getWhere(['kode_layanan' => $lnKode])->getRow();
+
+            if (!$sampleData) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Data identitas sampel tidak ditemukan'
+                ]);
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'data' => [
+                    'jenis' => $sampleData->jenis ?? '-',
+                    'kemasan' => $sampleData->kemasan ?? '-',
+                    'sifat' => $sampleData->sifat ?? '-',
+                    'sisa' => $sampleData->sisa ?? '-',
+                    'deskripsi' => $sampleData->deskripsi ?? '-',
+                    'keterangan_khusus' => $sampleData->keterangan_khusus ?? '-'
+                ]
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Error fetching sample identity: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat memuat data identitas sampel'
             ]);
         }
     }
@@ -413,10 +449,10 @@ class Pelayanan extends BaseController
             $db = \Config\Database::connect();
             $builder = $db->table('t_files_lhu as lhu');
 
-            // Join dengan simlab_account untuk mendapatkan info uploader (opsional)
-            $builder->select('lhu.kode, lhu.file_path, lhu.file_name, lhu.upload_by, acc.user_name as uploader_name');
-            $builder->join('simlab_account as acc', 'acc.user_id = lhu.upload_by', 'left');
-            $builder->where('lhu.kode', $row->lhu_id);
+            // Join dengan simlab_account_users untuk mendapatkan info uploader
+            $builder->select('lhu.file_id, lhu.kode, lhu.file, lhu.upload_by, acc.user_name as uploader_name');
+            $builder->join('simlab_account_users as acc', 'acc.user_id = lhu.upload_by', 'left');
+            $builder->where('lhu.file_id', $row->lhu_id);
             $builder->limit(1);
 
             $lhuFile = $builder->get()->getRow();
@@ -425,8 +461,8 @@ class Pelayanan extends BaseController
                 return ['has' => false, 'url' => '#'];
             }
 
-            // Prioritas: gunakan file_path jika ada, kalau tidak gunakan file_name
-            $filePath = $lhuFile->file_path ?? $lhuFile->file_name ?? null;
+            // Gunakan kolom file
+            $filePath = $lhuFile->file ?? null;
 
             if (empty($filePath)) {
                 return ['has' => false, 'url' => '#'];
@@ -485,7 +521,7 @@ class Pelayanan extends BaseController
     {
         $session = session();
         $user_id = $session->get('id_user');
-        $idenc   = $this->request->getPost('idenc');
+        $idenc = $this->request->getPost('idenc');
 
         try {
             $lnKode = $this->encrypter->decrypt(hex2bin($idenc));
@@ -526,8 +562,8 @@ class Pelayanan extends BaseController
         }
 
         return $this->response->setJSON([
-            'res'   => 'refresh',
-            'link'  => site_url('pelayanan'),
+            'res' => 'refresh',
+            'link' => site_url('pelayanan'),
             'xname' => csrf_token(),
             'xhash' => csrf_hash()
         ]);

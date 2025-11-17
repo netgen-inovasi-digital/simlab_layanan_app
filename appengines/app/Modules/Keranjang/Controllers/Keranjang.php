@@ -35,13 +35,13 @@ class Keranjang extends KeranjangBase
     {
         $response = [];
 
-        $parameter  = $row['layanan'] ?? '-';
-        $alat       = $row['alat'] ?? '-';
-        $jumlah     = (int)($row['jumlah'] ?? 0);
-        $keterangan = $row['keterangan'] ?? '';
-        $diskon     = (float)($row['diskon'] ?? 0);
-        $biayaAsli  = (float)($row['biaya_asli'] ?? 0);
-        $biayaTotal = (float)($row['biaya'] ?? 0);
+        $parameter = $row['layanan'] ?? '-';
+        $alat = $row['alat'] ?? '-';
+        $jumlah = (int) ($row['jumlah'] ?? 0);
+        $metodeKode = $row['metode_kode'] ?? null;
+        $diskon = (float) ($row['diskon'] ?? 0);
+        $biayaAsli = (float) ($row['biaya_asli'] ?? 0);
+        $biayaTotal = (float) ($row['biaya'] ?? 0);
 
         // Parameter
         $response[] = esc($parameter);
@@ -55,7 +55,7 @@ class Keranjang extends KeranjangBase
         // Biaya satuan
         if ($diskon > 0) {
             $hargaDiskon = $biayaAsli - ($biayaAsli * ($diskon / 100));
-            $biayaTampil  = '<span style="color:red;text-decoration:line-through;">Rp '
+            $biayaTampil = '<span style="color:red;text-decoration:line-through;">Rp '
                 . number_format($biayaAsli, 0, ',', '.') . '</span><br>';
             $biayaTampil .= 'Rp ' . number_format($hargaDiskon, 0, ',', '.');
         } else {
@@ -66,12 +66,20 @@ class Keranjang extends KeranjangBase
         // Jumlah
         $response[] = $jumlah;
 
-        // Keterangan
-        $response[] = esc($keterangan);
+        // Metode Uji
+        $metodeNama = '-';
+        if ($metodeKode) {
+            $modelMetode = new MyModel('r_metode');
+            $metode = $modelMetode->getDataById('metode_kode', $metodeKode);
+            if ($metode && isset($metode->nama)) {
+                $metodeNama = esc($metode->nama);
+            }
+        }
+        $response[] = $metodeNama;
 
         // Aksi + total hidden
         $hiddenTotal = '<span class="d-none row-total">Rp ' . number_format($biayaTotal, 0, ',', '.') . '</span>';
-        $response[]  = $this->aksiKeranjang($idx, true) . $hiddenTotal;
+        $response[] = $this->aksiKeranjang($idx, true) . $hiddenTotal;
 
         return $response;
     }
@@ -82,13 +90,13 @@ class Keranjang extends KeranjangBase
      */
     protected function processItemData(array $post): array
     {
-        $detUjiKode    = $post['detUjiKode']   ?? null;
-        $detAlat       = $post['detAlat']      ?? null;
-        $detBiaya      = isset($post['detBiaya']) ? (float)$post['detBiaya'] : 0;
-        $detParameter  = $post['detParameter'] ?? null;
-        $detDiskon     = isset($post['detDiskon']) ? (float)$post['detDiskon'] : 0;
-        $detJumlah     = isset($post['detJumlah']) ? (int)$post['detJumlah'] : 1;
-        $detKeterangan = trim($post['detKeterangan'] ?? '');
+        $detUjiKode = $post['detUjiKode'] ?? null;
+        $detAlat = $post['detAlat'] ?? null;
+        $detBiaya = isset($post['detBiaya']) ? (float) $post['detBiaya'] : 0;
+        $detParameter = $post['detParameter'] ?? null;
+        $detDiskon = isset($post['detDiskon']) ? (float) $post['detDiskon'] : 0;
+        $detJumlah = isset($post['detJumlah']) ? (int) $post['detJumlah'] : 1;
+        $detMetode = isset($post['detMetode']) ? (int) $post['detMetode'] : null;
 
         // Dapatkan diskon yang sebenarnya diterapkan
         $appliedDiskon = $this->getUserDiscount($detDiskon);
@@ -100,14 +108,14 @@ class Keranjang extends KeranjangBase
         $biayaTotalBaru = $biayaSetelahDiskon * $jumlah;
 
         return [
-            'kode'        => $detUjiKode,
-            'layanan'     => $detParameter ?? 'Layanan',
-            'alat'        => $detAlat ?? '',
-            'biaya_asli'  => $biayaPerItem,
-            'diskon'      => $appliedDiskon,
-            'jumlah'      => $jumlah,
-            'keterangan'  => $detKeterangan,
-            'biaya'       => $biayaTotalBaru,
+            'kode' => $detUjiKode,
+            'layanan' => $detParameter ?? 'Layanan',
+            'alat' => $detAlat ?? '',
+            'biaya_asli' => $biayaPerItem,
+            'diskon' => $appliedDiskon,
+            'jumlah' => $jumlah,
+            'metode_kode' => $detMetode,
+            'biaya' => $biayaTotalBaru,
         ];
     }
 
@@ -120,22 +128,21 @@ class Keranjang extends KeranjangBase
         $found = false;
 
         foreach ($keranjang as $idx => $item) {
-            $sameKode = isset($item['kode']) && (string)$item['kode'] === (string)$itemData['kode'];
-            $sameAlat = (isset($item['alat']) ? trim((string)$item['alat']) : '') === trim((string)$itemData['alat']);
+            $sameKode = isset($item['kode']) && (string) $item['kode'] === (string) $itemData['kode'];
+            $sameAlat = (isset($item['alat']) ? trim((string) $item['alat']) : '') === trim((string) $itemData['alat']);
+            $sameMetode = (isset($item['metode_kode']) ? (int) $item['metode_kode'] : null) === (isset($itemData['metode_kode']) ? (int) $itemData['metode_kode'] : null);
 
-            if ($sameKode && $sameAlat) {
+            // Item dianggap sama hanya jika kode, alat, DAN metode sama
+            if ($sameKode && $sameAlat && $sameMetode) {
                 // Tambah jumlah
-                $keranjang[$idx]['jumlah'] = (int)($item['jumlah'] ?? 0) + (int)$itemData['jumlah'];
-
-                // Ganti keterangan (bukan gabung)
-                $keranjang[$idx]['keterangan'] = $itemData['keterangan'];
+                $keranjang[$idx]['jumlah'] = (int) ($item['jumlah'] ?? 0) + (int) $itemData['jumlah'];
 
                 // Pastikan biaya asli & diskon tetap
-                $biayaAsli = isset($item['biaya_asli']) ? (float)$item['biaya_asli'] : (float)$itemData['biaya_asli'];
-                $disk = isset($item['diskon']) ? (float)$item['diskon'] : (float)$itemData['diskon'];
+                $biayaAsli = isset($item['biaya_asli']) ? (float) $item['biaya_asli'] : (float) $itemData['biaya_asli'];
+                $disk = isset($item['diskon']) ? (float) $item['diskon'] : (float) $itemData['diskon'];
 
                 // Hitung ulang total biaya baru
-                $jumlahBaru = (int)$keranjang[$idx]['jumlah'];
+                $jumlahBaru = (int) $keranjang[$idx]['jumlah'];
                 $keranjang[$idx]['biaya'] = ($biayaAsli * $jumlahBaru) * (1 - ($disk / 100));
                 $keranjang[$idx]['biaya_asli'] = $biayaAsli;
                 $keranjang[$idx]['diskon'] = $disk;
@@ -189,17 +196,17 @@ class Keranjang extends KeranjangBase
 
             // Build data detil - sesuai struktur tabel t_layanan_detil
             $detil = [
-                'kode_layanan'      => $lnKode,                    // FK ke simlab_t_layanan
-                'uji_kode'          => $item['kode'] ?? null,      // FK ke r_layanan_pengujian
-                'biaya'             => $item['biaya'] ?? 0,        // Total biaya item ini
-                'jumlah'            => $item['jumlah'] ?? 1,       // Jumlah item
-                'catatan_pelanggan' => $item['keterangan'] ?? null, // Keterangan dari pelanggan
-                'nama_layanan'      => $item['layanan'] ?? null,   // Nama layanan
-                'status_layanan'    => 0,                          // Status default: 0
-                'kode_jenis'        => $jenKodeValue,              // Kode jenis (2 char)
-                'catatan_manajer'   => null,                       // Default null
+                'kode_layanan' => $lnKode,                    // FK ke simlab_t_layanan
+                'uji_kode' => $item['kode'] ?? null,      // FK ke r_layanan_pengujian
+                'biaya' => $item['biaya'] ?? 0,        // Total biaya item ini
+                'jumlah' => $item['jumlah'] ?? 1,       // Jumlah item
+                'metode_pengujian' => isset($item['metode_kode']) ? (int) $item['metode_kode'] : null, // FK ke r_metode
+                'nama_layanan' => $item['layanan'] ?? null,   // Nama layanan
+                'status_layanan' => 0,                          // Status default: 0
+                'kode_jenis' => $jenKodeValue,              // Kode jenis (2 char)
+                'catatan_manajer' => null,                       // Default null
                 'terima_layanan_by' => null,                       // Default null
-                'files'             => null,                       // Default null
+                'files' => null,                       // Default null
             ];
 
             // Log data yang akan di-insert untuk debugging
@@ -301,7 +308,7 @@ class Keranjang extends KeranjangBase
                         isset($row->alatNama) ? mb_strtolower($row->alatNama, 'UTF-8') : '',
                         isset($row->nama_layanan) ? mb_strtolower($row->nama_layanan, 'UTF-8') : '',
                         isset($row->jenNama) ? mb_strtolower($row->jenNama, 'UTF-8') : '',
-                        isset($row->kode) ? (string)$row->kode : ''
+                        isset($row->kode) ? (string) $row->kode : ''
                     ];
 
                     $matchQ = false;
@@ -322,6 +329,10 @@ class Keranjang extends KeranjangBase
             // Build response data
             $data = [];
 
+            // Get metode list untuk dropdown
+            $modelMetode = new MyModel('r_metode');
+            $metodeList = $modelMetode->getAllData();
+
             foreach ($listUji as $row) {
                 $response = [];
 
@@ -334,7 +345,7 @@ class Keranjang extends KeranjangBase
                 // Tentukan diskon yang diperbolehkan
                 $allowedDiskon = 0;
                 if (!empty($row->diskon) && $row->diskon > 0 && $userIdentity === 'ULM') {
-                    $allowedDiskon = (float)$row->diskon;
+                    $allowedDiskon = (float) $row->diskon;
                 }
 
                 // Biaya
@@ -348,8 +359,14 @@ class Keranjang extends KeranjangBase
                 $inputJumlah = '<input type="number" class="form-control form-control-sm text-center jumlah" value="1" min="1" style="width:80px;">';
                 $response[] = $inputJumlah;
 
-                // Input Keterangan
-                $response[] = '<input type="text" class="form-control form-control-sm keterangan" placeholder="Keterangan...">';
+                // Dropdown Metode Uji
+                $selectMetode = '<select class="form-select form-select-sm metode-select" required>';
+                $selectMetode .= '<option value="">-- Pilih Metode --</option>';
+                foreach ($metodeList as $metode) {
+                    $selectMetode .= '<option value="' . esc($metode->metode_kode) . '">' . esc($metode->nama) . '</option>';
+                }
+                $selectMetode .= '</select>';
+                $response[] = $selectMetode;
 
                 // Tombol Aksi
                 $jenKodeClean = isset($row->kode_jenis) ? trim(substr($row->kode_jenis, 0, 2)) : '';
@@ -393,5 +410,149 @@ class Keranjang extends KeranjangBase
                 'items' => []
             ]);
         }
+    }
+
+    /**
+     * Override keranjangCheckout untuk menyimpan identitas sampel
+     */
+    public function keranjangCheckout()
+    {
+        $session = session();
+        $user_id = $session->get('id_user');
+
+        $modelUser = new MyModel('simlab_account_users');
+        $userRow = $modelUser->getDataById('user_id', $user_id);
+
+        $keranjang = $session->get($this->sessionKey) ?? [];
+        if (empty($keranjang)) {
+            return $this->response->setJSON([
+                'res' => false,
+                'msg' => 'Keranjang kosong',
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        }
+
+        // Ambil data identitas sampel dari POST
+        $jenisSampel = $this->request->getPost('jenisSampel');
+        $kemasanSampel = $this->request->getPost('kemasanSampel');
+        $sifatSampel = $this->request->getPost('sifatSampel');
+        $sisaSampel = $this->request->getPost('sisaSampel');
+        $deskripsiSampel = $this->request->getPost('deskripsiSampel');
+        $keteranganKhusus = $this->request->getPost('keteranganKhusus');
+
+        // Validasi data identitas sampel
+        if (empty($jenisSampel)) {
+            return $this->response->setJSON([
+                'res' => false,
+                'msg' => 'Jenis Sampel harus diisi',
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        }
+
+        if (empty($kemasanSampel)) {
+            return $this->response->setJSON([
+                'res' => false,
+                'msg' => 'Kemasan Sampel harus diisi',
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        }
+
+        if (empty($sifatSampel)) {
+            return $this->response->setJSON([
+                'res' => false,
+                'msg' => 'Sifat Sampel harus dipilih',
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        }
+
+        if (empty($sisaSampel)) {
+            return $this->response->setJSON([
+                'res' => false,
+                'msg' => 'Status Sisa Sampel harus dipilih',
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        }
+
+        $totalBiaya = array_sum(array_column($keranjang, 'biaya'));
+
+        $modelPembayaran = new MyModel($this->tablePembayaran);
+        $modelLayanan = new MyModel($this->tableLayanan);
+        $modelDetil = new MyModel($this->tableLayananDetail);
+        $modelIdentitasSampel = new MyModel('t_identitas_sampel');
+        $db = \Config\Database::connect();
+
+        $db->transStart();
+
+        try {
+            // Simpan data utama layanan
+            $lnKode = $this->saveMainLayanan($userRow, $totalBiaya);
+
+            if (!$lnKode) {
+                throw new \RuntimeException('Gagal menyimpan data layanan utama');
+            }
+
+            // Simpan data pembayaran
+            $this->savePembayaran($lnKode, $totalBiaya);
+
+            // Simpan detail layanan
+            $this->saveDetailLayanan($lnKode, $keranjang);
+
+            // Simpan identitas sampel
+            $identitasSampelData = [
+                'kode_layanan' => $lnKode,
+                'jenis' => trim($jenisSampel),
+                'kemasan' => trim($kemasanSampel),
+                'sifat' => $sifatSampel,
+                'sisa' => $sisaSampel,
+                'deskripsi' => !empty($deskripsiSampel) ? trim($deskripsiSampel) : null,
+                'keterangan_khusus' => !empty($keteranganKhusus) ? trim($keteranganKhusus) : null,
+            ];
+
+            $insertIdentitasResult = $modelIdentitasSampel->insertData($identitasSampelData);
+            if (!$insertIdentitasResult) {
+                throw new \RuntimeException('Gagal menyimpan identitas sampel');
+            }
+
+            // Commit dan bersihkan keranjang
+            $db->transComplete();
+            $session->remove($this->sessionKey);
+
+            return $this->response->setJSON([
+                'res' => true,
+                'msg' => 'Checkout berhasil! Data Anda sedang diproses.',
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        } catch (\Exception $e) {
+            if ($db->transStatus() === FALSE) {
+                $db->transRollback();
+            }
+
+            log_message('error', 'Error in keranjangCheckout: ' . $e->getMessage());
+
+            return $this->response->setJSON([
+                'res' => false,
+                'msg' => 'Checkout gagal: ' . $e->getMessage(),
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        }
+    }
+
+    /**
+     * Generate unique key untuk item - override untuk include metode_kode
+     */
+    protected function generateItemKey(array $row): string
+    {
+        $kode = isset($row['kode']) ? trim((string) $row['kode']) : '';
+        $alat = isset($row['alat']) ? trim((string) $row['alat']) : '';
+        $metode = isset($row['metode_kode']) ? (int) $row['metode_kode'] : 0;
+
+        return md5($kode . '|' . $alat . '|' . $metode);
     }
 }

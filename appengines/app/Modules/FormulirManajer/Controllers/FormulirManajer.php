@@ -164,7 +164,7 @@ class FormulirManajer extends BaseController
             // Tampilkan status perspektif manajer
             $response[] = $this->formatStatusForManager($row->lnStatus, $row->lnKode, $user_id);
 
-            $response[] = '<a href="javascript:void(0)" onclick="loadDetail(\'' . $id . '\')" 
+            $response[] = '<a href="javascript:void(0)" onclick="loadDetail(\'' . $id . '\', \'' . esc($row->lnKode) . '\')" 
                             class="btn btn-sm btn-info">
                             <i class="bi bi-gear"></i> Review Layanan
                         </a>';
@@ -886,5 +886,37 @@ class FormulirManajer extends BaseController
 
         // Selain itu, tampilkan status parent sebagaimana biasa
         return $this->formatStatus((int)$lnStatus);
+    }
+
+    public function getSampleIdentity($lnKode = null)
+    {
+        if (!$lnKode) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Kode layanan tidak ditemukan'
+            ]);
+        }
+
+        $modelIdentitasSampel = new MyModel('t_identitas_sampel');
+        $sampleData = $modelIdentitasSampel->getDataById('kode_layanan', $lnKode);
+
+        if (!$sampleData) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Data identitas sampel tidak ditemukan'
+            ]);
+        }
+
+        return $this->response->setJSON([
+            'success' => true,
+            'data' => [
+                'jenis' => $sampleData->jenis ?? '-',
+                'kemasan' => $sampleData->kemasan ?? '-',
+                'sifat' => $sampleData->sifat ?? '-',
+                'sisa' => $sampleData->sisa ?? '-',
+                'deskripsi' => $sampleData->deskripsi ?? '-',
+                'keterangan_khusus' => $sampleData->keterangan_khusus ?? '-'
+            ]
+        ]);
     }
 }

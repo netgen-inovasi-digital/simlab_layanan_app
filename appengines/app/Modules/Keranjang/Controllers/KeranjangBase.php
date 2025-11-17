@@ -242,14 +242,14 @@ abstract class KeranjangBase extends BaseController
                     ['label' => 'Instrumen/Alat', 'name' => 'detAlat', 'type' => 'text', 'readonly' => true],
                     ['label' => 'Biaya', 'name' => 'detBiaya', 'type' => 'number', 'readonly' => true],
                     ['label' => 'Jumlah', 'name' => 'detJumlah', 'type' => 'number', 'min' => 1, 'max' => 100],
-                    ['label' => 'Keterangan', 'name' => 'detKeterangan', 'type' => 'textarea'],
+                    ['label' => 'Metode Uji', 'name' => 'detMetode', 'type' => 'select', 'required' => true],
                 ],
 
                 // Validation rules
                 'validation' => [
                     'min_jumlah' => 1,
                     'max_jumlah' => 100,
-                    'require_keterangan' => false,
+                    'require_metode' => true,
                 ],
 
                 // Filter khusus untuk Rapat JAS
@@ -735,6 +735,28 @@ abstract class KeranjangBase extends BaseController
             'success' => true,
             'categories' => $categories
         ]);
+    }
+
+    /**
+     * Get list metode pengujian untuk dropdown
+     */
+    public function getMetodeList()
+    {
+        try {
+            $modelMetode = new MyModel('r_metode');
+            $metodeList = $modelMetode->getAllData();
+
+            return $this->response->setJSON([
+                'success' => true,
+                'data' => $metodeList
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Error fetching metode list: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Gagal memuat data metode pengujian'
+            ]);
+        }
     }
 
     /**

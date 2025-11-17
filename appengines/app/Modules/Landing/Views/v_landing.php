@@ -155,28 +155,8 @@
                 <div class="row g-4"> -->
         <!-- Berita Utama -->
         <!-- <div class="col-lg-7">
-                        <?php $utama = $getBerita[0]; ?>
-                        <div class="main-news position-relative rounded overflow-hidden shadow-sm">
-                            <img src="<?= $utama->thumbnail ? base_url('uploads/' . $utama->thumbnail) : 'https://placehold.co/500?text=No\nImage' ?>"
-                                class="img-fluid w-100" alt="<?= esc($utama->title) ?>">
-                            <div class="main-news-overlay p-4">
-                                <a href="<?= base_url('berita?&kategori=' . $utama->category_slug) ?>"><span
-                                        class="btn badge btn-warning text-dark mb-2"><?= esc($utama->nama ?? 'Berita') ?></span></a>
-                                <a href="<?= base_url('berita/' . $utama->post_slug) ?>" class="text-decoration-none">
-                                    <h3 class="text-white fw-bold">
-                                        <?= esc(strlen($utama->title) > 100 ? substr($utama->title, 0, 97) . '...' : $utama->title) ?>
-                                    </h3>
-                                </a>
-                                <div class="text-white small mt-2">
-                                    Diterbitkan oleh <span
-                                        class="text-white fw-semibold"><?= esc($utama->author ?? 'Admin') ?></span>
-                                    pada <?= date('d M Y', strtotime($utama->updated_at)) ?> |
-                                    Dilihat <?= $utama->views ?? 0 ?> kali
-                                </div>
-                            </div>
-                        </div>
-                    </div> -->
-        <!-- Berita Lainnya -->
+                        
+        Berita Lainnya -->
         <!-- <div class="col-lg-5 d-flex flex-column gap-3">
                         <?php foreach (array_slice($getBerita, 1) as $berita): ?>
                             <div class="news-card d-flex shadow-sm rounded overflow-hidden">
