@@ -287,7 +287,7 @@ class FormulirAdmin extends BaseController
             $lihatDetailBtn = '<button type="button" class="btn btn-sm btn-info" 
                                 title="Lihat Detail Item Layanan" 
                                 onclick="loadDetail(\'' . $id . '\')">
-                                <i class="bi bi-eye"></i> Lihat Layanan</button>';
+                                <i class="bi bi-eye"></i> Lihat </button>';
             $response[] = $lihatDetailBtn;
 
             $response[] = $this->aksi($id, $row->lnStatus);
@@ -557,6 +557,24 @@ class FormulirAdmin extends BaseController
             $res = $model->updateData($update, $this->id, $lnKode);
 
             if ($res) {
+                // Update log sampel: set kolom pengujian dengan waktu saat ini
+                try {
+                    $modelLogSampel = new MyModel('t_log_sampel');
+                    $logUpdate = [
+                        'pengujian' => date('Y-m-d H:i:s')
+                    ];
+                    
+                    // Update berdasarkan kode_layanan
+                    $logUpdateResult = $modelLogSampel->updateData($logUpdate, 'kode_layanan', $lnKode);
+                    
+                    if (!$logUpdateResult) {
+                        log_message('warning', 'Gagal update log sampel untuk kode_layanan: ' . $lnKode);
+                    }
+                } catch (\Exception $logEx) {
+                    // Log error tapi jangan gagalkan approve
+                    log_message('error', 'Error update log sampel: ' . $logEx->getMessage());
+                }
+
                 $response['res'] = true;
                 $response['msg'] = 'Data berhasil diapprove.';
                 // bila perlu kirim status baru juga

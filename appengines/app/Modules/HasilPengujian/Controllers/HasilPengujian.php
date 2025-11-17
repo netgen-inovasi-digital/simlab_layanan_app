@@ -574,6 +574,18 @@ try {
         // Semua layanan dalam invoice ini sudah terupload, update lnStatus ke 5
         $db->table('simlab_t_layanan')->where('lnKode', $lnKode)->update(['lnStatus' => 5]);
         $parentUpdated = true;
+        
+        // Update log sampel: set kolom verifikasi_hasil_uji dengan waktu saat ini
+        try {
+            $logUpdate = [
+                'verifikasi_hasil_uji' => date('Y-m-d H:i:s')
+            ];
+            
+            $db->table('t_log_sampel')->where('kode_layanan', $lnKode)->update($logUpdate);
+        } catch (\Exception $logEx) {
+            // Log error tapi jangan gagalkan proses kirim
+            log_message('error', 'Error update log sampel verifikasi_hasil_uji: ' . $logEx->getMessage());
+        }
     }
 
     // 5) Cek apakah masih ada detil milik user lain yang belum upload
