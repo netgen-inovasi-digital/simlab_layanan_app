@@ -62,15 +62,17 @@ class kategoriLayanan extends BaseController
     {
         $idenc = $this->request->getPost('id');
         $jenKode = $this->request->getPost('jenKode');
-        
-        $data = [
-            'jenKode' => $jenKode,
-            'jenNama' => $this->request->getPost('jenNama'),
-        ];
+        $jenNama = $this->request->getPost('jenNama');
 
         $model = new MyModel($this->table);
 
         if ($idenc == "") {
+            // Mode Insert
+            $data = [
+                'jenKode' => $jenKode,
+                'jenNama' => $jenNama,
+            ];
+            
             // Cek apakah kode kategori sudah ada untuk insert
             $cekKode = $model->getDataById($this->id, $jenKode);
             if ($cekKode) {
@@ -84,23 +86,35 @@ class kategoriLayanan extends BaseController
             
             $res = $model->insertData($data);
         } else {
-            $id  = $this->encrypter->decrypt(hex2bin($idenc));
+            // Mode Update
+            $idLama  = $this->encrypter->decrypt(hex2bin($idenc));
             
-            // Cek apakah kode kategori sudah digunakan oleh data lain untuk update
-            $cekKode = $model->where($this->id . ' !=', $id)
-                            ->where($this->id, $jenKode)
-                            ->first();
-            if ($cekKode) {
-                return $this->response->setJSON([
-                    'res'   => 'check',
-                    'msg'   => "Kode kategori layanan <strong>{$jenKode}</strong> sudah digunakan oleh data lain. Silakan gunakan kode yang berbeda.",
-                    'xname' => csrf_token(),
-                    'xhash' => csrf_hash()
-                ]);
+            // Cek apakah kode diubah
+            if ($idLama != $jenKode) {
+                // Kode diubah - cek duplikat dan update termasuk kode
+                $cekKode = $model->getDataById($this->id, $jenKode);
+                if ($cekKode) {
+                    return $this->response->setJSON([
+                        'res'   => 'check',
+                        'msg'   => "Kode kategori layanan <strong>{$jenKode}</strong> sudah digunakan oleh data lain. Silakan gunakan kode yang berbeda.",
+                        'xname' => csrf_token(),
+                        'xhash' => csrf_hash()
+                    ]);
+                }
+                
+                // Update dengan kode baru (CASCADE akan handle relasi)
+                $data = [
+                    'jenKode' => $jenKode,
+                    'jenNama' => $jenNama,
+                ];
+            } else {
+                // Kode tidak diubah - hanya update nama
+                $data = [
+                    'jenNama' => $jenNama,
+                ];
             }
             
-            // Update data - cascade akan ditangani otomatis oleh database FK
-            $res = $model->updateData($data, $this->id, $id);
+            $res = $model->updateData($data, $this->id, $idLama);
         }
 
         return $this->response->setJSON([

@@ -80,23 +80,24 @@ class Alat extends BaseController
             
             $res = $model->insertData($data);
         } else {
-            $id  = $this->encrypter->decrypt(hex2bin($idenc));
+            $idLama  = $this->encrypter->decrypt(hex2bin($idenc));
             
-            // Cek apakah kode alat sudah digunakan oleh data lain untuk update
-            $cekKode = $model->where($this->id . ' !=', $id)
-                            ->where($this->id, $alatKode)
-                            ->first();
-            if ($cekKode) {
-                return $this->response->setJSON([
-                    'res'   => 'check',
-                    'msg'   => "Kode alat <strong>{$alatKode}</strong> sudah digunakan oleh data lain. Silakan gunakan kode yang berbeda.",
-                    'xname' => csrf_token(),
-                    'xhash' => csrf_hash()
-                ]);
+            // Hanya cek duplikat jika kode diubah
+            if ($idLama != $alatKode) {
+                // Cek apakah kode alat baru sudah digunakan oleh data lain
+                $cekKode = $model->getDataById($this->id, $alatKode);
+                if ($cekKode) {
+                    return $this->response->setJSON([
+                        'res'   => 'check',
+                        'msg'   => "Kode alat <strong>{$alatKode}</strong> sudah digunakan oleh data lain. Silakan gunakan kode yang berbeda.",
+                        'xname' => csrf_token(),
+                        'xhash' => csrf_hash()
+                    ]);
+                }
             }
             
             // Update data - cascade akan ditangani otomatis oleh database FK
-            $res = $model->updateData($data, $this->id, $id);
+            $res = $model->updateData($data, $this->id, $idLama);
         }
 
         return $this->response->setJSON([
