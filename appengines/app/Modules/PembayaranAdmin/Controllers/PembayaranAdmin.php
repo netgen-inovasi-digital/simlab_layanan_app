@@ -39,7 +39,7 @@ class PembayaranAdmin extends BaseController
             $builder = $db->table('t_pembayaran');
             $builder->select('t_pembayaran.*, simlab_t_layanan.lnKode, simlab_t_layanan.lnAccEmail, simlab_t_layanan.lnNoTransaksi, simlab_t_layanan.lnTgl, simlab_t_layanan.lnStatus, simlab_t_layanan.user_id');
             $builder->join('simlab_t_layanan', 't_pembayaran.bayarLnKode = simlab_t_layanan.lnKode', 'inner');
-            $builder->where('simlab_t_layanan.lnStatus >', 3);
+            $builder->where('simlab_t_layanan.lnStatus >', 2);
 
             // Aplikasikan filter tanggal jika ada
             if (!empty($tanggalAwal) && !empty($tanggalAkhir)) {

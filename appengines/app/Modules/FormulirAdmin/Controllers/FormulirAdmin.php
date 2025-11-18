@@ -149,9 +149,9 @@ class FormulirAdmin extends BaseController
         $lnKodes = array_map(fn($r) => (int) $r->lnKode, $list);
 
         $payRows = $db->table('t_pembayaran')
-            ->select('bayarLnKode, bayarStatus, bayarInvoiceNo, MAX(bayarKode) AS lastKode')
+            ->select('bayarLnKode, bayarStatus, bayarInvoiceNo, bayarInvoiceFile, MAX(bayarKode) AS lastKode')
             ->whereIn('bayarLnKode', $lnKodes)
-            ->groupBy('bayarLnKode, bayarStatus, bayarInvoiceNo')
+            ->groupBy('bayarLnKode, bayarStatus, bayarInvoiceNo, bayarInvoiceFile')
             ->orderBy('lastKode', 'DESC')
             ->get()->getResult();
 
@@ -162,6 +162,7 @@ class FormulirAdmin extends BaseController
                 $payMap[$ln] = [
                     'status' => (int) $p->bayarStatus,
                     'inv' => $p->bayarInvoiceNo ?? null,
+                    'invoiceFile' => $p->bayarInvoiceFile ?? null,
                 ];
             }
         }
@@ -273,9 +274,15 @@ class FormulirAdmin extends BaseController
             // Status Pembayaran (sama seperti di Pelayanan)
             $lnKodeInt = (int) $row->lnKode;
             $bayarStatusVal = isset($payMap[$lnKodeInt]) ? $payMap[$lnKodeInt]['status'] : 0;
+            $invoiceFile = isset($payMap[$lnKodeInt]) ? $payMap[$lnKodeInt]['invoiceFile'] : null;
 
             if ($bayarStatusVal === 0) {
-                $response[] = '<span class="badge bg-warning">Menunggu Verifikasi</span>';
+                // Cek apakah invoice sudah dikirim (ada file)
+                if (!empty($invoiceFile)) {
+                    $response[] = '<span class="badge bg-info">Menunggu pembayaran</span>';
+                } else {
+                    $response[] = '<span class="badge bg-warning">Belum diproses</span>';
+                }
             } elseif ($bayarStatusVal === 1) {
                 $response[] = '<span class="badge bg-success">Lunas</span>';
             } elseif ($bayarStatusVal === 2) {
@@ -290,7 +297,7 @@ class FormulirAdmin extends BaseController
                                 <i class="bi bi-eye"></i> Lihat </button>';
             $response[] = $lihatDetailBtn;
 
-            $response[] = $this->aksi($id, $row->lnStatus);
+            $response[] = $this->aksi($id, $row->lnStatus, $bayarStatusVal);
 
             $data[] = $response;
         }
@@ -390,14 +397,20 @@ class FormulirAdmin extends BaseController
 
 
 
-    private function aksi($id, $status)
+    private function aksi($id, $status, $bayarStatus = 0)
     {
         $btn = '<div id="' . $id . '" class="float-end d-flex align-items-center" style="gap:6px;">';
 
-        // tombol Approve (sesuai kondisi Anda) â€” tampil seperti sekarang
+        // tombol Approve (sesuai kondisi Anda) – tampil seperti sekarang
         if ($status == 3) {
-            $btn .= '<span class="text-success btn-action" title="Setujui" onclick="confirmApprove(event)" style="display:inline-flex;align-items:center;justify-content:center;width:25px;height:25px;border-radius:6px;">'
-                . '<i class="bi bi-check-circle"></i></span>';
+            // Cek bayarStatus: hanya bisa approve jika bayarStatus = 1 (Lunas)
+            if ($bayarStatus === 1) {
+                $btn .= '<span class="text-success btn-action" title="Setujui" onclick="confirmApprove(event)" style="display:inline-flex;align-items:center;justify-content:center;width:25px;height:25px;border-radius:6px;">'
+                    . '<i class="bi bi-check-circle"></i></span>';
+            } else {
+                $btn .= '<span class="text-muted" title="Tidak dapat disetujui - Pembayaran belum lunas" style="display:inline-flex;align-items:center;justify-content:center;width:25px;height:25px;border-radius:6px;cursor:not-allowed;">'
+                    . '<i class="bi bi-check-circle"></i></span>';
+            }
             // divider kecil (opsional)
             $btn .= '<span class="text-muted" style="margin-left:4px;margin-right:4px;">|</span>';
         }
@@ -544,6 +557,20 @@ class FormulirAdmin extends BaseController
                 return $this->response->setJSON($response);
             }
 
+            // Cek bayarStatus terlebih dahulu
+            $db = \Config\Database::connect();
+            $paymentCheck = $db->table('t_pembayaran')
+                ->select('bayarStatus')
+                ->where('bayarLnKode', $lnKode)
+                ->orderBy('bayarKode', 'DESC')
+                ->limit(1)
+                ->get()->getRow();
+
+            if (!$paymentCheck || (int) $paymentCheck->bayarStatus !== 1) {
+                $response['msg'] = 'Tidak dapat menyetujui - Pembayaran belum lunas.';
+                return $this->response->setJSON($response);
+            }
+
             $model = new MyModel($this->table);
 
             // Anda bisa men-set status apa yg "approve" maksudnya.
@@ -563,10 +590,10 @@ class FormulirAdmin extends BaseController
                     $logUpdate = [
                         'pengujian' => date('Y-m-d H:i:s')
                     ];
-                    
+
                     // Update berdasarkan kode_layanan
                     $logUpdateResult = $modelLogSampel->updateData($logUpdate, 'kode_layanan', $lnKode);
-                    
+
                     if (!$logUpdateResult) {
                         log_message('warning', 'Gagal update log sampel untuk kode_layanan: ' . $lnKode);
                     }
@@ -641,19 +668,4 @@ class FormulirAdmin extends BaseController
             . '<i class="bi bi-whatsapp"></i>'
             . '</a>';
     }
-
-    // ==========================================
-    // KERANJANG FUNCTIONS REMOVED
-    // ==========================================
-    // All keranjang-related functions have been moved to Modules\KeranjangAdmin
-    // This module now uses KeranjangAdmin for all cart operations:
-    // - keranjangadmin/datalist
-    // - keranjangadmin/dataListLayanan
-    // - keranjangadmin/submit
-    // - keranjangadmin/delete/:id
-    // - keranjangadmin/checkout
-    // - keranjangadmin/setPelanggan
-    // - keranjangadmin/kategoriList
-    // ==========================================
-
 }
