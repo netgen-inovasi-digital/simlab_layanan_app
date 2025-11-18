@@ -580,5 +580,40 @@ class MyModel extends Model
 		return $count > 0;
 	}
 
+	// ===== mengambil data menggunakan getWhere (untuk compatibility dengan kode lama) ===== //
+	public function getWhere($where = [])
+	{
+		if (!empty($where)) {
+			foreach ($where as $key => $value) {
+				// Support operator seperti 'id !=' => 5
+				if (strpos($key, ' ') !== false) {
+					// Jika ada operator (seperti 'id !=')
+					$this->builder->where($key, $value);
+				} elseif (is_array($value)) {
+					// Jika value adalah array, gunakan whereIn
+					$this->builder->whereIn($key, $value);
+				} else {
+					$this->builder->where($key, $value);
+				}
+			}
+		}
+		return $this->builder->get();
+	}
+
+	// ===== count data by multiple where conditions ===== //
+	public function countByWhere($where = [])
+	{
+		if (!empty($where)) {
+			foreach ($where as $key => $value) {
+				if (is_array($value)) {
+					$this->builder->whereIn($key, $value);
+				} else {
+					$this->builder->where($key, $value);
+				}
+			}
+		}
+		return $this->builder->countAllResults();
+	}
+
 
 }

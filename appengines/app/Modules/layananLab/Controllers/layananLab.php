@@ -1,11 +1,11 @@
 <?php
 
-namespace Modules\Lab\Controllers;
+namespace Modules\layananLab\Controllers;
 
 use App\Controllers\BaseController;
 use App\Models\MyModel;
 
-class Lab extends BaseController
+class layananLab extends BaseController
 {
 	private $table = 'r_layanan_pengujian';
 	private $id = 'kode';   
@@ -24,7 +24,7 @@ class Lab extends BaseController
 			'diskon_ulm' => $modelDiskon->getDataById('kolom', 'ulm')->diskon ?? 0,
 		];
 
-		return view('Modules\Lab\Views\v_lab', $data);
+		return view('Modules\layananLab\Views\v_layananLab', $data);
 	}
 
     function edit($id)

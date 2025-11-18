@@ -16,7 +16,7 @@
                         </select>
                     </div>
                     <div class="col-md-6">
-                        <form id="formDiskonULM" action="<?= base_url('lab/update_diskon') ?>" method="post" class="d-flex align-items-end">
+                        <form id="formDiskonULM" action="<?= base_url('layananLab/update_diskon') ?>" method="post" class="d-flex align-items-end">
                             <?= csrf_field() ?>
                             <!-- <div class="flex-grow-1">
                                 <label for="diskon_ulm" class="form-label">Diskon Civitas ULM (%)</label>
@@ -51,7 +51,7 @@
 </div>
 
 <script>
-    var apiUrl = '<?php echo site_url("lab/datalist") ?>';
+    var apiUrl = '<?php echo site_url("layananLab/datalist") ?>';
     var currentPage = 1;
     var currentLimit = 10;
 
@@ -65,7 +65,7 @@
     table = loadTable(apiUrl + "?page=" + currentPage + "&limit=" + currentLimit);
     addAction();
 
-    fetch('<?php echo site_url("lab/getoptions") ?>')
+    fetch('<?php echo site_url("layananLab/getoptions") ?>')
         .then(res => res.json())
         .then(data => {
             var filterSelect = document.getElementById('filter_jenKode');
@@ -236,7 +236,7 @@
             }
         });
 
-        fetch('<?php echo site_url("lab/getoptions") ?>')
+        fetch('<?php echo site_url("layananLab/getoptions") ?>')
             .then(res => res.json())
             .then(data => {
                 var jenis = document.querySelector('[name="kode_jenis"]');
@@ -431,7 +431,7 @@
 
     function editItem(e) {
         const id = e.target.closest('div').id;
-        fetch('<?php echo site_url("lab/edit/") ?>' + id)
+        fetch('<?php echo site_url("layananLab/edit/") ?>' + id)
             .then(res => res.json())
             .then(data => {
                 document.querySelector('[name="id"]').value = data.id;
@@ -451,7 +451,7 @@
 
     function lihatTim(id) {
         showLoading();
-        fetch('<?php echo site_url("lab/getTim/") ?>' + id)
+        fetch('<?php echo site_url("layananLab/getTim/") ?>' + id)
             .then(res => res.json())
             .then(data => {
                 if (data.res && data.data) {
@@ -612,7 +612,7 @@
                 <h5 class="modal-title">TAMBAH DATA</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <?php echo form_open('lab/submit', array('id' => 'myform', 'novalidate' => '')) ?>
+            <?php echo form_open('layananLab/submit', array('id' => 'myform', 'novalidate' => '')) ?>
             <div class="modal-body p-4">
                 <input type="hidden" value="" name="id" />
                 <div class="row">
