@@ -485,5 +485,55 @@ class MyModel extends Model
 		return $row ? $row->$field : null;
 	}
 
+	// ===== delete data dengan cascade ke table lain ===== //
+	public function deleteDataWithCascade($where, $id, $cascadeTables = [])
+	{
+		$this->db->transBegin();
+		
+		// Hapus data dari tabel cascade terlebih dahulu
+		foreach ($cascadeTables as $cascadeTable => $cascadeWhere) {
+			$this->db->table($cascadeTable)
+					 ->where($cascadeWhere, $id)
+					 ->delete();
+		}
+		
+		// Hapus data utama
+		$this->builder->where($where, $id);
+		$this->builder->delete();
+		
+		if ($this->db->transStatus() === FALSE) {
+			$this->db->transRollback();
+			return false;
+		} else {
+			$this->db->transCommit();
+			return true;
+		}
+	}
+
+	// ===== update data dengan cascade ke table lain ===== //
+	public function updateDataWithCascade($data, $where, $id, $oldValue, $cascadeUpdates = [])
+	{
+		$this->db->transBegin();
+		
+		// Update data di tabel cascade terlebih dahulu
+		foreach ($cascadeUpdates as $cascadeTable => $cascadeConfig) {
+			$this->db->table($cascadeTable)
+					 ->where($cascadeConfig['where'], $oldValue)
+					 ->update([$cascadeConfig['field'] => $data[$where]]);
+		}
+		
+		// Update data utama
+		$this->builder->where($where, $id);
+		$this->builder->update($data);
+		
+		if ($this->db->transStatus() === FALSE) {
+			$this->db->transRollback();
+			return false;
+		} else {
+			$this->db->transCommit();
+			return true;
+		}
+	}
+
 
 }
