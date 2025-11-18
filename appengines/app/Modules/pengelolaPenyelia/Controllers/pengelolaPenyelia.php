@@ -66,10 +66,9 @@ class pengelolaPenyelia extends BaseController
             ]);
         }
 
-        $db = \Config\Database::connect();
-
         // Hapus semua relasi penyelia-layanan di tabel r_tim
-        $db->table('r_tim')->where('user_id', $id)->delete();
+        $timModel = new MyModel('r_tim');
+        $timModel->deleteData('user_id', $id);
 
         // Hapus akun penyelia dari simlab_account
         $model = new MyModel($this->table);
@@ -133,7 +132,7 @@ class pengelolaPenyelia extends BaseController
     {
         $model = new MyModel($this->table);
         $list = $model->getAllData();
-        $db   = \Config\Database::connect();
+        $timModel = new MyModel('r_tim');
         $data = [];
 
         foreach ($list as $row) {
@@ -142,9 +141,7 @@ class pengelolaPenyelia extends BaseController
             $id = bin2hex($this->encrypter->encrypt($row->user_id));
 
             // Hitung jumlah layanan dari tabel r_tim
-            $count = $db->table('r_tim')
-                        ->where('user_id', $row->user_id)
-                        ->countAllResults();
+            $count = $timModel->getCountAll('user_id', $row->user_id);
 
             $aktif = $row->status_user == 1
                 ? '<small><i class="bi bi-check-circle text-primary"></i> Aktif</small>'
@@ -177,13 +174,11 @@ class pengelolaPenyelia extends BaseController
             ]);
         }
 
-        $db = \Config\Database::connect();
-        
         // Hapus relasi dari tabel r_tim
-        $res = $db->table('r_tim')
-                  ->where('uji_kode', $ujiKode)
-                  ->delete();
+        $timModel = new MyModel('r_tim');
+        $res = $timModel->deleteData('uji_kode', $ujiKode);
 
+        
         return $this->response->setJSON([
             'res' => $res ? 'ok' : 'fail',
             'msg' => $res ? 'Layanan berhasil dihapus dari penyelia!' : 'Gagal menghapus layanan dari penyelia.',
@@ -205,8 +200,9 @@ class pengelolaPenyelia extends BaseController
             ]);
         }
 
-        $db = \Config\Database::connect();
-        $account = $db->table('simlab_account')->where('user_id', $user_id)->get()->getRow();
+        // Cek apakah penyelia ada
+        $accountModel = new MyModel('simlab_account');
+        $account = $accountModel->getDataById('user_id', $user_id);
         if (!$account) {
             return $this->response->setJSON([
                 'res' => 'notfound',
@@ -219,22 +215,24 @@ class pengelolaPenyelia extends BaseController
 
         $search = $this->request->getGet('search') ?? '';
 
-        $builder = $db->table('r_layanan_pengujian')
-                      ->select('kode, nama_layanan')
-                      ->orderBy('nama_layanan', 'ASC');
-
+        // Ambil data layanan
+        $layananModel = new MyModel('r_layanan_pengujian');
         if ($search !== '') {
-            $builder->like('nama_layanan', $search);
+            $layanan = $layananModel->getAllDataByJoinWithOrder(
+                [],
+                [],
+                ['nama_layanan' => 'ASC'],
+                'kode, nama_layanan',
+                'inner',
+                ['nama_layanan' => $search]
+            );
+        } else {
+            $layanan = $layananModel->getAllDataWithOrder(['nama_layanan' => 'ASC']);
         }
 
-        $layanan = $builder->get()->getResult();
-
         // Ambil semua layanan yang sudah dikelola penyelia ini
-        $assignedLayanan = $db->table('r_tim')
-                              ->select('uji_kode')
-                              ->where('user_id', $user_id)
-                              ->get()
-                              ->getResultArray();
+        $timModel = new MyModel('r_tim');
+        $assignedLayanan = $timModel->getAllDataById(['user_id' => $user_id], []);
         $assignedKodes = array_column($assignedLayanan, 'uji_kode');
 
         $items = [];
@@ -303,8 +301,8 @@ class pengelolaPenyelia extends BaseController
         }
 
         // Cek apakah layanan ada di r_layanan_pengujian
-        $model = new MyModel('r_layanan_pengujian');
-        $exists = $model->getDataById('kode', $idLayanan);
+        $layananModel = new MyModel('r_layanan_pengujian');
+        $exists = $layananModel->getDataById('kode', $idLayanan);
         if (!$exists) {
             return $this->response->setJSON([
                 'res' => 'fail',
@@ -315,12 +313,11 @@ class pengelolaPenyelia extends BaseController
         }
 
         // Cek apakah relasi sudah ada di r_tim
-        $db = \Config\Database::connect();
-        $existing = $db->table('r_tim')
-                       ->where('uji_kode', $idLayanan)
-                       ->where('user_id', $idPenyelia)
-                       ->get()
-                       ->getRow();
+        $timModel = new MyModel('r_tim');
+        $existing = $timModel->getDataByArray([
+            'uji_kode' => $idLayanan,
+            'user_id' => $idPenyelia
+        ]);
 
         if ($existing) {
             return $this->response->setJSON([
@@ -332,7 +329,6 @@ class pengelolaPenyelia extends BaseController
         }
 
         // Insert relasi baru ke tabel r_tim
-        $timModel = new MyModel('r_tim');
         $res = $timModel->insertData([
             'uji_kode' => $idLayanan,
             'user_id'  => $idPenyelia
