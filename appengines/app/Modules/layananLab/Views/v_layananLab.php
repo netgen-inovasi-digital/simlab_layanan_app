@@ -18,13 +18,6 @@
                     <div class="col-md-6">
                         <form id="formDiskonULM" action="<?= base_url('layananLab/update_diskon') ?>" method="post" class="d-flex align-items-end">
                             <?= csrf_field() ?>
-                            <!-- <div class="flex-grow-1">
-                                <label for="diskon_ulm" class="form-label">Diskon Civitas ULM (%)</label>
-                                <input type="number" name="diskon" id="diskon_ulm" class="form-control" value="<?= isset($diskon_ulm) ? $diskon_ulm : '' ?>" min="0" max="100">
-                            </div>
-                            <div class="ms-2">
-                                <button type="submit" class="btn btn-outline-primary">Update</button>
-                            </div> -->
                         </form>
                     </div>
                 </div>
@@ -135,11 +128,8 @@
         formData.delete('tim');
         
         // Tambahkan data tim ke formData
-        penyeliaList.forEach(p => {
-            formData.append('tim[]', p.user_id);
-        });
-        manajerList.forEach(m => {
-            formData.append('tim[]', m.user_id);
+        timManager.getAllTim().forEach(member => {
+            formData.append('tim[]', member.user_id);
         });
         
         // Parse biaya dari format rupiah ke number
@@ -148,28 +138,9 @@
             const biayaParsed = parseRupiah(biayaInput.value);
             formData.set('biaya', biayaParsed);
         }
-        console.log('===== DEBUG DATA TIM =====');
-        console.log('Penyelia List:', penyeliaList);
-        console.log('Manajer List:', manajerList);
-        console.log('Total Tim Members:', penyeliaList.length + manajerList.length);
-        console.log('FormData tim[]:', formData.getAll('tim[]'));
-        
-        // Log semua data di FormData
-        console.log('===== ALL FORM DATA =====');
-        for (var pair of formData.entries()) {
-            console.log(pair[0] + ': ' + pair[1]);
-        }
-        console.log('========================');
         
         const actionUrl = form.getAttribute('action');
         saveData({ url: actionUrl, formData: formData, onSuccess: function(data) {
-            console.log('===== RESPONSE FROM SERVER =====');
-            console.log('Response:', data);
-            if (data.debug_info) {
-                console.log('Debug Info:', data.debug_info);
-            }
-            console.log('================================');
-            
             if (data.res === true) {
                 if (typeof table !== 'undefined') table.fetchData({ reload: true });
                 sayAlert('successModal', 'Berhasil', 'Data berhasil disimpan.', 'success');
@@ -225,10 +196,39 @@
     }
 
     // Global variables untuk menyimpan data tim
-    var penyeliaList = [];
-    var manajerList = [];
-    var allPenyelia = [];
-    var allManajer = [];
+    const timManager = {
+        penyeliaList: [],
+        manajerList: [],
+        addPenyelia(user) {
+            if (!this.penyeliaList.find(p => p.user_id == user.user_id)) {
+                this.penyeliaList.push(user);
+                renderPenyeliaTable();
+            }
+        },
+        addManajer(user) {
+            if (!this.manajerList.find(m => m.user_id == user.user_id)) {
+                this.manajerList.push(user);
+                renderManajerTable();
+            }
+        },
+        removePenyelia(userId) {
+            this.penyeliaList = this.penyeliaList.filter(p => p.user_id != userId);
+            renderPenyeliaTable();
+        },
+        removeManajer(userId) {
+            this.manajerList = this.manajerList.filter(m => m.user_id != userId);
+            renderManajerTable();
+        },
+        reset() {
+            this.penyeliaList = [];
+            this.manajerList = [];
+            renderPenyeliaTable();
+            renderManajerTable();
+        },
+        getAllTim() {
+            return [...this.penyeliaList, ...this.manajerList];
+        }
+    };
 
     function loadOptions(selected = {}) {
         //  reset wrapper lama sebelum isi ulang
@@ -253,8 +253,8 @@
                 jenis.innerHTML = '<option value="">-- Pilih Jenis --</option>';
                 alat.innerHTML  = '<option value="">-- Pilih Alat --</option>';
                 para.innerHTML  = '<option value="">-- Pilih Parameter --</option>';
-                selectPenyelia.innerHTML = '<option value="">[ Pilih Penyelia ... ]</option>';
-                selectManajer.innerHTML = '<option value="">[  Pilih Manajer Teknis ... ]</option>';
+                selectPenyelia.innerHTML = '<option value=""> Pilih Penyelia ... </option>';
+                selectManajer.innerHTML = '<option value="">  Pilih Manajer Teknis ... </option>';
 
                 data.jenis.forEach(j => {
                     jenis.innerHTML += `<option value="${j.jenKode}" ${selected.jenis==j.jenKode?"selected":""}>${j.jenNama}</option>`;
@@ -281,23 +281,14 @@
                 // Load selected tim jika edit
                 if (selected.tim && selected.tim.length > 0) {
                     selected.tim.forEach(tm => {
-                        // Cek berdasarkan role_id
                         if (tm.role_id == 6) {
-                            // Penyelia
                             var user = allPenyelia.find(u => u.user_id == tm.user_id);
-                            if (user && !penyeliaList.find(p => p.user_id == user.user_id)) {
-                                penyeliaList.push(user);
-                            }
+                            if (user) timManager.addPenyelia(user);
                         } else if (tm.role_id == 4) {
-                            // Manajer Teknis
                             var user = allManajer.find(u => u.user_id == tm.user_id);
-                            if (user && !manajerList.find(m => m.user_id == user.user_id)) {
-                                manajerList.push(user);
-                            }
+                            if (user) timManager.addManajer(user);
                         }
                     });
-                    renderPenyeliaTable();
-                    renderManajerTable();
                 }
 
                 var namaLayananInput = document.querySelector('[name="nama_layanan"]');
@@ -322,59 +313,35 @@
 
     // Event listener untuk menambah penyelia dan manajer
     document.addEventListener('change', function(e) {
-        console.log('Change event detected on:', e.target.id, 'Value:', e.target.value);
-        
         if (e.target.id === 'selectPenyelia' && e.target.value) {
             var userId = parseInt(e.target.value);
-            console.log('Penyelia selected, userId:', userId);
-            console.log('Available penyelia:', allPenyelia);
-            
             var user = allPenyelia.find(u => u.user_id == userId);
-            console.log('Found user:', user);
-            
-            if (user && !penyeliaList.find(p => p.user_id == userId)) {
-                penyeliaList.push(user);
-                console.log('Added to penyeliaList:', penyeliaList);
-                renderPenyeliaTable();
-            } else {
-                console.log('User already in list or not found');
-            }
+            if (user) timManager.addPenyelia(user);
             e.target.value = '';
         }
         
         if (e.target.id === 'selectManajer' && e.target.value) {
             var userId = parseInt(e.target.value);
-            console.log('Manajer selected, userId:', userId);
-            console.log('Available manajer:', allManajer);
-            
             var user = allManajer.find(u => u.user_id == userId);
-            console.log('Found user:', user);
-            
-            if (user && !manajerList.find(m => m.user_id == userId)) {
-                manajerList.push(user);
-                console.log('Added to manajerList:', manajerList);
-                renderManajerTable();
-            } else {
-                console.log('User already in list or not found');
-            }
+            if (user) timManager.addManajer(user);
             e.target.value = '';
         }
     });
 
-    function renderPenyeliaTable() {
-        var tbody = document.querySelector('#tablePenyelia');
+    function renderTimTable(tbodyId, list, emptyMsg, btnClass) {
+        var tbody = document.querySelector(tbodyId);
         tbody.innerHTML = '';
         
-        if (penyeliaList.length === 0) {
-            tbody.innerHTML = '<tr class="text-muted text-center"><td colspan="3"><em>Belum ada penyelia dipilih</em></td></tr>';
+        if (list.length === 0) {
+            tbody.innerHTML = `<tr class="text-muted text-center"><td colspan="3"><em>${emptyMsg}</em></td></tr>`;
         } else {
-            penyeliaList.forEach((user, idx) => {
+            list.forEach((user, idx) => {
                 tbody.innerHTML += `
                     <tr>
                         <td>${idx + 1}.</td>
                         <td>${user.username}</td>
                         <td class="text-center">
-                            <span class="text-danger btn-action btn-hapus-penyelia" data-id="${user.user_id}" title="Hapus" style="cursor: pointer;">
+                            <span class="text-danger btn-action ${btnClass}" data-id="${user.user_id}" title="Hapus" style="cursor: pointer;">
                                 <i class="bi bi-trash"></i>
                             </span>
                         </td>
@@ -384,43 +351,26 @@
         }
     }
 
+    function renderPenyeliaTable() {
+        renderTimTable('#tablePenyelia', timManager.penyeliaList, 'Belum ada penyelia dipilih', 'btn-hapus-penyelia');
+    }
+
     function renderManajerTable() {
-        var tbody = document.querySelector('#tableManajer');
-        tbody.innerHTML = '';
-        
-        if (manajerList.length === 0) {
-            tbody.innerHTML = '<tr class="text-muted text-center"><td colspan="3"><em>Belum ada manajer teknis dipilih</em></td></tr>';
-        } else {
-            manajerList.forEach((user, idx) => {
-                tbody.innerHTML += `
-                    <tr>
-                        <td>${idx + 1}.</td>
-                        <td>${user.username}</td>
-                        <td class="text-center">
-                            <span class="text-danger btn-action btn-hapus-manajer" data-id="${user.user_id}" title="Hapus" style="cursor: pointer;">
-                                <i class="bi bi-trash"></i>
-                            </span>
-                        </td>
-                    </tr>
-                `;
-            });
-        }
+        renderTimTable('#tableManajer', timManager.manajerList, 'Belum ada manajer teknis dipilih', 'btn-hapus-manajer');
     }
 
     // Event listener untuk hapus
     document.addEventListener('click', function(e) {
-        const target = e.target.closest('.btn-hapus-penyelia');
-        if (target) {
-            var userId = parseInt(target.getAttribute('data-id'));
-            penyeliaList = penyeliaList.filter(p => p.user_id != userId);
-            renderPenyeliaTable();
+        const targetPenyelia = e.target.closest('.btn-hapus-penyelia');
+        if (targetPenyelia) {
+            var userId = parseInt(targetPenyelia.getAttribute('data-id'));
+            timManager.removePenyelia(userId);
         }
         
         const targetManajer = e.target.closest('.btn-hapus-manajer');
         if (targetManajer) {
             var userId = parseInt(targetManajer.getAttribute('data-id'));
-            manajerList = manajerList.filter(m => m.user_id != userId);
-            renderManajerTable();
+            timManager.removeManajer(userId);
         }
     });
 
@@ -428,8 +378,7 @@
         document.querySelector('#myform').reset();
         document.querySelector('[name="id"]').value = "";
         // Reset tim lists
-        penyeliaList = [];
-        manajerList = [];
+        timManager.reset();
         loadOptions();
         $('#modalForm').modal('show');
     });
@@ -555,7 +504,6 @@
                     li.dataset.value = option.value;
                     li.style.cursor = "pointer";
                     li.addEventListener("click", () => {
-                        console.log('Custom dropdown clicked:', select.id, 'Value:', option.value);
                         select.value = option.value;
                         selected.textContent = option.text;
                         dropdownContainer.style.display = "none";
@@ -563,7 +511,6 @@
                         // Trigger change event
                         const changeEvent = new Event("change", { bubbles: true });
                         select.dispatchEvent(changeEvent);
-                        console.log('Change event dispatched for:', select.id);
                     });
                     dropdown.appendChild(li);
                 }
@@ -603,15 +550,11 @@
         });
         
         // Reset tim lists
-        penyeliaList = [];
-        manajerList = [];
-        renderPenyeliaTable();
-        renderManajerTable();
+        timManager.reset();
     });
 
-    // Initialize rupiah formatting
     initRupiahInputs();
 </script>
 
-<?php include 'v_formAdd.php'; ?>
-<?php include 'v_tim.php'; ?>
+<?= view('Modules\layananLab\Views\v_formAdd') ?>
+<?= view('Modules\layananLab\Views\v_tim') ?>
