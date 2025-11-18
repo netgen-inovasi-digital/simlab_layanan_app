@@ -33,7 +33,7 @@ var csrfHash = '<?= csrf_hash() ?>';
 
 // Inisialisasi tabel utama
 table = createTable({
-    apiUrl: '<?= site_url("penyelia/datalist") ?>',
+    apiUrl: '<?= site_url("pengelolaPenyelia/datalist") ?>',
     showFilter: true
 });
 
@@ -63,7 +63,7 @@ function lihatLayanan(id) {
     `;
 
     layananTable = createModal({
-           apiUrl: '<?= site_url("penyelia/layanan") ?>/' + id,
+           apiUrl: '<?= site_url("pengelolaPenyelia/layanan") ?>/' + id,
             tableId: 'layanan-table-modal',
     });
 
@@ -86,7 +86,7 @@ function deleteItem(event) {
 
     sayAlert('confirmModal', 'Konfirmasi', 'Yakin ingin menghapus layanan ini dari penyelia?', 'danger', true, () => {
         showLoading();
-        fetch("<?= site_url('penyelia/deleteLayanan') ?>/" + id, {
+        fetch("<?= site_url('pengelolaPenyelia/deleteLayanan') ?>/" + id, {
             method: 'GET',
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
         })
@@ -161,7 +161,7 @@ function tambahlayanan(idLayanan) {
         
         let idPenyelia = document.getElementById('modallayanan').getAttribute('data-penyelia');
         showLoading();
-        fetch("<?= site_url('penyelia/tambahLayananPenyelia') ?>", {
+        fetch("<?= site_url('pengelolaPenyelia/tambahLayananPenyelia') ?>", {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

@@ -1,23 +1,30 @@
 <?php
 
-namespace Modules\Penyelia\Controllers;
+namespace Modules\pengelolaManajer\Controllers;
 
 use App\Controllers\BaseController;
 use App\Models\MyModel;
 
-class Penyelia extends BaseController
+class pengelolaManajer extends BaseController
 {
     private $table = 'simlab_account';
     private $id = 'username';
+    protected $encrypter;
+
+    public function initController(\CodeIgniter\HTTP\RequestInterface $request, \CodeIgniter\HTTP\ResponseInterface $response, \Psr\Log\LoggerInterface $logger)
+    {
+        parent::initController($request, $response, $logger);
+        $this->encrypter = \Config\Services::encrypter();
+    }
 
     public function index()
     {
         $data = [
-            'title' => 'Data Penyelia',
+            'title' => 'Data Manajer Teknis',
             'csrf_name' => csrf_token(),
             'csrf_hash' => csrf_hash()
         ];
-        return view('Modules\Penyelia\Views\v_penyelia', $data);
+        return view('Modules\pengelolaManajer\Views\v_manajerteknis', $data);
     }
 
     public function edit($id)
@@ -59,12 +66,11 @@ class Penyelia extends BaseController
             ]);
         }
 
-        $db = \Config\Database::connect();
+        // Hapus semua relasi manajer teknis-layanan di tabel r_tim
+        $timModel = new MyModel('r_tim');
+        $timModel->deleteData('user_id', $id);
 
-        // Hapus semua relasi penyelia-layanan di tabel r_tim
-        $db->table('r_tim')->where('user_id', $id)->delete();
-
-        // Hapus akun penyelia dari simlab_account
+        // Hapus akun Manajer Teknis dari simlab_account
         $model = new MyModel($this->table);
         $res = $model->deleteData('user_id', $id); 
 
@@ -74,6 +80,7 @@ class Penyelia extends BaseController
             'xhash' => csrf_hash()
         ]);
     }
+
     public function submit()
     {
         $idenc = $this->request->getPost('id');
@@ -94,7 +101,7 @@ class Penyelia extends BaseController
         $check = $model->getDataById('username', $username);
 
         if ($idenc == "") {
-            $data['role_id'] = 6; // default Penyelia
+            $data['role_id'] = 4; // default Manajer Teknis
 
             if ($check) {
                 $res = 'check';
@@ -122,22 +129,20 @@ class Penyelia extends BaseController
         ]);
     }
 
-    public function dataList()
+    public function datalist()
     {
         $model = new MyModel($this->table);
         $list = $model->getAllData();
-        $db   = \Config\Database::connect();
+        $timModel = new MyModel('r_tim');
         $data = [];
 
         foreach ($list as $row) {
-            if ($row->role_id != 6) continue; // hanya role Penyelia
+            if ($row->role_id != 4) continue; // hanya role Manajer Teknis
 
             $id = bin2hex($this->encrypter->encrypt($row->user_id));
 
             // Hitung jumlah layanan dari tabel r_tim
-            $count = $db->table('r_tim')
-                        ->where('user_id', $row->user_id)
-                        ->countAllResults();
+            $count = $timModel->getCountAll('user_id', $row->user_id);
 
             $aktif = $row->status_user == 1
                 ? '<small><i class="bi bi-check-circle text-primary"></i> Aktif</small>'
@@ -156,7 +161,6 @@ class Penyelia extends BaseController
         return $this->response->setJSON(['items' => $data]);
     }
 
-    
     public function deleteLayanan($id)
     {
         try {
@@ -170,16 +174,13 @@ class Penyelia extends BaseController
             ]);
         }
 
-        $db = \Config\Database::connect();
-        
         // Hapus relasi dari tabel r_tim
-        $res = $db->table('r_tim')
-                  ->where('uji_kode', $ujiKode)
-                  ->delete();
+        $timModel = new MyModel('r_tim');
+        $res = $timModel->deleteData('uji_kode', $ujiKode);
 
         return $this->response->setJSON([
             'res' => $res ? 'ok' : 'fail',
-            'msg' => $res ? 'Layanan berhasil dihapus dari penyelia!' : 'Gagal menghapus layanan dari penyelia.',
+            'msg' => $res ? 'Layanan berhasil dihapus dari Manajer Teknis!' : 'Gagal menghapus layanan dari Manajer Teknis.',
             'xname' => csrf_token(),
             'xhash' => csrf_hash()
         ]);
@@ -192,18 +193,19 @@ class Penyelia extends BaseController
         } catch (\Exception $e) {
             return $this->response->setJSON([
                 'res' => 'fail',
-                'msg' => 'ID penyelia tidak valid!',
+                'msg' => 'ID Manajer Teknis tidak valid!',
                 'xname' => csrf_token(),
                 'xhash' => csrf_hash()
             ]);
         }
 
-        $db = \Config\Database::connect();
-        $account = $db->table('simlab_account')->where('user_id', $user_id)->get()->getRow();
+        // Cek apakah manajer teknis ada
+        $accountModel = new MyModel('simlab_account');
+        $account = $accountModel->getDataById('user_id', $user_id);
         if (!$account) {
             return $this->response->setJSON([
                 'res' => 'notfound',
-                'msg' => 'Penyelia tidak ditemukan!',
+                'msg' => 'Manajer Teknis tidak ditemukan!',
                 'items' => [],
                 'xname' => csrf_token(),
                 'xhash' => csrf_hash()
@@ -212,22 +214,24 @@ class Penyelia extends BaseController
 
         $search = $this->request->getGet('search') ?? '';
 
-        $builder = $db->table('r_layanan_pengujian')
-                      ->select('kode, nama_layanan')
-                      ->orderBy('nama_layanan', 'ASC');
-
+        // Ambil data layanan
+        $layananModel = new MyModel('r_layanan_pengujian');
         if ($search !== '') {
-            $builder->like('nama_layanan', $search);
+            $layanan = $layananModel->getAllDataByJoinWithOrder(
+                [],
+                [],
+                ['nama_layanan' => 'ASC'],
+                'kode, nama_layanan',
+                'inner',
+                ['nama_layanan' => $search]
+            );
+        } else {
+            $layanan = $layananModel->getAllDataWithOrder(['nama_layanan' => 'ASC']);
         }
 
-        $layanan = $builder->get()->getResult();
-
-        // Ambil semua layanan yang sudah dikelola penyelia ini
-        $assignedLayanan = $db->table('r_tim')
-                              ->select('uji_kode')
-                              ->where('user_id', $user_id)
-                              ->get()
-                              ->getResultArray();
+        // Ambil semua layanan yang sudah dikelola manajer teknis ini
+        $timModel = new MyModel('r_tim');
+        $assignedLayanan = $timModel->getAllDataById(['user_id' => $user_id], []);
         $assignedKodes = array_column($assignedLayanan, 'uji_kode');
 
         $items = [];
@@ -268,16 +272,16 @@ class Penyelia extends BaseController
         ]);
     }
 
-    public function tambahLayananPenyelia()
+    public function tambahLayananManajerteknis()
     {
         $data = $this->request->getJSON(true);
         $idLayananEnc = $data['layanan'] ?? null;
-        $idPenyeliaEnc = $data['penyelia'] ?? null;
+        $idManajerEnc = $data['ManajerTeknis'] ?? null;
 
-        if (!$idLayananEnc || !$idPenyeliaEnc) {
+        if (!$idLayananEnc || !$idManajerEnc) {
             return $this->response->setJSON([
                 'res' => 'fail',
-                'msg' => 'Data layanan atau penyelia tidak valid!',
+                'msg' => 'Data layanan atau Manajer Teknis tidak valid!',
                 'xname' => csrf_token(),
                 'xhash' => csrf_hash()
             ]);
@@ -285,7 +289,7 @@ class Penyelia extends BaseController
 
         try {
             $idLayanan = $this->encrypter->decrypt(hex2bin($idLayananEnc));
-            $idPenyelia = $this->encrypter->decrypt(hex2bin($idPenyeliaEnc));
+            $idManajer = $this->encrypter->decrypt(hex2bin($idManajerEnc));
         } catch (\Exception $e) {
             return $this->response->setJSON([
                 'res' => 'fail',
@@ -308,17 +312,16 @@ class Penyelia extends BaseController
         }
 
         // Cek apakah relasi sudah ada di r_tim
-        $db = \Config\Database::connect();
-        $existing = $db->table('r_tim')
-                       ->where('uji_kode', $idLayanan)
-                       ->where('user_id', $idPenyelia)
-                       ->get()
-                       ->getRow();
+        $timModel = new MyModel('r_tim');
+        $existing = $timModel->getDataByArray([
+            'uji_kode' => $idLayanan,
+            'user_id' => $idManajer
+        ]);
 
         if ($existing) {
             return $this->response->setJSON([
                 'res' => 'fail',
-                'msg' => 'Layanan sudah ditambahkan ke penyelia ini!',
+                'msg' => 'Layanan sudah ditambahkan ke Manajer Teknis ini!',
                 'xname' => csrf_token(),
                 'xhash' => csrf_hash()
             ]);
@@ -328,7 +331,7 @@ class Penyelia extends BaseController
         $timModel = new MyModel('r_tim');
         $res = $timModel->insertData([
             'uji_kode' => $idLayanan,
-            'user_id'  => $idPenyelia
+            'user_id'  => $idManajer
         ]);
 
         return $this->response->setJSON([

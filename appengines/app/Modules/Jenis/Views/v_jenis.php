@@ -11,9 +11,9 @@
                 <table id="data-table" class="saytable border-top-bottom">
                     <thead>
                         <tr>
-                            <th show width="8%">No.</th>
-                            <th show>Kode Jenis</th>
-                            <th show>Nama Jenis</th>
+                            <th show width="6%">No.</th>
+                            <th show width="20%">Kode Jenis</th>
+                            <th show width="50%">Nama Jenis</th>
                             <th show class="action text-end">Aksi<i class="bi bi-code sort-icon"></i></th>
                         </tr>
                     </thead>
@@ -25,6 +25,7 @@
     </div>
 </div>
 
+
 <script>
     table = createTable({
         apiUrl: '<?php echo site_url("jenis/datalist") ?>',
@@ -32,8 +33,7 @@
     addAction();
 
     document.querySelector('#btnSimpan').addEventListener('click', function(e) {
-        e.preventDefault(); 
-
+        e.preventDefault();
         const form = document.querySelector('#myform');
         const formData = new FormData(form);
         const actionUrl = form.getAttribute('action');
@@ -43,7 +43,9 @@
             formData: formData,
             onSuccess: function(data) {
                 if (data.res === true) {
-                    if (typeof table !== 'undefined') table.fetchData({ reload: true });
+                    if (typeof table !== 'undefined') table.fetchData({
+                        reload: true
+                    });
                     sayAlert('successModal', 'Berhasil', 'Data berhasil disimpan.', 'success');
                     if ($('#modalForm').hasClass('show')) $('#modalForm').modal('hide');
                 }
@@ -51,7 +53,12 @@
         });
     });
 
-    function saveData({ url, formData, onSuccess, onError }) {
+    function saveData({
+        url,
+        formData,
+        onSuccess,
+        onError
+    }) {
         showLoading();
 
         const csrfInput = document.querySelector('[name="<?= csrf_token() ?>"]');
@@ -60,7 +67,9 @@
         fetch(url, {
                 method: 'POST',
                 body: formData,
-                headers: { 'X-CSRF-TOKEN': csrfToken }
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken
+                }
             })
             .then(response => response.json())
             .then(data => {
@@ -78,7 +87,9 @@
                 if ($('#modalForm').hasClass('show')) $('#modalForm').modal('hide');
 
                 if (data.res === true) {
-                    if (typeof table !== 'undefined') table.fetchData({ reload: true });
+                    if (typeof table !== 'undefined') table.fetchData({
+                        reload: true
+                    });
                     sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
                 } else if (data.res === 'reload') {
                     sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
@@ -89,6 +100,9 @@
                     window.location.href = data.link;
                 } else if (data.res === 'check') {
                     sayAlert('errorModal', 'Error', data.link, 'warning');
+                } else if (data.res === 'refresh-print') {
+                    loadContent(data.link);
+                    window.open(data.print, "_blank");
                 } else {
                     sayAlert('errorModal', 'Error', 'Data gagal disimpan.', 'warning');
                 }
@@ -106,11 +120,12 @@
     }
 </script>
 
-<div class="modal fade" id="modalForm" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
-    <div class="modal-dialog" role="document">
+
+<div class="modal fade" id="modalForm" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Tambah Kategori Layanan</h5>
+                <h5 class="modal-title">Tambah Data Jenis Baru</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             
@@ -120,17 +135,17 @@
 
                 <div class="mb-3">
                     <label for="jenKodeInput" class="form-label fw-bold">Kode Jenis</label>
-                    <input name="jenKode" type="text" maxlength="2" class="form-control" id="jenKodeInput" required placeholder="Contoh : A">
+                    <input name="jenKode" type="text" class="form-control" id="jenKodeInput" required placeholder="Contoh : MKB">
                     <div class="form-text"></div>
                 </div>
 
                 <div class="mb-3">
                     <label for="jenNamaInput" class="form-label fw-bold">Nama Jenis</label>
-                    <input name="jenNama" type="text" class="form-control" id="jenNamaInput" required placeholder="Contoh : Layanan Sewa Ruangan">
+                    <input name="jenNama" type="text" class="form-control" id="jenNamaInput" required placeholder="Contoh : Mikrobiologi">
                     <div class="form-text"></div>
                 </div>
-
             </div>
+
             <div class="modal-footer">
                 <button class="btn btn-light" type="button" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i> Batal</button>
                 <button class="btn btn-primary" id="btnSimpan" type="submit"><i class="bi bi-check2-circle"></i> Simpan</button>
