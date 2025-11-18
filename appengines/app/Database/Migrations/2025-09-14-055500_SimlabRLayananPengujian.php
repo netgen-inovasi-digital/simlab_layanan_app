@@ -1,4 +1,4 @@
-<?php
+<?php 
 
 namespace App\Database\Migrations;
 
@@ -48,25 +48,48 @@ class CreateRLayananPengujian extends Migration
                 'null' => true,
             ],
         ]);
+
         $this->forge->addKey('kode', true);
-        // index keys
         $this->forge->addKey('kode_alat');
         $this->forge->addKey('kode_parameter');
         $this->forge->addKey('kode_jenis');
 
         $this->forge->createTable('r_layanan_pengujian');
 
-        // foreign keys (pastikan tabel referensi sudah ada saat migration dijalankan)
+        // Jika FK lama mungkin sudah ada, drop dulu (agar migration idempotent pada DB yang sudah ada FK)
         $db = \Config\Database::connect();
-        $db->query('ALTER TABLE `r_layanan_pengujian`
-            ADD CONSTRAINT `fk_rlaypeng_paraKode` FOREIGN KEY (`kode_parameter`) REFERENCES `simlab_r_parameter` (`paraKode`) ON DELETE RESTRICT ON UPDATE RESTRICT,
-            ADD CONSTRAINT `fk_rlaypeng_alatKode` FOREIGN KEY (`kode_alat`) REFERENCES `simlab_r_alat` (`alatKode`) ON DELETE RESTRICT ON UPDATE RESTRICT,
-            ADD CONSTRAINT `fk_rlaypeng_jenKode` FOREIGN KEY (`kode_jenis`) REFERENCES `simlab_r_jenis` (`jenKode`) ON DELETE RESTRICT ON UPDATE RESTRICT
-        ;');
+        // Hapus FK lama jika ada (tidak error jika tidak ada) - silakan jalankan ini sebelum menambah FK baru
+        // NOTE: beberapa versi MySQL/MariaDB tidak support IF EXISTS untuk DROP FOREIGN KEY,
+        // tapi mengeksekusi DROP pada nama yang tidak ada akan error — jika yakin nama, gunakan; 
+        // di sini kita coba perlakuan aman: cek information_schema sebelum drop.
+        $db->query("
+            DELETE FROM information_schema.REFERENTIAL_CONSTRAINTS
+            WHERE CONSTRAINT_SCHEMA = DATABASE()
+              AND CONSTRAINT_NAME IN (
+                'fk_rlaypeng_paraKode',
+                'fk_rlaypeng_alatKode',
+                'fk_rlaypeng_jenKode'
+              );
+        ");
+
+        // Tambah FK baru semua dengan CASCADE
+        $db->query("
+            ALTER TABLE `r_layanan_pengujian`
+                ADD CONSTRAINT `fk_rlaypeng_paraKode` 
+                    FOREIGN KEY (`kode_parameter`) REFERENCES `simlab_r_parameter` (`paraKode`) 
+                    ON DELETE CASCADE ON UPDATE CASCADE,
+                ADD CONSTRAINT `fk_rlaypeng_alatKode` 
+                    FOREIGN KEY (`kode_alat`) REFERENCES `simlab_r_alat` (`alatKode`) 
+                    ON DELETE CASCADE ON UPDATE CASCADE,
+                ADD CONSTRAINT `fk_rlaypeng_jenKode` 
+                    FOREIGN KEY (`kode_jenis`) REFERENCES `simlab_r_jenis` (`jenKode`) 
+                    ON DELETE CASCADE ON UPDATE CASCADE;
+        ");
     }
 
     public function down()
     {
+        // drop table (akan otomatis menghapus FK juga)
         $this->forge->dropTable('r_layanan_pengujian', true);
     }
 }

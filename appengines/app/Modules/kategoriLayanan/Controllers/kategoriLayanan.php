@@ -1,27 +1,34 @@
 <?php
 
-namespace Modules\Alat\Controllers;
+namespace Modules\kategoriLayanan\Controllers;
 
 use App\Controllers\BaseController;
 use App\Models\MyModel;
 
-class Alat extends BaseController
+class kategoriLayanan extends BaseController
 {
-    private $table = 'simlab_r_alat';
-    private $id    = 'alatKode';
+    private $table = 'simlab_r_jenis';
+    private $id    = 'jenKode';
+    protected $encrypter;
+
+    public function initController(\CodeIgniter\HTTP\RequestInterface $request, \CodeIgniter\HTTP\ResponseInterface $response, \Psr\Log\LoggerInterface $logger)
+    {
+        parent::initController($request, $response, $logger);
+        $this->encrypter = \Config\Services::encrypter();
+    }
 
     public function index()
     {
-        $session   = session(); 
-        $user_id   = $session->get('id_user');
+        $session  = session(); 
+        $user_id  = $session->get('id_user');
         $modelUser = new MyModel('users');
 
         $data = [
-            'title' => 'Data Alat',
+            'title' => 'Data Kategori Layanan',
             'user'  => $modelUser->getDataById('id_user', $user_id),
         ];
 
-        return view('Modules\Alat\Views\v_alat', $data);
+        return view('Modules\kategoriLayanan\Views\v_kategoriLayanan', $data);
     }
 
     public function edit($id)
@@ -32,9 +39,9 @@ class Alat extends BaseController
         $get   = $model->getDataById($this->id, $id);
 
         $data[csrf_token()] = csrf_hash();
-        $data['id']        = $idenc;
-        $data['alatKode']  = $get->alatKode;
-        $data['alatNama']  = $get->alatNama;
+        $data['id']      = $idenc;
+        $data['jenKode'] = $get->jenKode;
+        $data['jenNama'] = $get->jenNama;
 
         return $this->response->setJSON($data);
     }
@@ -43,10 +50,7 @@ class Alat extends BaseController
     {
         $id    = $this->encrypter->decrypt(hex2bin($id));
         $model = new MyModel($this->table);
-        
-        // Hapus data - cascade akan ditangani otomatis oleh database FK
-        $res = $model->deleteData($this->id, $id);
-
+        $res   = $model->deleteData($this->id, $id);
         return $this->response->setJSON([
             'res'   => $res,
             'xname' => csrf_token(),
@@ -57,22 +61,24 @@ class Alat extends BaseController
     public function submit()
     {
         $idenc = $this->request->getPost('id');
-        $alatKode = $this->request->getPost('alatKode');
-        
-        $data = [
-            'alatKode' => $alatKode,
-            'alatNama' => $this->request->getPost('alatNama'),
-        ];
+        $jenKode = $this->request->getPost('jenKode');
+        $jenNama = $this->request->getPost('jenNama');
 
         $model = new MyModel($this->table);
 
         if ($idenc == "") {
-            // Cek apakah kode alat sudah ada untuk insert
-            $cekKode = $model->getDataById($this->id, $alatKode);
+            // Mode Insert
+            $data = [
+                'jenKode' => $jenKode,
+                'jenNama' => $jenNama,
+            ];
+            
+            // Cek apakah kode kategori sudah ada untuk insert
+            $cekKode = $model->getDataById($this->id, $jenKode);
             if ($cekKode) {
                 return $this->response->setJSON([
                     'res'   => 'check',
-                    'msg'   => "Kode alat <strong>{$alatKode}</strong> sudah ada. Silakan gunakan kode yang berbeda.",
+                    'msg'   => "Kode kategori layanan <strong>{$jenKode}</strong> sudah ada. Silakan gunakan kode yang berbeda.",
                     'xname' => csrf_token(),
                     'xhash' => csrf_hash()
                 ]);
@@ -80,23 +86,34 @@ class Alat extends BaseController
             
             $res = $model->insertData($data);
         } else {
+            // Mode Update
             $idLama  = $this->encrypter->decrypt(hex2bin($idenc));
             
-            // Hanya cek duplikat jika kode diubah
-            if ($idLama != $alatKode) {
-                // Cek apakah kode alat baru sudah digunakan oleh data lain
-                $cekKode = $model->getDataById($this->id, $alatKode);
+            // Cek apakah kode diubah
+            if ($idLama != $jenKode) {
+                // Kode diubah - cek duplikat dan update termasuk kode
+                $cekKode = $model->getDataById($this->id, $jenKode);
                 if ($cekKode) {
                     return $this->response->setJSON([
                         'res'   => 'check',
-                        'msg'   => "Kode alat <strong>{$alatKode}</strong> sudah digunakan oleh data lain. Silakan gunakan kode yang berbeda.",
+                        'msg'   => "Kode kategori layanan <strong>{$jenKode}</strong> sudah digunakan oleh data lain. Silakan gunakan kode yang berbeda.",
                         'xname' => csrf_token(),
                         'xhash' => csrf_hash()
                     ]);
                 }
+                
+                // Update dengan kode baru (CASCADE akan handle relasi)
+                $data = [
+                    'jenKode' => $jenKode,
+                    'jenNama' => $jenNama,
+                ];
+            } else {
+                // Kode tidak diubah - hanya update nama
+                $data = [
+                    'jenNama' => $jenNama,
+                ];
             }
             
-            // Update data - cascade akan ditangani otomatis oleh database FK
             $res = $model->updateData($data, $this->id, $idLama);
         }
 
@@ -115,20 +132,20 @@ class Alat extends BaseController
 
         $list = $model->getAllData();
         foreach ($list as $row) {
-            $id = bin2hex($this->encrypter->encrypt($row->alatKode));
+            $id = bin2hex($this->encrypter->encrypt($row->jenKode));
             
             // Cek jumlah relasi di layanan pengujian
-            $jumlahRelasi = $modelLayanan->where('kode_alat', $row->alatKode)->countAllResults();
-            $msgRelasi = $jumlahRelasi > 0 ? "Anda akan menghapus {$jumlahRelasi} layanan lab jika menghapus alat ini" : "";
+            $jumlahRelasi = $modelLayanan->where('kode_jenis', $row->jenKode)->countAllResults();
+            $msgRelasi = $jumlahRelasi > 0 ? "Terdapat {$jumlahRelasi} layanan pengujian yang terhubung dan akan ikut terhapus." : "";
             
-            $response   = [];
-            $response[] = '<span class="badge bg-info">' . esc($row->alatKode) . '</span>';
-            $response[] = esc($row->alatNama);
+            $response = [];
+            $response[] = '<span class="badge bg-info">' . esc($row->jenKode) . '</span>';
+            $response[] = esc($row->jenNama);
             $response[] = $this->aksi($id, $msgRelasi);
             $data[]     = $response;
         }
-
-        return $this->response->setJSON(["items" => $data]);
+        $output = ["items" => $data];
+        return $this->response->setJSON($output);
     }
 
     private function aksi($id, $msgRelasi = '')
