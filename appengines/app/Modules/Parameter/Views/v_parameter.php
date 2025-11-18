@@ -48,6 +48,8 @@
                     });
                     sayAlert('successModal', 'Berhasil', 'Data berhasil disimpan.', 'success');
                     if ($('#modalForm').hasClass('show')) $('#modalForm').modal('hide');
+                } else if (data.res === 'check') {
+                    sayAlert('errorModal', 'Peringatan', data.msg, 'warning');
                 }
             }
         });

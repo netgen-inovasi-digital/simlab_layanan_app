@@ -51,19 +51,48 @@ class Parameter extends BaseController
 	public function submit()
 	{
 		$idenc = $this->request->getPost('id');
+		$paraKode = $this->request->getPost('paraKode');
+		
 		$data = array(
-			'paraKode' => $this->request->getPost('paraKode'),
+			'paraKode' => $paraKode,
 			'paraNama' => $this->request->getPost('paraNama'),
 		);
 
 		$model = new MyModel($this->table);
 		
 		if ($idenc == "") {
+			// Cek apakah kode parameter sudah ada untuk insert
+			$cekKode = $model->getDataById($this->id, $paraKode);
+			if ($cekKode) {
+				return $this->response->setJSON([
+					'res'   => 'check',
+					'msg'   => "Kode parameter <strong>{$paraKode}</strong> sudah ada. Silakan gunakan kode yang berbeda.",
+					'xname' => csrf_token(),
+					'xhash' => csrf_hash()
+				]);
+			}
+			
 			$res = $model->insertData($data);
 		} else {
-			$id = $this->encrypter->decrypt(hex2bin($idenc));
-			$res = $model->updateData($data, $this->id, $id);
+			$idLama = $this->encrypter->decrypt(hex2bin($idenc));
+			
+			// Hanya cek duplikat jika kode diubah
+			if ($idLama != $paraKode) {
+				// Cek apakah kode parameter baru sudah digunakan oleh data lain
+				$cekKode = $model->getDataById($this->id, $paraKode);
+				if ($cekKode) {
+					return $this->response->setJSON([
+						'res'   => 'check',
+						'msg'   => "Kode parameter <strong>{$paraKode}</strong> sudah digunakan oleh data lain. Silakan gunakan kode yang berbeda.",
+						'xname' => csrf_token(),
+						'xhash' => csrf_hash()
+					]);
+				}
+			}
+			
+			$res = $model->updateData($data, $this->id, $idLama);
 		}
+		
 		return $this->response->setJSON(array('res' => $res, 'xname' => csrf_token(), 'xhash' => csrf_hash()));
 	}
 
