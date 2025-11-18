@@ -69,35 +69,37 @@ class kategoriLayanan extends BaseController
         ];
 
         $model = new MyModel($this->table);
-        
-        // Cek apakah kode kategori sudah ada
-        $check = $model->getDataById($this->id, $jenKode);
 
         if ($idenc == "") {
-            // Mode tambah baru
-            if ($check) {
+            // Cek apakah kode kategori sudah ada untuk insert
+            $cekKode = $model->getDataById($this->id, $jenKode);
+            if ($cekKode) {
                 return $this->response->setJSON([
                     'res'   => 'check',
-                    'msg'   => 'Kode kategori sudah ada!',
+                    'msg'   => "Kode kategori layanan <strong>{$jenKode}</strong> sudah ada. Silakan gunakan kode yang berbeda.",
                     'xname' => csrf_token(),
                     'xhash' => csrf_hash()
                 ]);
             }
+            
             $res = $model->insertData($data);
         } else {
-            // Mode edit
-            $id = $this->encrypter->decrypt(hex2bin($idenc));
-            $current = $model->getDataById($this->id, $id);
+            $id  = $this->encrypter->decrypt(hex2bin($idenc));
             
-            // Cek jika kode diubah dan kode baru sudah ada
-            if ($check && $current->jenKode != $jenKode) {
+            // Cek apakah kode kategori sudah digunakan oleh data lain untuk update
+            $cekKode = $model->where($this->id . ' !=', $id)
+                            ->where($this->id, $jenKode)
+                            ->first();
+            if ($cekKode) {
                 return $this->response->setJSON([
                     'res'   => 'check',
-                    'msg'   => 'Kode kategori sudah ada!',
+                    'msg'   => "Kode kategori layanan <strong>{$jenKode}</strong> sudah digunakan oleh data lain. Silakan gunakan kode yang berbeda.",
                     'xname' => csrf_token(),
                     'xhash' => csrf_hash()
                 ]);
             }
+            
+            // Update data - cascade akan ditangani otomatis oleh database FK
             $res = $model->updateData($data, $this->id, $id);
         }
 
@@ -111,28 +113,36 @@ class kategoriLayanan extends BaseController
     public function dataList()
     {
         $model = new MyModel($this->table);
+        $modelLayanan = new MyModel('r_layanan_pengujian');
         $data  = [];
 
         $list = $model->getAllData();
         foreach ($list as $row) {
             $id = bin2hex($this->encrypter->encrypt($row->jenKode));
+            
+            // Cek jumlah relasi di layanan pengujian
+            $jumlahRelasi = $modelLayanan->where('kode_jenis', $row->jenKode)->countAllResults();
+            $msgRelasi = $jumlahRelasi > 0 ? "Terdapat {$jumlahRelasi} layanan pengujian yang terhubung dan akan ikut terhapus." : "";
+            
             $response = [];
             $response[] = '<span class="badge bg-info">' . esc($row->jenKode) . '</span>';
             $response[] = esc($row->jenNama);
-            $response[] = $this->aksi($id);
+            $response[] = $this->aksi($id, $msgRelasi);
             $data[]     = $response;
         }
         $output = ["items" => $data];
         return $this->response->setJSON($output);
     }
 
-    private function aksi($id)
+    private function aksi($id, $msgRelasi = '')
     {
+        $deleteOnclick = $msgRelasi ? "deleteItem(event, '{$msgRelasi}')" : "deleteItem(event)";
+        
         return '<div id="' . $id . '" class="float-end">
             <span class="text-secondary btn-action" title="Ubah" onclick="editItem(event)">
                 <i class="bi bi-pencil-square"></i></span> 
             <label class="divider">|</label>
-            <span class="text-danger btn-action" title="Hapus" onclick="deleteItem(event)">
+            <span class="text-danger btn-action" title="Hapus" onclick="' . $deleteOnclick . '">
                 <i class="bi bi-trash"></i></span>
         </div>';
     }
