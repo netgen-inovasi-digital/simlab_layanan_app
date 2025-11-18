@@ -47,6 +47,8 @@
                     });
                     sayAlert('successModal', 'Berhasil', 'Data berhasil disimpan.', 'success');
                     if ($('#modalForm').hasClass('show')) $('#modalForm').modal('hide');
+                } else if (data.res === 'duplicate') {
+                    sayAlert('errorModal', 'Duplikat Data', data.message, 'warning');
                 }
             }
         });
@@ -99,6 +101,8 @@
                     window.location.href = data.link;
                 } else if (data.res === 'check') {
                     sayAlert('errorModal', 'Error', data.link, 'warning');
+                } else if (data.res === 'duplicate') {
+                    sayAlert('errorModal', 'Duplikat Data', data.message || 'Data sudah ada.', 'warning');
                 } else if (data.res === 'refresh-print') {
                     loadContent(data.link);
                     window.open(data.print, "_blank");

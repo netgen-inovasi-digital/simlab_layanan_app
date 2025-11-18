@@ -535,5 +535,50 @@ class MyModel extends Model
 		}
 	}
 
+	// ===== cek duplikat data berdasarkan field (case-insensitive) ===== //
+	public function checkDuplicateByField($field, $value, $excludeWhere = [], $caseInsensitive = true)
+	{
+		if ($caseInsensitive) {
+			// Menggunakan LOWER() untuk perbandingan case-insensitive
+			$this->builder->where("LOWER($field)", strtolower($value));
+		} else {
+			$this->builder->where($field, $value);
+		}
+		
+		// Exclude record tertentu (misalnya saat update, exclude ID yang sedang diedit)
+		if (!empty($excludeWhere)) {
+			foreach ($excludeWhere as $key => $val) {
+				$this->builder->where("$key !=", $val);
+			}
+		}
+		
+		$count = $this->builder->countAllResults();
+		return $count > 0; // Return true jika ada duplikat
+	}
+
+	// ===== cek duplikat data dengan multiple fields (case-insensitive) ===== //
+	public function checkDuplicateByFields($fields = [], $excludeWhere = [], $caseInsensitive = true)
+	{
+		if (!empty($fields)) {
+			foreach ($fields as $field => $value) {
+				if ($caseInsensitive) {
+					$this->builder->where("LOWER($field)", strtolower($value));
+				} else {
+					$this->builder->where($field, $value);
+				}
+			}
+		}
+		
+		// Exclude record tertentu
+		if (!empty($excludeWhere)) {
+			foreach ($excludeWhere as $key => $val) {
+				$this->builder->where("$key !=", $val);
+			}
+		}
+		
+		$count = $this->builder->countAllResults();
+		return $count > 0;
+	}
+
 
 }

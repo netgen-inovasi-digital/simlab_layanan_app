@@ -50,18 +50,42 @@ class Metode extends BaseController
 	public function submit()
 	{
 		$idenc = $this->request->getPost('id');
+		$nama = $this->request->getPost('nama');
+		
 		$data = array(
-			'nama' => $this->request->getPost('nama'),
+			'nama' => $nama,
 		);
 
 		$model = new MyModel($this->table);
 		
+		// Cek duplikat nama metode (case-insensitive)
+		$excludeWhere = [];
+		if ($idenc != "") {
+			// Jika update, exclude ID yang sedang diedit
+			$id = $this->encrypter->decrypt(hex2bin($idenc));
+			$excludeWhere = [$this->id => $id];
+		}
+		
+		$isDuplicate = $model->checkDuplicateByField('nama', $nama, $excludeWhere, true);
+		
+		if ($isDuplicate) {
+			// Return response untuk notifikasi duplikat
+			return $this->response->setJSON(array(
+				'res' => 'duplicate', 
+				'message' => 'Nama metode sudah ada. Silakan gunakan nama yang berbeda.',
+				'xname' => csrf_token(), 
+				'xhash' => csrf_hash()
+			));
+		}
+		
+		// Jika tidak duplikat, lanjutkan insert/update
 		if ($idenc == "") {
 			$res = $model->insertData($data);
 		} else {
 			$id = $this->encrypter->decrypt(hex2bin($idenc));
 			$res = $model->updateData($data, $this->id, $id);
 		}
+		
 		return $this->response->setJSON(array('res' => $res, 'xname' => csrf_token(), 'xhash' => csrf_hash()));
 	}
 
