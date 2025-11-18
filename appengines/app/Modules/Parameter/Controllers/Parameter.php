@@ -80,28 +80,36 @@ class Parameter extends BaseController
 	public function dataList()
 	{
 		$model = new MyModel($this->table);
+		$modelLayanan = new MyModel('r_layanan_pengujian');
 		$data = array();
 
 		$list = $model->getAllData();
 		foreach ($list as $row) {
 			$id = bin2hex($this->encrypter->encrypt($row->paraKode));
+			
+			// Cek jumlah relasi di layanan pengujian
+			$jumlahRelasi = $modelLayanan->where('kode_parameter', $row->paraKode)->countAllResults();
+			$msgRelasi = $jumlahRelasi > 0 ? "Anda akan menghapus {$jumlahRelasi} layanan lab jika menghapus parameter ini" : "";
+			
 			$response = array();
 			$response[] = '<span class="badge bg-info">' . esc($row->paraKode) . '</span>';
 			$response[] = esc($row->paraNama);
-			$response[] = $this->aksi($id);
+			$response[] = $this->aksi($id, $msgRelasi);
 			$data[] = $response;
 		}
 		$output = array("items" => $data);
 		return $this->response->setJSON($output);
 	}
 
-	function aksi($id)
+	function aksi($id, $msgRelasi = '')
 	{
+		$deleteOnclick = $msgRelasi ? "deleteItem(event, '{$msgRelasi}')" : "deleteItem(event)";
+		
 		return '<div id="' . $id . '" class="float-end">
 			<span class="text-secondary btn-action" title="Ubah" onclick="editItem(event)">
 				<i class="bi bi-pencil-square"></i></span> 
 			<label class="divider">|</label>
-			<span class="text-danger btn-action" title="Hapus" onclick="deleteItem(event)">
+			<span class="text-danger btn-action" title="Hapus" onclick="' . $deleteOnclick . '">
 				<i class="bi bi-trash"></i></span>
 		</div>';
 	}
