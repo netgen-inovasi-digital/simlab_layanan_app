@@ -39,7 +39,7 @@ class PembayaranAdmin extends BaseController
             $builder = $db->table('t_pembayaran');
             $builder->select('t_pembayaran.*, simlab_t_layanan.lnKode, simlab_t_layanan.lnAccEmail, simlab_t_layanan.lnNoTransaksi, simlab_t_layanan.lnTgl, simlab_t_layanan.lnStatus, simlab_t_layanan.user_id');
             $builder->join('simlab_t_layanan', 't_pembayaran.bayarLnKode = simlab_t_layanan.lnKode', 'inner');
-            $builder->where('simlab_t_layanan.lnStatus >', 3);
+            $builder->where('simlab_t_layanan.lnStatus >', 2);
 
             // Aplikasikan filter tanggal jika ada
             if (!empty($tanggalAwal) && !empty($tanggalAkhir)) {
@@ -64,7 +64,7 @@ class PembayaranAdmin extends BaseController
                 $sessionKey = 'temp_invoice_' . $row->bayarKode;
                 $tempInvoiceFile = session()->get($sessionKey);
 
-                // Status berdasarkan lnNoTransaksi dan bayarBuktiFile (seperti di Tagihan dengan tambahan status verifikasi)
+                // Status berdasarkan lnNoTransaksi dan bayarBuktiFile
                 // 0 = Menunggu Proses (lnNoTransaksi kosong)
                 // 1 = Terkirim (lnNoTransaksi terisi, bukti bayar belum ada)
                 // 2 = Belum Diverifikasi (lnNoTransaksi terisi, bukti bayar ada, bayarStatus = 0)
@@ -92,7 +92,7 @@ class PembayaranAdmin extends BaseController
                 // Filter berdasarkan status jika dipilih
                 if ($filterStatus !== null && $filterStatus !== '' && $filterStatus !== 'all') {
                     // Konversi filterStatus ke integer untuk perbandingan
-                    $filterStatusInt = (int)$filterStatus;
+                    $filterStatusInt = (int) $filterStatus;
 
                     // Debug log untuk troubleshooting
                     log_message('debug', 'Comparing status - filterStatus: ' . $filterStatusInt . ' (type: ' . gettype($filterStatusInt) . '), invoiceStatus: ' . $invoiceStatus . ' (type: ' . gettype($invoiceStatus) . ')');
@@ -106,9 +106,6 @@ class PembayaranAdmin extends BaseController
 
                 // Status pembayaran untuk logic button (tetap gunakan bayarStatus)
                 $paymentStatus = $this->getPaymentStatus($row->bayarBuktiFile, $row->bayarStatus);
-
-                // Tombol aksi
-                $aksi = $this->aksiButton($encrypted_id, $paymentStatus, $row->bayarBuktiFile, $row->bayarInvoiceFile, $row->lnNoTransaksi, $tempInvoiceFile);
 
                 // Ambil data user (sama seperti di Tagihan)
                 $personName = null;
@@ -124,7 +121,8 @@ class PembayaranAdmin extends BaseController
                 // Jika belum ada, cek berdasarkan email (lnAccEmail)
                 if (!$u && !empty($row->lnAccEmail)) {
                     $users = $userModel->getAllDataById(['user_email' => $row->lnAccEmail]);
-                    if (!empty($users)) $u = is_array($users) ? $users[0] : $users;
+                    if (!empty($users))
+                        $u = is_array($users) ? $users[0] : $users;
                 }
 
                 // Jika user ditemukan, ambil info
@@ -135,6 +133,9 @@ class PembayaranAdmin extends BaseController
                 } else {
                     $personName = $row->lnAccEmail ?? '-';
                 }
+
+                // Tombol aksi
+                $aksi = $this->aksiButton($encrypted_id, $paymentStatus, $row->bayarBuktiFile, $row->bayarInvoiceFile, $row->lnNoTransaksi, $tempInvoiceFile, $u);
 
                 $pemesanNama = !empty($personName) ? $personName : '-';
                 $tipe = !empty($userIdentity) ? $userIdentity : '-';
@@ -280,10 +281,44 @@ class PembayaranAdmin extends BaseController
     /**
      * Tombol aksi admin - Upload & Kirim Invoice (GABUNGAN), Upload Bukti, Terima, Tolak
      */
-    private function aksiButton($id, $status, $file, $invoiceFile, $invoiceNo, $tempInvoiceFile = null)
+    private function aksiButton($id, $status, $file, $invoiceFile, $invoiceNo, $tempInvoiceFile = null, $userObj = null)
     {
         $fileUrl = !empty($file) ? base_url('uploads/bukti/' . $file) : '';
         $invoiceUrl = !empty($invoiceFile) ? base_url('uploads/invoice/' . $invoiceFile) : '';
+
+        // Persiapan data WhatsApp
+        $waUrl = '';
+        $hasWhatsApp = false;
+        if ($userObj) {
+            $phoneRaw = '';
+
+            // Ambil field telepon dari objek user
+            if (isset($userObj->user_phone) && !empty($userObj->user_phone))
+                $phoneRaw = $userObj->user_phone;
+            elseif (isset($userObj->user_telpon) && !empty($userObj->user_telpon))
+                $phoneRaw = $userObj->user_telpon;
+            elseif (isset($userObj->user_telp) && !empty($userObj->user_telp))
+                $phoneRaw = $userObj->user_telp;
+            elseif (isset($userObj->phone) && !empty($userObj->phone))
+                $phoneRaw = $userObj->phone;
+
+            // Normalisasi nomor
+            if (!empty($phoneRaw)) {
+                $waDigits = $this->normalize_phone_for_whatsapp($phoneRaw);
+                if ($waDigits !== '') {
+                    $displayName = $userObj->user_name ?? null;
+
+                    // Buat pesan pembuka (encoded)
+                    $message = $displayName
+                        ? "Assalamualaikum Kak " . $displayName . ", saya ingin menginformasikan terkait pembayaran layanan pengujian."
+                        : "Halo, saya ingin menginformasikan terkait pembayaran layanan pengujian.";
+                    $msgEncoded = rawurlencode($message);
+
+                    $waUrl = "https://wa.me/" . $waDigits . "?text=" . $msgEncoded;
+                    $hasWhatsApp = true;
+                }
+            }
+        }
 
         $html = '<div id="' . $id . '" class="float-end">';
 
@@ -338,6 +373,23 @@ class PembayaranAdmin extends BaseController
         } else {
             $html .= '<li><a class="dropdown-item btn-action disabled" href="javascript:void(0)" title="Tidak bisa ditolak">';
             $html .= '<i class="bi bi-x-circle text-secondary"></i> Tolak Verifikasi</a></li>';
+        }
+
+        // Menu 5: Chat WhatsApp (disabled jika invoice belum terkirim atau nomor tidak tersedia)
+        if ($hasWhatsApp) {
+            $waDisabled = empty($invoiceNo) ? 'disabled' : '';
+            $waTitle = empty($invoiceNo) ? 'Kirim invoice terlebih dahulu' : 'Chat via WhatsApp';
+            $waIconClass = empty($invoiceNo) ? 'text-secondary' : 'text-success';
+
+            if (empty($invoiceNo)) {
+                $html .= '<li><hr class="dropdown-divider"></li>';
+                $html .= '<li><a class="dropdown-item btn-action ' . $waDisabled . '" href="javascript:void(0)" title="' . $waTitle . '">';
+                $html .= '<i class="bi bi-whatsapp ' . $waIconClass . '"></i> Chat WhatsApp</a></li>';
+            } else {
+                $html .= '<li><hr class="dropdown-divider"></li>';
+                $html .= '<li><a class="dropdown-item btn-action" href="javascript:void(0)" title="' . $waTitle . '" onclick="window.open(\'' . esc($waUrl) . '\', \'_blank\', \'noopener\')">';
+                $html .= '<i class="bi bi-whatsapp ' . $waIconClass . '"></i> Chat WhatsApp</a></li>';
+            }
         }
 
         $html .= '</ul>';
@@ -596,7 +648,7 @@ class PembayaranAdmin extends BaseController
             return ['status' => false, 'msg' => 'File tidak valid'];
         }
 
-        $allowedExt  = ['pdf', 'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'];
+        $allowedExt = ['pdf', 'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'];
         $allowedMime = [
             'application/pdf',
             'image/png',
@@ -607,7 +659,7 @@ class PembayaranAdmin extends BaseController
             'image/webp'
         ];
 
-        $ext  = strtolower($file->getClientExtension());
+        $ext = strtolower($file->getClientExtension());
         $tmpName = $file->getTempName();
 
         if (!is_file($tmpName)) {
@@ -1021,5 +1073,31 @@ class PembayaranAdmin extends BaseController
                 'xhash' => csrf_hash()
             ]);
         }
+    }
+
+    /**
+     * Normalisasi nomor telepon untuk WhatsApp
+     * Hapus semua selain digit, ubah leading 0 -> 62 (Indonesia) jika perlu
+     */
+    private function normalize_phone_for_whatsapp($rawPhone)
+    {
+        if (empty($rawPhone))
+            return '';
+
+        // Keep digits only
+        $digits = preg_replace('/\D+/', '', (string) $rawPhone);
+        if ($digits === '')
+            return '';
+
+        // Jika mulai dengan 0 -> ganti 0 dengan 62 (Indonesia)
+        if (strpos($digits, '0') === 0) {
+            $digits = '62' . substr($digits, 1);
+        }
+
+        // Jika panjang terlalu pendek, bail out
+        if (strlen($digits) < 8)
+            return '';
+
+        return $digits;
     }
 }
