@@ -4,8 +4,9 @@ if (!isset($routes)) {
     $routes = \Config\Services::routes(true);
 }
 
-$routes->group('penyelia', ['namespace' => 'Modules\Penyelia\Controllers'], function($subroutes) {
+$routes->group('pengelolaPenyelia', ['namespace' => 'Modules\pengelolaPenyelia\Controllers'], function($subroutes) {
     $subroutes->get('/', 'Penyelia::index');
+    $subroutes->get('datalist', 'Penyelia::datalist');
     $subroutes->get('layanan/(:any)', 'Penyelia::layanan/$1');
     $subroutes->get('layananKosong', 'Penyelia::layananKosong');
     $subroutes->get('deleteLayanan/(:any)', 'Penyelia::deleteLayanan/$1');

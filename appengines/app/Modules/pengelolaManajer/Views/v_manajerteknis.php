@@ -32,7 +32,7 @@ var csrfHash = '<?= csrf_hash() ?>';
 
 // Inisialisasi tabel utama
 table = createTable({
-    apiUrl: '<?= site_url("manajerteknis/datalist") ?>',
+    apiUrl: '<?= site_url("pengelolaManajer/datalist") ?>',
     showFilter: true
 });
 
@@ -62,7 +62,7 @@ function lihatLayanan(id) {
     `;
 
     layananTable = createModal({
-           apiUrl: '<?= site_url("manajerteknis/layanan") ?>/' + id,
+           apiUrl: '<?= site_url("pengelolaManajer/layanan") ?>/' + id,
             tableId: 'layanan-table-modal',
     });
 
@@ -85,7 +85,7 @@ function deleteItem(event) {
 
     sayAlert('confirmModal', 'Konfirmasi', 'Yakin ingin menghapus layanan ini dari Manajer Teknis?', 'danger', true, () => {
         showLoading();
-        fetch("<?= site_url('manajerteknis/deleteLayanan') ?>/" + id, {
+        fetch("<?= site_url('pengelolaManajer/deleteLayanan') ?>/" + id, {
             method: 'GET',
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
         })
@@ -160,7 +160,7 @@ function tambahlayanan(idLayanan) {
         
         let idManajer = document.getElementById('modallayanan').getAttribute('data-manajerteknis');
         showLoading();
-        fetch("<?= site_url('manajerteknis/tambahLayananManajerteknis') ?>", {
+        fetch("<?= site_url('pengelolaManajer/tambahLayananManajerteknis') ?>", {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
