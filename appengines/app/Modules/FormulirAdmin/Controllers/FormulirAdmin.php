@@ -499,8 +499,6 @@ class FormulirAdmin extends BaseController
         return $btn;
     }
 
-
-
     private function formatStatus($status)
     {
         switch ($status) {
