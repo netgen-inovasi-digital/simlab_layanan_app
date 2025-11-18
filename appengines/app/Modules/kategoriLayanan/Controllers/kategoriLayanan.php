@@ -1,14 +1,21 @@
 <?php
 
-namespace Modules\Jenis\Controllers;
+namespace Modules\kategoriLayanan\Controllers;
 
 use App\Controllers\BaseController;
 use App\Models\MyModel;
 
-class Jenis extends BaseController
+class kategoriLayanan extends BaseController
 {
     private $table = 'simlab_r_jenis';
     private $id    = 'jenKode';
+    protected $encrypter;
+
+    public function initController(\CodeIgniter\HTTP\RequestInterface $request, \CodeIgniter\HTTP\ResponseInterface $response, \Psr\Log\LoggerInterface $logger)
+    {
+        parent::initController($request, $response, $logger);
+        $this->encrypter = \Config\Services::encrypter();
+    }
 
     public function index()
     {
@@ -17,11 +24,11 @@ class Jenis extends BaseController
         $modelUser = new MyModel('users');
 
         $data = [
-            'title' => 'Data Jenis',
+            'title' => 'Data Kategori Layanan',
             'user'  => $modelUser->getDataById('id_user', $user_id),
         ];
 
-        return view('Modules\Jenis\Views\v_jenis', $data);
+        return view('Modules\kategoriLayanan\Views\v_kategoriLayanan', $data);
     }
 
     public function edit($id)
@@ -54,17 +61,43 @@ class Jenis extends BaseController
     public function submit()
     {
         $idenc = $this->request->getPost('id');
+        $jenKode = $this->request->getPost('jenKode');
+        
         $data = [
-            'jenKode' => $this->request->getPost('jenKode'),
+            'jenKode' => $jenKode,
             'jenNama' => $this->request->getPost('jenNama'),
         ];
 
         $model = new MyModel($this->table);
+        
+        // Cek apakah kode kategori sudah ada
+        $check = $model->getDataById($this->id, $jenKode);
 
         if ($idenc == "") {
+            // Mode tambah baru
+            if ($check) {
+                return $this->response->setJSON([
+                    'res'   => 'check',
+                    'msg'   => 'Kode kategori sudah ada!',
+                    'xname' => csrf_token(),
+                    'xhash' => csrf_hash()
+                ]);
+            }
             $res = $model->insertData($data);
         } else {
-            $id  = $this->encrypter->decrypt(hex2bin($idenc));
+            // Mode edit
+            $id = $this->encrypter->decrypt(hex2bin($idenc));
+            $current = $model->getDataById($this->id, $id);
+            
+            // Cek jika kode diubah dan kode baru sudah ada
+            if ($check && $current->jenKode != $jenKode) {
+                return $this->response->setJSON([
+                    'res'   => 'check',
+                    'msg'   => 'Kode kategori sudah ada!',
+                    'xname' => csrf_token(),
+                    'xhash' => csrf_hash()
+                ]);
+            }
             $res = $model->updateData($data, $this->id, $id);
         }
 
