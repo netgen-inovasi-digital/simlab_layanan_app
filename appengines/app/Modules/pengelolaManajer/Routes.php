@@ -5,16 +5,16 @@ if (!isset($routes)) {
 }
 
 $routes->group('pengelolaManajer', ['namespace' => 'Modules\pengelolaManajer\Controllers'], function($subroutes) {
-    $subroutes->get('/', 'Manajerteknis::index');
-    $subroutes->get('datalist', 'Manajerteknis::datalist');
-    $subroutes->get('layanan/(:any)', 'Manajerteknis::layanan/$1');
-    $subroutes->get('layananKosong', 'Manajerteknis::layananKosong');
-    $subroutes->get('deleteLayanan/(:any)', 'Manajerteknis::deleteLayanan/$1');
+    $subroutes->get('/', 'pengelolaManajer::index');
+    $subroutes->get('datalist', 'pengelolaManajer::datalist');
+    $subroutes->get('layanan/(:any)', 'pengelolaManajer::layanan/$1');
+    $subroutes->get('layananKosong', 'pengelolaManajer::layananKosong');
+    $subroutes->get('deleteLayanan/(:any)', 'pengelolaManajer::deleteLayanan/$1');
 
     // basic
-    $subroutes->get('(:any)', 'Manajerteknis::$1');
-    $subroutes->post('submit', 'Manajerteknis::submit');
-    $subroutes->post('edit', 'Manajerteknis::edit');
-    $subroutes->post('delete', 'Manajerteknis::delete');
-    $subroutes->post('tambahLayananManajerteknis', 'Manajerteknis::tambahLayananManajerteknis');
+    $subroutes->get('(:any)', 'pengelolaManajer::$1');
+    $subroutes->post('submit', 'pengelolaManajer::submit');
+    $subroutes->post('edit', 'pengelolaManajer::edit');
+    $subroutes->post('delete', 'pengelolaManajer::delete');
+    $subroutes->post('tambahLayananManajerteknis', 'pengelolaManajer::tambahLayananManajerteknis');
 });
