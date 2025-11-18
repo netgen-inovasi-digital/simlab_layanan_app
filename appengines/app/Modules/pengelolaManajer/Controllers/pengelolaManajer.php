@@ -66,10 +66,9 @@ class pengelolaManajer extends BaseController
             ]);
         }
 
-        $db = \Config\Database::connect();
-
         // Hapus semua relasi manajer teknis-layanan di tabel r_tim
-        $db->table('r_tim')->where('user_id', $id)->delete();
+        $timModel = new MyModel('r_tim');
+        $timModel->deleteData('user_id', $id);
 
         // Hapus akun Manajer Teknis dari simlab_account
         $model = new MyModel($this->table);
@@ -134,7 +133,7 @@ class pengelolaManajer extends BaseController
     {
         $model = new MyModel($this->table);
         $list = $model->getAllData();
-        $db   = \Config\Database::connect();
+        $timModel = new MyModel('r_tim');
         $data = [];
 
         foreach ($list as $row) {
@@ -143,9 +142,7 @@ class pengelolaManajer extends BaseController
             $id = bin2hex($this->encrypter->encrypt($row->user_id));
 
             // Hitung jumlah layanan dari tabel r_tim
-            $count = $db->table('r_tim')
-                        ->where('user_id', $row->user_id)
-                        ->countAllResults();
+            $count = $timModel->getCountAll('user_id', $row->user_id);
 
             $aktif = $row->status_user == 1
                 ? '<small><i class="bi bi-check-circle text-primary"></i> Aktif</small>'
@@ -177,12 +174,9 @@ class pengelolaManajer extends BaseController
             ]);
         }
 
-        $db = \Config\Database::connect();
-        
         // Hapus relasi dari tabel r_tim
-        $res = $db->table('r_tim')
-                  ->where('uji_kode', $ujiKode)
-                  ->delete();
+        $timModel = new MyModel('r_tim');
+        $res = $timModel->deleteData('uji_kode', $ujiKode);
 
         return $this->response->setJSON([
             'res' => $res ? 'ok' : 'fail',
@@ -205,8 +199,9 @@ class pengelolaManajer extends BaseController
             ]);
         }
 
-        $db = \Config\Database::connect();
-        $account = $db->table('simlab_account')->where('user_id', $user_id)->get()->getRow();
+        // Cek apakah manajer teknis ada
+        $accountModel = new MyModel('simlab_account');
+        $account = $accountModel->getDataById('user_id', $user_id);
         if (!$account) {
             return $this->response->setJSON([
                 'res' => 'notfound',
@@ -219,22 +214,24 @@ class pengelolaManajer extends BaseController
 
         $search = $this->request->getGet('search') ?? '';
 
-        $builder = $db->table('r_layanan_pengujian')
-                      ->select('kode, nama_layanan')
-                      ->orderBy('nama_layanan', 'ASC');
-
+        // Ambil data layanan
+        $layananModel = new MyModel('r_layanan_pengujian');
         if ($search !== '') {
-            $builder->like('nama_layanan', $search);
+            $layanan = $layananModel->getAllDataByJoinWithOrder(
+                [],
+                [],
+                ['nama_layanan' => 'ASC'],
+                'kode, nama_layanan',
+                'inner',
+                ['nama_layanan' => $search]
+            );
+        } else {
+            $layanan = $layananModel->getAllDataWithOrder(['nama_layanan' => 'ASC']);
         }
 
-        $layanan = $builder->get()->getResult();
-
         // Ambil semua layanan yang sudah dikelola manajer teknis ini
-        $assignedLayanan = $db->table('r_tim')
-                              ->select('uji_kode')
-                              ->where('user_id', $user_id)
-                              ->get()
-                              ->getResultArray();
+        $timModel = new MyModel('r_tim');
+        $assignedLayanan = $timModel->getAllDataById(['user_id' => $user_id], []);
         $assignedKodes = array_column($assignedLayanan, 'uji_kode');
 
         $items = [];
@@ -315,12 +312,11 @@ class pengelolaManajer extends BaseController
         }
 
         // Cek apakah relasi sudah ada di r_tim
-        $db = \Config\Database::connect();
-        $existing = $db->table('r_tim')
-                       ->where('uji_kode', $idLayanan)
-                       ->where('user_id', $idManajer)
-                       ->get()
-                       ->getRow();
+        $timModel = new MyModel('r_tim');
+        $existing = $timModel->getDataByArray([
+            'uji_kode' => $idLayanan,
+            'user_id' => $idManajer
+        ]);
 
         if ($existing) {
             return $this->response->setJSON([
