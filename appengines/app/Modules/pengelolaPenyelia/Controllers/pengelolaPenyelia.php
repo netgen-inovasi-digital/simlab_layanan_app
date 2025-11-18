@@ -5,10 +5,17 @@ namespace Modules\pengelolaPenyelia\Controllers;
 use App\Controllers\BaseController;
 use App\Models\MyModel;
 
-class Penyelia extends BaseController
+class pengelolaPenyelia extends BaseController
 {
     private $table = 'simlab_account';
     private $id = 'username';
+    protected $encrypter;
+
+    public function initController(\CodeIgniter\HTTP\RequestInterface $request, \CodeIgniter\HTTP\ResponseInterface $response, \Psr\Log\LoggerInterface $logger)
+    {
+        parent::initController($request, $response, $logger);
+        $this->encrypter = \Config\Services::encrypter();
+    }
 
     public function index()
     {
