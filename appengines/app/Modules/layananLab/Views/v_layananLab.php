@@ -196,39 +196,41 @@
     }
 
     // Global variables untuk menyimpan data tim
-    const timManager = {
-        penyeliaList: [],
-        manajerList: [],
-        addPenyelia(user) {
-            if (!this.penyeliaList.find(p => p.user_id == user.user_id)) {
-                this.penyeliaList.push(user);
+    if (!window.timManager) {
+        window.timManager = {
+            penyeliaList: [],
+            manajerList: [],
+            addPenyelia(user) {
+                if (!this.penyeliaList.find(p => p.user_id == user.user_id)) {
+                    this.penyeliaList.push(user);
+                    renderPenyeliaTable();
+                }
+            },
+            addManajer(user) {
+                if (!this.manajerList.find(m => m.user_id == user.user_id)) {
+                    this.manajerList.push(user);
+                    renderManajerTable();
+                }
+            },
+            removePenyelia(userId) {
+                this.penyeliaList = this.penyeliaList.filter(p => p.user_id != userId);
                 renderPenyeliaTable();
-            }
-        },
-        addManajer(user) {
-            if (!this.manajerList.find(m => m.user_id == user.user_id)) {
-                this.manajerList.push(user);
+            },
+            removeManajer(userId) {
+                this.manajerList = this.manajerList.filter(m => m.user_id != userId);
                 renderManajerTable();
+            },
+            reset() {
+                this.penyeliaList = [];
+                this.manajerList = [];
+                renderPenyeliaTable();
+                renderManajerTable();
+            },
+            getAllTim() {
+                return [...this.penyeliaList, ...this.manajerList];
             }
-        },
-        removePenyelia(userId) {
-            this.penyeliaList = this.penyeliaList.filter(p => p.user_id != userId);
-            renderPenyeliaTable();
-        },
-        removeManajer(userId) {
-            this.manajerList = this.manajerList.filter(m => m.user_id != userId);
-            renderManajerTable();
-        },
-        reset() {
-            this.penyeliaList = [];
-            this.manajerList = [];
-            renderPenyeliaTable();
-            renderManajerTable();
-        },
-        getAllTim() {
-            return [...this.penyeliaList, ...this.manajerList];
-        }
-    };
+        };
+    }
 
     function loadOptions(selected = {}) {
         //  reset wrapper lama sebelum isi ulang
