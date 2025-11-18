@@ -142,7 +142,12 @@
             formData.append('tim[]', m.user_id);
         });
         
-        // Debug: log data yang akan dikirim
+        // Parse biaya dari format rupiah ke number
+        const biayaInput = form.querySelector('[name="biaya"]');
+        if (biayaInput) {
+            const biayaParsed = parseRupiah(biayaInput.value);
+            formData.set('biaya', biayaParsed);
+        }
         console.log('===== DEBUG DATA TIM =====');
         console.log('Penyelia List:', penyeliaList);
         console.log('Manajer List:', manajerList);
@@ -437,7 +442,7 @@
                 document.querySelector('[name="id"]').value = data.id;
                 document.querySelector('[name="nama_layanan"]').value = data.nama_layanan;
                 document.querySelector('[name="satuan"]').value = data.satuan;
-                document.querySelector('[name="biaya"]').value = data.biaya;
+                document.querySelector('[name="biaya"]').value = formatRupiah(data.biaya, false);
                 document.querySelector('[name="diskon"]').value = data.diskon;
                 loadOptions({
                     jenis: data.kode_jenis,
@@ -603,6 +608,9 @@
         renderPenyeliaTable();
         renderManajerTable();
     });
+
+    // Initialize rupiah formatting
+    initRupiahInputs();
 </script>
 
 <?php include 'v_formAdd.php'; ?>

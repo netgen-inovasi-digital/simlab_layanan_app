@@ -299,7 +299,8 @@ class layananLab extends BaseController
 			$response[] = $btnLihatTim;
 
 			// kolom biaya
-			$response[] = $row->biaya . ' / ' . $row->satuan;
+			$biayaFormatted = number_format($row->biaya, 0, ',', '.');
+			$response[] = $biayaFormatted . ' / ' . $row->satuan;
 
 			// kolom diskon
 			$response[] = ($row->diskon ?? 0) . '%';

@@ -41,10 +41,7 @@
                             <div class="col-sm-7">
                                 <div class="mb-3">
                                     <label class="form-label">Biaya</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text">Rp</span>
-                                        <input name="biaya" type="number" class="form-control" required placeholder="Masukkan biaya">
-                                    </div>
+                                    <input name="biaya" type="text" class="form-control rupiah-input" required placeholder="Masukkan biaya">
                                 </div>
                             </div>
                             <div class="col-sm-5">
