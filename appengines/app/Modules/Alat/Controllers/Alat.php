@@ -44,26 +44,7 @@ class Alat extends BaseController
         $id    = $this->encrypter->decrypt(hex2bin($id));
         $model = new MyModel($this->table);
         
-        // Cek apakah ada layanan pengujian yang menggunakan alat ini
-        $modelLayanan = new MyModel('r_layanan_pengujian');
-        $countLayanan = $modelLayanan->getCountAll('kode_alat', $id);
-        
-        if ($countLayanan > 0) {
-            // Ada layanan pengujian yang terhubung - hapus dengan cascade
-            $res = $model->deleteDataWithCascade($this->id, $id, [
-                'r_layanan_pengujian' => 'kode_alat'
-            ]);
-            
-            return $this->response->setJSON([
-                'res'     => $res,
-                'message' => $res ? "Data alat dan {$countLayanan} layanan pengujian terkait berhasil dihapus." : "Gagal menghapus data.",
-                'cascade' => true,
-                'xname'   => csrf_token(),
-                'xhash'   => csrf_hash()
-            ]);
-        }
-        
-        // Tidak ada layanan terhubung, hapus biasa
+        // Hapus data - cascade akan ditangani otomatis oleh database FK
         $res = $model->deleteData($this->id, $id);
 
         return $this->response->setJSON([
@@ -76,36 +57,46 @@ class Alat extends BaseController
     public function submit()
     {
         $idenc = $this->request->getPost('id');
+        $alatKode = $this->request->getPost('alatKode');
+        
         $data = [
-            'alatKode' => $this->request->getPost('alatKode'),
+            'alatKode' => $alatKode,
             'alatNama' => $this->request->getPost('alatNama'),
         ];
 
         $model = new MyModel($this->table);
 
         if ($idenc == "") {
+            // Cek apakah kode alat sudah ada untuk insert
+            $cekKode = $model->getDataById($this->id, $alatKode);
+            if ($cekKode) {
+                return $this->response->setJSON([
+                    'res'   => 'check',
+                    'msg'   => "Kode alat <strong>{$alatKode}</strong> sudah ada. Silakan gunakan kode yang berbeda.",
+                    'xname' => csrf_token(),
+                    'xhash' => csrf_hash()
+                ]);
+            }
+            
             $res = $model->insertData($data);
         } else {
             $id  = $this->encrypter->decrypt(hex2bin($idenc));
-            $oldData = $model->getDataById($this->id, $id);
             
-            // Jika kode alat berubah, update dengan cascade ke layanan pengujian
-            if ($oldData && $oldData->alatKode !== $data['alatKode']) {
-                $res = $model->updateDataWithCascade(
-                    $data,
-                    $this->id,
-                    $id,
-                    $oldData->alatKode,
-                    [
-                        'r_layanan_pengujian' => [
-                            'where' => 'kode_alat',
-                            'field' => 'kode_alat'
-                        ]
-                    ]
-                );
-            } else {
-                $res = $model->updateData($data, $this->id, $id);
+            // Cek apakah kode alat sudah digunakan oleh data lain untuk update
+            $cekKode = $model->where($this->id . ' !=', $id)
+                            ->where($this->id, $alatKode)
+                            ->first();
+            if ($cekKode) {
+                return $this->response->setJSON([
+                    'res'   => 'check',
+                    'msg'   => "Kode alat <strong>{$alatKode}</strong> sudah digunakan oleh data lain. Silakan gunakan kode yang berbeda.",
+                    'xname' => csrf_token(),
+                    'xhash' => csrf_hash()
+                ]);
             }
+            
+            // Update data - cascade akan ditangani otomatis oleh database FK
+            $res = $model->updateData($data, $this->id, $id);
         }
 
         return $this->response->setJSON([
@@ -125,31 +116,29 @@ class Alat extends BaseController
         foreach ($list as $row) {
             $id = bin2hex($this->encrypter->encrypt($row->alatKode));
             
-            // Hitung jumlah layanan pengujian yang terhubung
-            $countLayanan = $modelLayanan->getCountAll('kode_alat', $row->alatKode);
+            // Cek jumlah relasi di layanan pengujian
+            $jumlahRelasi = $modelLayanan->where('kode_alat', $row->alatKode)->countAllResults();
+            $msgRelasi = $jumlahRelasi > 0 ? "Anda akan menghapus {$jumlahRelasi} layanan lab jika menghapus alat ini" : "";
             
             $response   = [];
             $response[] = '<span class="badge bg-info">' . esc($row->alatKode) . '</span>';
             $response[] = esc($row->alatNama);
-            $response[] = $this->aksi($id, $countLayanan);
+            $response[] = $this->aksi($id, $msgRelasi);
             $data[]     = $response;
         }
 
         return $this->response->setJSON(["items" => $data]);
     }
 
-    private function aksi($id, $countLayanan = 0)
+    private function aksi($id, $msgRelasi = '')
     {
-        $deleteMsg = '';
-        if ($countLayanan > 0) {
-            $deleteMsg = "Terdapat {$countLayanan} layanan yang akan ikut terhapus jika anda menghapus alat ini";
-        }
+        $deleteOnclick = $msgRelasi ? "deleteItem(event, '{$msgRelasi}')" : "deleteItem(event)";
         
         return '<div id="' . $id . '" class="float-end">
             <span class="text-secondary btn-action" title="Ubah" onclick="editItem(event)">
                 <i class="bi bi-pencil-square"></i></span> 
             <label class="divider">|</label>
-            <span class="text-danger btn-action" title="Hapus" onclick="deleteItem(event, \'' . $deleteMsg . '\')">
+            <span class="text-danger btn-action" title="Hapus" onclick="' . $deleteOnclick . '">
                 <i class="bi bi-trash"></i></span>
         </div>';
     }
