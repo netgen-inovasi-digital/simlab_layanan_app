@@ -141,12 +141,24 @@
         
         const actionUrl = form.getAttribute('action');
         saveData({ url: actionUrl, formData: formData, onSuccess: function(data) {
+            // Clear previous errors
+            document.querySelectorAll('.text-danger').forEach(el => el.textContent = '');
+            
             if (data.res === true) {
                 if (typeof table !== 'undefined') table.fetchData({ reload: true });
                 sayAlert('successModal', 'Berhasil', 'Data berhasil disimpan.', 'success');
                 if ($('#modalForm').hasClass('show')) $('#modalForm').modal('hide');
             } else if (data.res === 'validation_error') {
-                sayAlert('errorModal', 'Validasi Gagal', data.message, 'warning');
+                // Display validation errors
+                if (data.errors) {
+                    for (const [field, message] of Object.entries(data.errors)) {
+                        const errorElement = document.getElementById('error-' + field);
+                        if (errorElement) {
+                            errorElement.textContent = message;
+                        }
+                    }
+                }
+                sayAlert('errorModal', 'Validasi Gagal', 'Silakan periksa data yang diinput.', 'warning');
             } else if (data.res === false && data.msg) {
                 sayAlert('errorModal', 'Gagal', data.msg, 'warning');
             }
@@ -397,6 +409,9 @@
         const idInput = document.querySelector('[name="id"]');
         if (idInput) idInput.value = "";
         
+        // Clear previous errors
+        document.querySelectorAll('.text-danger').forEach(el => el.textContent = '');
+        
         // Reset tim lists
         timManager.reset();
         loadOptions();
@@ -408,6 +423,9 @@
         fetch('<?php echo site_url("layananLab/edit/") ?>' + id)
             .then(res => res.json())
             .then(data => {
+                // Clear previous errors
+                document.querySelectorAll('.text-danger').forEach(el => el.textContent = '');
+                
                 const idInput = document.querySelector('[name="id"]');
                 if (idInput) idInput.value = data.id;
                 
@@ -583,6 +601,9 @@
                 el.dataset.enhanced = "false";
             }
         });
+        
+        // Clear previous errors
+        document.querySelectorAll('.text-danger').forEach(el => el.textContent = '');
         
         // Reset tim lists
         timManager.reset();

@@ -17,18 +17,21 @@
                             <select name="kode_jenis" class="form-select" required>
                                 <option value="">-- Pilih Jenis --</option>
                             </select>
+                            <small class="text-danger" id="error-kode_jenis"></small>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Alat</label>
                             <select name="kode_alat" class="form-select" required>
                                 <option value="">-- Pilih Alat --</option>
                             </select>
+                            <small class="text-danger" id="error-kode_alat"></small>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Parameter</label>
                             <select name="kode_parameter" class="form-select" required>
                                 <option value="">-- Pilih Parameter --</option>
                             </select>
+                            <small class="text-danger" id="error-kode_parameter"></small>
                         </div>
                     </div>
                     <div class="col-md-6">
@@ -36,18 +39,21 @@
                         <div class="mb-3">
                             <label class="form-label">Nama Layanan</label>
                             <input name="nama_layanan" type="text" class="form-control" required placeholder="Masukkan nama layanan">
+                            <small class="text-danger" id="error-nama_layanan"></small>
                         </div>
                         <div class="row">
                             <div class="col-sm-7">
                                 <div class="mb-3">
                                     <label class="form-label">Biaya</label>
                                     <input name="biaya" type="text" class="form-control rupiah-input" required placeholder="Masukkan biaya">
+                                    <small class="text-danger" id="error-biaya"></small>
                                 </div>
                             </div>
                             <div class="col-sm-5">
                                 <div class="mb-3">
                                     <label class="form-label">Satuan</label>
                                     <input name="satuan" type="text" class="form-control" required placeholder="Sampel/Jam/Ruangan">
+                                    <small class="text-danger" id="error-satuan"></small>
                                 </div>
                             </div>
                         </div>
@@ -113,6 +119,7 @@
                             </table>
                         </div>
                         <p class="small text-muted mt-1 mb-0">(Pilih satu atau lebih manajer teknis)</p>
+                        <small class="text-danger" id="error-tim"></small>
                     </div>
                 </div>
             </div>
