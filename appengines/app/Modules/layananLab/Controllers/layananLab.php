@@ -175,7 +175,7 @@ class layananLab extends BaseController
 
         $errors = [];
         if ($penyeliaCount < 1 || $manajerCount < 1) {
-            $errors['tim'] = 'Tim penanggung jawab harus memiliki minimal 1 Penyelia dan 1 Manajer Teknis.';
+            $errors['tim'] = 'Layanan harus memiliki minimal 1 Penyelia dan 1 Manajer Teknis.';
         }
 
         if (!empty($errors)) {
