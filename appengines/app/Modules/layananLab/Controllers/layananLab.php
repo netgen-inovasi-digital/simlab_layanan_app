@@ -320,7 +320,7 @@ class layananLab extends BaseController
 	function aksi($id)
 	{
 		return '<div id="' . $id . '" class="float-end">
-			<span class="text-secondary btn-action" title="Ubah" onclick="editItem(event)">
+			<span class="text-secondary btn-action" title="Ubah" onclick="editItemLayananLab(event)">
 				<i class="bi bi-pencil-square"></i></span> 
 			<label class="divider">|</label>
 			<span class="text-danger btn-action" title="Hapus" onclick="deleteItem(event)">

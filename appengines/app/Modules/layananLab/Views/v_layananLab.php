@@ -252,42 +252,53 @@
                 var selectPenyelia = document.querySelector('#selectPenyelia');
                 var selectManajer = document.querySelector('#selectManajer');
 
-                jenis.innerHTML = '<option value="">-- Pilih Jenis --</option>';
-                alat.innerHTML  = '<option value="">-- Pilih Alat --</option>';
-                para.innerHTML  = '<option value="">-- Pilih Parameter --</option>';
-                selectPenyelia.innerHTML = '<option value=""> Pilih Penyelia ... </option>';
-                selectManajer.innerHTML = '<option value="">  Pilih Manajer Teknis ... </option>';
+                // Initialize arrays
+                window.allPenyelia = data.penyelia || [];
+                window.allManajer = data.manajer || [];
 
-                data.jenis.forEach(j => {
-                    jenis.innerHTML += `<option value="${j.jenKode}" ${selected.jenis==j.jenKode?"selected":""}>${j.jenNama}</option>`;
-                });
-                data.alat.forEach(a => {
-                    alat.innerHTML += `<option value="${a.alatKode}" ${selected.alat==a.alatKode?"selected":""}>${a.alatNama}</option>`;
-                });
-                data.parameter.forEach(p => {
-                    para.innerHTML += `<option value="${p.paraKode}" ${selected.para==p.paraKode?"selected":""}>${p.paraNama}</option>`;
-                });
+                if (jenis) {
+                    jenis.innerHTML = '<option value="">-- Pilih Jenis --</option>';
+                    data.jenis.forEach(j => {
+                        jenis.innerHTML += `<option value="${j.jenKode}" ${selected.jenis==j.jenKode?"selected":""}>${j.jenNama}</option>`;
+                    });
+                }
                 
-                // Populate dropdown penyelia dan manajer
-                allPenyelia = data.penyelia || [];
-                allManajer = data.manajer || [];
+                if (alat) {
+                    alat.innerHTML  = '<option value="">-- Pilih Alat --</option>';
+                    data.alat.forEach(a => {
+                        alat.innerHTML += `<option value="${a.alatKode}" ${selected.alat==a.alatKode?"selected":""}>${a.alatNama}</option>`;
+                    });
+                }
                 
-                allPenyelia.forEach(user => {
-                    selectPenyelia.innerHTML += `<option value="${user.user_id}">${user.username}</option>`;
-                });
+                if (para) {
+                    para.innerHTML  = '<option value="">-- Pilih Parameter --</option>';
+                    data.parameter.forEach(p => {
+                        para.innerHTML += `<option value="${p.paraKode}" ${selected.para==p.paraKode?"selected":""}>${p.paraNama}</option>`;
+                    });
+                }
                 
-                allManajer.forEach(user => {
-                    selectManajer.innerHTML += `<option value="${user.user_id}">${user.username}</option>`;
-                });
+                if (selectPenyelia) {
+                    selectPenyelia.innerHTML = '<option value=""> Pilih Penyelia ... </option>';
+                    window.allPenyelia.forEach(user => {
+                        selectPenyelia.innerHTML += `<option value="${user.user_id}">${user.username}</option>`;
+                    });
+                }
+                
+                if (selectManajer) {
+                    selectManajer.innerHTML = '<option value="">  Pilih Manajer Teknis ... </option>';
+                    window.allManajer.forEach(user => {
+                        selectManajer.innerHTML += `<option value="${user.user_id}">${user.username}</option>`;
+                    });
+                }
 
                 // Load selected tim jika edit
                 if (selected.tim && selected.tim.length > 0) {
                     selected.tim.forEach(tm => {
                         if (tm.role_id == 6) {
-                            var user = allPenyelia.find(u => u.user_id == tm.user_id);
+                            var user = window.allPenyelia.find(u => u.user_id == tm.user_id);
                             if (user) timManager.addPenyelia(user);
                         } else if (tm.role_id == 4) {
-                            var user = allManajer.find(u => u.user_id == tm.user_id);
+                            var user = window.allManajer.find(u => u.user_id == tm.user_id);
                             if (user) timManager.addManajer(user);
                         }
                     });
@@ -295,14 +306,15 @@
 
                 var namaLayananInput = document.querySelector('[name="nama_layanan"]');
                 function autoFillNamaLayanan() {
+                    if (!alat || !para || !namaLayananInput) return;
                     var alatText = alat.options[alat.selectedIndex]?.text || "";
                     var paraText = para.options[para.selectedIndex]?.text || "";
                     if (alatText && paraText) {
                         namaLayananInput.value = alatText + " - " + paraText;
                     }
                 }
-                alat.addEventListener('change', autoFillNamaLayanan);
-                para.addEventListener('change', autoFillNamaLayanan);
+                if (alat) alat.addEventListener('change', autoFillNamaLayanan);
+                if (para) para.addEventListener('change', autoFillNamaLayanan);
 
                 // Aktifkan search untuk dropdown
                 selectSearch('[name="kode_jenis"]');
@@ -317,14 +329,14 @@
     document.addEventListener('change', function(e) {
         if (e.target.id === 'selectPenyelia' && e.target.value) {
             var userId = parseInt(e.target.value);
-            var user = allPenyelia.find(u => u.user_id == userId);
+            var user = window.allPenyelia.find(u => u.user_id == userId);
             if (user) timManager.addPenyelia(user);
             e.target.value = '';
         }
         
         if (e.target.id === 'selectManajer' && e.target.value) {
             var userId = parseInt(e.target.value);
-            var user = allManajer.find(u => u.user_id == userId);
+            var user = window.allManajer.find(u => u.user_id == userId);
             if (user) timManager.addManajer(user);
             e.target.value = '';
         }
@@ -332,6 +344,8 @@
 
     function renderTimTable(tbodyId, list, emptyMsg, btnClass) {
         var tbody = document.querySelector(tbodyId);
+        if (!tbody) return; // Exit if tbody element doesn't exist
+        
         tbody.innerHTML = '';
         
         if (list.length === 0) {
@@ -377,24 +391,38 @@
     });
 
     document.querySelector('#add').addEventListener('click', function() {
-        document.querySelector('#myform').reset();
-        document.querySelector('[name="id"]').value = "";
+        const form = document.querySelector('#myform');
+        if (form) form.reset();
+        
+        const idInput = document.querySelector('[name="id"]');
+        if (idInput) idInput.value = "";
+        
         // Reset tim lists
         timManager.reset();
         loadOptions();
         $('#modalForm').modal('show');
     });
 
-    function editItem(e) {
+    function editItemLayananLab(e) {
         const id = e.target.closest('div').id;
         fetch('<?php echo site_url("layananLab/edit/") ?>' + id)
             .then(res => res.json())
             .then(data => {
-                document.querySelector('[name="id"]').value = data.id;
-                document.querySelector('[name="nama_layanan"]').value = data.nama_layanan;
-                document.querySelector('[name="satuan"]').value = data.satuan;
-                document.querySelector('[name="biaya"]').value = formatRupiah(data.biaya, false);
-                document.querySelector('[name="diskon"]').value = data.diskon;
+                const idInput = document.querySelector('[name="id"]');
+                if (idInput) idInput.value = data.id;
+                
+                const namaLayananInput = document.querySelector('[name="nama_layanan"]');
+                if (namaLayananInput) namaLayananInput.value = data.nama_layanan;
+                
+                const satuanInput = document.querySelector('[name="satuan"]');
+                if (satuanInput) satuanInput.value = data.satuan;
+                
+                const biayaInput = document.querySelector('[name="biaya"]');
+                if (biayaInput) biayaInput.value = formatRupiah(data.biaya, false);
+                
+                const diskonInput = document.querySelector('[name="diskon"]');
+                if (diskonInput) diskonInput.value = data.diskon;
+                
                 loadOptions({
                     jenis: data.kode_jenis,
                     alat: data.kode_alat,
@@ -412,6 +440,11 @@
             .then(data => {
                 if (data.res && data.data) {
                     var tbody = document.querySelector('#timTableBody');
+                    if (!tbody) {
+                        hideLoading();
+                        sayAlert('errorModal', 'Error', 'Elemen tabel tim tidak ditemukan.', 'warning');
+                        return;
+                    }
                     tbody.innerHTML = '';
                     
                     if (data.data.length === 0) {
