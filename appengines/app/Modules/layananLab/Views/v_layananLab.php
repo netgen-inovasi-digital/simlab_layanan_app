@@ -612,5 +612,5 @@
     initRupiahInputs();
 </script>
 
-<?= view('Modules\layananLab\Views\v_formAdd') ?>
-<?= view('Modules\layananLab\Views\v_tim') ?>
+<?= view('Modules\layananLab\Views\v_tambahLayananLab') ?>
+<?= view('Modules\layananLab\Views\v_tambahPenanggungJawab') ?>
