@@ -89,6 +89,57 @@ class layananLab extends BaseController
     // Simpan data layanan (insert/update)
     public function submit()
     {
+        // Validasi input
+        $rules = [
+            'kode_jenis' => [
+                'rules' => 'required',
+                'errors' => [
+                    'required' => 'Jenis Layanan harus dipilih.'
+                ]
+            ],
+            'kode_alat' => [
+                'rules' => 'required',
+                'errors' => [
+                    'required' => 'Alat harus dipilih.'
+                ]
+            ],
+            'kode_parameter' => [
+                'rules' => 'required',
+                'errors' => [
+                    'required' => 'Parameter harus dipilih.'
+                ]
+            ],
+            'nama_layanan' => [
+                'rules' => 'required',
+                'errors' => [
+                    'required' => 'Nama Layanan harus diisi.'
+                ]
+            ],
+            'biaya' => [
+                'rules' => 'required|numeric|greater_than[0]',
+                'errors' => [
+                    'required' => 'Biaya harus diisi.',
+                    'numeric' => 'Biaya harus berupa angka.',
+                    'greater_than' => 'Biaya harus diisi.'
+                ]
+            ],
+            'satuan' => [
+                'rules' => 'required',
+                'errors' => [
+                    'required' => 'Satuan harus diisi.'
+                ]
+            ],
+        ];
+
+        if (!$this->validate($rules)) {
+            return $this->response->setJSON([
+                'res' => 'validation_error',
+                'errors' => $this->validator->getErrors(),
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        }
+
         $idenc = $this->request->getPost('id');
         $timMembers = $this->request->getPost('tim');
 
@@ -105,12 +156,32 @@ class layananLab extends BaseController
 
         // Validasi tim: minimal 1 penyelia dan 1 manajer teknis
         $accountModel = new AccountModel();
-        $validation = $accountModel->validateTimMembers($timMembers);
-        
-        if (!$validation['valid']) {
+        $penyeliaCount = 0;
+        $manajerCount = 0;
+        if (!empty($timMembers) && is_array($timMembers)) {
+            foreach ($timMembers as $userId) {
+                if (!empty($userId)) {
+                    $user = $accountModel->getUserById($userId);
+                    if ($user) {
+                        if ($user->role_id == 6) { // ROLE_PENYELIA
+                            $penyeliaCount++;
+                        } elseif ($user->role_id == 4) { // ROLE_MANAJER_TEKNIS
+                            $manajerCount++;
+                        }
+                    }
+                }
+            }
+        }
+
+        $errors = [];
+        if ($penyeliaCount < 1 || $manajerCount < 1) {
+            $errors['tim'] = 'Layanan harus memiliki minimal 1 Penyelia dan 1 Manajer Teknis.';
+        }
+
+        if (!empty($errors)) {
             return $this->response->setJSON([
-                'res' => false,
-                'msg' => $validation['message'],
+                'res' => 'validation_error',
+                'errors' => $errors,
                 'xname' => csrf_token(),
                 'xhash' => csrf_hash()
             ]);
@@ -299,7 +370,8 @@ class layananLab extends BaseController
 			$response[] = $btnLihatTim;
 
 			// kolom biaya
-			$response[] = $row->biaya . ' / ' . $row->satuan;
+			$biayaFormatted = number_format($row->biaya, 0, ',', '.');
+			$response[] = $biayaFormatted . ' / ' . $row->satuan;
 
 			// kolom diskon
 			$response[] = ($row->diskon ?? 0) . '%';
@@ -319,7 +391,7 @@ class layananLab extends BaseController
 	function aksi($id)
 	{
 		return '<div id="' . $id . '" class="float-end">
-			<span class="text-secondary btn-action" title="Ubah" onclick="editItem(event)">
+			<span class="text-secondary btn-action" title="Ubah" onclick="editItemLayananLab(event)">
 				<i class="bi bi-pencil-square"></i></span> 
 			<label class="divider">|</label>
 			<span class="text-danger btn-action" title="Hapus" onclick="deleteItem(event)">

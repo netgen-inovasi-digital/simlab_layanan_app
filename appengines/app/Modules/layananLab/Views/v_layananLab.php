@@ -18,13 +18,6 @@
                     <div class="col-md-6">
                         <form id="formDiskonULM" action="<?= base_url('layananLab/update_diskon') ?>" method="post" class="d-flex align-items-end">
                             <?= csrf_field() ?>
-                            <!-- <div class="flex-grow-1">
-                                <label for="diskon_ulm" class="form-label">Diskon Civitas ULM (%)</label>
-                                <input type="number" name="diskon" id="diskon_ulm" class="form-control" value="<?= isset($diskon_ulm) ? $diskon_ulm : '' ?>" min="0" max="100">
-                            </div>
-                            <div class="ms-2">
-                                <button type="submit" class="btn btn-outline-primary">Update</button>
-                            </div> -->
                         </form>
                     </div>
                 </div>
@@ -135,42 +128,37 @@
         formData.delete('tim');
         
         // Tambahkan data tim ke formData
-        penyeliaList.forEach(p => {
-            formData.append('tim[]', p.user_id);
-        });
-        manajerList.forEach(m => {
-            formData.append('tim[]', m.user_id);
+        timManager.getAllTim().forEach(member => {
+            formData.append('tim[]', member.user_id);
         });
         
-        // Debug: log data yang akan dikirim
-        console.log('===== DEBUG DATA TIM =====');
-        console.log('Penyelia List:', penyeliaList);
-        console.log('Manajer List:', manajerList);
-        console.log('Total Tim Members:', penyeliaList.length + manajerList.length);
-        console.log('FormData tim[]:', formData.getAll('tim[]'));
-        
-        // Log semua data di FormData
-        console.log('===== ALL FORM DATA =====');
-        for (var pair of formData.entries()) {
-            console.log(pair[0] + ': ' + pair[1]);
+        // Parse biaya dari format rupiah ke number
+        const biayaInput = form.querySelector('[name="biaya"]');
+        if (biayaInput) {
+            const biayaParsed = parseRupiah(biayaInput.value);
+            formData.set('biaya', biayaParsed);
         }
-        console.log('========================');
         
         const actionUrl = form.getAttribute('action');
         saveData({ url: actionUrl, formData: formData, onSuccess: function(data) {
-            console.log('===== RESPONSE FROM SERVER =====');
-            console.log('Response:', data);
-            if (data.debug_info) {
-                console.log('Debug Info:', data.debug_info);
-            }
-            console.log('================================');
+            // Clear previous errors
+            document.querySelectorAll('.text-danger').forEach(el => el.textContent = '');
             
             if (data.res === true) {
                 if (typeof table !== 'undefined') table.fetchData({ reload: true });
                 sayAlert('successModal', 'Berhasil', 'Data berhasil disimpan.', 'success');
                 if ($('#modalForm').hasClass('show')) $('#modalForm').modal('hide');
             } else if (data.res === 'validation_error') {
-                sayAlert('errorModal', 'Validasi Gagal', data.message, 'warning');
+                // Display validation errors
+                if (data.errors) {
+                    for (const [field, message] of Object.entries(data.errors)) {
+                        const errorElement = document.getElementById('error-' + field);
+                        if (errorElement) {
+                            errorElement.textContent = message;
+                        }
+                    }
+                }
+                sayAlert('errorModal', 'Validasi Gagal', 'Silakan periksa data yang diinput.', 'warning');
             } else if (data.res === false && data.msg) {
                 sayAlert('errorModal', 'Gagal', data.msg, 'warning');
             }
@@ -220,10 +208,41 @@
     }
 
     // Global variables untuk menyimpan data tim
-    var penyeliaList = [];
-    var manajerList = [];
-    var allPenyelia = [];
-    var allManajer = [];
+    if (!window.timManager) {
+        window.timManager = {
+            penyeliaList: [],
+            manajerList: [],
+            addPenyelia(user) {
+                if (!this.penyeliaList.find(p => p.user_id == user.user_id)) {
+                    this.penyeliaList.push(user);
+                    renderPenyeliaTable();
+                }
+            },
+            addManajer(user) {
+                if (!this.manajerList.find(m => m.user_id == user.user_id)) {
+                    this.manajerList.push(user);
+                    renderManajerTable();
+                }
+            },
+            removePenyelia(userId) {
+                this.penyeliaList = this.penyeliaList.filter(p => p.user_id != userId);
+                renderPenyeliaTable();
+            },
+            removeManajer(userId) {
+                this.manajerList = this.manajerList.filter(m => m.user_id != userId);
+                renderManajerTable();
+            },
+            reset() {
+                this.penyeliaList = [];
+                this.manajerList = [];
+                renderPenyeliaTable();
+                renderManajerTable();
+            },
+            getAllTim() {
+                return [...this.penyeliaList, ...this.manajerList];
+            }
+        };
+    }
 
     function loadOptions(selected = {}) {
         //  reset wrapper lama sebelum isi ulang
@@ -245,66 +264,69 @@
                 var selectPenyelia = document.querySelector('#selectPenyelia');
                 var selectManajer = document.querySelector('#selectManajer');
 
-                jenis.innerHTML = '<option value="">-- Pilih Jenis --</option>';
-                alat.innerHTML  = '<option value="">-- Pilih Alat --</option>';
-                para.innerHTML  = '<option value="">-- Pilih Parameter --</option>';
-                selectPenyelia.innerHTML = '<option value="">[ Pilih Penyelia ... ]</option>';
-                selectManajer.innerHTML = '<option value="">[  Pilih Manajer Teknis ... ]</option>';
+                // Initialize arrays
+                window.allPenyelia = data.penyelia || [];
+                window.allManajer = data.manajer || [];
 
-                data.jenis.forEach(j => {
-                    jenis.innerHTML += `<option value="${j.jenKode}" ${selected.jenis==j.jenKode?"selected":""}>${j.jenNama}</option>`;
-                });
-                data.alat.forEach(a => {
-                    alat.innerHTML += `<option value="${a.alatKode}" ${selected.alat==a.alatKode?"selected":""}>${a.alatNama}</option>`;
-                });
-                data.parameter.forEach(p => {
-                    para.innerHTML += `<option value="${p.paraKode}" ${selected.para==p.paraKode?"selected":""}>${p.paraNama}</option>`;
-                });
+                if (jenis) {
+                    jenis.innerHTML = '<option value="">-- Pilih Jenis --</option>';
+                    data.jenis.forEach(j => {
+                        jenis.innerHTML += `<option value="${j.jenKode}" ${selected.jenis==j.jenKode?"selected":""}>${j.jenNama}</option>`;
+                    });
+                }
                 
-                // Populate dropdown penyelia dan manajer
-                allPenyelia = data.penyelia || [];
-                allManajer = data.manajer || [];
+                if (alat) {
+                    alat.innerHTML  = '<option value="">-- Pilih Alat --</option>';
+                    data.alat.forEach(a => {
+                        alat.innerHTML += `<option value="${a.alatKode}" ${selected.alat==a.alatKode?"selected":""}>${a.alatNama}</option>`;
+                    });
+                }
                 
-                allPenyelia.forEach(user => {
-                    selectPenyelia.innerHTML += `<option value="${user.user_id}">${user.username}</option>`;
-                });
+                if (para) {
+                    para.innerHTML  = '<option value="">-- Pilih Parameter --</option>';
+                    data.parameter.forEach(p => {
+                        para.innerHTML += `<option value="${p.paraKode}" ${selected.para==p.paraKode?"selected":""}>${p.paraNama}</option>`;
+                    });
+                }
                 
-                allManajer.forEach(user => {
-                    selectManajer.innerHTML += `<option value="${user.user_id}">${user.username}</option>`;
-                });
+                if (selectPenyelia) {
+                    selectPenyelia.innerHTML = '<option value=""> Pilih Penyelia ... </option>';
+                    window.allPenyelia.forEach(user => {
+                        selectPenyelia.innerHTML += `<option value="${user.user_id}">${user.username}</option>`;
+                    });
+                }
+                
+                if (selectManajer) {
+                    selectManajer.innerHTML = '<option value="">  Pilih Manajer Teknis ... </option>';
+                    window.allManajer.forEach(user => {
+                        selectManajer.innerHTML += `<option value="${user.user_id}">${user.username}</option>`;
+                    });
+                }
 
                 // Load selected tim jika edit
                 if (selected.tim && selected.tim.length > 0) {
                     selected.tim.forEach(tm => {
-                        // Cek berdasarkan role_id
                         if (tm.role_id == 6) {
-                            // Penyelia
-                            var user = allPenyelia.find(u => u.user_id == tm.user_id);
-                            if (user && !penyeliaList.find(p => p.user_id == user.user_id)) {
-                                penyeliaList.push(user);
-                            }
+                            var user = window.allPenyelia.find(u => u.user_id == tm.user_id);
+                            if (user) timManager.addPenyelia(user);
                         } else if (tm.role_id == 4) {
-                            // Manajer Teknis
-                            var user = allManajer.find(u => u.user_id == tm.user_id);
-                            if (user && !manajerList.find(m => m.user_id == user.user_id)) {
-                                manajerList.push(user);
-                            }
+                            var user = window.allManajer.find(u => u.user_id == tm.user_id);
+                            if (user) timManager.addManajer(user);
                         }
                     });
-                    renderPenyeliaTable();
-                    renderManajerTable();
                 }
 
                 var namaLayananInput = document.querySelector('[name="nama_layanan"]');
                 function autoFillNamaLayanan() {
+                    if (!alat || !para || !namaLayananInput) return;
                     var alatText = alat.options[alat.selectedIndex]?.text || "";
                     var paraText = para.options[para.selectedIndex]?.text || "";
                     if (alatText && paraText) {
                         namaLayananInput.value = alatText + " - " + paraText;
                     }
                 }
-                alat.addEventListener('change', autoFillNamaLayanan);
-                para.addEventListener('change', autoFillNamaLayanan);
+                if (alat) alat.addEventListener('change', autoFillNamaLayanan);
+                if (para) para.addEventListener('change', autoFillNamaLayanan);
 
                 // Aktifkan search untuk dropdown
                 selectSearch('[name="kode_jenis"]');
@@ -317,59 +339,37 @@
 
     // Event listener untuk menambah penyelia dan manajer
     document.addEventListener('change', function(e) {
-        console.log('Change event detected on:', e.target.id, 'Value:', e.target.value);
-        
         if (e.target.id === 'selectPenyelia' && e.target.value) {
             var userId = parseInt(e.target.value);
-            console.log('Penyelia selected, userId:', userId);
-            console.log('Available penyelia:', allPenyelia);
-            
-            var user = allPenyelia.find(u => u.user_id == userId);
-            console.log('Found user:', user);
-            
-            if (user && !penyeliaList.find(p => p.user_id == userId)) {
-                penyeliaList.push(user);
-                console.log('Added to penyeliaList:', penyeliaList);
-                renderPenyeliaTable();
-            } else {
-                console.log('User already in list or not found');
-            }
+            var user = window.allPenyelia.find(u => u.user_id == userId);
+            if (user) timManager.addPenyelia(user);
             e.target.value = '';
         }
         
         if (e.target.id === 'selectManajer' && e.target.value) {
             var userId = parseInt(e.target.value);
-            console.log('Manajer selected, userId:', userId);
-            console.log('Available manajer:', allManajer);
-            
-            var user = allManajer.find(u => u.user_id == userId);
-            console.log('Found user:', user);
-            
-            if (user && !manajerList.find(m => m.user_id == userId)) {
-                manajerList.push(user);
-                console.log('Added to manajerList:', manajerList);
-                renderManajerTable();
-            } else {
-                console.log('User already in list or not found');
-            }
+            var user = window.allManajer.find(u => u.user_id == userId);
+            if (user) timManager.addManajer(user);
             e.target.value = '';
         }
     });
 
-    function renderPenyeliaTable() {
-        var tbody = document.querySelector('#tablePenyelia');
+    function renderTimTable(tbodyId, list, emptyMsg, btnClass) {
+        var tbody = document.querySelector(tbodyId);
+        if (!tbody) return; // Exit if tbody element doesn't exist
+        
         tbody.innerHTML = '';
         
-        if (penyeliaList.length === 0) {
-            tbody.innerHTML = '<tr class="text-muted text-center"><td colspan="3"><em>Belum ada penyelia dipilih</em></td></tr>';
+        if (list.length === 0) {
+            tbody.innerHTML = `<tr class="text-muted text-center"><td colspan="3"><em>${emptyMsg}</em></td></tr>`;
         } else {
-            penyeliaList.forEach((user, idx) => {
+            list.forEach((user, idx) => {
                 tbody.innerHTML += `
                     <tr>
                         <td>${idx + 1}.</td>
                         <td>${user.username}</td>
                         <td class="text-center">
-                            <span class="text-danger btn-action btn-hapus-penyelia" data-id="${user.user_id}" title="Hapus" style="cursor: pointer;">
+                            <span class="text-danger btn-action ${btnClass}" data-id="${user.user_id}" title="Hapus" style="cursor: pointer;">
                                 <i class="bi bi-trash"></i>
                             </span>
                         </td>
@@ -379,66 +379,68 @@
         }
     }
 
+    function renderPenyeliaTable() {
+        renderTimTable('#tablePenyelia', timManager.penyeliaList, 'Belum ada penyelia dipilih', 'btn-hapus-penyelia');
+    }
+
     function renderManajerTable() {
-        var tbody = document.querySelector('#tableManajer');
-        tbody.innerHTML = '';
-        
-        if (manajerList.length === 0) {
-            tbody.innerHTML = '<tr class="text-muted text-center"><td colspan="3"><em>Belum ada manajer teknis dipilih</em></td></tr>';
-        } else {
-            manajerList.forEach((user, idx) => {
-                tbody.innerHTML += `
-                    <tr>
-                        <td>${idx + 1}.</td>
-                        <td>${user.username}</td>
-                        <td class="text-center">
-                            <span class="text-danger btn-action btn-hapus-manajer" data-id="${user.user_id}" title="Hapus" style="cursor: pointer;">
-                                <i class="bi bi-trash"></i>
-                            </span>
-                        </td>
-                    </tr>
-                `;
-            });
-        }
+        renderTimTable('#tableManajer', timManager.manajerList, 'Belum ada manajer teknis dipilih', 'btn-hapus-manajer');
     }
 
     // Event listener untuk hapus
     document.addEventListener('click', function(e) {
-        const target = e.target.closest('.btn-hapus-penyelia');
-        if (target) {
-            var userId = parseInt(target.getAttribute('data-id'));
-            penyeliaList = penyeliaList.filter(p => p.user_id != userId);
-            renderPenyeliaTable();
+        const targetPenyelia = e.target.closest('.btn-hapus-penyelia');
+        if (targetPenyelia) {
+            var userId = parseInt(targetPenyelia.getAttribute('data-id'));
+            timManager.removePenyelia(userId);
         }
         
         const targetManajer = e.target.closest('.btn-hapus-manajer');
         if (targetManajer) {
             var userId = parseInt(targetManajer.getAttribute('data-id'));
-            manajerList = manajerList.filter(m => m.user_id != userId);
-            renderManajerTable();
+            timManager.removeManajer(userId);
         }
     });
 
     document.querySelector('#add').addEventListener('click', function() {
-        document.querySelector('#myform').reset();
-        document.querySelector('[name="id"]').value = "";
+        const form = document.querySelector('#myform');
+        if (form) form.reset();
+        
+        const idInput = document.querySelector('[name="id"]');
+        if (idInput) idInput.value = "";
+        
+        // Clear previous errors
+        document.querySelectorAll('.text-danger').forEach(el => el.textContent = '');
+        
         // Reset tim lists
-        penyeliaList = [];
-        manajerList = [];
+        timManager.reset();
         loadOptions();
         $('#modalForm').modal('show');
     });
 
-    function editItem(e) {
+    function editItemLayananLab(e) {
         const id = e.target.closest('div').id;
         fetch('<?php echo site_url("layananLab/edit/") ?>' + id)
             .then(res => res.json())
             .then(data => {
-                document.querySelector('[name="id"]').value = data.id;
-                document.querySelector('[name="nama_layanan"]').value = data.nama_layanan;
-                document.querySelector('[name="satuan"]').value = data.satuan;
-                document.querySelector('[name="biaya"]').value = data.biaya;
-                document.querySelector('[name="diskon"]').value = data.diskon;
+                // Clear previous errors
+                document.querySelectorAll('.text-danger').forEach(el => el.textContent = '');
+                
+                const idInput = document.querySelector('[name="id"]');
+                if (idInput) idInput.value = data.id;
+                
+                const namaLayananInput = document.querySelector('[name="nama_layanan"]');
+                if (namaLayananInput) namaLayananInput.value = data.nama_layanan;
+                
+                const satuanInput = document.querySelector('[name="satuan"]');
+                if (satuanInput) satuanInput.value = data.satuan;
+                
+                const biayaInput = document.querySelector('[name="biaya"]');
+                if (biayaInput) biayaInput.value = formatRupiah(data.biaya, false);
+                
+                const diskonInput = document.querySelector('[name="diskon"]');
+                if (diskonInput) diskonInput.value = data.diskon;
+                
                 loadOptions({
                     jenis: data.kode_jenis,
                     alat: data.kode_alat,
@@ -456,6 +458,11 @@
             .then(data => {
                 if (data.res && data.data) {
                     var tbody = document.querySelector('#timTableBody');
+                    if (!tbody) {
+                        hideLoading();
+                        sayAlert('errorModal', 'Error', 'Elemen tabel tim tidak ditemukan.', 'warning');
+                        return;
+                    }
                     tbody.innerHTML = '';
                     
                     if (data.data.length === 0) {
@@ -550,7 +557,6 @@
                     li.dataset.value = option.value;
                     li.style.cursor = "pointer";
                     li.addEventListener("click", () => {
-                        console.log('Custom dropdown clicked:', select.id, 'Value:', option.value);
                         select.value = option.value;
                         selected.textContent = option.text;
                         dropdownContainer.style.display = "none";
@@ -558,7 +564,6 @@
                         // Trigger change event
                         const changeEvent = new Event("change", { bubbles: true });
                         select.dispatchEvent(changeEvent);
-                        console.log('Change event dispatched for:', select.id);
                     });
                     dropdown.appendChild(li);
                 }
@@ -597,176 +602,15 @@
             }
         });
         
+        // Clear previous errors
+        document.querySelectorAll('.text-danger').forEach(el => el.textContent = '');
+        
         // Reset tim lists
-        penyeliaList = [];
-        manajerList = [];
-        renderPenyeliaTable();
-        renderManajerTable();
+        timManager.reset();
     });
+
+    initRupiahInputs();
 </script>
 
-<div class="modal fade" id="modalForm" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">TAMBAH DATA</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <?php echo form_open('layananLab/submit', array('id' => 'myform', 'novalidate' => '')) ?>
-            <div class="modal-body p-4">
-                <input type="hidden" value="" name="id" />
-                <div class="row">
-                    <div class="col-md-6 border-end">
-                        <p class="text-muted small fw-bold">KLASIFIKASI LAYANAN</p>
-                        <div class="mb-3">
-                            <label class="form-label">Jenis Layanan</label>
-                            <select name="kode_jenis" class="form-select" required>
-                                <option value="">-- Pilih Jenis --</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Alat</label>
-                            <select name="kode_alat" class="form-select" required>
-                                <option value="">-- Pilih Alat --</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Parameter</label>
-                            <select name="kode_parameter" class="form-select" required>
-                                <option value="">-- Pilih Parameter --</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <p class="text-muted small fw-bold">DETAIL LAYANAN</p>
-                        <div class="mb-3">
-                            <label class="form-label">Nama Layanan</label>
-                            <input name="nama_layanan" type="text" class="form-control" required placeholder="Masukkan nama layanan">
-                        </div>
-                        <div class="row">
-                            <div class="col-sm-7">
-                                <div class="mb-3">
-                                    <label class="form-label">Biaya</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text">Rp</span>
-                                        <input name="biaya" type="number" class="form-control" required placeholder="Masukkan biaya">
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-sm-5">
-                                <div class="mb-3">
-                                    <label class="form-label">Satuan</label>
-                                    <input name="satuan" type="text" class="form-control" required placeholder="Sampel/Jam/Ruangan">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Diskon (%)</label>
-                            <input name="diskon" type="number" class="form-control" min="0" max="100" placeholder="Masukkan diskon">
-                        </div>
-                    </div>
-                </div>
-                <hr class="my-4">
-                <div class="row">
-                    <div class="col-12">
-                        <p class="text-muted small fw-bold mb-3">TIM PENANGGUNG JAWAB</p>
-                    </div>
-                </div>
-
-                <!-- Penyelia Section -->
-                <div class="row mb-4">
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold">PENYELIA </label>
-                        <select id="selectPenyelia" class="form-select">
-                            <option value="">[ Pilih Penyelia ... ]</option>
-                        </select>
-                        <div class="table-responsive border rounded mt-3">
-                            <table class="table table-sm table-hover mb-0">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th width="10%">No.</th>
-                                        <th width="70%">Username</th>
-                                        <th width="20%" class="text-center">Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tablePenyelia">
-                                    <tr class="text-muted text-center">
-                                        <td colspan="3"><em>Belum ada penyelia dipilih</em></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <p class="small text-muted mt-1 mb-0">(Pilih satu atau lebih penyelia)</p>
-                    </div>
-
-                    <!-- Manajer Teknis Section -->
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold">MANAJER TEKNIS</label>
-                        <select id="selectManajer" class="form-select">
-                            <option value="">[Pilih Manajer Teknis ... ]</option>
-                        </select>
-                        <div class="table-responsive border rounded mt-3">
-                            <table class="table table-sm table-hover mb-0">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th width="10%">No.</th>
-                                        <th width="70%">Username</th>
-                                        <th width="20%" class="text-center">Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tableManajer">
-                                    <tr class="text-muted text-center">
-                                        <td colspan="3"><em>Belum ada manajer teknis dipilih</em></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <p class="small text-muted mt-1 mb-0">(Pilih satu atau lebih manajer teknis)</p>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-light" type="button" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i> Batal</button>
-                <button class="btn btn-primary" id="btnSimpan" type="submit"><i class="bi bi-check2-circle"></i> Simpan</button>
-            </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- Modal Lihat Tim -->
-<div class="modal fade" id="modalTim" tabindex="-1" aria-labelledby="modalTimLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title" id="modalTimLabel">
-                    <i class="bi bi-people-fill"></i> Tim Penanggung Jawab
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <table class="table table-hover">
-                    <thead class="table-light">
-                        <tr>
-                            <th width="10%" class="text-center">No</th>
-                            <th width="45%" class="text-center">Manajer Teknis</th>
-                            <th width="45%" class="text-center">Penyelia</th>
-                        </tr>
-                    </thead>
-                    <tbody id="timTableBody">
-                        <tr>
-                            <td colspan="3" class="text-center">
-                                <div class="spinner-border spinner-border-sm" role="status">
-                                    <span class="visually-hidden">Loading...</span>
-                                </div>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
-            </div>
-        </div>
-    </div>
-</div>
+<?= view('Modules\layananLab\Views\v_formAdd') ?>
+<?= view('Modules\layananLab\Views\v_tim') ?>
