@@ -38,7 +38,7 @@ class MenuSeeder extends Seeder
             ['id_menu' => 48, 'kode_menu' => '1',    'kode_induk' => '0',  'nama' => 'Pelayanan',                      'link' => 'pelayanan',              'icon' => 'bi-layout-text-window',  'sort_order' => 1],
             ['id_menu' => 49, 'kode_menu' => '4',    'kode_induk' => '0',  'nama' => 'Pembayaran Admin',               'link' => 'pembayaran_admin',       'icon' => 'bi-layout-text-window',  'sort_order' => 14],
             ['id_menu' => 52, 'kode_menu' => '6',    'kode_induk' => '0',  'nama' => 'Pelanggan',                      'link' => 'akun',                   'icon' => 'bi-person',              'sort_order' => 16],
-            ['id_menu' => 55, 'kode_menu' => '13',   'kode_induk' => '0',  'nama' => 'Kaji Ulang',                     'link' => 'formulirmanajer',        'icon' => 'bi-layout-text-window',  'sort_order' => 36],
+            ['id_menu' => 55, 'kode_menu' => '13',   'kode_induk' => '0',  'nama' => 'Kaji Ulang',                     'link' => 'kajiulang',        'icon' => 'bi-layout-text-window',  'sort_order' => 36],
             ['id_menu' => 56, 'kode_menu' => '15',   'kode_induk' => '0',  'nama' => 'Pengujian',                      'link' => 'hasilpengujian',         'icon' => 'bi-layout-text-window',  'sort_order' => 38],
             ['id_menu' => 57, 'kode_menu' => '14',   'kode_induk' => '0',  'nama' => 'Tinjau LHUS',                    'link' => 'tinjaulhus',             'icon' => 'bi-layout-text-window',  'sort_order' => 37],
             ['id_menu' => 58, 'kode_menu' => '11.1', 'kode_induk' => '11', 'nama' => 'Penyelia',                       'link' => 'pengelolaPenyelia',      'icon' => 'bi-person',              'sort_order' => 27],

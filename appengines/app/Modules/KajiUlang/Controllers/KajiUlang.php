@@ -1,11 +1,11 @@
 <?php
 
-namespace Modules\FormulirManajer\Controllers;
+namespace Modules\KajiUlang\Controllers;
 
 use App\Controllers\BaseController;
 use App\Models\MyModel;
 
-class FormulirManajer extends BaseController
+class KajiUlang extends BaseController
 {
     private $table = 'simlab_t_layanan';
     private $id    = 'lnKode';
@@ -24,11 +24,11 @@ class FormulirManajer extends BaseController
 
         $modelUser = new MyModel('simlab_account_users');
         $data = [
-            'title' => 'Data Formulir Manajer',
+            'title' => 'Data Kaji Ulang',
             'user'  => $modelUser->getDataById('user_id', $user_id),
         ];
 
-        return view('Modules\FormulirManajer\Views\v_formulirManajer', $data);
+        return view('Modules\KajiUlang\Views\v_kajiUlang', $data);
     }
 
     public function datalist()

@@ -159,7 +159,7 @@
     // TABEL UTAMA
     // ============================================================
     table = createTable({
-        apiUrl: '<?php echo site_url("formulirmanajer/datalist") ?>',
+        apiUrl: '<?php echo site_url("kajiulang/datalist") ?>',
         dataSrc: 'items'
     });
     addAction();
@@ -198,7 +198,7 @@
             if (table?.getConfig) {
                 const cfg = table.getConfig();
                 cfg.apiUrl = normalizeDoubleQuestion(
-                    buildApiUrlWithOptionalParam('<?= site_url("formulirmanajer/datalist") ?>', 'lnStatus', (val === '' ? null : val))
+                    buildApiUrlWithOptionalParam('<?= site_url("kajiulang/datalist") ?>', 'lnStatus', (val === '' ? null : val))
                 );
                 table.fetchData({ reload: true, page: 1 });
             }
@@ -253,7 +253,7 @@
         if (btn) btn.disabled = true;
 
         try {
-            const res = await fetch('<?php echo site_url("formulirmanajer/savekomentar") ?>', {
+            const res = await fetch('<?php echo site_url("kajiulang/savekomentar") ?>', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -308,7 +308,7 @@
         if (!trackingDetailTable) {
             trackingDetailTable = createModal({
                 tableId: 'tableDetail',
-                apiUrl: `<?php echo site_url("formulirmanajer/detailList/") ?>${id}`,
+                apiUrl: `<?php echo site_url("kajiulang/detailList/") ?>${id}`,
                 itemsPerPage: 10, // Maksimal 10 data
                 showFilter: false,
                 treeview: false,
@@ -316,7 +316,7 @@
             });
         } else {
             trackingDetailTable.refresh({
-                apiUrl: `<?php echo site_url("formulirmanajer/detailList/") ?>${id}`
+                apiUrl: `<?php echo site_url("kajiulang/detailList/") ?>${id}`
             });
         }
 
@@ -349,7 +349,7 @@
                 sampleSection.style.display = 'block';
             } else {
                 // Fetch data baru dari server
-                fetch(`<?php echo site_url("formulirmanajer/getSampleIdentity/") ?>${lnKode}`)
+                fetch(`<?php echo site_url("kajiulang/getSampleIdentity/") ?>${lnKode}`)
                     .then(response => response.json())
                     .then(data => {
                         if (data.success && data.data) {
@@ -429,8 +429,8 @@
             formData.append('uji', uji);
 
             const url = isAccept
-                ? '<?php echo site_url("formulirmanajer/approveDetail") ?>'
-                : '<?php echo site_url("formulirmanajer/rejectDetail") ?>';
+                ? '<?php echo site_url("kajiulang/approveDetail") ?>'
+                : '<?php echo site_url("kajiulang/rejectDetail") ?>';
 
             const res = await fetch(url, {
                 method: 'POST',
