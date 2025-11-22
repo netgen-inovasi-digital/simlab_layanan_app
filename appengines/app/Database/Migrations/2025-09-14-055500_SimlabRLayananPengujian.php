@@ -3,6 +3,7 @@
 namespace App\Database\Migrations;
 
 use CodeIgniter\Database\Migration;
+use Config\Database;
 
 class CreateRLayananPengujian extends Migration
 {
@@ -10,34 +11,34 @@ class CreateRLayananPengujian extends Migration
     {
         $this->forge->addField([
             'kode' => [
-                'type' => 'INT',
-                'unsigned' => true,
+                'type'           => 'INT',
+                'unsigned'       => true,
                 'auto_increment' => true,
             ],
             'nama_layanan' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 255,
-                'null' => true,
+                'null'       => true,
             ],
             'kode_alat' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 50,
-                'null' => true,
+                'null'       => true,
             ],
             'kode_parameter' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 20,
-                'null' => true,
+                'null'       => true,
             ],
             'kode_jenis' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 2,
-                'null' => true,
+                'null'       => true,
             ],
             'satuan' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 15,
-                'null' => true,
+                'null'       => true,
             ],
             'biaya' => [
                 'type' => 'DOUBLE',
@@ -54,25 +55,10 @@ class CreateRLayananPengujian extends Migration
         $this->forge->addKey('kode_parameter');
         $this->forge->addKey('kode_jenis');
 
-        $this->forge->createTable('r_layanan_pengujian');
+        $this->forge->createTable('r_layanan_pengujian', true);
 
-        // Jika FK lama mungkin sudah ada, drop dulu (agar migration idempotent pada DB yang sudah ada FK)
-        $db = \Config\Database::connect();
-        // Hapus FK lama jika ada (tidak error jika tidak ada) - silakan jalankan ini sebelum menambah FK baru
-        // NOTE: beberapa versi MySQL/MariaDB tidak support IF EXISTS untuk DROP FOREIGN KEY,
-        // tapi mengeksekusi DROP pada nama yang tidak ada akan error — jika yakin nama, gunakan; 
-        // di sini kita coba perlakuan aman: cek information_schema sebelum drop.
-        $db->query("
-            DELETE FROM information_schema.REFERENTIAL_CONSTRAINTS
-            WHERE CONSTRAINT_SCHEMA = DATABASE()
-              AND CONSTRAINT_NAME IN (
-                'fk_rlaypeng_paraKode',
-                'fk_rlaypeng_alatKode',
-                'fk_rlaypeng_jenKode'
-              );
-        ");
-
-        // Tambah FK baru semua dengan CASCADE
+        // Tambah FK
+        $db = Database::connect();
         $db->query("
             ALTER TABLE `r_layanan_pengujian`
                 ADD CONSTRAINT `fk_rlaypeng_paraKode` 
@@ -89,7 +75,6 @@ class CreateRLayananPengujian extends Migration
 
     public function down()
     {
-        // drop table (akan otomatis menghapus FK juga)
         $this->forge->dropTable('r_layanan_pengujian', true);
     }
 }
