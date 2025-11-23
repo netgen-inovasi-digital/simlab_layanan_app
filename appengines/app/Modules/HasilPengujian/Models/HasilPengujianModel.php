@@ -326,23 +326,34 @@ class HasilPengujianModel extends Model
      * 
      * @param int|string $lnKode Layanan code
      * @param int $userId User ID
-     * @param int $fromStatus From status
+     * @param int|null $fromStatus From status (null = update all regardless of current status)
      * @param int $toStatus To status
      * @return bool
      */
-    public function updateFilesStatusForUser($lnKode, int $userId, int $fromStatus, int $toStatus): bool
+    public function updateFilesStatusForUser($lnKode, int $userId, ?int $fromStatus, int $toStatus): bool
     {
-        $sql = "
-            UPDATE t_layanan_detil d
-            INNER JOIN r_tim rt ON rt.uji_kode = d.uji_kode
-            SET d.files = ?
-            WHERE d.kode_layanan = ?
-              AND rt.user_id = ?
-              AND d.status_layanan = 1
-              AND d.files = ?
-        ";
-
-        return $this->db->query($sql, [$toStatus, $lnKode, $userId, $fromStatus]);
+        if ($fromStatus !== null) {
+            $sql = "
+                UPDATE t_layanan_detil d
+                INNER JOIN r_tim rt ON rt.uji_kode = d.uji_kode
+                SET d.files = ?
+                WHERE d.kode_layanan = ?
+                  AND rt.user_id = ?
+                  AND d.status_layanan = 1
+                  AND d.files = ?
+            ";
+            return $this->db->query($sql, [$toStatus, $lnKode, $userId, $fromStatus]);
+        } else {
+            $sql = "
+                UPDATE t_layanan_detil d
+                INNER JOIN r_tim rt ON rt.uji_kode = d.uji_kode
+                SET d.files = ?
+                WHERE d.kode_layanan = ?
+                  AND rt.user_id = ?
+                  AND d.status_layanan = 1
+            ";
+            return $this->db->query($sql, [$toStatus, $lnKode, $userId]);
+        }
     }
 
     /**
