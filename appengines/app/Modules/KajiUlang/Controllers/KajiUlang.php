@@ -145,12 +145,12 @@ class KajiUlang extends BaseController
             }
             $response[] = $statusHtml;
 
-            // Aksi approve/reject 
-            $ujiKodeInt = (int)$row->uji_kode;
+            // Aksi approve/reject
+            $detailKode = (int)$row->kode; // Primary key dari t_layanan_detil
             $encLnForBtn = $encLnId;
             $komentarVal = $row->catatan_manajer !== null ? esc($row->catatan_manajer) : '';
 
-            $textarea = '<textarea class="form-control komentar-input" data-uji="' . $ujiKodeInt . '" rows="2" placeholder="Keterangan/manajer..."'
+            $textarea = '<textarea class="form-control komentar-input" data-detail="' . $detailKode . '" rows="2" placeholder="Keterangan/manajer..."'
                 . ' style="max-width:240px; min-width:160px; max-height:120px; min-height:48px; overflow-y:auto; overflow-x:hidden; resize:vertical; white-space:pre-wrap; word-break:break-word;">'
                 . $komentarVal .
                 '</textarea>';
@@ -158,8 +158,8 @@ class KajiUlang extends BaseController
             $response[] = $textarea;
 
             $aksiHtml = '<div class="d-flex justify-content-center gap-2 align-items-center">';
-            $aksiHtml .= '<span class="text-success btn-action btn-accept-manager" title="Setujui" data-ln="' . $encLnForBtn . '" data-uji="' . $ujiKodeInt . '"><i class="bi bi-check-circle"></i></span> ';
-            $aksiHtml .= '<span class="text-warning btn-action btn-reject-manager" title="Tolak" data-ln="' . $encLnForBtn . '" data-uji="' . $ujiKodeInt . '"><i class="bi bi-x-circle"></i></span>';
+            $aksiHtml .= '<span class="text-success btn-action btn-accept-manager" title="Setujui" data-ln="' . $encLnForBtn . '" data-detail="' . $detailKode . '"><i class="bi bi-check-circle"></i></span> ';
+            $aksiHtml .= '<span class="text-warning btn-action btn-reject-manager" title="Tolak" data-ln="' . $encLnForBtn . '" data-detail="' . $detailKode . '"><i class="bi bi-x-circle"></i></span>';
             $aksiHtml .= '</div>';
 
             $response[] = $aksiHtml;
@@ -223,9 +223,9 @@ class KajiUlang extends BaseController
     public function approveDetail()
     {
         $lnEnc = $this->request->getPost('ln');
-        $ujiRaw = $this->request->getPost('uji');
+        $detailRaw = $this->request->getPost('detail');
 
-        if (empty($lnEnc) || $ujiRaw === null) {
+        if (empty($lnEnc) || $detailRaw === null) {
             return $this->response->setJSON([
                 'res' => false,
                 'affected' => 0,
@@ -235,7 +235,7 @@ class KajiUlang extends BaseController
             ]);
         }
 
-        $uji = (int)$ujiRaw;
+        $detailKode = (int)$detailRaw;
 
         try {
             $lnId = $this->encrypter->decrypt(hex2bin($lnEnc));
@@ -273,32 +273,32 @@ class KajiUlang extends BaseController
             ]);
         }
 
-        // Check authorization for this uji
-        if (!$this->kajiUlangModel->isUserAuthorizedForUji($uji, $managerId)) {
+        // Check authorization for this detail record
+        if (!$this->kajiUlangModel->isUserAuthorizedForDetail($detailKode, $managerId)) {
             return $this->response->setJSON([
                 'res' => false,
                 'affected' => 0,
-                'msg' => 'Anda tidak berwenang memproses uji ini.',
+                'msg' => 'Anda tidak berwenang memproses detail ini.',
                 'xname' => csrf_token(),
                 'xhash' => csrf_hash()
             ]);
         }
 
-        // Count total detail rows
-        $total = $this->kajiUlangModel->countLayananDetail($lnId, $uji);
+        // Count total detail rows (should be 1 for this specific record)
+        $total = $this->kajiUlangModel->countDetailByKode($detailKode);
 
         if ($total === 0) {
             return $this->response->setJSON([
                 'res' => false,
                 'affected' => 0,
-                'msg' => 'No matching detail rows found',
+                'msg' => 'Detail record tidak ditemukan',
                 'xname' => csrf_token(),
                 'xhash' => csrf_hash()
             ]);
         }
 
-        // Count already approved
-        $already = $this->kajiUlangModel->countLayananDetail($lnId, $uji, 1);
+        // Check if already approved
+        $already = $this->kajiUlangModel->countDetailByKode($detailKode, 1);
 
         if ($already === $total) {
             // Already approved, check if parent needs update
@@ -325,7 +325,7 @@ class KajiUlang extends BaseController
         $this->kajiUlangModel->transStart();
 
         // Approve detail
-        $affected = $this->kajiUlangModel->approveLayananDetail($lnId, $uji, $managerId);
+        $affected = $this->kajiUlangModel->approveLayananDetailByKode($detailKode, $managerId);
         $parentUpdated = false;
 
         if ($affected > 0) {
@@ -357,9 +357,9 @@ class KajiUlang extends BaseController
     public function rejectDetail()
     {
         $lnEnc = $this->request->getPost('ln');
-        $ujiRaw = $this->request->getPost('uji');
+        $detailRaw = $this->request->getPost('detail');
 
-        if (empty($lnEnc) || $ujiRaw === null) {
+        if (empty($lnEnc) || $detailRaw === null) {
             return $this->response->setJSON([
                 'res' => false,
                 'affected' => 0,
@@ -369,7 +369,7 @@ class KajiUlang extends BaseController
             ]);
         }
 
-        $uji = (int)$ujiRaw;
+        $detailKode = (int)$detailRaw;
 
         try {
             $lnId = $this->encrypter->decrypt(hex2bin($lnEnc));
@@ -407,32 +407,32 @@ class KajiUlang extends BaseController
             ]);
         }
 
-        // Check authorization for this uji
-        if (!$this->kajiUlangModel->isUserAuthorizedForUji($uji, $managerId)) {
+        // Check authorization for this detail record
+        if (!$this->kajiUlangModel->isUserAuthorizedForDetail($detailKode, $managerId)) {
             return $this->response->setJSON([
                 'res' => false,
                 'affected' => 0,
-                'msg' => 'Anda tidak berwenang memproses uji ini.',
+                'msg' => 'Anda tidak berwenang memproses detail ini.',
                 'xname' => csrf_token(),
                 'xhash' => csrf_hash()
             ]);
         }
 
-        // Count total detail rows
-        $total = $this->kajiUlangModel->countLayananDetail($lnId, $uji);
+        // Count total detail rows (should be 1 for this specific record)
+        $total = $this->kajiUlangModel->countDetailByKode($detailKode);
 
         if ($total === 0) {
             return $this->response->setJSON([
                 'res' => false,
                 'affected' => 0,
-                'msg' => 'No matching detail rows found',
+                'msg' => 'Detail record tidak ditemukan',
                 'xname' => csrf_token(),
                 'xhash' => csrf_hash()
             ]);
         }
 
-        // Count already rejected
-        $already = $this->kajiUlangModel->countLayananDetail($lnId, $uji, 2);
+        // Check if already rejected
+        $already = $this->kajiUlangModel->countDetailByKode($detailKode, 2);
 
         if ($already === $total) {
             // Already rejected, check if parent needs update
@@ -459,7 +459,7 @@ class KajiUlang extends BaseController
         $this->kajiUlangModel->transStart();
 
         // Reject detail
-        $affected = $this->kajiUlangModel->rejectLayananDetail($lnId, $uji, $managerId);
+        $affected = $this->kajiUlangModel->rejectLayananDetailByKode($detailKode, $managerId);
         $parentUpdated = false;
 
         if ($affected > 0) {

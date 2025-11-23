@@ -241,10 +241,10 @@
         const inputs = modalEl.querySelectorAll('.komentar-input');
         const items = [];
         inputs.forEach(function(inp) {
-            const uji = inp.getAttribute('data-uji');
+            const detail = inp.getAttribute('data-detail');
             const val = inp.value;
-            if (uji !== null && uji !== '') {
-                items.push({ ujiKode: parseInt(uji, 10), komentar: val });
+            if (detail !== null && detail !== '') {
+                items.push({ detailKode: parseInt(detail, 10), komentar: val });
             }
         });
 
@@ -418,10 +418,10 @@
         if (!el) return;
         
         const ln = el.dataset.ln;
-        const uji = el.dataset.uji;
+        const detail = el.dataset.detail;
         
-        if (!ln || (uji === undefined || uji === null)) {
-            console.warn('handleApproveReject: missing ln or uji', ln, uji);
+        if (!ln || (detail === undefined || detail === null)) {
+            console.warn('handleApproveReject: missing ln or detail', ln, detail);
             return;
         }
 
@@ -444,7 +444,7 @@
             const csrfToken = _getCsrf();
             const formData = new FormData();
             formData.append('ln', ln);
-            formData.append('uji', uji);
+            formData.append('detail', detail);
 
             const url = isAccept
                 ? '<?php echo site_url("kajiulang/approveDetail") ?>'

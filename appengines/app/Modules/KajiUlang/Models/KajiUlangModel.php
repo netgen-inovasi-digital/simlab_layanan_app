@@ -154,6 +154,7 @@ class KajiUlangModel extends Model
     {
         $builder = $this->db->table('t_layanan_detil as d');
         $builder->select("
+            d.kode,
             d.uji_kode,
             d.kode_layanan,
             d.nama_layanan,
@@ -176,10 +177,10 @@ class KajiUlangModel extends Model
     }
 
     /**
-     * Update komentar/catatan manajer for multiple uji
-     * 
+     * Update komentar/catatan manajer for multiple detail records
+     *
      * @param int|string $lnKode Layanan code
-     * @param array $items Array of items with ujiKode and komentar
+     * @param array $items Array of items with detailKode and komentar
      * @return bool
      */
     public function updateKomentarBatch($lnKode, array $items): bool
@@ -188,13 +189,13 @@ class KajiUlangModel extends Model
 
         $builder = $this->db->table('t_layanan_detil');
         foreach ($items as $it) {
-            $uji = isset($it['ujiKode']) ? (int)$it['ujiKode'] : null;
+            $detailKode = isset($it['detailKode']) ? (int)$it['detailKode'] : null;
             $kom = isset($it['komentar']) ? $it['komentar'] : null;
 
-            if ($uji === null) continue;
+            if ($detailKode === null) continue;
 
-            $builder->where('kode_layanan', $lnKode)
-                ->where('uji_kode', $uji)
+            $builder->where('kode', $detailKode)
+                ->where('kode_layanan', $lnKode)
                 ->update(['catatan_manajer' => $kom]);
         }
 
@@ -314,6 +315,82 @@ class KajiUlangModel extends Model
             ->update([
                 'status_layanan'     => 2,
                 'terima_layanan_by'  => $managerId
+            ]);
+
+        return $this->db->affectedRows();
+    }
+
+    /**
+     * Check if user is authorized for specific detail record
+     *
+     * @param int $detailKode Detail kode (primary key)
+     * @param int $userId User ID
+     * @return bool
+     */
+    public function isUserAuthorizedForDetail(int $detailKode, int $userId): bool
+    {
+        $builder = $this->db->table('t_layanan_detil as d');
+        $builder->join('r_tim rt', 'rt.uji_kode = d.uji_kode', 'inner');
+        $builder->where('d.kode', $detailKode);
+        $builder->where('rt.user_id', $userId);
+
+        return $builder->countAllResults() > 0;
+    }
+
+    /**
+     * Count detail records by kode with optional status filter
+     *
+     * @param int $detailKode Detail kode (primary key)
+     * @param int|null $status Status filter (optional)
+     * @return int
+     */
+    public function countDetailByKode(int $detailKode, ?int $status = null): int
+    {
+        $builder = $this->db->table('t_layanan_detil');
+        $builder->where('kode', $detailKode);
+
+        if ($status !== null) {
+            $builder->where('status_layanan', $status);
+        }
+
+        return $builder->countAllResults();
+    }
+
+    /**
+     * Approve layanan detail by kode (primary key)
+     *
+     * @param int $detailKode Detail kode (primary key)
+     * @param int $managerId Manager user ID
+     * @return int Affected rows
+     */
+    public function approveLayananDetailByKode(int $detailKode, int $managerId): int
+    {
+        $result = $this->db->table('t_layanan_detil')
+            ->where('kode', $detailKode)
+            ->where('(status_layanan IS NULL OR status_layanan != 1)')
+            ->update([
+                'status_layanan'    => 1,
+                'terima_layanan_by' => $managerId
+            ]);
+
+        return $this->db->affectedRows();
+    }
+
+    /**
+     * Reject layanan detail by kode (primary key)
+     *
+     * @param int $detailKode Detail kode (primary key)
+     * @param int $managerId Manager user ID
+     * @return int Affected rows
+     */
+    public function rejectLayananDetailByKode(int $detailKode, int $managerId): int
+    {
+        $result = $this->db->table('t_layanan_detil')
+            ->where('kode', $detailKode)
+            ->where('(status_layanan IS NULL OR status_layanan != 2)')
+            ->update([
+                'status_layanan'    => 2,
+                'terima_layanan_by' => $managerId
             ]);
 
         return $this->db->affectedRows();
