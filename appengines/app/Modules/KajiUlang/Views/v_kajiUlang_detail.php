@@ -4,7 +4,7 @@
             <div class="card-header d-flex justify-content-between align-items-center">
                 <label class="card-title mb-0 d-flex">
                     <span style="cursor:pointer" class="me-2" onclick="loadContent('kajiulang')">
-				        <i class="bi bi-arrow-left-circle fs-5 text-secondary"></i></span>
+                        <i class="bi bi-arrow-left-circle fs-5 text-secondary"></i></span>
                     <div><?php echo $title ?></div>
                 </label>
             </div>
@@ -16,7 +16,9 @@
                     </div>
                     <div class="col-12 col-md-4 border-start">
                         <div>Tanggal Layanan:</div>
-                        <div class="fw-medium"><?php echo esc($layananData->lnTgl ? date('d/m/Y H:i', strtotime($layananData->lnTgl)) : '-'); ?></div>
+                        <div class="fw-medium">
+                            <?php echo esc($layananData->lnTgl ? date('d/m/Y H:i', strtotime($layananData->lnTgl)) : '-'); ?>
+                        </div>
                     </div>
                     <div class="col-12 col-md-4 border-start">
                         <div>Status Layanan:</div>
@@ -37,7 +39,8 @@
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label class="fw-bold text-muted small">Kemasan Sampel:</label>
-                                    <p class="mb-0" id="sampleKemasan"><?php echo esc($sampleData['kemasan'] ?? '-'); ?></p>
+                                    <p class="mb-0" id="sampleKemasan"><?php echo esc($sampleData['kemasan'] ?? '-'); ?>
+                                    </p>
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label class="fw-bold text-muted small">Sifat Sampel:</label>
@@ -49,11 +52,13 @@
                                 </div>
                                 <div class="col-12 mb-3">
                                     <label class="fw-bold text-muted small">Deskripsi:</label>
-                                    <p class="mb-0 text-wrap" id="sampleDeskripsi"><?php echo esc($sampleData['deskripsi'] ?? '-'); ?></p>
+                                    <p class="mb-0 text-wrap" id="sampleDeskripsi">
+                                        <?php echo esc($sampleData['deskripsi'] ?? '-'); ?></p>
                                 </div>
                                 <div class="col-12">
                                     <label class="fw-bold text-muted small">Keterangan Khusus:</label>
-                                    <p class="mb-0 text-wrap" id="sampleKeteranganKhusus"><?php echo esc($sampleData['keterangan_khusus'] ?? '-'); ?></p>
+                                    <p class="mb-0 text-wrap" id="sampleKeteranganKhusus">
+                                        <?php echo esc($sampleData['keterangan_khusus'] ?? '-'); ?></p>
                                 </div>
                             </div>
                         </div>
@@ -78,7 +83,7 @@
                             <th show width="5%">No</th>
                             <th show width="20%">Layanan</th>
                             <th show width="8%">Jumlah</th>
-                            <th show width="25%">Keterangan</th>
+                            <th show width="25%">Metode Uji</th>
                             <th show width="10%">Status</th>
                             <th show width="20%">Berikan keterangan</th>
                             <th show width="12%" class="text-center">Aksi</th>
@@ -92,145 +97,145 @@
 </div>
 
 <script>
-table = createTable({
-    apiUrl: '<?php echo site_url("kajiulang/detaillist/".$idenc) ?>',
-    onLoaded: function(data) {
-        // Store encrypted layanan ID for use in buttons
-        window.encLnId = data.encLn;
-    }
-});
+    table = createTable({
+        apiUrl: '<?php echo site_url("kajiulang/detaillist/" . $idenc) ?>',
+        onLoaded: function (data) {
+            // Store encrypted layanan ID for use in buttons
+            window.encLnId = data.encLn;
+        }
+    });
 
-// Save komentar functionality
-$('#btnSaveKomentar').on('click', function() {
-    if (!window.encLnId) {
-        alert('Data belum dimuat dengan lengkap');
-        return;
-    }
+    // Save komentar functionality
+    $('#btnSaveKomentar').on('click', function () {
+        if (!window.encLnId) {
+            alert('Data belum dimuat dengan lengkap');
+            return;
+        }
 
-    let items = [];
-    $('.komentar-input').each(function() {
-        let ujiKode = $(this).data('uji');
-        let komentar = $(this).val();
-        items.push({
-            ujiKode: ujiKode,
-            komentar: komentar
+        let items = [];
+        $('.komentar-input').each(function () {
+            let ujiKode = $(this).data('uji');
+            let komentar = $(this).val();
+            items.push({
+                ujiKode: ujiKode,
+                komentar: komentar
+            });
+        });
+
+        if (items.length === 0) {
+            alert('Tidak ada data untuk disimpan');
+            return;
+        }
+
+        $.ajax({
+            url: '<?php echo site_url("kajiulang/savekomentar") ?>',
+            type: 'POST',
+            data: {
+                lnId: window.encLnId,
+                items: items,
+                '<?php echo csrf_token() ?>': '<?php echo csrf_hash() ?>'
+            },
+            success: function (response) {
+                if (response.res) {
+                    alert('Komentar berhasil disimpan');
+                    table.ajax.reload();
+                } else {
+                    alert('Gagal menyimpan komentar: ' + response.msg);
+                }
+            },
+            error: function () {
+                alert('Terjadi kesalahan saat menyimpan komentar');
+            }
         });
     });
 
-    if (items.length === 0) {
-        alert('Tidak ada data untuk disimpan');
-        return;
-    }
-
-    $.ajax({
-        url: '<?php echo site_url("kajiulang/savekomentar") ?>',
-        type: 'POST',
-        data: {
-            lnId: window.encLnId,
-            items: items,
-            '<?php echo csrf_token() ?>': '<?php echo csrf_hash() ?>'
-        },
-        success: function(response) {
-            if (response.res) {
-                alert('Komentar berhasil disimpan');
-                table.ajax.reload();
-            } else {
-                alert('Gagal menyimpan komentar: ' + response.msg);
-            }
-        },
-        error: function() {
-            alert('Terjadi kesalahan saat menyimpan komentar');
+    // Kirim ke admin functionality
+    $('#btnKirim').on('click', function () {
+        if (!window.encLnId) {
+            alert('Data belum dimuat dengan lengkap');
+            return;
         }
-    });
-});
 
-// Kirim ke admin functionality
-$('#btnKirim').on('click', function() {
-    if (!window.encLnId) {
-        alert('Data belum dimuat dengan lengkap');
-        return;
-    }
+        if (!confirm('Apakah Anda yakin ingin mengirim layanan ini ke admin?')) {
+            return;
+        }
 
-    if (!confirm('Apakah Anda yakin ingin mengirim layanan ini ke admin?')) {
-        return;
-    }
-
-    $.ajax({
-        url: '<?php echo site_url("kajiulang/kirim") ?>',
-        type: 'POST',
-        data: {
-            ln: window.encLnId,
-            '<?php echo csrf_token() ?>': '<?php echo csrf_hash() ?>'
-        },
-        success: function(response) {
-            if (response.res) {
-                alert(response.msg);
-                if (response.parent_updated) {
-                    loadContent('kajiulang');
+        $.ajax({
+            url: '<?php echo site_url("kajiulang/kirim") ?>',
+            type: 'POST',
+            data: {
+                ln: window.encLnId,
+                '<?php echo csrf_token() ?>': '<?php echo csrf_hash() ?>'
+            },
+            success: function (response) {
+                if (response.res) {
+                    alert(response.msg);
+                    if (response.parent_updated) {
+                        loadContent('kajiulang');
+                    } else {
+                        table.ajax.reload();
+                    }
                 } else {
-                    table.ajax.reload();
+                    alert('Gagal mengirim: ' + response.msg);
                 }
-            } else {
-                alert('Gagal mengirim: ' + response.msg);
+            },
+            error: function () {
+                alert('Terjadi kesalahan saat mengirim layanan');
             }
-        },
-        error: function() {
-            alert('Terjadi kesalahan saat mengirim layanan');
-        }
+        });
     });
-});
 
-// Approve functionality
-$(document).on('click', '.btn-accept-manager', function() {
-    let lnId = $(this).data('ln');
-    let ujiKode = $(this).data('uji');
+    // Approve functionality
+    $(document).on('click', '.btn-accept-manager', function () {
+        let lnId = $(this).data('ln');
+        let ujiKode = $(this).data('uji');
 
-    $.ajax({
-        url: '<?php echo site_url("kajiulang/approvedetail") ?>',
-        type: 'POST',
-        data: {
-            ln: lnId,
-            uji: ujiKode,
-            '<?php echo csrf_token() ?>': '<?php echo csrf_hash() ?>'
-        },
-        success: function(response) {
-            if (response.res) {
-                alert('Berhasil disetujui');
-                table.ajax.reload();
-            } else {
-                alert('Gagal menyetujui: ' + response.msg);
+        $.ajax({
+            url: '<?php echo site_url("kajiulang/approvedetail") ?>',
+            type: 'POST',
+            data: {
+                ln: lnId,
+                uji: ujiKode,
+                '<?php echo csrf_token() ?>': '<?php echo csrf_hash() ?>'
+            },
+            success: function (response) {
+                if (response.res) {
+                    alert('Berhasil disetujui');
+                    table.ajax.reload();
+                } else {
+                    alert('Gagal menyetujui: ' + response.msg);
+                }
+            },
+            error: function () {
+                alert('Terjadi kesalahan saat menyetujui');
             }
-        },
-        error: function() {
-            alert('Terjadi kesalahan saat menyetujui');
-        }
+        });
     });
-});
 
-// Reject functionality
-$(document).on('click', '.btn-reject-manager', function() {
-    let lnId = $(this).data('ln');
-    let ujiKode = $(this).data('uji');
+    // Reject functionality
+    $(document).on('click', '.btn-reject-manager', function () {
+        let lnId = $(this).data('ln');
+        let ujiKode = $(this).data('uji');
 
-    $.ajax({
-        url: '<?php echo site_url("kajiulang/rejectdetail") ?>',
-        type: 'POST',
-        data: {
-            ln: lnId,
-            uji: ujiKode,
-            '<?php echo csrf_token() ?>': '<?php echo csrf_hash() ?>'
-        },
-        success: function(response) {
-            if (response.res) {
-                alert('Berhasil ditolak');
-                table.ajax.reload();
-            } else {
-                alert('Gagal menolak: ' + response.msg);
+        $.ajax({
+            url: '<?php echo site_url("kajiulang/rejectdetail") ?>',
+            type: 'POST',
+            data: {
+                ln: lnId,
+                uji: ujiKode,
+                '<?php echo csrf_token() ?>': '<?php echo csrf_hash() ?>'
+            },
+            success: function (response) {
+                if (response.res) {
+                    alert('Berhasil ditolak');
+                    table.ajax.reload();
+                } else {
+                    alert('Gagal menolak: ' + response.msg);
+                }
+            },
+            error: function () {
+                alert('Terjadi kesalahan saat menolak');
             }
-        },
-        error: function() {
-            alert('Terjadi kesalahan saat menolak');
-        }
+        });
     });
-});
 </script>

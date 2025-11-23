@@ -331,7 +331,6 @@ class FormulirAdmin extends BaseController
         d.kode_layanan,
         d.nama_layanan,
         d.kode_jenis,
-        GROUP_CONCAT(DISTINCT d.catatan_pelanggan SEPARATOR ' | ') AS detKet,
         GROUP_CONCAT(DISTINCT d.catatan_manajer SEPARATOR ' | ') AS detKetLn,
         SUM(d.jumlah) AS jumlah,
         SUM(d.biaya) AS detBiaya,
@@ -355,15 +354,6 @@ class FormulirAdmin extends BaseController
             $response[] = $row->nama_layanan ?? '-';
             $response[] = isset($row->detBiaya) ? number_format($row->detBiaya, 0, ',', '.') : '-';
             $response[] = isset($row->jumlah) ? (int) $row->jumlah : 0;
-
-            // detKet (keterangan item)
-            $response[] = '<div 
-                style="display:block; max-width:240px; min-width:160px; width:100%;
-                    max-height:120px; min-height:48px; overflow-y:auto; overflow-x:hidden;
-                    padding:4px 6px; border:1px solid #ddd; border-radius:4px; background:#f9f9f9;
-                    white-space:pre-wrap; word-break:break-word; font-size:0.9rem;">'
-                . htmlspecialchars($row->detKet ?? '', ENT_QUOTES, 'UTF-8') .
-                '</div>';
 
             // status hasil grouping (1 = diterima, 2 = ditolak, lainnya = pending)
             $statusGroup = isset($row->detStatusGroup) ? (int) $row->detStatusGroup : null;

@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 namespace Modules\FormulirAdmin\Controllers;
 
@@ -8,7 +8,7 @@ use App\Models\MyModel;
 class FormulirAdminRapatJas extends BaseController
 {
     private $table = 'simlab_t_layanan';
-    private $id    = 'lnKode';
+    private $id = 'lnKode';
     protected $encrypter;
     private $sessionKey = 'keranjang_formadmin_rapatjas';
 
@@ -34,7 +34,7 @@ class FormulirAdminRapatJas extends BaseController
         if (method_exists($modelUser, 'getAllData')) {
             $users = $modelUser->getAllData();
         } elseif (method_exists($modelUser, 'getAllDataWithOrder')) {
-            $users = $modelUser->getAllDataWithOrder([], ['user_name' => 'ASC']);
+            $users = $modelUser->getAllDataWithOrder(['user_name' => 'ASC']);
         } else {
             // fallback ke query builder jika MyModel tidak punya helper
             $db = \Config\Database::connect();
@@ -60,17 +60,17 @@ class FormulirAdminRapatJas extends BaseController
         $categories = [];
         if (!empty($categoriesRaw)) {
             foreach ($categoriesRaw as $c) {
-                $kode = isset($c->jenKode) ? trim((string)$c->jenKode) : '';
-                $nama = (isset($c->jenNama) && trim((string)$c->jenNama) !== '') ? trim((string)$c->jenNama) : $kode;
+                $kode = isset($c->jenKode) ? trim((string) $c->jenKode) : '';
+                $nama = (isset($c->jenNama) && trim((string) $c->jenNama) !== '') ? trim((string) $c->jenNama) : $kode;
                 if ($kode !== '') {
-                    $categories[] = (object)[ 'jenKode' => $kode, 'jenNama' => $nama ];
+                    $categories[] = (object) ['jenKode' => $kode, 'jenNama' => $nama];
                 }
             }
         }
 
         $data = [
             'title' => 'Data Formulir Admin - Rapat JAS',
-            'user'  => (new MyModel('simlab_account_users'))->getDataById('user_id', $user_id),
+            'user' => (new MyModel('simlab_account_users'))->getDataById('user_id', $user_id),
             'users' => $users,
             'categories' => $categories
         ];
@@ -80,12 +80,12 @@ class FormulirAdminRapatJas extends BaseController
 
     public function delete($id)
     {
-        $id    = $this->encrypter->decrypt(hex2bin($id));
+        $id = $this->encrypter->decrypt(hex2bin($id));
         $model = new MyModel($this->table);
-        $res   = $model->deleteData($this->id, $id);
+        $res = $model->deleteData($this->id, $id);
 
         return $this->response->setJSON([
-            'res'   => $res,
+            'res' => $res,
             'xname' => csrf_token(),
             'xhash' => csrf_hash()
         ]);
@@ -94,9 +94,9 @@ class FormulirAdminRapatJas extends BaseController
     public function submit()
     {
         $idenc = $this->request->getPost('id');
-        $data  = [
+        $data = [
             'lnOrangNama' => $this->request->getPost('lnOrangNama'),
-            'lnInstansi'  => $this->request->getPost('lnInstansi'),
+            'lnInstansi' => $this->request->getPost('lnInstansi'),
         ];
 
         $model = new MyModel($this->table);
@@ -104,12 +104,12 @@ class FormulirAdminRapatJas extends BaseController
         if ($idenc == "") {
             $res = $model->insertData($data);
         } else {
-            $id  = $this->encrypter->decrypt(hex2bin($idenc));
+            $id = $this->encrypter->decrypt(hex2bin($idenc));
             $res = $model->updateData($data, $this->id, $id);
         }
 
         return $this->response->setJSON([
-            'res'   => $res,
+            'res' => $res,
             'xname' => csrf_token(),
             'xhash' => csrf_hash()
         ]);
@@ -122,7 +122,7 @@ class FormulirAdminRapatJas extends BaseController
     public function datalist()
     {
         $model = new MyModel($this->table);
-        $data  = [];
+        $data = [];
 
         // Ambil parameter kategoriLayanan dari query string (status filtering)
         $kategoriParam = $this->request->getGet('kategoriLayanan');
@@ -142,19 +142,21 @@ class FormulirAdminRapatJas extends BaseController
             $list = $model->getAllDataByWhere([], ['lnTgl' => 'DESC']);
         }
 
-        $userModel  = new MyModel('simlab_account_users');
+        $userModel = new MyModel('simlab_account_users');
         $layananDet = new MyModel('t_layanan_detil');
         $db = \Config\Database::connect();
 
         foreach ($list as $row) {
-            $lnStatusInt = (int)$row->lnStatus;
+            $lnStatusInt = (int) $row->lnStatus;
 
             // Filter by status
             if (is_array($filterStatuses)) {
-                if (!in_array($lnStatusInt, $filterStatuses, true)) continue;
+                if (!in_array($lnStatusInt, $filterStatuses, true))
+                    continue;
             } else {
                 // Perilaku default lama: lewati status tertentu (0,2)
-                if (in_array($lnStatusInt, [0, 2], true)) continue;
+                if (in_array($lnStatusInt, [0, 2], true))
+                    continue;
             }
 
             // FILTER KHUSUS RAPAT JAS: Hanya tampilkan jika ada detil dengan kode_jenis dimulai 'D'
@@ -210,10 +212,10 @@ class FormulirAdminRapatJas extends BaseController
             }
 
             // ambil data user
-            $personName   = null;
+            $personName = null;
             $userIdentity = '-';
-            $instansi     = '-';
-            $u            = null;
+            $instansi = '-';
+            $u = null;
 
             // 1) Cek langsung dari user_id (FK)
             if (!empty($row->user_id)) {
@@ -223,26 +225,27 @@ class FormulirAdminRapatJas extends BaseController
             // 2) Jika belum ada, cek berdasarkan email (lnAccEmail)
             if (!$u && !empty($row->lnAccEmail)) {
                 $users = $userModel->getAllDataById(['user_email' => $row->lnAccEmail]);
-                if (!empty($users)) $u = is_array($users) ? $users[0] : $users;
+                if (!empty($users))
+                    $u = is_array($users) ? $users[0] : $users;
             }
 
             // 3) Jika masih belum ketemu, cari user_id dari invoice (lnNoTransaksi)
             if (!$u && !empty($row->lnNoTransaksi)) {
                 $qb = $db->table($this->table);
                 $qb->select('user_id')
-                   ->where('lnNoTransaksi', $row->lnNoTransaksi)
-                   ->where('user_id IS NOT NULL', null, false);
+                    ->where('lnNoTransaksi', $row->lnNoTransaksi)
+                    ->where('user_id IS NOT NULL', null, false);
                 $res = $qb->get()->getResult();
                 if (!empty($res)) {
-                    $foundUserId = (int)$res[0]->user_id;
+                    $foundUserId = (int) $res[0]->user_id;
                     $u = $userModel->getDataById('user_id', $foundUserId);
                 }
             }
 
             // 4) Jika user ditemukan, ambil info
             if ($u) {
-                $personName   = $u->user_name ?? $u->user_email ?? '-';
-                $instansi     = $u->user_instansi ?? '-';
+                $personName = $u->user_name ?? $u->user_email ?? '-';
+                $instansi = $u->user_instansi ?? '-';
                 $userIdentity = $u->user_identity ?? '-';
             } else {
                 $personName = $row->lnAccEmail ?? '-';
@@ -304,7 +307,6 @@ class FormulirAdminRapatJas extends BaseController
             d.kode_layanan,
             d.nama_layanan,
             d.kode_jenis,
-            GROUP_CONCAT(DISTINCT d.catatan_pelanggan SEPARATOR ' | ') AS detKet,
             GROUP_CONCAT(DISTINCT d.catatan_manajer SEPARATOR ' | ') AS detKetLn,
             SUM(d.jumlah) AS jumlah,
             SUM(d.biaya) AS detBiaya,
@@ -317,18 +319,18 @@ class FormulirAdminRapatJas extends BaseController
         // FILTER KHUSUS: Hanya detil dengan kode_jenis dimulai 'D'
         $builder->like('d.kode_jenis', 'D', 'after');
         $builder->groupBy('d.uji_kode, d.kode_layanan, d.nama_layanan, d.kode_jenis');
-        
+
         $rows = $builder->get()->getResult();
 
         $data = [];
         $no = 1;
 
         foreach ($rows as $row) {
-            $response   = [];
+            $response = [];
             $response[] = $no++;
             $response[] = $row->nama_layanan ?? '-';
             $response[] = isset($row->detBiaya) ? number_format($row->detBiaya, 0, ',', '.') : '-';
-            $response[] = isset($row->jumlah) ? (int)$row->jumlah : 0;
+            $response[] = isset($row->jumlah) ? (int) $row->jumlah : 0;
 
             // detKet (keterangan item)
             $response[] = '<div 
@@ -336,11 +338,11 @@ class FormulirAdminRapatJas extends BaseController
                         max-height:120px; min-height:48px; overflow-y:auto; overflow-x:hidden;
                         padding:4px 6px; border:1px solid #ddd; border-radius:4px; background:#f9f9f9;
                         white-space:pre-wrap; word-break:break-word; font-size:0.9rem;">'
-                    . htmlspecialchars($row->detKet ?? '', ENT_QUOTES, 'UTF-8') .
-                    '</div>';
+                . htmlspecialchars($row->detKet ?? '', ENT_QUOTES, 'UTF-8') .
+                '</div>';
 
             // status hasil grouping
-            $statusGroup = isset($row->detStatusGroup) ? (int)$row->detStatusGroup : null;
+            $statusGroup = isset($row->detStatusGroup) ? (int) $row->detStatusGroup : null;
             if ($statusGroup === 1) {
                 $statusHtml = '<span class="badge bg-success">Diterima</span>';
             } elseif ($statusGroup === 2) {
@@ -349,18 +351,18 @@ class FormulirAdminRapatJas extends BaseController
                 $statusHtml = '<span class="badge bg-secondary">Pending</span>';
             }
             $response[] = $statusHtml;
-            
+
             // detKetLn (keterangan level layanan)
             $response[] = '<div 
             style="display:block; max-width:240px; min-width:160px; width:100%;
             max-height:120px; min-height:48px; overflow-y:auto; overflow-x:hidden;
             padding:4px 6px; border:1px solid #ddd; border-radius:4px; background:#f9f9f9;
             white-space:pre-wrap; word-break:break-word; font-size:0.9rem;">'
-            . htmlspecialchars($row->detKetLn ?? '', ENT_QUOTES, 'UTF-8') .
-            '</div>';
-            
+                . htmlspecialchars($row->detKetLn ?? '', ENT_QUOTES, 'UTF-8') .
+                '</div>';
+
             // Username yang melakukan accept layanan
-            $accUsernames = trim((string)($row->accUsernames ?? ''));
+            $accUsernames = trim((string) ($row->accUsernames ?? ''));
             $response[] = $accUsernames !== '' ? htmlspecialchars($accUsernames, ENT_QUOTES, 'UTF-8') : '-';
             $data[] = $response;
         }
@@ -391,13 +393,13 @@ class FormulirAdminRapatJas extends BaseController
             if ($lnKode !== null) {
                 $db = \Config\Database::connect();
                 $row = $db->table($this->table)
-                        ->select('user_id, lnAccEmail')
-                        ->where($this->id, $lnKode)
-                        ->get()
-                        ->getRow();
+                    ->select('user_id, lnAccEmail')
+                    ->where($this->id, $lnKode)
+                    ->get()
+                    ->getRow();
 
                 $phoneRaw = '';
-                $userObj  = null;
+                $userObj = null;
 
                 if ($row) {
                     $modelUser = new MyModel('simlab_account_users');
@@ -408,14 +410,19 @@ class FormulirAdminRapatJas extends BaseController
 
                     if (!$userObj && !empty($row->lnAccEmail)) {
                         $users = $modelUser->getAllDataById(['user_email' => $row->lnAccEmail]);
-                        if (!empty($users)) $userObj = is_array($users) ? $users[0] : $users;
+                        if (!empty($users))
+                            $userObj = is_array($users) ? $users[0] : $users;
                     }
 
                     if ($userObj) {
-                        if (isset($userObj->user_phone) && !empty($userObj->user_phone)) $phoneRaw = $userObj->user_phone;
-                        elseif (isset($userObj->user_telpon) && !empty($userObj->user_telpon)) $phoneRaw = $userObj->user_telpon;
-                        elseif (isset($userObj->user_telp) && !empty($userObj->user_telp)) $phoneRaw = $userObj->user_telp;
-                        elseif (isset($userObj->phone) && !empty($userObj->phone)) $phoneRaw = $userObj->phone;
+                        if (isset($userObj->user_phone) && !empty($userObj->user_phone))
+                            $phoneRaw = $userObj->user_phone;
+                        elseif (isset($userObj->user_telpon) && !empty($userObj->user_telpon))
+                            $phoneRaw = $userObj->user_telpon;
+                        elseif (isset($userObj->user_telp) && !empty($userObj->user_telp))
+                            $phoneRaw = $userObj->user_telp;
+                        elseif (isset($userObj->phone) && !empty($userObj->phone))
+                            $phoneRaw = $userObj->phone;
                     }
                 }
 
@@ -447,17 +454,28 @@ class FormulirAdminRapatJas extends BaseController
     private function formatStatus($status)
     {
         switch ($status) {
-            case 0: return '<span class="badge bg-secondary">Draft</span>';
-            case 1: return '<span class="badge bg-warning">In Review Manajer</span>';
-            case 2: return '<span class="badge bg-danger">Ditolak</span>';
-            case 3: return '<span class="badge bg-info">Belum direview</span>';
-            case 4: return '<span class="badge bg-primary">Dalam pengujian</span>';
-            case 5: return '<span class="badge bg-primary">LHUS diproses</span>';
-            case 6: return '<span class="badge bg-success">LHUS disetujui</span>';
-            case 7: return '<span class="badge bg-primary">LHU diproses</span>';
-            case 8: return '<span class="badge bg-success">LHU disetujui</span>';
-            case 9: return '<span class="badge bg-dark">Pengujian selesai</span>';
-            default: return '<span class="badge bg-dark">Unknown</span>';
+            case 0:
+                return '<span class="badge bg-secondary">Draft</span>';
+            case 1:
+                return '<span class="badge bg-warning">In Review Manajer</span>';
+            case 2:
+                return '<span class="badge bg-danger">Ditolak</span>';
+            case 3:
+                return '<span class="badge bg-info">Belum direview</span>';
+            case 4:
+                return '<span class="badge bg-primary">Dalam pengujian</span>';
+            case 5:
+                return '<span class="badge bg-primary">LHUS diproses</span>';
+            case 6:
+                return '<span class="badge bg-success">LHUS disetujui</span>';
+            case 7:
+                return '<span class="badge bg-primary">LHU diproses</span>';
+            case 8:
+                return '<span class="badge bg-success">LHU disetujui</span>';
+            case 9:
+                return '<span class="badge bg-dark">Pengujian selesai</span>';
+            default:
+                return '<span class="badge bg-dark">Unknown</span>';
         }
     }
 
@@ -503,7 +521,8 @@ class FormulirAdminRapatJas extends BaseController
                 try {
                     $err = $model->db->error();
                     log_message('error', 'Approve gagal: ' . json_encode($err));
-                } catch (\Throwable $e) {}
+                } catch (\Throwable $e) {
+                }
             }
         } catch (\Exception $e) {
             log_message('error', 'Approve exception: ' . $e->getMessage());
@@ -519,22 +538,28 @@ class FormulirAdminRapatJas extends BaseController
     /**
      * Normalisasi nomor telepon untuk WhatsApp
      */
-    public function normalize_phone_for_whatsapp($rawPhone) {
-        if (empty($rawPhone)) return '';
-        $digits = preg_replace('/\D+/', '', (string)$rawPhone);
-        if ($digits === '') return '';
+    public function normalize_phone_for_whatsapp($rawPhone)
+    {
+        if (empty($rawPhone))
+            return '';
+        $digits = preg_replace('/\D+/', '', (string) $rawPhone);
+        if ($digits === '')
+            return '';
         if (strpos($digits, '0') === 0) {
             $digits = '62' . substr($digits, 1);
         }
-        if (strlen($digits) < 8) return '';
+        if (strlen($digits) < 8)
+            return '';
         return $digits;
     }
 
     /**
      * Buat tombol HTML untuk WhatsApp
      */
-    public function whatsapp_button_html($phoneDigits, $name = null) {
-        if (empty($phoneDigits)) return '';
+    public function whatsapp_button_html($phoneDigits, $name = null)
+    {
+        if (empty($phoneDigits))
+            return '';
         $text = $name ? "Halo%20" . rawurlencode($name) . "%2C%20saya%20ingin%20bertanya%20tentang%20layanan%20Rapat%20JAS." : "Halo%2C%20saya%20ingin%20bertanya%20tentang%20layanan%20Rapat%20JAS.";
         $url = "https://wa.me/" . $phoneDigits . "?text=" . $text;
         return '<a href="' . esc($url) . '" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-success ms-1" title="Chat via WhatsApp">'

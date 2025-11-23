@@ -9,7 +9,7 @@ use Modules\KajiUlang\Models\KajiUlangModel;
 class KajiUlang extends BaseController
 {
     private $table = 'simlab_t_layanan';
-    private $id    = 'lnKode';
+    private $id = 'lnKode';
     protected $encrypter;
     protected $kajiUlangModel;
 
@@ -61,7 +61,7 @@ class KajiUlang extends BaseController
 
         foreach ($list as $row) {
             // HANYA skip status=0 jika TIDAK sedang mem-filter
-            if ((int)$row->lnStatus === 0 && empty($statusArr)) {
+            if ((int) $row->lnStatus === 0 && empty($statusArr)) {
                 continue;
             }
 
@@ -69,8 +69,8 @@ class KajiUlang extends BaseController
             $response = [];
 
             $pemesanNama = !empty($row->pemesan_name) ? $row->pemesan_name : '-';
-            $tipe        = !empty($row->pemesan_identity) ? $row->pemesan_identity : '-';
-            $tanggal     = !empty($row->lnTgl) ? date('d-m-Y H:i', strtotime($row->lnTgl)) : '-';
+            $tipe = !empty($row->pemesan_identity) ? $row->pemesan_identity : '-';
+            $tanggal = !empty($row->lnTgl) ? date('d-m-Y H:i', strtotime($row->lnTgl)) : '-';
 
             $combined = '
                 <div style="line-height:1.3;">
@@ -128,7 +128,7 @@ class KajiUlang extends BaseController
             $response = [];
             $response[] = $no++;
             $response[] = $row->nama_layanan ?? '-';
-            $response[] = isset($row->jumlah) ? (int)$row->jumlah : 0;
+            $response[] = isset($row->jumlah) ? (int) $row->jumlah : 0;
 
             $response[] = isset($row->metode_nama) && !empty($row->metode_nama) ? esc($row->metode_nama) : '-';
 
@@ -192,7 +192,7 @@ class KajiUlang extends BaseController
 
         try {
             $lnKode = $this->encrypter->decrypt(hex2bin($input['lnId']));
-            $lnKode = (int)$lnKode;
+            $lnKode = (int) $lnKode;
         } catch (\Exception $e) {
             return $this->response->setJSON([
                 'res' => false,
@@ -255,7 +255,7 @@ class KajiUlang extends BaseController
             ]);
         }
 
-        $session   = session();
+        $session = session();
         $managerId = (int) ($session->get('id_user') ?? 0);
 
         if ($managerId <= 0) {
@@ -350,12 +350,12 @@ class KajiUlang extends BaseController
         $transOk = $this->kajiUlangModel->transStatus();
 
         return $this->response->setJSON([
-            'res'      => $transOk && $affected > 0,
+            'res' => $transOk && $affected > 0,
             'affected' => $affected,
-            'msg'      => $affected > 0 ? 'Berhasil disetujui' : 'No rows updated',
+            'msg' => $affected > 0 ? 'Berhasil disetujui' : 'No rows updated',
             'parent_updated' => $parentUpdated,
-            'xname'    => csrf_token(),
-            'xhash'    => csrf_hash()
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
         ]);
     }
 
@@ -389,7 +389,7 @@ class KajiUlang extends BaseController
             ]);
         }
 
-        $session   = session();
+        $session = session();
         $managerId = (int) ($session->get('id_user') ?? 0);
 
         if ($managerId <= 0) {
@@ -484,12 +484,12 @@ class KajiUlang extends BaseController
         $transOk = $this->kajiUlangModel->transStatus();
 
         return $this->response->setJSON([
-            'res'      => $transOk && $affected > 0,
+            'res' => $transOk && $affected > 0,
             'affected' => $affected,
-            'msg'      => $affected > 0 ? 'OK' : 'No rows updated',
+            'msg' => $affected > 0 ? 'OK' : 'No rows updated',
             'parent_updated' => $parentUpdated,
-            'xname'    => csrf_token(),
-            'xhash'    => csrf_hash()
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
         ]);
     }
 

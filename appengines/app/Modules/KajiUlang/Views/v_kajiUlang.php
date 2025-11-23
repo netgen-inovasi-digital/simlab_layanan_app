@@ -1,4 +1,4 @@
-<div class="row"> 
+<div class="row">
     <div class="col-md-12">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
@@ -130,7 +130,7 @@
             }
             const s = params.toString();
             return u.pathname + (s ? '?' + s : '');
-        } catch(e) {
+        } catch (e) {
             if (key && String(key) !== '' && value !== null && String(value) !== '') {
                 return path + (path.includes('?') ? '&' : '?') + encodeURIComponent(key) + '=' + encodeURIComponent(String(value));
             }
@@ -168,7 +168,7 @@
     if (typeof table !== 'undefined' && table && typeof table.getConfig === 'function' && typeof table.fetchData === 'function' && !table.__fetchPatched) {
         const _origFetch = table.fetchData.bind(table);
         let _currentAbort = null;
-        table.fetchData = function(opts = {}) {
+        table.fetchData = function (opts = {}) {
             try {
                 const cfg = table.getConfig();
                 if (cfg && typeof cfg.apiUrl === 'string') {
@@ -176,12 +176,12 @@
                     u.searchParams.set('_ts', Date.now().toString()); // cache-buster
                     cfg.apiUrl = normalizeDoubleQuestion(u.pathname + (u.search ? u.search : ''));
                 }
-            } catch (err) {}
-            try { if (_currentAbort) _currentAbort.abort(); } catch(e){}
+            } catch (err) { }
+            try { if (_currentAbort) _currentAbort.abort(); } catch (e) { }
             try {
                 _currentAbort = new AbortController();
                 opts.signal = _currentAbort.signal;
-            } catch(e){}
+            } catch (e) { }
             return _origFetch(opts);
         };
         table.__fetchPatched = true;
@@ -190,10 +190,10 @@
     // ============================================================
     // FILTER STATUS DROPDOWN
     // ============================================================
-    (function attachStatusFilter(){
+    (function attachStatusFilter() {
         const sel = document.getElementById('statusFilter');
         if (!sel || sel.dataset.bound === '1') return;
-        sel.addEventListener('change', function(){
+        sel.addEventListener('change', function () {
             const val = (this.value || '').toString().trim();
             if (table?.getConfig) {
                 const cfg = table.getConfig();
@@ -348,7 +348,7 @@
 
         // Load atau tampilkan identitas sampel
         const sampleSection = document.getElementById('sampleIdentitySection');
-        
+
         if (lnKode) {
             // Cek apakah data sudah di-cache
             if (cachedSampleData[lnKode]) {
@@ -369,7 +369,7 @@
                         if (data.success && data.data) {
                             // Simpan ke cache
                             cachedSampleData[lnKode] = data.data;
-                            
+
                             // Populate sample identity fields
                             document.getElementById('sampleJenis').textContent = data.data.jenis || '-';
                             document.getElementById('sampleKemasan').textContent = data.data.kemasan || '-';
@@ -412,7 +412,7 @@
     // ============================================================
     async function handleApproveReject(el, isAccept) {
         if (!el) return;
-        
+
         const ln = el.dataset.ln;
         const detail = el.dataset.detail;
         
@@ -482,7 +482,7 @@
     // ============================================================
     // EVENT DELEGATION UNTUK APPROVE/REJECT BUTTONS
     // ============================================================
-    document.addEventListener('click', function(e) {
+    document.addEventListener('click', function (e) {
         // ACCEPT BUTTON
         const acceptEl = e.target.closest ? e.target.closest('.btn-accept-manager') : null;
         if (acceptEl) {

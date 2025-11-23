@@ -73,7 +73,6 @@ class Pelayanan extends BaseController
                 d.kode_layanan,
                 d.nama_layanan as detParameter,
                 d.kode_jenis,
-                GROUP_CONCAT(DISTINCT d.catatan_pelanggan SEPARATOR ' | ') as catatan_pelanggan,
                 SUM(d.jumlah) as jumlah,
                 SUM(d.biaya) as biaya,
                 MAX(d.status_layanan) as status_layanan
@@ -86,12 +85,11 @@ class Pelayanan extends BaseController
                 'success' => true,
                 'data' => [
                     'kode' => $data->lnKode,
-                    // 'status' => (int)$data->lnStatus,
                     'statusText' => $this->getStatusText((int) $data->lnStatus),
                     'tanggal' => date('d-m-Y', strtotime($data->lnTgl)),
                     'noTransaksi' => $data->lnNoTransaksi ?? 'Belum tersedia',
                     'details' => array_map(function ($detail) {
-                        $statusGroup = isset($detail->detStatus) ? (int) $detail->detStatus : null;
+                        $statusGroup = isset($detail->status_layanan) ? (int) $detail->status_layanan : null;
 
                         if ($statusGroup === 0) {
                             $statusHtml = '<span class="badge bg-warning">Pending</span>';
@@ -104,9 +102,8 @@ class Pelayanan extends BaseController
                         }
                         return [
                             'parameter' => $detail->detParameter ?? '-',
-                            'biaya' => number_format((float) ($detail->detBiaya ?? 0), 0, ',', '.'),
-                            'jumlah' => (int) ($detail->detJumlah ?? 0),
-                            'keterangan' => $detail->detKeterangan ?? '-',
+                            'biaya' => number_format((float) ($detail->biaya ?? 0), 0, ',', '.'),
+                            'jumlah' => (int) ($detail->jumlah ?? 0),
                             'status' => $statusHtml
                         ];
                     }, $details)
@@ -183,11 +180,11 @@ class Pelayanan extends BaseController
         // Query dengan JOIN ke t_layanan_detil untuk filter kode_jenis = 'A' (sampel)
         // Gunakan GROUP BY untuk menghindari duplikasi row jika ada multiple detail items
         $builder = $db->table($this->table . ' as t');
-        $builder->select('t.lnKode, t.user_id, t.lnAccEmail, t.lnNoTransaksi, t.lnTgl, t.lnStatus, t.kuisioner, t.lhu_id');
+        $builder->select('t.lnKode, t.user_id, t.lnAccEmail, t.lnNoTransaksi, t.lnTgl, t.lnStatus, t.kuisioner');
         $builder->join('t_layanan_detil d', 'd.kode_layanan = t.lnKode', 'inner');
         $builder->where('t.user_id', $user_id);
         $builder->where('d.kode_jenis', 'A');  // Filter hanya sampel (kode_jenis = 'A')
-        $builder->groupBy('t.lnKode, t.user_id, t.lnAccEmail, t.lnNoTransaksi, t.lnTgl, t.lnStatus, t.kuisioner, t.lhu_id');
+        $builder->groupBy('t.lnKode, t.user_id, t.lnAccEmail, t.lnNoTransaksi, t.lnTgl, t.lnStatus, t.kuisioner');
         $builder->orderBy('t.lnTgl', 'DESC');
 
         $list = $builder->get()->getResult();
@@ -440,8 +437,8 @@ class Pelayanan extends BaseController
 
     private function detectLhuFile($row)
     {
-        // Cek apakah ada lhu_id di tabel t_layanan
-        if (!isset($row->lhu_id) || empty($row->lhu_id)) {
+        $lnKode = $row->lnKode ?? null;
+        if (!$lnKode) {
             return ['has' => false, 'url' => '#'];
         }
 
@@ -452,7 +449,8 @@ class Pelayanan extends BaseController
             // Join dengan simlab_account_users untuk mendapatkan info uploader
             $builder->select('lhu.file_id, lhu.kode, lhu.file, lhu.upload_by, acc.user_name as uploader_name');
             $builder->join('simlab_account_users as acc', 'acc.user_id = lhu.upload_by', 'left');
-            $builder->where('lhu.file_id', $row->lhu_id);
+            $builder->where('lhu.kode', $lnKode);
+            $builder->orderBy('lhu.file_id', 'DESC');
             $builder->limit(1);
 
             $lhuFile = $builder->get()->getRow();
@@ -489,7 +487,7 @@ class Pelayanan extends BaseController
             }
 
             // File tercatat di database tapi tidak ditemukan di storage
-            log_message('warning', "LHU file not found in storage: {$filePath} for lhu_id: {$row->lhu_id}");
+            log_message('warning', "LHU file not found in storage: {$filePath} for lnKode: {$lnKode}");
             return ['has' => false, 'url' => '#'];
         } catch (\Throwable $e) {
             log_message('error', 'Error detecting LHU file: ' . $e->getMessage());

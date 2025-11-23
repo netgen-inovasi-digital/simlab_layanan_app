@@ -8,7 +8,7 @@ use App\Models\MyModel;
 class HasilPengujian extends BaseController
 {
     private $table = 'simlab_t_layanan';
-    private $id    = 'lnKode';
+    private $id = 'lnKode';
 
     public function __construct()
     {
@@ -25,7 +25,7 @@ class HasilPengujian extends BaseController
 
         $data = [
             'title' => 'Data Hasil Pengujian',
-            'user'  => $modelUser->getDataById('user_id', $user_id),
+            'user' => $modelUser->getDataById('user_id', $user_id),
         ];
 
         return view('Modules\HasilPengujian\Views\v_hasilPengujian', $data);
@@ -46,11 +46,11 @@ class HasilPengujian extends BaseController
         if ($lnStatusParam !== '') {
             foreach (preg_split('/[,\s]+/', $lnStatusParam, -1, PREG_SPLIT_NO_EMPTY) as $p) {
                 $tp = strtolower(trim($p));
-                if (in_array($tp, ['tolak','reject','ditolak'], true)) {
+                if (in_array($tp, ['tolak', 'reject', 'ditolak'], true)) {
                     $wantReject = true;
                     continue;
                 }
-                if (in_array($tp, ['terunggah','uploaded'], true)) {
+                if (in_array($tp, ['terunggah', 'uploaded'], true)) {
                     $wantUploaded = true;
                     continue;
                 }
@@ -74,8 +74,10 @@ class HasilPengujian extends BaseController
 
         $lnKodeList = [];
         foreach ($detilList as $item) {
-            if (is_object($item) && isset($item->kode_layanan)) $lnKodeList[] = $item->kode_layanan;
-            elseif (is_array($item) && isset($item['kode_layanan'])) $lnKodeList[] = $item['kode_layanan'];
+            if (is_object($item) && isset($item->kode_layanan))
+                $lnKodeList[] = $item->kode_layanan;
+            elseif (is_array($item) && isset($item['kode_layanan']))
+                $lnKodeList[] = $item['kode_layanan'];
         }
         $lnKodeList = array_values(array_unique(array_filter($lnKodeList)));
 
@@ -121,7 +123,7 @@ class HasilPengujian extends BaseController
             ->groupBy('d.kode_layanan')
             ->getCompiledSelect(false);
 
-        $b  = $db->table('simlab_t_layanan as l');
+        $b = $db->table('simlab_t_layanan as l');
         $b->select('l.*');
         $b->join("({$aggSql}) agg", 'agg.kode_layanan = l.lnKode', 'left');
 
@@ -142,7 +144,7 @@ class HasilPengujian extends BaseController
             if ($wantReject) {
                 $b->orGroupStart()
                     ->where('COALESCE(agg.has_reject_for_user,0) =', 1)
-                ->groupEnd();
+                    ->groupEnd();
             }
 
             if ($wantUploaded) {
@@ -150,17 +152,17 @@ class HasilPengujian extends BaseController
                 $b->orGroupStart()
                     ->where('COALESCE(agg.has_reject_for_user,0) =', 0)
                     ->where('COALESCE(agg.user_uploaded_total,0) >', 0)
-                ->groupEnd();
+                    ->groupEnd();
             }
 
             foreach ($lnStatusFilter as $s) {
-                switch ((int)$s) {
+                switch ((int) $s) {
                     case 4: // "Sedang dalam pengujian"
                         $b->orGroupStart()
                             ->where('COALESCE(agg.has_reject_for_user,0) =', 0)
                             ->where('COALESCE(agg.pending_for_user,0) >', 0)
                             ->where('l.lnStatus', 4)
-                          ->groupEnd();
+                            ->groupEnd();
                         break;
 
                     case 5: // "LHUS sedang diverifikasi manajer (terkirim)"
@@ -170,10 +172,10 @@ class HasilPengujian extends BaseController
                             ->where('COALESCE(agg.has_reject_for_user,0) =', 0)
                             ->where('COALESCE(agg.user_sent_total,0) >', 0)
                             ->groupStart()
-                                ->where('COALESCE(agg.user_accepted_total,0) < COALESCE(agg.user_active_total,0)', null, false)
-                                ->orWhere('COALESCE(agg.user_active_total,0) =', 0)
+                            ->where('COALESCE(agg.user_accepted_total,0) < COALESCE(agg.user_active_total,0)', null, false)
+                            ->orWhere('COALESCE(agg.user_active_total,0) =', 0)
                             ->groupEnd()
-                          ->groupEnd();
+                            ->groupEnd();
                         break;
 
                     case 6: // "LHUS diterima"
@@ -182,18 +184,18 @@ class HasilPengujian extends BaseController
                             ->where('COALESCE(agg.pending_for_user,0) =', 0)
                             ->where('COALESCE(agg.user_active_total,0) >', 0)
                             ->where('COALESCE(agg.user_accepted_total,0) = COALESCE(agg.user_active_total,0)', null, false)
-                          ->groupEnd();
+                            ->groupEnd();
                         break;
 
                     default:
                         $b->orGroupStart()
-                            ->where('l.lnStatus', (int)$s)
+                            ->where('l.lnStatus', (int) $s)
                             ->where('COALESCE(agg.has_reject_for_user,0) =', 0)
                             ->groupStart()
-                                ->where('COALESCE(agg.pending_for_user,0) >', 0)
-                                ->orWhere('COALESCE(agg.user_active_total,0) =', 0)
+                            ->where('COALESCE(agg.pending_for_user,0) >', 0)
+                            ->orWhere('COALESCE(agg.user_active_total,0) =', 0)
                             ->groupEnd()
-                          ->groupEnd();
+                            ->groupEnd();
                         break;
                 }
             }
@@ -206,12 +208,13 @@ class HasilPengujian extends BaseController
 
         $data = [];
         foreach ($list as $row) {
-            if ((int)$row->lnStatus < 4) continue;
+            if ((int) $row->lnStatus < 4)
+                continue;
 
             $id = bin2hex(service('encrypter')->encrypt($row->lnKode));
             $pemesanNama = !empty($row->pemesan_name) ? $row->pemesan_name : '-';
-            $tipe        = !empty($row->pemesan_identity) ? $row->pemesan_identity : '-';
-            $tanggal     = !empty($row->lnTgl) ? date('d-m-Y H:i', strtotime($row->lnTgl)) : '-';
+            $tipe = !empty($row->pemesan_identity) ? $row->pemesan_identity : '-';
+            $tanggal = !empty($row->lnTgl) ? date('d-m-Y H:i', strtotime($row->lnTgl)) : '-';
 
             $colA = '
                 <div style="line-height:1.3;">
@@ -221,8 +224,8 @@ class HasilPengujian extends BaseController
 
             $colB = $this->formatStatusForPenyelia($row->lnStatus, $row->lnKode, $user_id);
 
-            $btn  = '<button type="button" class="btn btn-sm btn-info" title="Lihat Detail Item Layanan" onclick="loadDetail(\'' . $id . '\')">'
-                  . '<i class="bi bi-upload"></i>Unggah LHUS</button>';
+            $btn = '<button type="button" class="btn btn-sm btn-info" title="Lihat Detail Item Layanan" onclick="loadDetail(\'' . $id . '\')">'
+                . '<i class="bi bi-upload"></i>Unggah LHUS</button>';
 
             $data[] = [$colA, $colB, $btn];
         }
@@ -274,7 +277,7 @@ class HasilPengujian extends BaseController
             d.kode_layanan,
             d.nama_layanan,
             d.kode_jenis,
-            GROUP_CONCAT(DISTINCT d.catatan_pelanggan SEPARATOR ' | ') AS detKet,
+
             GROUP_CONCAT(DISTINCT d.catatan_manajer SEPARATOR ' | ') AS detKetManajar,
             GROUP_CONCAT(DISTINCT d.catatan_manajer SEPARATOR ' | ') AS detKetLhus, -- fallback reuse column
             GROUP_CONCAT(DISTINCT d.files SEPARATOR ',') AS detFilesList,
@@ -310,19 +313,11 @@ class HasilPengujian extends BaseController
 
             $response[] = $no++;
             $response[] = $row->nama_layanan ?? '-';
-            $response[] = isset($row->jumlah) ? (int)$row->jumlah : 0;
-
-            $keteranganHtml = '<div style="display:block; max-width:260px; min-width:160px; width:100%;'
-                . 'max-height:120px; min-height:48px; overflow-y:auto; overflow-x:hidden;'
-                . 'padding:4px 6px; border:1px solid #ddd; border-radius:4px; background:#f9f9f9;'
-                . 'white-space:pre-wrap; word-break:break-word; font-size:0.9rem;">'
-                . htmlspecialchars($row->detKet ?? '', ENT_QUOTES, 'UTF-8') .
-                '</div>';
-            $response[] = $keteranganHtml;
+            $response[] = isset($row->jumlah) ? (int) $row->jumlah : 0;
 
             // --- FILE LHUS per row detection: pakai files kolom dan t_files_lhus
             $filesListRaw = $row->detFilesList ?? '';
-            $detFilesMax = isset($row->detFilesMax) ? (int)$row->detFilesMax : null;
+            $detFilesMax = isset($row->detFilesMax) ? (int) $row->detFilesMax : null;
 
             $files = [];
             $rowHasFile = false;
@@ -361,11 +356,11 @@ class HasilPengujian extends BaseController
 
             $detKodeAttr = htmlspecialchars($row->kode ?? '', ENT_QUOTES, 'UTF-8');
             $uploadInput = '<label class="mb-0 position-relative" style="cursor:pointer;">'
-                        . '<input type="file" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx" '
-                        . 'data-detlist="' . $detKodeAttr . '" data-detkode="' . $detKodeAttr . '" data-ln="' . $encLnId . '" '
-                        . 'class="d-none lhus-uploader-input" onchange="autoUploadFile(this)" />'
-                        . '<span class="text-primary btn-action" title="Unggah / Ubah File LHUS"><i class="bi bi-upload"></i></span>'
-                        . '</label>';
+                . '<input type="file" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx" '
+                . 'data-detlist="' . $detKodeAttr . '" data-detkode="' . $detKodeAttr . '" data-ln="' . $encLnId . '" '
+                . 'class="d-none lhus-uploader-input" onchange="autoUploadFile(this)" />'
+                . '<span class="text-primary btn-action" title="Unggah / Ubah File LHUS"><i class="bi bi-upload"></i></span>'
+                . '</label>';
 
             $combinedHtml .= $eyeButton . $uploadInput . '</div>';
 
@@ -377,7 +372,7 @@ class HasilPengujian extends BaseController
                 $detStatusLHUS = null;
             }
 
-            $lnStatusInt = isset($lnStatus) ? (int)$lnStatus : null;
+            $lnStatusInt = isset($lnStatus) ? (int) $lnStatus : null;
 
             if ($detStatusLHUS === 2) {
                 $statusHtml = '<div class="text-center"><span class="badge bg-danger">lhus ditolak</span></div>';
@@ -406,7 +401,7 @@ class HasilPengujian extends BaseController
 
             // >>> kolom tambahan: username approver det.terima_layanan_by
             $accBy = !empty($row->acc_by) ? esc($row->acc_by) : '-';
-            $response[] = '<div class="text-center">'.$accBy.'</div>';
+            $response[] = '<div class="text-center">' . $accBy . '</div>';
 
             $data[] = $response;
         }
@@ -478,11 +473,12 @@ class HasilPengujian extends BaseController
                 $hasFile = false;
 
                 $filesVal = $dr->files ?? 0;
-                if ($filesVal && (int)$filesVal > 0) {
+                if ($filesVal && (int) $filesVal > 0) {
                     $hasFile = true;
                 } else {
                     $fileRow = $db->table('t_files_lhus')->where('kode', $dr->kode)->limit(1)->get()->getRow();
-                    if ($fileRow && !empty($fileRow->file_lhus)) $hasFile = true;
+                    if ($fileRow && !empty($fileRow->file_lhus))
+                        $hasFile = true;
                 }
 
                 if (!$hasFile) {
@@ -514,13 +510,13 @@ class HasilPengujian extends BaseController
         }
 
         // --- kirim & catat upload_by di t_files_lhus / files flag ---
-try {
-    $db = \Config\Database::connect();
-    // mulai transaksi eksplisit
-    $db->transBegin();
+        try {
+            $db = \Config\Database::connect();
+            // mulai transaksi eksplisit
+            $db->transBegin();
 
-    // 1) Ubah status files dari 3 (terunggah) menjadi 0 (terkirim ke manajer) untuk detil milik user ini
-    $sql1 = "
+            // 1) Ubah status files dari 3 (terunggah) menjadi 0 (terkirim ke manajer) untuk detil milik user ini
+            $sql1 = "
         UPDATE t_layanan_detil d
         INNER JOIN r_tim rt ON rt.uji_kode = d.uji_kode
         SET d.files = 0
@@ -529,10 +525,10 @@ try {
           AND d.status_layanan = 1
           AND d.files = 3
     ";
-    $db->query($sql1, [$lnKode, $user_id]);
+            $db->query($sql1, [$lnKode, $user_id]);
 
-    // 2) Update status di t_files_lhus menjadi 0 (terkirim)
-    $sql1b = "
+            // 2) Update status di t_files_lhus menjadi 0 (terkirim)
+            $sql1b = "
         UPDATE t_files_lhus lhus
         INNER JOIN t_layanan_detil d ON d.kode = lhus.kode
         INNER JOIN r_tim rt ON rt.uji_kode = d.uji_kode
@@ -542,10 +538,10 @@ try {
           AND d.status_layanan = 1
           AND lhus.status = 3
     ";
-    $db->query($sql1b, [$lnKode, $user_id]);
+            $db->query($sql1b, [$lnKode, $user_id]);
 
-    // 3) Catat terima_layanan_by untuk baris yang relevan (hanya user ini)
-    $sql2 = "
+            // 3) Catat terima_layanan_by untuk baris yang relevan (hanya user ini)
+            $sql2 = "
         UPDATE t_layanan_detil d
         INNER JOIN r_tim rt2 ON rt2.uji_kode = d.uji_kode
         SET d.terima_layanan_by = ?
@@ -554,11 +550,11 @@ try {
           AND d.status_layanan = 1
           AND d.files = 0
     ";
-    $db->query($sql2, [$user_id, $lnKode, $user_id]);
+            $db->query($sql2, [$user_id, $lnKode, $user_id]);
 
-    // 4) Cek apakah SEMUA layanan detil dalam invoice ini sudah terupload (tidak peduli user siapa)
-    // Menggunakan t_files_lhus dengan kode_layanan untuk mempermudah pengecekan
-    $sqlCheckAllUploaded = "
+            // 4) Cek apakah SEMUA layanan detil dalam invoice ini sudah terupload (tidak peduli user siapa)
+            // Menggunakan t_files_lhus dengan kode_layanan untuk mempermudah pengecekan
+            $sqlCheckAllUploaded = "
         SELECT COUNT(*) as total_belum_upload
         FROM t_layanan_detil d
         LEFT JOIN t_files_lhus lhus ON lhus.kode = d.kode
@@ -566,30 +562,30 @@ try {
           AND d.status_layanan = 1
           AND (lhus.file_id IS NULL OR lhus.file_lhus IS NULL OR lhus.file_lhus = '')
     ";
-    $resultCheck = $db->query($sqlCheckAllUploaded, [$lnKode])->getRow();
-    $totalBelumUpload = $resultCheck ? (int)$resultCheck->total_belum_upload : 0;
+            $resultCheck = $db->query($sqlCheckAllUploaded, [$lnKode])->getRow();
+            $totalBelumUpload = $resultCheck ? (int) $resultCheck->total_belum_upload : 0;
 
-    $parentUpdated = false;
-    if ($totalBelumUpload === 0) {
-        // Semua layanan dalam invoice ini sudah terupload, update lnStatus ke 5
-        $db->table('simlab_t_layanan')->where('lnKode', $lnKode)->update(['lnStatus' => 5]);
-        $parentUpdated = true;
-        
-        // Update log sampel: set kolom verifikasi_hasil_uji dengan waktu saat ini
-        try {
-            $logUpdate = [
-                'verifikasi_hasil_uji' => date('Y-m-d H:i:s')
-            ];
-            
-            $db->table('t_log_sampel')->where('kode_layanan', $lnKode)->update($logUpdate);
-        } catch (\Exception $logEx) {
-            // Log error tapi jangan gagalkan proses kirim
-            log_message('error', 'Error update log sampel verifikasi_hasil_uji: ' . $logEx->getMessage());
-        }
-    }
+            $parentUpdated = false;
+            if ($totalBelumUpload === 0) {
+                // Semua layanan dalam invoice ini sudah terupload, update lnStatus ke 5
+                $db->table('simlab_t_layanan')->where('lnKode', $lnKode)->update(['lnStatus' => 5]);
+                $parentUpdated = true;
 
-    // 5) Cek apakah masih ada detil milik user lain yang belum upload
-    $sqlRemainingForOthers = "
+                // Update log sampel: set kolom verifikasi_hasil_uji dengan waktu saat ini
+                try {
+                    $logUpdate = [
+                        'verifikasi_hasil_uji' => date('Y-m-d H:i:s')
+                    ];
+
+                    $db->table('t_log_sampel')->where('kode_layanan', $lnKode)->update($logUpdate);
+                } catch (\Exception $logEx) {
+                    // Log error tapi jangan gagalkan proses kirim
+                    log_message('error', 'Error update log sampel verifikasi_hasil_uji: ' . $logEx->getMessage());
+                }
+            }
+
+            // 5) Cek apakah masih ada detil milik user lain yang belum upload
+            $sqlRemainingForOthers = "
         SELECT COUNT(*) as remaining
         FROM t_layanan_detil d
         LEFT JOIN t_files_lhus lhus ON lhus.kode = d.kode
@@ -597,63 +593,63 @@ try {
           AND d.status_layanan = 1
           AND (lhus.file_id IS NULL OR lhus.file_lhus IS NULL OR lhus.file_lhus = '')
     ";
-    $resultRemaining = $db->query($sqlRemainingForOthers, [$lnKode])->getRow();
-    $remainingCount = $resultRemaining ? (int)$resultRemaining->remaining : 0;
+            $resultRemaining = $db->query($sqlRemainingForOthers, [$lnKode])->getRow();
+            $remainingCount = $resultRemaining ? (int) $resultRemaining->remaining : 0;
 
-    // commit / complete
-    if ($db->transStatus() === false) {
-        $db->transRollback();
-        $dberr = $db->error();
-        return $this->response->setJSON([
-            'res' => 'error',
-            'msg' => 'Gagal menyimpan status pada detil/parent (transaksi gagal). DB Error: ' . ($dberr['message'] ?? 'Unknown'),
-            'db' => $dberr,
-            'xname' => csrf_token(),
-            'xhash' => csrf_hash()
-        ]);
-    } else {
-        $db->transCommit();
-    }
+            // commit / complete
+            if ($db->transStatus() === false) {
+                $db->transRollback();
+                $dberr = $db->error();
+                return $this->response->setJSON([
+                    'res' => 'error',
+                    'msg' => 'Gagal menyimpan status pada detil/parent (transaksi gagal). DB Error: ' . ($dberr['message'] ?? 'Unknown'),
+                    'db' => $dberr,
+                    'xname' => csrf_token(),
+                    'xhash' => csrf_hash()
+                ]);
+            } else {
+                $db->transCommit();
+            }
 
-    if ($remainingCount > 0) {
-        return $this->response->setJSON([
-            'res' => true,
-            'msg' => 'LHUS Anda berhasil dikirim ke manajer. Masih ada ' . $remainingCount . ' layanan lain yang belum terupload.',
-            'waiting_others' => true,
-            'pending_total' => $remainingCount,
-            'parent_updated' => false,
-            'xname' => csrf_token(),
-            'xhash' => csrf_hash()
-        ]);
-    }
+            if ($remainingCount > 0) {
+                return $this->response->setJSON([
+                    'res' => true,
+                    'msg' => 'LHUS Anda berhasil dikirim ke manajer. Masih ada ' . $remainingCount . ' layanan lain yang belum terupload.',
+                    'waiting_others' => true,
+                    'pending_total' => $remainingCount,
+                    'parent_updated' => false,
+                    'xname' => csrf_token(),
+                    'xhash' => csrf_hash()
+                ]);
+            }
 
-    return $this->response->setJSON([
-        'res' => true,
-        'msg' => 'Semua LHUS dalam invoice ini sudah lengkap dan terkirim ke manajer teknis!',
-        'waiting_others' => false,
-        'parent_updated' => $parentUpdated,
-        'xname' => csrf_token(),
-        'xhash' => csrf_hash()
-    ]);
-} catch (\Throwable $e) {
-    if (isset($db) && $db->transStatus() !== false) {
-        $db->transRollback();
-    }
-    $dberr = isset($db) ? $db->error() : [];
-    return $this->response->setJSON([
-        'res' => 'error',
-        'msg' => 'Error saat update: ' . $e->getMessage(),
-        'db' => $dberr,
-        'xname' => csrf_token(),
-        'xhash' => csrf_hash()
-    ]);
-}
+            return $this->response->setJSON([
+                'res' => true,
+                'msg' => 'Semua LHUS dalam invoice ini sudah lengkap dan terkirim ke manajer teknis!',
+                'waiting_others' => false,
+                'parent_updated' => $parentUpdated,
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        } catch (\Throwable $e) {
+            if (isset($db) && $db->transStatus() !== false) {
+                $db->transRollback();
+            }
+            $dberr = isset($db) ? $db->error() : [];
+            return $this->response->setJSON([
+                'res' => 'error',
+                'msg' => 'Error saat update: ' . $e->getMessage(),
+                'db' => $dberr,
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        }
 
     }
 
     private function doUpload(\CodeIgniter\HTTP\Files\UploadedFile $file)
     {
-        $allowed = ['jpg','jpeg','png','pdf','doc','docx','xls','xlsx'];
+        $allowed = ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx', 'xls', 'xlsx'];
         $max = 5 * 1024 * 1024;
 
         if (!$file->isValid() || $file->hasMoved()) {
@@ -764,7 +760,7 @@ try {
                                 'status' => 3,  // status 3 = terunggah (belum dikirim)
                                 'kode_layanan' => $lnKode
                             ]);
-                        
+
                         // Hapus file lama jika ada
                         if (!empty($existingFile->file_lhus) && $existingFile->file_lhus !== $filename) {
                             $oldFilePath = FCPATH . 'uploads/lhus/' . $existingFile->file_lhus;
@@ -793,7 +789,8 @@ try {
                     ]);
                 } else {
                     $savedPath = FCPATH . 'uploads/lhus/' . $filename;
-                    if (is_file($savedPath)) @unlink($savedPath);
+                    if (is_file($savedPath))
+                        @unlink($savedPath);
                     $dberr = $db->error();
                     return $this->response->setJSON([
                         'res' => 'error',
@@ -840,7 +837,8 @@ try {
                     ]);
                 } else {
                     $savedPath = FCPATH . 'uploads/lhus/' . $filename;
-                    if (is_file($savedPath)) @unlink($savedPath);
+                    if (is_file($savedPath))
+                        @unlink($savedPath);
                     $dberr = $db->error();
                     return $this->response->setJSON([
                         'res' => 'error',
@@ -853,7 +851,8 @@ try {
             }
         } catch (\Throwable $e) {
             $savedPath = FCPATH . 'uploads/lhus/' . $filename;
-            if (is_file($savedPath)) @unlink($savedPath);
+            if (is_file($savedPath))
+                @unlink($savedPath);
             return $this->response->setJSON([
                 'res' => 'error',
                 'msg' => 'Error saat menyimpan ke detil: ' . $e->getMessage(),
@@ -865,18 +864,29 @@ try {
 
     private function formatStatus($lnStatus)
     {
-        switch ((int)$lnStatus) {
-            case 0: return '<span class="badge bg-secondary">Draft</span>';
-            case 1: return '<span class="badge bg-warning">In Review (Manajer)</span>';
-            case 2: return '<span class="badge bg-danger">Ditolak</span>';
-            case 3: return '<span class="badge bg-info">In Review (Admin)</span>';
-            case 4: return '<span class="badge bg-primary">Sedang dalam pengujian</span>';
-            case 5: return '<span class="badge bg-primary">LHUS sedang diverifikasi manajer</span>';
-            case 6: return '<span class="badge bg-success">LHUS Disetujui</span>';
-            case 7: return '<span class="badge bg-primary">Memproses LHU</span>';
-            case 8: return '<span class="badge bg-success">LHU sedang diproses</span>';
-            case 9: return '<span class="badge bg-dark">Pengujian Selesai</span>';
-            default: return '<span class="badge bg-dark">Unknown</span>';
+        switch ((int) $lnStatus) {
+            case 0:
+                return '<span class="badge bg-secondary">Draft</span>';
+            case 1:
+                return '<span class="badge bg-warning">In Review (Manajer)</span>';
+            case 2:
+                return '<span class="badge bg-danger">Ditolak</span>';
+            case 3:
+                return '<span class="badge bg-info">In Review (Admin)</span>';
+            case 4:
+                return '<span class="badge bg-primary">Sedang dalam pengujian</span>';
+            case 5:
+                return '<span class="badge bg-primary">LHUS sedang diverifikasi manajer</span>';
+            case 6:
+                return '<span class="badge bg-success">LHUS Disetujui</span>';
+            case 7:
+                return '<span class="badge bg-primary">Memproses LHU</span>';
+            case 8:
+                return '<span class="badge bg-success">LHU sedang diproses</span>';
+            case 9:
+                return '<span class="badge bg-dark">Pengujian Selesai</span>';
+            default:
+                return '<span class="badge bg-dark">Unknown</span>';
         }
     }
 
@@ -899,7 +909,8 @@ try {
             if ($checkReject) {
                 return '<span class="badge bg-danger">LHUS ditolak</span>';
             }
-        } catch (\Throwable $e) {}
+        } catch (\Throwable $e) {
+        }
 
         // PRIORITAS 2: Cek apakah ada yang statusnya 3 (terunggah tapi belum dikirim)
         try {
@@ -916,7 +927,8 @@ try {
             if ($checkUploaded) {
                 return '<span class="badge bg-info">Terunggah (belum dikirim)</span>';
             }
-        } catch (\Throwable $e) {}
+        } catch (\Throwable $e) {
+        }
 
         // PRIORITAS 3: Cek apakah sudah diterima semua (files = 1)
         try {
@@ -940,7 +952,8 @@ try {
                     return '<span class="badge bg-success">LHUS diterima</span>';
                 }
             }
-        } catch (\Throwable $e) {}
+        } catch (\Throwable $e) {
+        }
 
         // PRIORITAS 4: Cek apakah sudah terkirim ke manajer (files = 0)
         try {
@@ -957,10 +970,11 @@ try {
             if ($checkSent) {
                 return '<span class="badge bg-primary">Terkirim ke manajer teknis</span>';
             }
-        } catch (\Throwable $e) {}
+        } catch (\Throwable $e) {
+        }
 
         // Fallback ke mapping lnStatus
-        return $this->formatStatus((int)$lnStatus);
+        return $this->formatStatus((int) $lnStatus);
     }
 
     public function getSampleIdentity($lnKode = null)
