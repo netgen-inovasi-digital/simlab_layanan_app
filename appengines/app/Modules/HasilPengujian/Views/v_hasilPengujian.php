@@ -66,7 +66,7 @@
         </div>
 
         <!-- Sample Identity Details Section -->
-        <div class="detail-table mt-4" id="sampleIdentitySection" style="display: none;">
+        <div class="detail-table mt-4" id="sampleIdentitySection" style="display:none;">
           <h6 class="mb-3">Identitas Sampel:</h6>
           <div class="card">
             <div class="card-body">
@@ -89,11 +89,15 @@
                 </div>
                 <div class="col-12 mb-3">
                   <label class="fw-bold text-muted small">Deskripsi:</label>
-                  <p class="mb-0 text-wrap" id="sampleDeskripsi">-</p>
+                  <div class="border rounded p-2" style="max-height: 160px; overflow-y: auto; background-color: #f8f9fa;">
+                    <p class="mb-0 text-wrap small" id="sampleDeskripsi">-</p>
+                  </div>
                 </div>
                 <div class="col-12">
                   <label class="fw-bold text-muted small">Keterangan Khusus:</label>
-                  <p class="mb-0 text-wrap" id="sampleKeteranganKhusus">-</p>
+                  <div class="border rounded p-2" style="max-height: 160px; overflow-y: auto; background-color: #f8f9fa;">
+                    <p class="mb-0 text-wrap small" id="sampleKeteranganKhusus">-</p>
+                  </div>
                 </div>
               </div>
             </div>

@@ -11,6 +11,7 @@ $routes->group('hasilpengujian', ['namespace' => 'Modules\HasilPengujian\Control
     $subroutes->post('datalist', 'HasilPengujian::dataList');
     $subroutes->get('detaillist/(:any)', 'HasilPengujian::detailList/$1');
     $subroutes->post('detaillist/(:any)', 'HasilPengujian::detailList/$1');
+    $subroutes->get('getSampleIdentity/(:any)', 'HasilPengujian::getSampleIdentity/$1');
     $subroutes->post('submit', 'HasilPengujian::submit');
     $subroutes->post('upload', 'HasilPengujian::upload');
     $subroutes->post('approve/(:any)', 'HasilPengujian::approve/$1');
