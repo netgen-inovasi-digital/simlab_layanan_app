@@ -173,9 +173,6 @@
     </div>
 </div>
 
-<!-- Load dependencies yang diperlukan untuk modal ini -->
-<script src="<?= base_url('assets/js/sayTable.js?v=0.11') ?>"></script>
-
 <script>
     /**
      * buildApiUrlWithOptionalParam
