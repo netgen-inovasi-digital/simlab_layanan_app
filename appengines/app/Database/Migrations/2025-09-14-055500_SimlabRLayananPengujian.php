@@ -3,6 +3,7 @@
 namespace App\Database\Migrations;
 
 use CodeIgniter\Database\Migration;
+use Config\Database;
 
 class CreateRLayananPengujian extends Migration
 {
@@ -10,34 +11,34 @@ class CreateRLayananPengujian extends Migration
     {
         $this->forge->addField([
             'kode' => [
-                'type' => 'INT',
-                'unsigned' => true,
+                'type'           => 'INT',
+                'unsigned'       => true,
                 'auto_increment' => true,
             ],
             'nama_layanan' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 255,
-                'null' => true,
+                'null'       => true,
             ],
             'kode_alat' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 50,
-                'null' => true,
+                'null'       => true,
             ],
             'kode_parameter' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 20,
-                'null' => true,
+                'null'       => true,
             ],
             'kode_jenis' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 2,
-                'null' => true,
+                'null'       => true,
             ],
             'satuan' => [
-                'type' => 'VARCHAR',
+                'type'       => 'VARCHAR',
                 'constraint' => 15,
-                'null' => true,
+                'null'       => true,
             ],
             'biaya' => [
                 'type' => 'DOUBLE',

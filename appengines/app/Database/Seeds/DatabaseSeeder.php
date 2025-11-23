@@ -25,7 +25,7 @@ class DatabaseSeeder extends Seeder
         $this->call('OtoritasSeeder');
         $this->call('RMetodeSeeder');
         
-        //ngasih transaksi
+        //ngasih transaks
         // $this->call('TransaksiSeeder');
         // Seeder tambahan jika ada:
         // $this->call('UsersSeeder');

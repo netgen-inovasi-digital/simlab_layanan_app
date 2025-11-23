@@ -31,39 +31,36 @@
     </div>
 </div>
 
-<!--  Modal Detail -->
-<div class="modal fade" id="modalDetail" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
-    <div class="modal-dialog modal-xl modal-dialog-centered" role="document"
-        style="max-width:1200px; margin: 1.5% auto;">
+<!-- MODAL DETAIL -->
+<div class="modal fade" id="modalDetail" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Detail Item Layanan</h5>
-                <button id="btnSaveKomentar" type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <h5 class="modal-title">Detail Review Layanan</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <!-- responsive wrapper: jika tabel lebar maka muncul scroll -->
-                <div class="table-responsive">
-                    <table id="tableDetail" class="saytable table table-bordered align-middle">
-                        <thead>
-                            <tr>
-                                <th show style="min-width:40px; width:5%;">No</th>
-                                <th show style="min-width:300px; width:15%;">Layanan</th>
-                                <th show style="min-width:60px; width:5%;">Jumlah</th>
-                                <th show style="min-width:120px; width:5%;">Status</th>
-                                <th show style="min-width:300px; width:20%;">Berikan keterangan</th>
-                                <th show style="min-width:110px; width:5%;" class="text-center">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody id="detail-body">
-                            <tr>
-                                <td colspan="6" class="text-center">Loading...</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0">Detail Item Layanan</h6>
                 </div>
 
-                <!-- Sample Identity Details Section -->
-                <div class="detail-table mt-4" id="sampleIdentitySection" style="display: none;">
+                <table id="tableDetail" class="saytable border-top-bottom">
+                    <thead>
+                        <tr>
+                            <th width="5%">No</th>
+                            <th width="20%">Layanan</th>
+                            <th width="8%">Jumlah</th>
+                            <th width="25%">Metode</th>
+                            <th width="10%">Status</th>
+                            <th width="20%">Berikan keterangan</th>
+                            <th width="12%" class="text-center">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+
+                <!-- Sample Identity Details Section - DIPINDAHKAN KE BAWAH -->
+                <div class="detail-table mt-4" id="sampleIdentitySection" style="display:none;">
                     <h6 class="mb-3">Identitas Sampel:</h6>
                     <div class="card">
                         <div class="card-body">
@@ -86,18 +83,24 @@
                                 </div>
                                 <div class="col-12 mb-3">
                                     <label class="fw-bold text-muted small">Deskripsi:</label>
-                                    <p class="mb-0 text-wrap" id="sampleDeskripsi">-</p>
+                                    <div class="border rounded p-2" style="max-height: 160px; overflow-y: auto; background-color: #f8f9fa;">
+                                        <p class="mb-0 text-wrap small" id="sampleDeskripsi">-</p>
+                                    </div>
                                 </div>
                                 <div class="col-12">
                                     <label class="fw-bold text-muted small">Keterangan Khusus:</label>
-                                    <p class="mb-0 text-wrap" id="sampleKeteranganKhusus">-</p>
+                                    <div class="border rounded p-2" style="max-height: 160px; overflow-y: auto; background-color: #f8f9fa;">
+                                        <p class="mb-0 text-wrap small" id="sampleKeteranganKhusus">-</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <!-- Modal footer DIHAPUS (tombol Kirim dihapus sesuai permintaan) -->
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+            </div>
         </div>
     </div>
 </div>
@@ -107,13 +110,8 @@
     // CREATE MODAL WRAPPER (untuk isolasi tabel di dalam modal)
     // ============================================================
     function createModal(customConfig = {}) {
-        // Gunakan createTable1 untuk isolasi tabel modal
-        if (typeof createTable1 === 'function') {
-            return createTable1(customConfig);
-        } else {
-            console.warn('createTable1 tidak ditemukan, fallback ke createTable');
-            return createTable(customConfig);
-        }
+        // Langsung gunakan createTable untuk konsistensi
+        return createTable(customConfig);
     }
 
     // ============================================================
@@ -161,7 +159,7 @@
     // TABEL UTAMA
     // ============================================================
     table = createTable({
-        apiUrl: '<?php echo site_url("formulirmanajer/datalist") ?>',
+        apiUrl: '<?php echo site_url("kajiulang/datalist") ?>',
         dataSrc: 'items'
     });
     addAction();
@@ -200,7 +198,7 @@
             if (table?.getConfig) {
                 const cfg = table.getConfig();
                 cfg.apiUrl = normalizeDoubleQuestion(
-                    buildApiUrlWithOptionalParam('<?= site_url("formulirmanajer/datalist") ?>', 'lnStatus', (val === '' ? null : val))
+                    buildApiUrlWithOptionalParam('<?= site_url("kajiulang/datalist") ?>', 'lnStatus', (val === '' ? null : val))
                 );
                 table.fetchData({ reload: true, page: 1 });
             }
@@ -237,11 +235,11 @@
         // Kumpulkan textarea/input komentar dalam modal (kelas .komentar-input)
         const inputs = modalEl.querySelectorAll('.komentar-input');
         const items = [];
-        inputs.forEach(function (inp) {
-            const uji = inp.getAttribute('data-uji');
+        inputs.forEach(function(inp) {
+            const detail = inp.getAttribute('data-detail');
             const val = inp.value;
-            if (uji !== null && uji !== '') {
-                items.push({ ujiKode: parseInt(uji, 10), komentar: val });
+            if (detail !== null && detail !== '') {
+                items.push({ detailKode: parseInt(detail, 10), komentar: val });
             }
         });
 
@@ -251,11 +249,9 @@
         }
 
         const csrfToken = _getCsrf();
-        const btn = document.getElementById('btnSaveKomentar');
-        if (btn) btn.disabled = true;
 
         try {
-            const res = await fetch('<?php echo site_url("formulirmanajer/savekomentar") ?>', {
+            const res = await fetch('<?php echo site_url("kajiulang/savekomentar") ?>', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -286,21 +282,36 @@
         } catch (err) {
             console.error('Error saat menyimpan komentar:', err);
             return { ok: false, error: err };
-        } finally {
-            if (btn) btn.disabled = false;
         }
     }
 
-    // Event listener untuk tombol close (auto-save komentar)
-    document.addEventListener('click', function (e) {
-        if (!e.target.matches('#btnSaveKomentar') && !e.target.closest('#btnSaveKomentar')) return;
-        e.preventDefault();
-        // Panggil fungsi async (silent)
-        saveKomentarAsync().then(() => { });
+    // ============================================================
+    // AUTO-SAVE KOMENTAR SAAT MODAL DITUTUP
+    // ============================================================
+    document.addEventListener('click', function(e) {
+        // Auto-save saat klik tombol close (X) atau tombol "Tutup"
+        if (e.target.matches('[data-bs-dismiss="modal"]') || e.target.closest('[data-bs-dismiss="modal"]')) {
+            e.preventDefault();
+            // Simpan komentar terlebih dahulu sebelum tutup modal
+            saveKomentarAsync().then(() => {
+                // Setelah simpan selesai, baru tutup modal
+                if (_modalDetailInstance) _modalDetailInstance.hide();
+                else if (typeof $ === 'function') $('#modalDetail').modal('hide');
+            });
+            return;
+        }
+    });
+
+    // Event listener untuk modal hide (backup untuk auto-save)
+    document.addEventListener('hide.bs.modal', function(e) {
+        if (e.target.id === 'modalDetail') {
+            // Pastikan komentar tersimpan saat modal ditutup
+            saveKomentarAsync().catch(err => console.warn('Auto-save komentar gagal:', err));
+        }
     });
 
     // ============================================================
-    // LOAD DETAIL LAYANAN
+    // LOAD DETAIL LAYANAN (MODAL)
     // ============================================================
     let trackingDetailTable;
     let cachedSampleData = {}; // Cache untuk identitas sampel
@@ -310,15 +321,16 @@
         if (!trackingDetailTable) {
             trackingDetailTable = createModal({
                 tableId: 'tableDetail',
-                apiUrl: `<?php echo site_url("formulirmanajer/detailList/") ?>${id}`,
-                itemsPerPage: 10, // Maksimal 10 data
+                apiUrl: `<?php echo site_url("kajiulang/detailList/") ?>${id}`,
+                itemsPerPage: 10,
                 showFilter: false,
                 treeview: false,
-                numbering: false
+                numbering: false,
+                dataSrc: 'items'
             });
         } else {
             trackingDetailTable.refresh({
-                apiUrl: `<?php echo site_url("formulirmanajer/detailList/") ?>${id}`
+                apiUrl: `<?php echo site_url("kajiulang/detailList/") ?>${id}`
             });
         }
 
@@ -351,7 +363,7 @@
                 sampleSection.style.display = 'block';
             } else {
                 // Fetch data baru dari server
-                fetch(`<?php echo site_url("formulirmanajer/getSampleIdentity/") ?>${lnKode}`)
+                fetch(`<?php echo site_url("kajiulang/getSampleIdentity/") ?>${lnKode}`)
                     .then(response => response.json())
                     .then(data => {
                         if (data.success && data.data) {
@@ -402,10 +414,10 @@
         if (!el) return;
 
         const ln = el.dataset.ln;
-        const uji = el.dataset.uji;
-
-        if (!ln || (uji === undefined || uji === null)) {
-            console.warn('handleApproveReject: missing ln or uji', ln, uji);
+        const detail = el.dataset.detail;
+        
+        if (!ln || (detail === undefined || detail === null)) {
+            console.warn('handleApproveReject: missing ln or detail', ln, detail);
             return;
         }
 
@@ -428,11 +440,11 @@
             const csrfToken = _getCsrf();
             const formData = new FormData();
             formData.append('ln', ln);
-            formData.append('uji', uji);
+            formData.append('detail', detail);
 
             const url = isAccept
-                ? '<?php echo site_url("formulirmanajer/approveDetail") ?>'
-                : '<?php echo site_url("formulirmanajer/rejectDetail") ?>';
+                ? '<?php echo site_url("kajiulang/approveDetail") ?>'
+                : '<?php echo site_url("kajiulang/rejectDetail") ?>';
 
             const res = await fetch(url, {
                 method: 'POST',
@@ -487,65 +499,4 @@
             return;
         }
     });
-
-    // ============================================================
-    // SAVE DATA GENERIC (UNTUK FORM LAIN JIKA ADA)
-    // ============================================================
-    function saveData({ url, formData, onSuccess, onError }) {
-        showLoading();
-        const csrfToken = _getCsrf();
-
-        fetch(url, {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-CSRF-TOKEN': csrfToken
-            }
-        })
-            .then(response => response.json())
-            .then(data => {
-                // Update token
-                if (data.xname && data.xhash) {
-                    document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => {
-                        input.value = data.xhash;
-                    });
-                }
-
-                if (typeof onSuccess === 'function') {
-                    onSuccess(data);
-                    return;
-                }
-
-                if ($('#modalForm').hasClass('show')) $('#modalForm').modal('hide');
-
-                if (data.res === true) {
-                    if (typeof table !== 'undefined') table.fetchData({ reload: true });
-                    sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
-                } else if (data.res === 'reload') {
-                    sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
-                } else if (data.res === 'refresh') {
-                    loadContent(data.link);
-                    sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
-                } else if (data.res === 'redirect') {
-                    window.location.href = data.link;
-                } else if (data.res === 'check') {
-                    sayAlert('errorModal', 'Error', data.link, 'warning');
-                } else if (data.res === 'refresh-print') {
-                    loadContent(data.link);
-                    window.open(data.print, "_blank");
-                } else {
-                    sayAlert('errorModal', 'Error', 'Terjadi kesalahan pada sistem.', 'warning');
-                }
-            })
-            .catch(error => {
-                if (typeof onError === 'function') {
-                    onError(error);
-                } else {
-                    sayAlert('errorModal', 'Error', 'Terjadi kesalahan pada sistem.', 'warning');
-                }
-            })
-            .finally(() => {
-                hideLoading();
-            });
-    }
 </script>
