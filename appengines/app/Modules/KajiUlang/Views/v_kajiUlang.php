@@ -50,7 +50,7 @@
                             <th width="5%">No</th>
                             <th width="20%">Layanan</th>
                             <th width="8%">Jumlah</th>
-                            <th width="25%">Keterangan</th>
+                            <th width="25%">Metode</th>
                             <th width="10%">Status</th>
                             <th width="20%">Berikan keterangan</th>
                             <th width="12%" class="text-center">Aksi</th>

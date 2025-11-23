@@ -130,13 +130,7 @@ class KajiUlang extends BaseController
             $response[] = $row->nama_layanan ?? '-';
             $response[] = isset($row->jumlah) ? (int)$row->jumlah : 0;
 
-            $response[] = '<div 
-                        style="display:block; max-width:240px; min-width:160px; width:100%;
-                            max-height:120px; min-height:48px; overflow-y:auto; overflow-x:hidden;
-                            padding:4px 6px; border:1px solid #ddd; border-radius:4px; background:#f9f9f9;
-                            white-space:pre-wrap; word-break:break-word; font-size:0.9rem;">'
-                . htmlspecialchars($row->catatan_pelanggan ?? '', ENT_QUOTES, 'UTF-8') .
-                '</div>';
+            $response[] = isset($row->metode_nama) && !empty($row->metode_nama) ? esc($row->metode_nama) : '-';
 
             // Status per record
             $status = isset($row->status_layanan) ? (int)$row->status_layanan : null;
