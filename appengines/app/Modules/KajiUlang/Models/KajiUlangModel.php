@@ -144,8 +144,8 @@ class KajiUlangModel extends Model
     }
 
     /**
-     * Get layanan detail list for manager review
-     * 
+     * Get layanan detail list for manager review - shows all records with same kode_layanan without quantity calculation
+     *
      * @param int|string $kode Layanan code
      * @param int $userId User ID
      * @return array
@@ -158,16 +158,16 @@ class KajiUlangModel extends Model
             d.kode_layanan,
             d.nama_layanan,
             d.kode_jenis,
-            GROUP_CONCAT(DISTINCT d.catatan_pelanggan SEPARATOR ' | ') AS catatan_pelanggan,
-            GROUP_CONCAT(DISTINCT d.catatan_manajer SEPARATOR ' | ') AS catatan_manajer,
-            SUM(d.jumlah) AS jumlah,
-            SUM(d.biaya) AS total_biaya,
-            MAX(d.status_layanan) AS status_group
+            d.catatan_pelanggan,
+            d.catatan_manajer,
+            d.jumlah,
+            d.biaya,
+            d.status_layanan
         ");
         $builder->join('r_tim rt', 'rt.uji_kode = d.uji_kode', 'inner');
         $builder->where('d.kode_layanan', $kode);
         $builder->where('rt.user_id', $userId);
-        $builder->groupBy('d.uji_kode, d.kode_layanan, d.nama_layanan, d.kode_jenis');
+        $builder->orderBy('d.uji_kode', 'ASC');
 
         return $builder->get()->getResult();
     }

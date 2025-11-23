@@ -138,13 +138,13 @@ class KajiUlang extends BaseController
                 . htmlspecialchars($row->catatan_pelanggan ?? '', ENT_QUOTES, 'UTF-8') .
                 '</div>';
 
-            // Status grouping
-            $statusGroup = isset($row->status_group) ? (int)$row->status_group : null;
-            if ($statusGroup === 2) {
+            // Status per record
+            $status = isset($row->status_layanan) ? (int)$row->status_layanan : null;
+            if ($status === 2) {
                 $statusHtml = '<span class="badge bg-danger">Ditolak</span>';
-            } elseif ($statusGroup === 1) {
+            } elseif ($status === 1) {
                 $statusHtml = '<span class="badge bg-success">Diterima</span>';
-            } elseif ($statusGroup === 0) {
+            } elseif ($status === 0) {
                 $statusHtml = '<span class="badge bg-secondary">Pending</span>';
             } else {
                 $statusHtml = '<span class="badge bg-secondary">Belum Diproses</span>';
