@@ -50,46 +50,21 @@ class CreateRLayananPengujian extends Migration
         ]);
 
         $this->forge->addKey('kode', true);
-        $this->forge->addKey('kode_alat');
-        $this->forge->addKey('kode_parameter');
-        $this->forge->addKey('kode_jenis');
 
-        $this->forge->createTable('r_layanan_pengujian');
+        // Create table first
+        $this->forge->createTable('r_layanan_pengujian', true);
 
-        // Jika FK lama mungkin sudah ada, drop dulu (agar migration idempotent pada DB yang sudah ada FK)
-        $db = \Config\Database::connect();
-        // Hapus FK lama jika ada (tidak error jika tidak ada) - silakan jalankan ini sebelum menambah FK baru
-        // NOTE: beberapa versi MySQL/MariaDB tidak support IF EXISTS untuk DROP FOREIGN KEY,
-        // tapi mengeksekusi DROP pada nama yang tidak ada akan error — jika yakin nama, gunakan; 
-        // di sini kita coba perlakuan aman: cek information_schema sebelum drop.
-        $db->query("
-            DELETE FROM information_schema.REFERENTIAL_CONSTRAINTS
-            WHERE CONSTRAINT_SCHEMA = DATABASE()
-              AND CONSTRAINT_NAME IN (
-                'fk_rlaypeng_paraKode',
-                'fk_rlaypeng_alatKode',
-                'fk_rlaypeng_jenKode'
-              );
-        ");
+        // Tambah FK dengan mekanisme forge (lebih aman & portable)
+        $this->forge->addForeignKey('kode_parameter', 'simlab_r_parameter', 'paraKode', 'CASCADE', 'CASCADE');
+        $this->forge->addForeignKey('kode_alat', 'simlab_r_alat', 'alatKode', 'CASCADE', 'CASCADE');
+        $this->forge->addForeignKey('kode_jenis', 'simlab_r_jenis', 'jenKode', 'CASCADE', 'CASCADE');
 
-        // Tambah FK baru semua dengan CASCADE
-        $db->query("
-            ALTER TABLE `r_layanan_pengujian`
-                ADD CONSTRAINT `fk_rlaypeng_paraKode` 
-                    FOREIGN KEY (`kode_parameter`) REFERENCES `simlab_r_parameter` (`paraKode`) 
-                    ON DELETE CASCADE ON UPDATE CASCADE,
-                ADD CONSTRAINT `fk_rlaypeng_alatKode` 
-                    FOREIGN KEY (`kode_alat`) REFERENCES `simlab_r_alat` (`alatKode`) 
-                    ON DELETE CASCADE ON UPDATE CASCADE,
-                ADD CONSTRAINT `fk_rlaypeng_jenKode` 
-                    FOREIGN KEY (`kode_jenis`) REFERENCES `simlab_r_jenis` (`jenKode`) 
-                    ON DELETE CASCADE ON UPDATE CASCADE;
-        ");
+        // Apply alter table for foreign keys
+        $this->forge->processIndexes('r_layanan_pengujian');
     }
 
     public function down()
     {
-        // drop table (akan otomatis menghapus FK juga)
         $this->forge->dropTable('r_layanan_pengujian', true);
     }
 }

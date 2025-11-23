@@ -8,7 +8,7 @@ use App\Models\MyModel;
 class FormulirManajer extends BaseController
 {
     private $table = 'simlab_t_layanan';
-    private $id    = 'lnKode';
+    private $id = 'lnKode';
     protected $encrypter;
 
     public function __construct()
@@ -25,7 +25,7 @@ class FormulirManajer extends BaseController
         $modelUser = new MyModel('simlab_account_users');
         $data = [
             'title' => 'Data Formulir Manajer',
-            'user'  => $modelUser->getDataById('user_id', $user_id),
+            'user' => $modelUser->getDataById('user_id', $user_id),
         ];
 
         return view('Modules\FormulirManajer\Views\v_formulirManajer', $data);
@@ -35,8 +35,8 @@ class FormulirManajer extends BaseController
     {
         $session = session();
         $user_id = $session->get('id_user');
-        $model   = new MyModel($this->table);
-        $data    = [];
+        $model = new MyModel($this->table);
+        $data = [];
 
         $lnStatusRaw = (string) ($this->request->getGet('lnStatus') ?? '');
         $statusArr = [];
@@ -109,7 +109,7 @@ class FormulirManajer extends BaseController
         if (!empty($statusArr)) {
             $builder->groupStart();
             foreach ($statusArr as $st) {
-                $st = (int)$st;
+                $st = (int) $st;
                 if ($st === 1) {
                     // 1 (Belum direview): lnStatus = 1 AND pending_for_manager > 0
                     $builder->orGroupStart()
@@ -142,7 +142,7 @@ class FormulirManajer extends BaseController
 
         foreach ($list as $row) {
             // HANYA skip status=0 jika TIDAK sedang mem-filter
-            if ((int)$row->lnStatus === 0 && empty($statusArr)) {
+            if ((int) $row->lnStatus === 0 && empty($statusArr)) {
                 continue;
             }
 
@@ -150,8 +150,8 @@ class FormulirManajer extends BaseController
             $response = [];
 
             $pemesanNama = !empty($row->pemesan_name) ? $row->pemesan_name : '-';
-            $tipe        = !empty($row->pemesan_identity) ? $row->pemesan_identity : '-';
-            $tanggal     = !empty($row->lnTgl) ? date('d-m-Y H:i', strtotime($row->lnTgl)) : '-';
+            $tipe = !empty($row->pemesan_identity) ? $row->pemesan_identity : '-';
+            $tanggal = !empty($row->lnTgl) ? date('d-m-Y H:i', strtotime($row->lnTgl)) : '-';
 
             $combined = '
                 <div style="line-height:1.3;">
@@ -214,7 +214,6 @@ class FormulirManajer extends BaseController
             d.kode_layanan,
             d.nama_layanan,
             d.kode_jenis,
-            GROUP_CONCAT(DISTINCT d.catatan_pelanggan SEPARATOR ' | ') AS catatan_pelanggan,
             GROUP_CONCAT(DISTINCT d.catatan_manajer SEPARATOR ' | ') AS catatan_manajer,
             SUM(d.jumlah) AS jumlah,
             SUM(d.biaya) AS total_biaya,
@@ -234,18 +233,18 @@ class FormulirManajer extends BaseController
             $response = [];
             $response[] = $no++;
             $response[] = $row->nama_layanan ?? '-';
-            $response[] = isset($row->jumlah) ? (int)$row->jumlah : 0;
+            $response[] = isset($row->jumlah) ? (int) $row->jumlah : 0;
 
             $response[] = '<div 
                         style="display:block; max-width:240px; min-width:160px; width:100%;
                             max-height:120px; min-height:48px; overflow-y:auto; overflow-x:hidden;
                             padding:4px 6px; border:1px solid #ddd; border-radius:4px; background:#f9f9f9;
                             white-space:pre-wrap; word-break:break-word; font-size:0.9rem;">'
-                . htmlspecialchars($row->catatan_pelanggan ?? '', ENT_QUOTES, 'UTF-8') .
+                . htmlspecialchars($row->catatan_manajer ?? '', ENT_QUOTES, 'UTF-8') .
                 '</div>';
 
             // Status grouping
-            $statusGroup = isset($row->status_group) ? (int)$row->status_group : null;
+            $statusGroup = isset($row->status_group) ? (int) $row->status_group : null;
             if ($statusGroup === 2) {
                 $statusHtml = '<span class="badge bg-danger">Ditolak</span>';
             } elseif ($statusGroup === 1) {
@@ -258,7 +257,7 @@ class FormulirManajer extends BaseController
             $response[] = $statusHtml;
 
             // Aksi approve/reject 
-            $ujiKodeInt = (int)$row->uji_kode;
+            $ujiKodeInt = (int) $row->uji_kode;
             $encLnForBtn = $encLnId;
             $komentarVal = $row->catatan_manajer !== null ? esc($row->catatan_manajer) : '';
 
@@ -298,7 +297,7 @@ class FormulirManajer extends BaseController
 
         try {
             $lnKode = $this->encrypter->decrypt(hex2bin($input['lnId']));
-            $lnKode = (int)$lnKode;
+            $lnKode = (int) $lnKode;
         } catch (\Exception $e) {
             return $this->response->setJSON([
                 'res' => false,
@@ -314,7 +313,7 @@ class FormulirManajer extends BaseController
         $db = \Config\Database::connect();
 
         // Cek otorisasi via r_tim
-        $check = (int)$db->table('t_layanan_detil as d')
+        $check = (int) $db->table('t_layanan_detil as d')
             ->join('r_tim rt', 'rt.uji_kode = d.uji_kode', 'inner')
             ->where('d.kode_layanan', $lnKode)
             ->where('rt.user_id', $user_id)
@@ -334,10 +333,11 @@ class FormulirManajer extends BaseController
 
         $builder = $db->table('t_layanan_detil');
         foreach ($input['items'] as $it) {
-            $uji = isset($it['ujiKode']) ? (int)$it['ujiKode'] : null;
+            $uji = isset($it['ujiKode']) ? (int) $it['ujiKode'] : null;
             $kom = isset($it['komentar']) ? $it['komentar'] : null;
 
-            if ($uji === null) continue;
+            if ($uji === null)
+                continue;
 
             $builder->where('kode_layanan', $lnKode)
                 ->where('uji_kode', $uji)
@@ -370,7 +370,7 @@ class FormulirManajer extends BaseController
             ]);
         }
 
-        $uji = (int)$ujiRaw;
+        $uji = (int) $ujiRaw;
 
         try {
             $lnId = $this->encrypter->decrypt(hex2bin($lnEnc));
@@ -384,7 +384,7 @@ class FormulirManajer extends BaseController
             ]);
         }
 
-        $session   = session();
+        $session = session();
         $managerId = (int) ($session->get('id_user') ?? 0);
 
         if ($managerId <= 0) {
@@ -488,7 +488,7 @@ class FormulirManajer extends BaseController
             ->where('uji_kode', $uji)
             ->where('(status_layanan IS NULL OR status_layanan != 1)')
             ->update([
-                'status_layanan'    => 1,
+                'status_layanan' => 1,
                 'terima_layanan_by' => $managerId
             ]);
 
@@ -517,12 +517,12 @@ class FormulirManajer extends BaseController
         $transOk = $db->transStatus();
 
         return $this->response->setJSON([
-            'res'      => $transOk && $affected > 0,
+            'res' => $transOk && $affected > 0,
             'affected' => $affected,
-            'msg'      => $affected > 0 ? 'Berhasil disetujui' : 'No rows updated',
+            'msg' => $affected > 0 ? 'Berhasil disetujui' : 'No rows updated',
             'parent_updated' => $parentUpdated,
-            'xname'    => csrf_token(),
-            'xhash'    => csrf_hash()
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
         ]);
     }
 
@@ -530,7 +530,7 @@ class FormulirManajer extends BaseController
     public function rejectDetail()
     {
 
-        $session   = session();
+        $session = session();
         $managerId = (int) ($session->get('id_user') ?? 0);
 
 
@@ -547,7 +547,7 @@ class FormulirManajer extends BaseController
             ]);
         }
 
-        $uji = (int)$ujiRaw;
+        $uji = (int) $ujiRaw;
 
         try {
             $lnId = $this->encrypter->decrypt(hex2bin($lnEnc));
@@ -561,7 +561,7 @@ class FormulirManajer extends BaseController
             ]);
         }
 
-        $session   = session();
+        $session = session();
         $managerId = (int) ($session->get('id_user') ?? 0);
 
         if ($managerId <= 0) {
@@ -662,8 +662,8 @@ class FormulirManajer extends BaseController
             ->where('uji_kode', $uji)
             ->where('(status_layanan IS NULL OR status_layanan != 2)')
             ->update([
-                'status_layanan'     => 2,
-                'terima_layanan_by'  => $managerId
+                'status_layanan' => 2,
+                'terima_layanan_by' => $managerId
             ]);
 
         $affected = $db->affectedRows();
@@ -689,12 +689,12 @@ class FormulirManajer extends BaseController
         $transOk = $db->transStatus();
 
         return $this->response->setJSON([
-            'res'      => $transOk && $affected > 0,
+            'res' => $transOk && $affected > 0,
             'affected' => $affected,
-            'msg'      => $affected > 0 ? 'OK' : 'No rows updated',
+            'msg' => $affected > 0 ? 'OK' : 'No rows updated',
             'parent_updated' => $parentUpdated,
-            'xname'    => csrf_token(),
-            'xhash'    => csrf_hash()
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
         ]);
     }
 
@@ -885,7 +885,7 @@ class FormulirManajer extends BaseController
         }
 
         // Selain itu, tampilkan status parent sebagaimana biasa
-        return $this->formatStatus((int)$lnStatus);
+        return $this->formatStatus((int) $lnStatus);
     }
 
     public function getSampleIdentity($lnKode = null)

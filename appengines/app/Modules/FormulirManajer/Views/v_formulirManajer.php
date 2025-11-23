@@ -1,4 +1,4 @@
-<div class="row"> 
+<div class="row">
     <div class="col-md-12">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
@@ -33,71 +33,73 @@
 
 <!--  Modal Detail -->
 <div class="modal fade" id="modalDetail" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
-  <div class="modal-dialog modal-xl modal-dialog-centered" role="document" style="max-width:1200px; margin: 1.5% auto;">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Detail Item Layanan</h5>
-        <button id="btnSaveKomentar" type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <!-- responsive wrapper: jika tabel lebar maka muncul scroll -->
-        <div class="table-responsive">
-          <table id="tableDetail" class="saytable table table-bordered align-middle">
-            <thead>
-             <tr>
-                  <th show style="min-width:40px; width:5%;">No</th>
-                  <th show style="min-width:300px; width:15%;">Layanan</th>
-                  <th show style="min-width:60px; width:5%;">Jumlah</th>
-                  <th show style="min-width:200px; width:25%;">Keterangan</th>
-                  <th show style="min-width:120px; width:5%;">Status</th>
-                  <th show style="min-width:300px; width:20%;">Berikan keterangan</th>
-                  <th show style="min-width:110px; width:5%;" class="text-center">Aksi</th>
-              </tr>
-            </thead>
-            <tbody id="detail-body">
-              <tr><td colspan="7" class="text-center">Loading...</td></tr>
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Sample Identity Details Section -->
-        <div class="detail-table mt-4" id="sampleIdentitySection" style="display: none;">
-          <h6 class="mb-3">Identitas Sampel:</h6>
-          <div class="card">
-            <div class="card-body">
-              <div class="row">
-                <div class="col-md-6 mb-3">
-                  <label class="fw-bold text-muted small">Jenis Sampel:</label>
-                  <p class="mb-0" id="sampleJenis">-</p>
-                </div>
-                <div class="col-md-6 mb-3">
-                  <label class="fw-bold text-muted small">Kemasan Sampel:</label>
-                  <p class="mb-0" id="sampleKemasan">-</p>
-                </div>
-                <div class="col-md-6 mb-3">
-                  <label class="fw-bold text-muted small">Sifat Sampel:</label>
-                  <p class="mb-0" id="sampleSifat">-</p>
-                </div>
-                <div class="col-md-6 mb-3">
-                  <label class="fw-bold text-muted small">Sisa Sampel:</label>
-                  <p class="mb-0" id="sampleSisa">-</p>
-                </div>
-                <div class="col-12 mb-3">
-                  <label class="fw-bold text-muted small">Deskripsi:</label>
-                  <p class="mb-0 text-wrap" id="sampleDeskripsi">-</p>
-                </div>
-                <div class="col-12">
-                  <label class="fw-bold text-muted small">Keterangan Khusus:</label>
-                  <p class="mb-0 text-wrap" id="sampleKeteranganKhusus">-</p>
-                </div>
-              </div>
+    <div class="modal-dialog modal-xl modal-dialog-centered" role="document"
+        style="max-width:1200px; margin: 1.5% auto;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Detail Item Layanan</h5>
+                <button id="btnSaveKomentar" type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-          </div>
+            <div class="modal-body">
+                <!-- responsive wrapper: jika tabel lebar maka muncul scroll -->
+                <div class="table-responsive">
+                    <table id="tableDetail" class="saytable table table-bordered align-middle">
+                        <thead>
+                            <tr>
+                                <th show style="min-width:40px; width:5%;">No</th>
+                                <th show style="min-width:300px; width:15%;">Layanan</th>
+                                <th show style="min-width:60px; width:5%;">Jumlah</th>
+                                <th show style="min-width:120px; width:5%;">Status</th>
+                                <th show style="min-width:300px; width:20%;">Berikan keterangan</th>
+                                <th show style="min-width:110px; width:5%;" class="text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="detail-body">
+                            <tr>
+                                <td colspan="6" class="text-center">Loading...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Sample Identity Details Section -->
+                <div class="detail-table mt-4" id="sampleIdentitySection" style="display: none;">
+                    <h6 class="mb-3">Identitas Sampel:</h6>
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="fw-bold text-muted small">Jenis Sampel:</label>
+                                    <p class="mb-0" id="sampleJenis">-</p>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="fw-bold text-muted small">Kemasan Sampel:</label>
+                                    <p class="mb-0" id="sampleKemasan">-</p>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="fw-bold text-muted small">Sifat Sampel:</label>
+                                    <p class="mb-0" id="sampleSifat">-</p>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="fw-bold text-muted small">Sisa Sampel:</label>
+                                    <p class="mb-0" id="sampleSisa">-</p>
+                                </div>
+                                <div class="col-12 mb-3">
+                                    <label class="fw-bold text-muted small">Deskripsi:</label>
+                                    <p class="mb-0 text-wrap" id="sampleDeskripsi">-</p>
+                                </div>
+                                <div class="col-12">
+                                    <label class="fw-bold text-muted small">Keterangan Khusus:</label>
+                                    <p class="mb-0 text-wrap" id="sampleKeteranganKhusus">-</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Modal footer DIHAPUS (tombol Kirim dihapus sesuai permintaan) -->
         </div>
-      </div>
-      <!-- Modal footer DIHAPUS (tombol Kirim dihapus sesuai permintaan) -->
     </div>
-  </div>
 </div>
 
 <script>
@@ -130,7 +132,7 @@
             }
             const s = params.toString();
             return u.pathname + (s ? '?' + s : '');
-        } catch(e) {
+        } catch (e) {
             if (key && String(key) !== '' && value !== null && String(value) !== '') {
                 return path + (path.includes('?') ? '&' : '?') + encodeURIComponent(key) + '=' + encodeURIComponent(String(value));
             }
@@ -168,7 +170,7 @@
     if (typeof table !== 'undefined' && table && typeof table.getConfig === 'function' && typeof table.fetchData === 'function' && !table.__fetchPatched) {
         const _origFetch = table.fetchData.bind(table);
         let _currentAbort = null;
-        table.fetchData = function(opts = {}) {
+        table.fetchData = function (opts = {}) {
             try {
                 const cfg = table.getConfig();
                 if (cfg && typeof cfg.apiUrl === 'string') {
@@ -176,12 +178,12 @@
                     u.searchParams.set('_ts', Date.now().toString()); // cache-buster
                     cfg.apiUrl = normalizeDoubleQuestion(u.pathname + (u.search ? u.search : ''));
                 }
-            } catch (err) {}
-            try { if (_currentAbort) _currentAbort.abort(); } catch(e){}
+            } catch (err) { }
+            try { if (_currentAbort) _currentAbort.abort(); } catch (e) { }
             try {
                 _currentAbort = new AbortController();
                 opts.signal = _currentAbort.signal;
-            } catch(e){}
+            } catch (e) { }
             return _origFetch(opts);
         };
         table.__fetchPatched = true;
@@ -190,10 +192,10 @@
     // ============================================================
     // FILTER STATUS DROPDOWN
     // ============================================================
-    (function attachStatusFilter(){
+    (function attachStatusFilter() {
         const sel = document.getElementById('statusFilter');
         if (!sel || sel.dataset.bound === '1') return;
-        sel.addEventListener('change', function(){
+        sel.addEventListener('change', function () {
             const val = (this.value || '').toString().trim();
             if (table?.getConfig) {
                 const cfg = table.getConfig();
@@ -235,7 +237,7 @@
         // Kumpulkan textarea/input komentar dalam modal (kelas .komentar-input)
         const inputs = modalEl.querySelectorAll('.komentar-input');
         const items = [];
-        inputs.forEach(function(inp) {
+        inputs.forEach(function (inp) {
             const uji = inp.getAttribute('data-uji');
             const val = inp.value;
             if (uji !== null && uji !== '') {
@@ -290,11 +292,11 @@
     }
 
     // Event listener untuk tombol close (auto-save komentar)
-    document.addEventListener('click', function(e) {
+    document.addEventListener('click', function (e) {
         if (!e.target.matches('#btnSaveKomentar') && !e.target.closest('#btnSaveKomentar')) return;
         e.preventDefault();
         // Panggil fungsi async (silent)
-        saveKomentarAsync().then(() => {});
+        saveKomentarAsync().then(() => { });
     });
 
     // ============================================================
@@ -334,7 +336,7 @@
 
         // Load atau tampilkan identitas sampel
         const sampleSection = document.getElementById('sampleIdentitySection');
-        
+
         if (lnKode) {
             // Cek apakah data sudah di-cache
             if (cachedSampleData[lnKode]) {
@@ -355,7 +357,7 @@
                         if (data.success && data.data) {
                             // Simpan ke cache
                             cachedSampleData[lnKode] = data.data;
-                            
+
                             // Populate sample identity fields
                             document.getElementById('sampleJenis').textContent = data.data.jenis || '-';
                             document.getElementById('sampleKemasan').textContent = data.data.kemasan || '-';
@@ -398,10 +400,10 @@
     // ============================================================
     async function handleApproveReject(el, isAccept) {
         if (!el) return;
-        
+
         const ln = el.dataset.ln;
         const uji = el.dataset.uji;
-        
+
         if (!ln || (uji === undefined || uji === null)) {
             console.warn('handleApproveReject: missing ln or uji', ln, uji);
             return;
@@ -468,7 +470,7 @@
     // ============================================================
     // EVENT DELEGATION UNTUK APPROVE/REJECT BUTTONS
     // ============================================================
-    document.addEventListener('click', function(e) {
+    document.addEventListener('click', function (e) {
         // ACCEPT BUTTON
         const acceptEl = e.target.closest ? e.target.closest('.btn-accept-manager') : null;
         if (acceptEl) {
@@ -494,12 +496,12 @@
         const csrfToken = _getCsrf();
 
         fetch(url, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken
-                }
-            })
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRF-TOKEN': csrfToken
+            }
+        })
             .then(response => response.json())
             .then(data => {
                 // Update token

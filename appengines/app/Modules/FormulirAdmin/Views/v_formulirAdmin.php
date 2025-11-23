@@ -68,7 +68,6 @@
                             <th width="30%">Parameter</th>
                             <th width="20%">Biaya</th>
                             <th width="15%">Jumlah</th>
-                            <th width="15%">Keterangan</th>
                             <th width="15%">Status</th>
                             <th width="15%">Keterangan Manajer</th>
                             <th width="10%">Acc</th>
@@ -76,7 +75,7 @@
                     </thead>
                     <tbody id="detail-body">
                         <tr>
-                            <td colspan="6" class="text-center">Loading...</td>
+                            <td colspan="7" class="text-center">Loading...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -150,7 +149,7 @@
     // Patch table.fetchData untuk menormalisasi apiUrl bila helper createTable menambahkan '?ganda'
     if (table && typeof table.getConfig === 'function' && typeof table.fetchData === 'function') {
         const origFetch = table.fetchData.bind(table);
-        table.fetchData = function(opts = {}) {
+        table.fetchData = function (opts = {}) {
             try {
                 const cfg = table.getConfig();
                 if (cfg && cfg.apiUrl && typeof cfg.apiUrl === 'string') {
@@ -175,7 +174,7 @@
     // Event listener untuk filter dropdown
     var statusFilterEl = document.getElementById('statusFilter');
     if (statusFilterEl) {
-        statusFilterEl.addEventListener('change', function() {
+        statusFilterEl.addEventListener('change', function () {
             const selectedValue = this.value;
             const tableConfig = table.getConfig();
 
@@ -207,12 +206,12 @@
         const csrfToken = csrfInput ? csrfInput.value : '';
 
         fetch(url, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken
-                }
-            })
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRF-TOKEN': csrfToken
+            }
+        })
             .then(response => response.json())
             .then(data => {
                 if (data.xname && data.xhash) {
@@ -278,7 +277,7 @@
             if (!id) return;
 
             // gunakan sayConfirm jika tersedia (konsisten dengan UI)
-            const doApprove = function() {
+            const doApprove = function () {
                 const csrf = getCsrfTokenFromPage();
                 const headers = {
                     'X-Requested-With': 'XMLHttpRequest'
@@ -295,10 +294,10 @@
                 if (csrf && csrf.name && csrf.value) body.append(csrf.name, csrf.value);
 
                 fetch('<?= site_url("formuliradmin/approve/") ?>' + id, {
-                        method: 'POST',
-                        headers: headers,
-                        body: body
-                    })
+                    method: 'POST',
+                    headers: headers,
+                    body: body
+                })
 
                     .then(res => res.json())
                     .then(data => {
@@ -319,7 +318,7 @@
             };
 
             if (typeof sayConfirm === 'function') {
-                sayConfirm('Konfirmasi ', 'Setujui transaksi ini?', function() {
+                sayConfirm('Konfirmasi ', 'Setujui transaksi ini?', function () {
                     doApprove();
                 }, 'primary', 'Setujui');
 
@@ -372,9 +371,9 @@
             .then(data => {
                 tbody.innerHTML = '';
                 if (data.items && data.items.length > 0) {
-                    data.items.forEach(function(row) {
+                    data.items.forEach(function (row) {
                         let tr = '<tr>';
-                        row.forEach(function(col) {
+                        row.forEach(function (col) {
                             tr += '<td>' + col + '</td>';
                         });
                         tr += '</tr>';
@@ -398,11 +397,11 @@
     }
 
     // ======= Pastiin #add membuka modalForm (dari KeranjangAdmin) =======
-    (function() {
+    (function () {
         var addBtn = document.querySelector('#add');
         if (!addBtn) return;
 
-        addBtn.addEventListener('click', function() {
+        addBtn.addEventListener('click', function () {
             try {
                 var modalEl = document.getElementById('modalForm');
                 if (!modalEl) {
