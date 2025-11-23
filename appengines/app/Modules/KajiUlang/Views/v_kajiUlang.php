@@ -44,8 +44,8 @@
                     <h6 class="mb-0">Detail Item Layanan</h6>
                 </div>
 
-                <table id="tableDetail" class="table table-sm table-bordered">
-                    <thead class="table-light">
+                <table id="tableDetail" class="saytable border-top-bottom">
+                    <thead>
                         <tr>
                             <th width="5%">No</th>
                             <th width="20%">Layanan</th>
@@ -110,13 +110,8 @@
     // CREATE MODAL WRAPPER (untuk isolasi tabel di dalam modal)
     // ============================================================
     function createModal(customConfig = {}) {
-        // Gunakan createTable1 untuk isolasi tabel modal
-        if (typeof createTable1 === 'function') {
-            return createTable1(customConfig);
-        } else {
-            console.warn('createTable1 tidak ditemukan, fallback ke createTable');
-            return createTable(customConfig);
-        }
+        // Langsung gunakan createTable untuk konsistensi
+        return createTable(customConfig);
     }
 
     // ============================================================
@@ -330,7 +325,8 @@
                 itemsPerPage: 10,
                 showFilter: false,
                 treeview: false,
-                numbering: false
+                numbering: false,
+                dataSrc: 'items'
             });
         } else {
             trackingDetailTable.refresh({

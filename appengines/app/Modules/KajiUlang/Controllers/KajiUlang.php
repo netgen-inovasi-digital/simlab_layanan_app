@@ -167,7 +167,13 @@ class KajiUlang extends BaseController
             $data[] = $response;
         }
 
-        return $this->response->setJSON(['items' => $data, 'encLn' => $encLnId]);
+        return $this->response->setJSON([
+            'res' => 'ok',
+            'items' => $data,
+            'encLn' => $encLnId,
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
+        ]);
     }
 
     public function saveKomentar()
