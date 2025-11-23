@@ -4,16 +4,19 @@ namespace Modules\KajiUlang\Controllers;
 
 use App\Controllers\BaseController;
 use App\Models\MyModel;
+use Modules\KajiUlang\Models\KajiUlangModel;
 
 class KajiUlang extends BaseController
 {
     private $table = 'simlab_t_layanan';
     private $id    = 'lnKode';
     protected $encrypter;
+    protected $kajiUlangModel;
 
     public function __construct()
     {
         $this->encrypter = \Config\Services::encrypter();
+        $this->kajiUlangModel = new KajiUlangModel();
         helper('form');
     }
 
@@ -35,7 +38,6 @@ class KajiUlang extends BaseController
     {
         $session = session();
         $user_id = $session->get('id_user');
-        $model   = new MyModel($this->table);
         $data    = [];
 
         $lnStatusRaw = (string) ($this->request->getGet('lnStatus') ?? '');
@@ -47,98 +49,15 @@ class KajiUlang extends BaseController
             }
         }
 
-        $db = \Config\Database::connect();
-
-        // Dapatkan daftar kode_layanan yang berkaitan dengan user lewat r_tim -> t_layanan_detil
-        $builderLn = $db->table('t_layanan_detil as d');
-        // tambahkan alias supaya hasil selalu berproperty kode_layanan
-        $builderLn->select('DISTINCT d.kode_layanan AS kode_layanan', false);
-        $builderLn->join('r_tim rt', 'rt.uji_kode = d.uji_kode', 'inner');
-        $builderLn->where('rt.user_id', $user_id);
-        $rowsLn = $builderLn->get()->getResult();
-
-        $lnKodeList = [];
-        foreach ($rowsLn as $item) {
-            if (is_array($item) && isset($item['kode_layanan'])) {
-                $lnKodeList[] = $item['kode_layanan'];
-            } elseif (is_object($item) && isset($item->kode_layanan)) {
-                $lnKodeList[] = $item->kode_layanan;
-            }
-        }
-
-        $lnKodeList = array_values(array_unique(array_filter($lnKodeList, function ($v) {
-            return $v !== null && $v !== '' && $v !== 0;
-        })));
+        // Get layanan codes related to user
+        $lnKodeList = $this->kajiUlangModel->getLayananKodesByUserId($user_id);
 
         if (empty($lnKodeList)) {
             return $this->response->setJSON(['items' => []]);
         }
 
-        // Build main query on simlab_t_layanan
-        $builder = $db->table('simlab_t_layanan as l');
-        // join both account_users (preferred) and account (fallback)
-        $builder->join('simlab_account_users as au', 'au.user_id = l.user_id', 'left');
-        $builder->join('simlab_account as a', 'a.user_id = l.user_id', 'left');
-
-        // use COALESCE so pemesan_name favors account_users.user_name, then account.nama, then lnAccEmail
-        $builder->select("
-            l.*,
-            COALESCE(au.user_name, a.nama, l.lnAccEmail, '-') AS pemesan_name,
-            COALESCE(au.user_email, l.lnAccEmail, '') AS pemesan_email,
-            COALESCE(au.user_identity, '-') AS pemesan_identity,
-            COALESCE(pm.pending_for_manager, 0) as pending_for_manager
-        ", false);
-
-
-        // SUBQUERY pending per manager
-        $pendingSub = $db->table('t_layanan_detil as det')
-            ->select('det.kode_layanan AS kode_layanan, SUM(CASE WHEN (det.status_layanan = 0 OR det.status_layanan IS NULL) THEN 1 ELSE 0 END) AS pending_for_manager', false)
-            ->join('r_tim rt', 'rt.uji_kode = det.uji_kode', 'inner')
-            ->where('rt.user_id', $user_id)
-            ->groupBy('det.kode_layanan');
-
-        // join subquery
-        $builder->join('(' . $pendingSub->getCompiledSelect(false) . ') pm', 'pm.kode_layanan = l.lnKode', 'left');
-
-        $builder->whereIn('l.lnKode', $lnKodeList);
-
-        // exclude lnStatus = 2 (Ditolak)
-        $builder->where('l.lnStatus !=', 2);
-
-        // === FILTER BERDASARKAN LOGIC TABEL UTAMA ===
-        if (!empty($statusArr)) {
-            $builder->groupStart();
-            foreach ($statusArr as $st) {
-                $st = (int)$st;
-                if ($st === 1) {
-                    // 1 (Belum direview): lnStatus = 1 AND pending_for_manager > 0
-                    $builder->orGroupStart()
-                        ->where('l.lnStatus', 1)
-                        ->where('COALESCE(pm.pending_for_manager,0) >', 0, false)
-                        ->groupEnd();
-                } elseif ($st === 3) {
-                    // 3 (Terkirim ke admin): pending_for_manager = 0 and not draft
-                    $builder->orGroupStart()
-                        ->where('COALESCE(pm.pending_for_manager,0) =', 0, false)
-                        ->where('l.lnStatus !=', 0)
-                        ->groupEnd();
-                } elseif ($st === 4) {
-                    // 4 (Pengujian)
-                    $builder->orGroupStart()
-                        ->where('l.lnStatus', 4)
-                        ->groupEnd();
-                } else {
-                    // fallback ke lnStatus murni
-                    $builder->orGroupStart()
-                        ->where('l.lnStatus', $st)
-                        ->groupEnd();
-                }
-            }
-            $builder->groupEnd();
-        }
-
-        $builder->orderBy('l.lnTgl', 'DESC');
-        $list = $builder->get()->getResult();
+        // Get layanan list with status filtering
+        $list = $this->kajiUlangModel->getLayananListForManager($lnKodeList, $user_id, $statusArr);
 
         foreach ($list as $row) {
             // HANYA skip status=0 jika TIDAK sedang mem-filter
@@ -164,7 +83,7 @@ class KajiUlang extends BaseController
             // Tampilkan status perspektif manajer
             $response[] = $this->formatStatusForManager($row->lnStatus, $row->lnKode, $user_id);
 
-            $response[] = '<a href="javascript:void(0)" onclick="loadDetail(\'' . $id . '\', \'' . esc($row->lnKode) . '\')" 
+            $response[] = '<a href="javascript:void(0)" onclick="loadDetail(\'' . $id . '\', \'' . $row->lnKode . '\')" 
                             class="btn btn-sm btn-info">
                             <i class="bi bi-gear"></i> Review Layanan
                         </a>';
@@ -191,41 +110,16 @@ class KajiUlang extends BaseController
             return $this->response->setJSON(['items' => []]);
         }
 
-        $db = \Config\Database::connect();
-
-        // Cek user sebagai anggota tim untuk layanan ini
-        $checkBuilder = $db->table('t_layanan_detil as d');
-        $checkBuilder->select('1');
-        $checkBuilder->join('r_tim rt', 'rt.uji_kode = d.uji_kode', 'inner');
-        $checkBuilder->where('d.kode_layanan', $kode);
-        $checkBuilder->where('rt.user_id', $user_id);
-        $exists = $checkBuilder->limit(1)->get()->getRow();
-
-        if (!$exists) {
+        // Check user authorization for this layanan
+        if (!$this->kajiUlangModel->isUserAuthorizedForLayanan($kode, $user_id)) {
             return $this->response->setJSON(['items' => []]);
         }
 
         // Encrypted ln dipakai di tombol & save
         $encLnId = bin2hex($this->encrypter->encrypt($kode));
 
-        $builder = $db->table('t_layanan_detil as d');
-        $builder->select("
-            d.uji_kode,
-            d.kode_layanan,
-            d.nama_layanan,
-            d.kode_jenis,
-            GROUP_CONCAT(DISTINCT d.catatan_pelanggan SEPARATOR ' | ') AS catatan_pelanggan,
-            GROUP_CONCAT(DISTINCT d.catatan_manajer SEPARATOR ' | ') AS catatan_manajer,
-            SUM(d.jumlah) AS jumlah,
-            SUM(d.biaya) AS total_biaya,
-            MAX(d.status_layanan) AS status_group
-        ");
-        $builder->join('r_tim rt', 'rt.uji_kode = d.uji_kode', 'inner');
-        $builder->where('d.kode_layanan', $kode);
-        $builder->where('rt.user_id', $user_id);
-        $builder->groupBy('d.uji_kode, d.kode_layanan, d.nama_layanan, d.kode_jenis');
-
-        $rows = $builder->get()->getResult();
+        // Get detail list for review
+        $rows = $this->kajiUlangModel->getDetailListForReview($kode, $user_id);
 
         $data = [];
         $no = 1;
@@ -311,17 +205,8 @@ class KajiUlang extends BaseController
         $session = session();
         $user_id = $session->get('id_user');
 
-        $db = \Config\Database::connect();
-
-        // Cek otorisasi via r_tim
-        $check = (int)$db->table('t_layanan_detil as d')
-            ->join('r_tim rt', 'rt.uji_kode = d.uji_kode', 'inner')
-            ->where('d.kode_layanan', $lnKode)
-            ->where('rt.user_id', $user_id)
-            ->limit(1)
-            ->countAllResults(false);
-
-        if ($check === 0) {
+        // Check authorization
+        if (!$this->kajiUlangModel->isUserAuthorizedForLayanan($lnKode, $user_id)) {
             return $this->response->setJSON([
                 'res' => false,
                 'msg' => 'Anda tidak berwenang mengubah komentar pada layanan ini',
@@ -330,22 +215,8 @@ class KajiUlang extends BaseController
             ]);
         }
 
-        $db->transStart();
-
-        $builder = $db->table('t_layanan_detil');
-        foreach ($input['items'] as $it) {
-            $uji = isset($it['ujiKode']) ? (int)$it['ujiKode'] : null;
-            $kom = isset($it['komentar']) ? $it['komentar'] : null;
-
-            if ($uji === null) continue;
-
-            $builder->where('kode_layanan', $lnKode)
-                ->where('uji_kode', $uji)
-                ->update(['catatan_manajer' => $kom]);
-        }
-
-        $db->transComplete();
-        $ok = $db->transStatus();
+        // Update komentar batch
+        $ok = $this->kajiUlangModel->updateKomentarBatch($lnKode, $input['items']);
 
         return $this->response->setJSON([
             'res' => $ok,
@@ -397,11 +268,8 @@ class KajiUlang extends BaseController
             ]);
         }
 
-        $db = \Config\Database::connect();
-
-        // Pastikan managerId valid
-        $acc = $db->table('simlab_account')->select('user_id')->where('user_id', $managerId)->get()->getRow();
-        if (!$acc) {
+        // Validate manager user
+        if (!$this->kajiUlangModel->isValidUser($managerId)) {
             return $this->response->setJSON([
                 'res' => false,
                 'affected' => 0,
@@ -411,13 +279,8 @@ class KajiUlang extends BaseController
             ]);
         }
 
-        // PASTIKAN manager adalah anggota tim untuk uji ini (otorisasi)
-        $auth = (int) $db->table('r_tim')
-            ->where('uji_kode', $uji)
-            ->where('user_id', $managerId)
-            ->countAllResults(false);
-
-        if ($auth === 0) {
+        // Check authorization for this uji
+        if (!$this->kajiUlangModel->isUserAuthorizedForUji($uji, $managerId)) {
             return $this->response->setJSON([
                 'res' => false,
                 'affected' => 0,
@@ -427,12 +290,8 @@ class KajiUlang extends BaseController
             ]);
         }
 
-        $table = $db->table('t_layanan_detil');
-
-        // Total baris matching (khusus uji + ln)
-        $table->where('kode_layanan', $lnId);
-        $table->where('uji_kode', $uji);
-        $total = (int) $table->countAllResults(false);
+        // Count total detail rows
+        $total = $this->kajiUlangModel->countLayananDetail($lnId, $uji);
 
         if ($total === 0) {
             return $this->response->setJSON([
@@ -444,25 +303,15 @@ class KajiUlang extends BaseController
             ]);
         }
 
-        // Sudah berapa yang status_layanan=1
-        $table->where('kode_layanan', $lnId);
-        $table->where('uji_kode', $uji);
-        $table->where('status_layanan', 1);
-        $already = (int) $table->countAllResults(false);
+        // Count already approved
+        $already = $this->kajiUlangModel->countLayananDetail($lnId, $uji, 1);
 
         if ($already === $total) {
-            // Jika semua sudah approved untuk uji ini, cek apakah masih ada pending di seluruh LN
-            $pendingBuilder = $db->table('t_layanan_detil');
-            $pendingBuilder->where('kode_layanan', $lnId);
-            $pendingBuilder->groupStart()
-                ->where('status_layanan', 0)
-                ->orWhere('status_layanan IS NULL', null, false)
-                ->groupEnd();
-            $pendingRemaining = (int) $pendingBuilder->countAllResults(false);
+            // Already approved, check if parent needs update
+            $pendingRemaining = $this->kajiUlangModel->countPendingForLayanan($lnId);
 
             $parentUpdated = false;
             if ($pendingRemaining === 0) {
-                // Jika tidak ada pending sama sekali, update parent menjadi status 3 (Layanan terkirim ke admin)
                 $model = new MyModel($this->table);
                 $resParent = $model->updateData(['lnStatus' => 3], $this->id, $lnId);
                 $parentUpdated = ($resParent === true || $resParent === 1);
@@ -478,43 +327,27 @@ class KajiUlang extends BaseController
             ]);
         }
 
-        // Mulai TRANSAKSI untuk menghindari race condition antara update + pengecekan pending + update parent
-        $db->transStart();
+        // Start transaction
+        $this->kajiUlangModel->transStart();
 
-        // Update hanya baris yang belum status_layanan=1 untuk uji yang bersangkutan
-        // (otorisasi sudah dipastikan via r_tim untuk uji ini)
-        $resUpdate = $db->table('t_layanan_detil')
-            ->where('kode_layanan', $lnId)
-            ->where('uji_kode', $uji)
-            ->where('(status_layanan IS NULL OR status_layanan != 1)')
-            ->update([
-                'status_layanan'    => 1,
-                'terima_layanan_by' => $managerId
-            ]);
-
-        $affected = $db->affectedRows();
+        // Approve detail
+        $affected = $this->kajiUlangModel->approveLayananDetail($lnId, $uji, $managerId);
         $parentUpdated = false;
 
         if ($affected > 0) {
-            // Setelah update, cek apakah masih ada pending di seluruh LN
-            $pendingBuilder = $db->table('t_layanan_detil');
-            $pendingBuilder->where('kode_layanan', $lnId);
-            $pendingBuilder->groupStart()
-                ->where('status_layanan', 0)
-                ->orWhere('status_layanan IS NULL', null, false)
-                ->groupEnd();
-            $pendingRemaining = (int) $pendingBuilder->countAllResults(false);
+            // Check remaining pending
+            $pendingRemaining = $this->kajiUlangModel->countPendingForLayanan($lnId);
 
             if ($pendingRemaining === 0) {
-                // Update ke 3 (Layanan terkirim ke admin) bila sudah tidak ada pending
+                // Update parent status to 3
                 $model = new MyModel($this->table);
                 $resParent = $model->updateData(['lnStatus' => 3], $this->id, $lnId);
                 $parentUpdated = ($resParent === true || $resParent === 1);
             }
         }
 
-        $db->transComplete();
-        $transOk = $db->transStatus();
+        $this->kajiUlangModel->transComplete();
+        $transOk = $this->kajiUlangModel->transStatus();
 
         return $this->response->setJSON([
             'res'      => $transOk && $affected > 0,
@@ -529,11 +362,6 @@ class KajiUlang extends BaseController
 
     public function rejectDetail()
     {
-
-        $session   = session();
-        $managerId = (int) ($session->get('id_user') ?? 0);
-
-
         $lnEnc = $this->request->getPost('ln');
         $ujiRaw = $this->request->getPost('uji');
 
@@ -574,11 +402,8 @@ class KajiUlang extends BaseController
             ]);
         }
 
-        $db = \Config\Database::connect();
-
-        // Pastikan managerId valid
-        $acc = $db->table('simlab_account')->select('user_id')->where('user_id', $managerId)->get()->getRow();
-        if (!$acc) {
+        // Validate manager user
+        if (!$this->kajiUlangModel->isValidUser($managerId)) {
             return $this->response->setJSON([
                 'res' => false,
                 'affected' => 0,
@@ -588,13 +413,8 @@ class KajiUlang extends BaseController
             ]);
         }
 
-        // PASTIKAN manager adalah anggota tim untuk uji ini (otorisasi)
-        $auth = (int) $db->table('r_tim')
-            ->where('uji_kode', $uji)
-            ->where('user_id', $managerId)
-            ->countAllResults(false);
-
-        if ($auth === 0) {
+        // Check authorization for this uji
+        if (!$this->kajiUlangModel->isUserAuthorizedForUji($uji, $managerId)) {
             return $this->response->setJSON([
                 'res' => false,
                 'affected' => 0,
@@ -604,12 +424,8 @@ class KajiUlang extends BaseController
             ]);
         }
 
-        $table = $db->table('t_layanan_detil');
-
-        // Total baris matching
-        $table->where('kode_layanan', $lnId);
-        $table->where('uji_kode', $uji);
-        $total = (int) $table->countAllResults(false);
+        // Count total detail rows
+        $total = $this->kajiUlangModel->countLayananDetail($lnId, $uji);
 
         if ($total === 0) {
             return $this->response->setJSON([
@@ -621,20 +437,12 @@ class KajiUlang extends BaseController
             ]);
         }
 
-        // Sudah berapa yang status_layanan=2
-        $table->where('kode_layanan', $lnId);
-        $table->where('uji_kode', $uji);
-        $table->where('status_layanan', 2);
-        $already = (int) $table->countAllResults(false);
+        // Count already rejected
+        $already = $this->kajiUlangModel->countLayananDetail($lnId, $uji, 2);
 
         if ($already === $total) {
-            $pendingBuilder = $db->table('t_layanan_detil');
-            $pendingBuilder->where('kode_layanan', $lnId);
-            $pendingBuilder->groupStart()
-                ->where('status_layanan', 0)
-                ->orWhere('status_layanan IS NULL', null, false)
-                ->groupEnd();
-            $pendingRemaining = (int) $pendingBuilder->countAllResults(false);
+            // Already rejected, check if parent needs update
+            $pendingRemaining = $this->kajiUlangModel->countPendingForLayanan($lnId);
 
             $parentUpdated = false;
             if ($pendingRemaining === 0) {
@@ -653,40 +461,27 @@ class KajiUlang extends BaseController
             ]);
         }
 
-        // Mulai TRANSAKSI untuk menghindari race condition
-        $db->transStart();
+        // Start transaction
+        $this->kajiUlangModel->transStart();
 
-        // Update hanya baris yang belum status_layanan=2
-        $resUpdate = $db->table('t_layanan_detil')
-            ->where('kode_layanan', $lnId)
-            ->where('uji_kode', $uji)
-            ->where('(status_layanan IS NULL OR status_layanan != 2)')
-            ->update([
-                'status_layanan'     => 2,
-                'terima_layanan_by'  => $managerId
-            ]);
-
-        $affected = $db->affectedRows();
+        // Reject detail
+        $affected = $this->kajiUlangModel->rejectLayananDetail($lnId, $uji, $managerId);
         $parentUpdated = false;
 
         if ($affected > 0) {
-            $pendingBuilder = $db->table('t_layanan_detil');
-            $pendingBuilder->where('kode_layanan', $lnId);
-            $pendingBuilder->groupStart()
-                ->where('status_layanan', 0)
-                ->orWhere('status_layanan IS NULL', null, false)
-                ->groupEnd();
-            $pendingRemaining = (int) $pendingBuilder->countAllResults(false);
+            // Check remaining pending
+            $pendingRemaining = $this->kajiUlangModel->countPendingForLayanan($lnId);
 
             if ($pendingRemaining === 0) {
+                // Update parent status to 3
                 $model = new MyModel($this->table);
                 $resParent = $model->updateData(['lnStatus' => 3], $this->id, $lnId);
                 $parentUpdated = ($resParent === true || $resParent === 1);
             }
         }
 
-        $db->transComplete();
-        $transOk = $db->transStatus();
+        $this->kajiUlangModel->transComplete();
+        $transOk = $this->kajiUlangModel->transStatus();
 
         return $this->response->setJSON([
             'res'      => $transOk && $affected > 0,
@@ -725,17 +520,8 @@ class KajiUlang extends BaseController
         $session = session();
         $user_id = $session->get('id_user');
 
-        $db = \Config\Database::connect();
-
-        // Otorisasi via r_tim
-        $check = (int) $db->table('t_layanan_detil as d')
-            ->join('r_tim rt', 'rt.uji_kode = d.uji_kode', 'inner')
-            ->where('d.kode_layanan', $lnId)
-            ->where('rt.user_id', $user_id)
-            ->limit(1)
-            ->countAllResults(false);
-
-        if ($check === 0) {
+        // Check authorization
+        if (!$this->kajiUlangModel->isUserAuthorizedForLayanan($lnId, $user_id)) {
             return $this->response->setJSON([
                 'res' => false,
                 'msg' => 'Anda tidak memiliki otorisasi untuk mengirim layanan ini',
@@ -744,16 +530,8 @@ class KajiUlang extends BaseController
             ]);
         }
 
-        // Pending per-manajer (via r_tim)
-        $pendingManagerCount = (int) $db->table('t_layanan_detil as d')
-            ->join('r_tim rt', 'rt.uji_kode = d.uji_kode', 'inner')
-            ->where('d.kode_layanan', $lnId)
-            ->where('rt.user_id', $user_id)
-            ->groupStart()
-            ->where('d.status_layanan', 0)
-            ->orWhere('d.status_layanan IS NULL', null, false)
-            ->groupEnd()
-            ->countAllResults(false);
+        // Check pending for this manager
+        $pendingManagerCount = $this->kajiUlangModel->countPendingForManager($lnId, $user_id);
 
         if ($pendingManagerCount > 0) {
             return $this->response->setJSON([
@@ -765,14 +543,8 @@ class KajiUlang extends BaseController
             ]);
         }
 
-        // Pending total LN
-        $pendingTotal = (int) $db->table('t_layanan_detil')
-            ->where('kode_layanan', $lnId)
-            ->groupStart()
-            ->where('status_layanan', 0)
-            ->orWhere('status_layanan IS NULL', null, false)
-            ->groupEnd()
-            ->countAllResults(false);
+        // Check total pending for layanan
+        $pendingTotal = $this->kajiUlangModel->countPendingForLayanan($lnId);
 
         if ($pendingTotal > 0) {
             return $this->response->setJSON([
@@ -786,19 +558,13 @@ class KajiUlang extends BaseController
             ]);
         }
 
-        // Update parent lnStatus = 3
-        $db->transStart();
+        // Update parent status in transaction
+        $this->kajiUlangModel->transStart();
 
-        $pendingTotalCheck = (int) $db->table('t_layanan_detil')
-            ->where('kode_layanan', $lnId)
-            ->groupStart()
-            ->where('status_layanan', 0)
-            ->orWhere('status_layanan IS NULL', null, false)
-            ->groupEnd()
-            ->countAllResults(false);
+        $pendingTotalCheck = $this->kajiUlangModel->countPendingForLayanan($lnId);
 
         if ($pendingTotalCheck > 0) {
-            $db->transComplete();
+            $this->kajiUlangModel->transComplete();
             return $this->response->setJSON([
                 'res' => true,
                 'msg' => 'Berhasil dikirim — namun ditemukan item pending saat verifikasi akhir ' . $pendingTotalCheck,
@@ -814,9 +580,9 @@ class KajiUlang extends BaseController
         $resParent = $model->updateData(['lnStatus' => 3], $this->id, $lnId);
         $parentUpdated = ($resParent === true || $resParent === 1);
 
-        $db->transComplete();
+        $this->kajiUlangModel->transComplete();
 
-        if ($db->transStatus() === false) {
+        if ($this->kajiUlangModel->transStatus() === false) {
             return $this->response->setJSON([
                 'res' => false,
                 'msg' => 'Gagal memperbarui status layanan',
@@ -866,25 +632,15 @@ class KajiUlang extends BaseController
 
     private function formatStatusForManager($lnStatus, $lnKode, $userId)
     {
-        $db = \Config\Database::connect();
+        // Check pending via r_tim
+        $pendingCount = $this->kajiUlangModel->countPendingForManager($lnKode, $userId);
 
-        // Cek pending via r_tim
-        $pendingCount = (int) $db->table('t_layanan_detil as d')
-            ->join('r_tim rt', 'rt.uji_kode = d.uji_kode', 'inner')
-            ->where('d.kode_layanan', $lnKode)
-            ->where('rt.user_id', $userId)
-            ->groupStart()
-            ->where('d.status_layanan', 0)
-            ->orWhere('d.status_layanan IS NULL', null, false)
-            ->groupEnd()
-            ->countAllResults(false);
-
-        // Jika manajer tidak punya pending lagi -> badge "Layanan terkirim ke admin"
+        // If manager has no pending, show "Layanan terkirim ke admin"
         if ($pendingCount === 0) {
             return '<span class="badge bg-info">Layanan terkirim ke admin</span>';
         }
 
-        // Selain itu, tampilkan status parent sebagaimana biasa
+        // Otherwise, show parent status
         return $this->formatStatus((int)$lnStatus);
     }
 

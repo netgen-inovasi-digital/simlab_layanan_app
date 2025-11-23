@@ -31,73 +31,78 @@
     </div>
 </div>
 
-<!--  Modal Detail -->
-<div class="modal fade" id="modalDetail" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
-  <div class="modal-dialog modal-xl modal-dialog-centered" role="document" style="max-width:1200px; margin: 1.5% auto;">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Detail Item Layanan</h5>
-        <button id="btnSaveKomentar" type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <!-- responsive wrapper: jika tabel lebar maka muncul scroll -->
-        <div class="table-responsive">
-          <table id="tableDetail" class="saytable table table-bordered align-middle">
-            <thead>
-             <tr>
-                  <th show style="min-width:40px; width:5%;">No</th>
-                  <th show style="min-width:300px; width:15%;">Layanan</th>
-                  <th show style="min-width:60px; width:5%;">Jumlah</th>
-                  <th show style="min-width:200px; width:25%;">Keterangan</th>
-                  <th show style="min-width:120px; width:5%;">Status</th>
-                  <th show style="min-width:300px; width:20%;">Berikan keterangan</th>
-                  <th show style="min-width:110px; width:5%;" class="text-center">Aksi</th>
-              </tr>
-            </thead>
-            <tbody id="detail-body">
-              <tr><td colspan="7" class="text-center">Loading...</td></tr>
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Sample Identity Details Section -->
-        <div class="detail-table mt-4" id="sampleIdentitySection" style="display: none;">
-          <h6 class="mb-3">Identitas Sampel:</h6>
-          <div class="card">
-            <div class="card-body">
-              <div class="row">
-                <div class="col-md-6 mb-3">
-                  <label class="fw-bold text-muted small">Jenis Sampel:</label>
-                  <p class="mb-0" id="sampleJenis">-</p>
-                </div>
-                <div class="col-md-6 mb-3">
-                  <label class="fw-bold text-muted small">Kemasan Sampel:</label>
-                  <p class="mb-0" id="sampleKemasan">-</p>
-                </div>
-                <div class="col-md-6 mb-3">
-                  <label class="fw-bold text-muted small">Sifat Sampel:</label>
-                  <p class="mb-0" id="sampleSifat">-</p>
-                </div>
-                <div class="col-md-6 mb-3">
-                  <label class="fw-bold text-muted small">Sisa Sampel:</label>
-                  <p class="mb-0" id="sampleSisa">-</p>
-                </div>
-                <div class="col-12 mb-3">
-                  <label class="fw-bold text-muted small">Deskripsi:</label>
-                  <p class="mb-0 text-wrap" id="sampleDeskripsi">-</p>
-                </div>
-                <div class="col-12">
-                  <label class="fw-bold text-muted small">Keterangan Khusus:</label>
-                  <p class="mb-0 text-wrap" id="sampleKeteranganKhusus">-</p>
-                </div>
-              </div>
+<!-- MODAL DETAIL -->
+<div class="modal fade" id="modalDetail" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Detail Review Layanan</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-          </div>
+            <div class="modal-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0">Detail Item Layanan</h6>
+                </div>
+
+                <table id="tableDetail" class="table table-sm table-bordered">
+                    <thead class="table-light">
+                        <tr>
+                            <th width="5%">No</th>
+                            <th width="20%">Layanan</th>
+                            <th width="8%">Jumlah</th>
+                            <th width="25%">Keterangan</th>
+                            <th width="10%">Status</th>
+                            <th width="20%">Berikan keterangan</th>
+                            <th width="12%" class="text-center">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+
+                <!-- Sample Identity Details Section - DIPINDAHKAN KE BAWAH -->
+                <div class="detail-table mt-4" id="sampleIdentitySection" style="display:none;">
+                    <h6 class="mb-3">Identitas Sampel:</h6>
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="fw-bold text-muted small">Jenis Sampel:</label>
+                                    <p class="mb-0" id="sampleJenis">-</p>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="fw-bold text-muted small">Kemasan Sampel:</label>
+                                    <p class="mb-0" id="sampleKemasan">-</p>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="fw-bold text-muted small">Sifat Sampel:</label>
+                                    <p class="mb-0" id="sampleSifat">-</p>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="fw-bold text-muted small">Sisa Sampel:</label>
+                                    <p class="mb-0" id="sampleSisa">-</p>
+                                </div>
+                                <div class="col-12 mb-3">
+                                    <label class="fw-bold text-muted small">Deskripsi:</label>
+                                    <div class="border rounded p-2" style="max-height: 160px; overflow-y: auto; background-color: #f8f9fa;">
+                                        <p class="mb-0 text-wrap small" id="sampleDeskripsi">-</p>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <label class="fw-bold text-muted small">Keterangan Khusus:</label>
+                                    <div class="border rounded p-2" style="max-height: 160px; overflow-y: auto; background-color: #f8f9fa;">
+                                        <p class="mb-0 text-wrap small" id="sampleKeteranganKhusus">-</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+            </div>
         </div>
-      </div>
-      <!-- Modal footer DIHAPUS (tombol Kirim dihapus sesuai permintaan) -->
     </div>
-  </div>
 </div>
 
 <script>
@@ -249,8 +254,6 @@
         }
 
         const csrfToken = _getCsrf();
-        const btn = document.getElementById('btnSaveKomentar');
-        if (btn) btn.disabled = true;
 
         try {
             const res = await fetch('<?php echo site_url("kajiulang/savekomentar") ?>', {
@@ -284,21 +287,36 @@
         } catch (err) {
             console.error('Error saat menyimpan komentar:', err);
             return { ok: false, error: err };
-        } finally {
-            if (btn) btn.disabled = false;
         }
     }
 
-    // Event listener untuk tombol close (auto-save komentar)
+    // ============================================================
+    // AUTO-SAVE KOMENTAR SAAT MODAL DITUTUP
+    // ============================================================
     document.addEventListener('click', function(e) {
-        if (!e.target.matches('#btnSaveKomentar') && !e.target.closest('#btnSaveKomentar')) return;
-        e.preventDefault();
-        // Panggil fungsi async (silent)
-        saveKomentarAsync().then(() => {});
+        // Auto-save saat klik tombol close (X) atau tombol "Tutup"
+        if (e.target.matches('[data-bs-dismiss="modal"]') || e.target.closest('[data-bs-dismiss="modal"]')) {
+            e.preventDefault();
+            // Simpan komentar terlebih dahulu sebelum tutup modal
+            saveKomentarAsync().then(() => {
+                // Setelah simpan selesai, baru tutup modal
+                if (_modalDetailInstance) _modalDetailInstance.hide();
+                else if (typeof $ === 'function') $('#modalDetail').modal('hide');
+            });
+            return;
+        }
+    });
+
+    // Event listener untuk modal hide (backup untuk auto-save)
+    document.addEventListener('hide.bs.modal', function(e) {
+        if (e.target.id === 'modalDetail') {
+            // Pastikan komentar tersimpan saat modal ditutup
+            saveKomentarAsync().catch(err => console.warn('Auto-save komentar gagal:', err));
+        }
     });
 
     // ============================================================
-    // LOAD DETAIL LAYANAN
+    // LOAD DETAIL LAYANAN (MODAL)
     // ============================================================
     let trackingDetailTable;
     let cachedSampleData = {}; // Cache untuk identitas sampel
@@ -309,7 +327,7 @@
             trackingDetailTable = createModal({
                 tableId: 'tableDetail',
                 apiUrl: `<?php echo site_url("kajiulang/detailList/") ?>${id}`,
-                itemsPerPage: 10, // Maksimal 10 data
+                itemsPerPage: 10,
                 showFilter: false,
                 treeview: false,
                 numbering: false
@@ -485,65 +503,4 @@
             return;
         }
     });
-
-    // ============================================================
-    // SAVE DATA GENERIC (UNTUK FORM LAIN JIKA ADA)
-    // ============================================================
-    function saveData({ url, formData, onSuccess, onError }) {
-        showLoading();
-        const csrfToken = _getCsrf();
-
-        fetch(url, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                // Update token
-                if (data.xname && data.xhash) {
-                    document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => {
-                        input.value = data.xhash;
-                    });
-                }
-
-                if (typeof onSuccess === 'function') {
-                    onSuccess(data);
-                    return;
-                }
-
-                if ($('#modalForm').hasClass('show')) $('#modalForm').modal('hide');
-
-                if (data.res === true) {
-                    if (typeof table !== 'undefined') table.fetchData({ reload: true });
-                    sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
-                } else if (data.res === 'reload') {
-                    sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
-                } else if (data.res === 'refresh') {
-                    loadContent(data.link);
-                    sayAlert('successModal', 'Success', 'Data berhasil disimpan.', 'success');
-                } else if (data.res === 'redirect') {
-                    window.location.href = data.link;
-                } else if (data.res === 'check') {
-                    sayAlert('errorModal', 'Error', data.link, 'warning');
-                } else if (data.res === 'refresh-print') {
-                    loadContent(data.link);
-                    window.open(data.print, "_blank");
-                } else {
-                    sayAlert('errorModal', 'Error', 'Terjadi kesalahan pada sistem.', 'warning');
-                }
-            })
-            .catch(error => {
-                if (typeof onError === 'function') {
-                    onError(error);
-                } else {
-                    sayAlert('errorModal', 'Error', 'Terjadi kesalahan pada sistem.', 'warning');
-                }
-            })
-            .finally(() => {
-                hideLoading();
-            });
-    }
 </script>
