@@ -69,6 +69,17 @@
         color: #666
     }
 
+    .track .step .step-date {
+        position: absolute;
+        top: -28px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 12px;
+        color: #6c757d;
+        white-space: nowrap;
+        min-height: 14px;
+    }
+
     .statusbox {
         padding: 20px;
         background-color: #fff;
@@ -222,9 +233,21 @@
                             7 => ['icon' => 'bi-flag', 'text' => 'Selesai']
                         ];
 
+                        // map step -> t_log_sampel column
+                        $stepDateField = [
+                            1 => 'pengecekan',
+                            2 => 'pengujian',
+                            3 => 'verifikasi_hasil_uji',
+                            4 => 'penerbitan_lhus',
+                            5 => 'verifikasi_lhu',
+                            6 => 'penerbitan_lhu',
+                            7 => 'penerbitan_lhu'
+                        ];
+
                         foreach ($steps as $step => $info):
                             ?>
-                            <div class="step" data-step="<?= $step ?>">
+                            <div class="step" data-step="<?= $step ?>" data-field="<?= $stepDateField[$step] ?? '' ?>">
+                                <div class="step-date">&nbsp;</div>
                                 <span class="icon">
                                     <i class="bi <?= $info['icon'] ?>"></i>
                                 </span>
@@ -408,6 +431,29 @@
             .catch(error => {
                 console.error('Error fetching sample identity:', error);
                 document.getElementById('sampleIdentitySection').style.display = 'none';
+            });
+
+        // Fetch tracking data (including t_log_sampel timestamps) and populate date labels above steps
+        fetch(`<?= site_url('pelayanan/getTrackingData/') ?>${id}`)
+            .then(res => res.json())
+            .then(payload => {
+                if (payload && payload.success && payload.data && payload.data.log) {
+                    const log = payload.data.log;
+                    document.querySelectorAll('.track .step').forEach(step => {
+                        const field = step.dataset.field;
+                        const dateEl = step.querySelector('.step-date');
+                        if (!field || !dateEl) return;
+                        const val = log[field];
+                        dateEl.textContent = val ? val : '-';
+                    });
+                } else {
+                    // clear dates if not available
+                    document.querySelectorAll('.track .step .step-date').forEach(el => el.textContent = '');
+                }
+            })
+            .catch(err => {
+                console.error('Error fetching tracking data:', err);
+                document.querySelectorAll('.track .step .step-date').forEach(el => el.textContent = '');
             });
 
         // Tampilkan modal
