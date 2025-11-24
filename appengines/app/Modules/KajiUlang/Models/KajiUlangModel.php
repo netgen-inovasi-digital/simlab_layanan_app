@@ -159,7 +159,6 @@ class KajiUlangModel extends Model
             d.kode_layanan,
             d.nama_layanan,
             d.kode_jenis,
-            d.catatan_pelanggan,
             d.catatan_manajer,
             d.jumlah,
             d.biaya,
