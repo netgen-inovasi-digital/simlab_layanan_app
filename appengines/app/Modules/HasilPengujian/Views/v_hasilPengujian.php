@@ -45,25 +45,25 @@
         <button id="btnSaveKomentar" type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
-        <div class="table-responsive">
-          <table class="table table-bordered align-middle">
-            <thead>
-             <tr>
-                  <th style="min-width:40px; width:5%;">No</th>
-                  <th style="min-width:300px; width:15%;">Layanan</th>
-                  <th style="min-width:60px; width:5%;">Jumlah</th>
-                  <th style="min-width:200px; width:25%;" class="text-center">Keterangan</th>
-                  <th style="min-width:200px; width:5%;" class="text-center">Status File</th>
-                  <th style="min-width:110px; width:5%;" class="text-center">LHUS</th>
-                  <th style="min-width:300px; width:20%;" class="text-center">keterangan Manajer</th>
-                  <th style="min-width:300px; width:5%;" class="text-center">Acc Manajer</th>
-              </tr>
-            </thead>
-            <tbody id="detail-body">
-              <tr><td colspan="8" class="text-center">Loading...</td></tr>
-            </tbody>
-          </table>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="mb-0">Detail Item Layanan</h6>
         </div>
+
+        <table id="tableDetail" class="saytable border-top-bottom">
+            <thead>
+                <tr>
+                    <th width="5%">No</th>
+                    <th width="15%">Layanan</th>
+                    <th width="5%">Jumlah</th>
+                    <th width="25%" class="text-center">Metode</th>
+                    <th width="5%" class="text-center">Status File</th>
+                    <th width="5%" class="text-center">LHUS</th>
+                    <th width="20%" class="text-center">Keterangan Manajer</th>
+                    <th width="5%" class="text-center">Acc Manajer</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
 
         <!-- Sample Identity Details Section -->
         <div class="detail-table mt-4" id="sampleIdentitySection" style="display:none;">
@@ -163,6 +163,14 @@
     });
     addAction();
 
+    // ============================================================
+    // CREATE MODAL WRAPPER (untuk isolasi tabel di dalam modal)
+    // ============================================================
+    function createModal(customConfig = {}) {
+        // Langsung gunakan createTable untuk konsistensi
+        return createTable(customConfig);
+    }
+
     document.querySelector('#btnSimpan')?.addEventListener('click', function(e) {
         e.preventDefault();
         const form = document.querySelector('#myform');
@@ -221,8 +229,11 @@
 
     //  function confirmApprove(e) { ... } (tetap dikomentari)
 
-    // Cache untuk data identitas sampel
-    const cachedSampleData = {};
+    // ============================================================
+    // LOAD DETAIL LAYANAN (MODAL)
+    // ============================================================
+    let trackingDetailTable;
+    let cachedSampleData = {}; // Cache untuk identitas sampel
 
     function loadSampleIdentity(lnKode) {
         const sampleSection = document.getElementById('sampleIdentitySection');
@@ -272,119 +283,55 @@
         }
     }
 
-    function loadDetail(id) {
-    const url = '<?php echo site_url("hasilpengujian/detaillist/") ?>' + id;
-    const tbody = document.querySelector('#detail-body');
-    tbody.innerHTML = '<tr><td colspan="8" class="text-center">Loading...</td></tr>';
+    function loadDetail(id, lnKode) {
+        console.log('loadDetail called with id:', id, 'lnKode:', lnKode);
+        
+        // Show modal first
+        const modalElement = document.getElementById('modalDetail');
+        if (modalElement) {
+            try {
+                const existing = bootstrap.Modal && bootstrap.Modal.getInstance ? bootstrap.Modal.getInstance(modalElement) : null;
+                const isShown = modalElement.classList.contains('show') || (existing && typeof existing._isShown !== 'undefined' && existing._isShown);
 
-    fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-        .then(response => {
-            if (!response.ok) {
-                return response.text().then(t => { throw new Error('HTTP ' + response.status + ': ' + t); });
-            }
-            return response.json();
-        })
-        .then(data => {
-            tbody.innerHTML = '';
-            if (data.items && data.items.length > 0) {
-                data.items.forEach(function(row) {
-                    let tr = '<tr>';
-                    row.forEach(function(col) { tr += '<td>' + col + '</td>'; });
-                    tr += '</tr>';
-                    tbody.innerHTML += tr;
-                });
-            } else {
-                tbody.innerHTML = '<tr><td colspan="8" class="text-center">Tidak ada data</td></tr>';
-            }
-
-            // Load identitas sampel
-            if (data.lnKode) {
-                loadSampleIdentity(data.lnKode);
-            }
-
-            const btnKirim = document.getElementById('btnKirimDetail');
-            if (btnKirim) {
-                const encLn = data.encLn || '';
-                btnKirim.setAttribute('data-enc', encLn);
-                if (data.allFilesUploaded) btnKirim.removeAttribute('disabled');
-                else btnKirim.setAttribute('disabled', 'disabled');
-
-                const newBtn = btnKirim.cloneNode(true);
-                btnKirim.parentNode.replaceChild(newBtn, btnKirim);
-
-                newBtn.addEventListener('click', function(ev) {
-                    ev.preventDefault();
-                    const enc = this.getAttribute('data-enc') || '';
-                    if (!enc) { 
-                        sayAlert('errorModal','Error','ID tidak ditemukan.','warning'); 
-                        return; 
-                    }
-                    sayConfirm(
-                        'Konfirmasi',
-                        'Yakin ingin mengirim file LHUS untuk semua item ini?',
-                        () => { doSendLhus(enc); },
-                        'success',
-                        'Kirim',
-                        'Batal'
-                    );
-                });
-
-            }
-
-            // show modal - only show if it's not already visible to avoid stacking backdrops
-            const modalEl = document.getElementById('modalDetail');
-            if (modalEl) {
-                // If Bootstrap 5 available, check class 'show' OR use getInstance
-                try {
-                    // prefer to check existing instance first
-                    const existing = bootstrap.Modal && bootstrap.Modal.getInstance ? bootstrap.Modal.getInstance(modalEl) : null;
-                    const isShown = modalEl.classList.contains('show') || (existing && typeof existing._isShown !== 'undefined' && existing._isShown);
-
-                    if (!isShown) {
-                        // create instance if not exists
-                        const modal = existing || new bootstrap.Modal(modalEl);
-                        modal.show();
-                    } else {
-                        // already shown — do nothing (content already updated)
-                    }
-                } catch (e) {
-                    // fallback to jQuery if bootstrap object not available
-                    try {
-                        if (typeof $ !== 'undefined') {
-                            if (!$('#modalDetail').hasClass('show')) $('#modalDetail').modal('show');
-                        } else {
-                            // last resort: attempt to show (but this branch unlikely)
-                            const modal = new bootstrap.Modal(modalEl);
-                            modal.show();
-                        }
-                    } catch (ee) {
-                        console.warn('modal show fallback error', ee);
-                    }
+                if (!isShown) {
+                    const modal = existing || new bootstrap.Modal(modalElement);
+                    modal.show();
                 }
-            } else {
-                // fallback for older jQuery modal
+            } catch (e) {
                 if (typeof $ !== 'undefined' && !$('#modalDetail').hasClass('show')) $('#modalDetail').modal('show');
             }
-        })
-        .catch(error => {
-            console.error('loadDetail error:', error);
-            tbody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error load data</td></tr>';
-            // show modal only if not already shown
-            const modalEl = document.getElementById('modalDetail');
-            if (modalEl) {
-                try {
-                    const existing = bootstrap.Modal && bootstrap.Modal.getInstance ? bootstrap.Modal.getInstance(modalEl) : null;
-                    const isShown = modalEl.classList.contains('show') || (existing && typeof existing._isShown !== 'undefined' && existing._isShown);
-                    if (!isShown) {
-                        const modal = existing || new bootstrap.Modal(modalEl);
-                        modal.show();
-                    }
-                } catch (e) {
-                    if (typeof $ !== 'undefined' && !$('#modalDetail').hasClass('show')) $('#modalDetail').modal('show');
+        }
+        
+        // Then create table and load data after modal is shown
+        setTimeout(() => {
+            // Simpan encLn dan lnKode ke modal dataset
+            const modalDetailEl = document.getElementById('modalDetail');
+            if (modalDetailEl) {
+                modalDetailEl.dataset.encLn = id;
+                // Jika lnKode tidak diberikan, ambil dari dataset yang tersimpan
+                if (lnKode) {
+                    modalDetailEl.dataset.lnKode = lnKode;
+                } else {
+                    lnKode = modalDetailEl.dataset.lnKode || '';
                 }
             }
-        });
-}
+
+            trackingDetailTable = createModal({
+                tableId: 'tableDetail',
+                apiUrl: `<?php echo site_url("hasilpengujian/detailList/") ?>${id}`,
+                itemsPerPage: 10,
+                showFilter: false,
+                treeview: false,
+                numbering: false,
+                dataSrc: 'items'
+            });
+            
+            console.log('trackingDetailTable created:', trackingDetailTable);
+
+            // Load identitas sampel
+            loadSampleIdentity(lnKode);
+        }, 200);
+    }
 </script>
 
 <script>

@@ -124,10 +124,13 @@ class HasilPengujian extends BaseController
         }
 
         return $this->response->setJSON([
+            'res' => 'ok',
             'items' => $data,
             'encLn' => $encLnId,
             'allFilesUploaded' => $allUploaded,
-            'lnKode' => $kode
+            'lnKode' => $kode,
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
         ]);
     }
 
@@ -259,8 +262,7 @@ class HasilPengujian extends BaseController
         ]);
     }
 
-    // ==================== PRIVATE HELPER METHODS ====================
-
+    
     /**
      * Parse status filter dari parameter GET
      */
@@ -314,7 +316,7 @@ class HasilPengujian extends BaseController
 
             $colB = $this->formatStatusForPenyelia($row->lnStatus, $row->lnKode, $user_id);
 
-            $btn  = '<button type="button" class="btn btn-sm btn-info" title="Lihat Detail Item Layanan" onclick="loadDetail(\'' . $id . '\')">'
+            $btn  = '<button type="button" class="btn btn-sm btn-info" title="Lihat Detail Item Layanan" onclick="loadDetail(\'' . $id . '\', \'' . $row->lnKode . '\')">'
                   . '<i class="bi bi-upload"></i>Unggah LHUS</button>';
 
             $data[] = [$colA, $colB, $btn];
@@ -333,9 +335,9 @@ class HasilPengujian extends BaseController
         $response[] = $row->nama_layanan ?? '-';
         $response[] = isset($row->jumlah) ? (int)$row->jumlah : 0;
 
-        // Format keterangan
-        $keteranganHtml = $this->formatKeteranganHtml($row->detKet ?? '');
-        $response[] = $keteranganHtml;
+        // Format metode
+        $metodeHtml = $this->formatKeteranganHtml($row->metode_nama ?? '');
+        $response[] = $metodeHtml;
 
         // Check file status
         $detFilesMax = isset($row->detFilesMax) ? (int)$row->detFilesMax : null;
@@ -370,7 +372,7 @@ class HasilPengujian extends BaseController
     }
 
     /**
-     * Format keterangan HTML
+     * Format metode HTML
      */
     private function formatKeteranganHtml(string $text): string
     {
