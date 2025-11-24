@@ -223,7 +223,7 @@ class HasilPengujianModel extends Model
             ANY_VALUE(d.kode_layanan) AS kode_layanan,
             ANY_VALUE(d.nama_layanan) AS nama_layanan,
             ANY_VALUE(d.kode_jenis) AS kode_jenis,
-            GROUP_CONCAT(DISTINCT d.catatan_pelanggan SEPARATOR ' | ') AS detKet,
+            GROUP_CONCAT(DISTINCT d.catatan_manajer SEPARATOR ' | ') AS detKet,
             GROUP_CONCAT(DISTINCT d.catatan_manajer SEPARATOR ' | ') AS detKetManajer,
             GROUP_CONCAT(DISTINCT d.catatan_manajer SEPARATOR ' | ') AS detKetLhus,
             GROUP_CONCAT(DISTINCT d.files SEPARATOR ',') AS detFilesList,
