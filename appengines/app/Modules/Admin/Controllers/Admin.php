@@ -30,6 +30,8 @@ class Admin extends BaseController
         $data[csrf_token()] = csrf_hash();
         $data['id'] = $idenc;
         $data['username'] = $get->username;
+        $data['nama'] = $get->nama ?? '';
+        $data['telepon'] = $get->Telepon ?? '';
         $data['role'] = $get->role_id;
         $data['status'] = $get->status_user;
         return $this->response->setJSON($data);
@@ -54,6 +56,8 @@ class Admin extends BaseController
 
         $data = [
             'username'    => $username,
+            'nama'        => $this->request->getPost('nama'),
+            'Telepon'     => $this->request->getPost('telepon'),
             'role_id'     => $this->request->getPost('role'),
             'status_user' => $this->request->getPost('status'),
         ];
@@ -113,6 +117,7 @@ class Admin extends BaseController
 			$response = [];
 
 			$response[] = $row->username;
+			$response[] = $row->nama ?? '-';
 			$response[] = '<small class="badge bg-light text-muted">'.$row->nama_role.'</small>';
 
 			$aktif = '<small><i class="bi bi-check-circle text-primary"></i> Aktif</small>';
@@ -131,17 +136,86 @@ class Admin extends BaseController
 	}
 
 
+    /**
+     * Normalisasi nomor telepon untuk WhatsApp (hapus karakter non-digit, tambahkan 62)
+     */
+    private function normalize_phone_for_whatsapp($rawPhone)
+    {
+        if (empty($rawPhone)) return '';
+        // hapus semua karakter kecuali digit
+        $digits = preg_replace('/\D/', '', trim($rawPhone));
+        if (empty($digits)) return '';
+
+        // jika diawali 0, ganti dengan 62
+        if (substr($digits, 0, 1) === '0') {
+            $digits = '62' . substr($digits, 1);
+        }
+        // jika belum diawali 62, tambahkan 62
+        elseif (substr($digits, 0, 2) !== '62') {
+            $digits = '62' . $digits;
+        }
+
+        return $digits;
+    }
+
+    /**
+     * Membuat tombol WhatsApp untuk user tertentu
+     */
+    private function whatsapp_button($user)
+    {
+        if (!$user || empty($user->Telepon)) {
+            return '';
+        }
+
+        $waDigits = $this->normalize_phone_for_whatsapp($user->Telepon);
+        if ($waDigits === '') {
+            return '';
+        }
+
+        $displayName = $user->nama ?? $user->username ?? 'Admin';
+        $message = "Halo " . $displayName . ", saya ingin bertanya terkait layanan.";
+        $msgEncoded = rawurlencode($message);
+        $waUrl = "https://wa.me/" . $waDigits . "?text=" . $msgEncoded;
+
+        return '<span class="text-success btn-action" title="Chat via WhatsApp" '
+            . 'style="display:inline-flex;align-items:center;justify-content:center;cursor:pointer;" '
+            . 'onclick="window.open(\'' . esc($waUrl) . '\', \'_blank\', \'noopener\')">'
+            . '<i class="bi bi-whatsapp"></i>'
+            . '</span>';
+    }
+
     function aksi($id)
     {
-        return '
-        <div id="'.$id.'" class="float-end">
-            <span class="text-secondary btn-action" title="Ubah" onclick="editItem(event)">
-                <i class="bi bi-pencil-square"></i>
-            </span> 
-            <label class="divider">|</label>
-            <span class="text-danger btn-action" title="Hapus" onclick="deleteItem(event)">
-                <i class="bi bi-trash"></i>
-            </span>
-        </div>';
+        $btn = '<div id="' . $id . '" class="float-end d-flex align-items-center" style="gap:6px;">';
+
+        // Tombol WhatsApp (jika ada nomor telepon)
+        try {
+            $username = $this->encrypter->decrypt(hex2bin($id));
+            $model = new MyModel($this->table);
+            $user = $model->getDataById($this->id, $username);
+            $waBtn = $this->whatsapp_button($user);
+            if (!empty($waBtn)) {
+                $btn .= $waBtn;
+                $btn .= '<span class="text-muted" style="margin:0 4px;">|</span>';
+            }
+        } catch (\Throwable $e) {
+            // Jika error, lanjutkan tanpa tombol WA
+        }
+
+        // Tombol Edit
+        $btn .= '<span class="text-secondary btn-action" title="Ubah" onclick="editItem(event)" style="display:inline-flex;align-items:center;justify-content:center;">';
+        $btn .= '<i class="bi bi-pencil-square"></i>';
+        $btn .= '</span>';
+
+        // Divider
+        $btn .= '<span class="text-muted" style="margin:0 4px;">|</span>';
+
+        // Tombol Delete
+        $btn .= '<span class="text-danger btn-action" title="Hapus" onclick="deleteItem(event)" style="display:inline-flex;align-items:center;justify-content:center;">';
+        $btn .= '<i class="bi bi-trash"></i>';
+        $btn .= '</span>';
+
+        $btn .= '</div>';
+        return $btn;
     }
 }
