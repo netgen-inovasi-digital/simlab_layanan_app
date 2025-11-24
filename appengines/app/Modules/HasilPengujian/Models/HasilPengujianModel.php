@@ -219,10 +219,10 @@ class HasilPengujianModel extends Model
 
         $builder->select("
             d.kode,
-            d.uji_kode,
-            d.kode_layanan,
-            d.nama_layanan,
-            d.kode_jenis,
+            ANY_VALUE(d.uji_kode) AS uji_kode,
+            ANY_VALUE(d.kode_layanan) AS kode_layanan,
+            ANY_VALUE(d.nama_layanan) AS nama_layanan,
+            ANY_VALUE(d.kode_jenis) AS kode_jenis,
             GROUP_CONCAT(DISTINCT d.catatan_pelanggan SEPARATOR ' | ') AS detKet,
             GROUP_CONCAT(DISTINCT d.catatan_manajer SEPARATOR ' | ') AS detKetManajer,
             GROUP_CONCAT(DISTINCT d.catatan_manajer SEPARATOR ' | ') AS detKetLhus,
@@ -231,9 +231,9 @@ class HasilPengujianModel extends Model
             SUM(d.jumlah) AS jumlah,
             SUM(d.biaya) AS detBiaya,
             MAX(d.status_layanan) AS status_group,
-            d.terima_layanan_by,
-            u.user_name AS acc_by,
-            (SELECT metode_nama FROM r_metode WHERE metode_kode = d.metode_pengujian LIMIT 1) AS metode_nama
+            ANY_VALUE(d.terima_layanan_by) AS terima_layanan_by,
+            ANY_VALUE(u.user_name) AS acc_by,
+            (SELECT nama FROM r_metode WHERE metode_kode = d.metode_pengujian LIMIT 1) AS metode_nama
         ");
 
         $builder->join('simlab_account_users u', 'u.user_id = d.terima_layanan_by', 'left');
