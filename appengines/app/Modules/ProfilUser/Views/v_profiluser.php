@@ -36,13 +36,9 @@
                         <!-- Download File ULM (Hanya muncul jika pilih ULM) -->
                         <div class="mb-3" id="downloadFileUlm" style="display: <?= $get->showBukti ? 'block' : 'none' ?>;">
                             <?php if (isset($fileUlm) && $fileUlm): ?>
-                                <div class="alert alert-info">
-                                    <h6 class="mb-2"><i class="bi bi-file-earmark-text"></i> Download File</h6>
-                                    <!-- <p class="mb-2"><i class="bi bi-info-circle"></i> Silahkan download file surat pernyataan dari ULM berikut :</p> -->
-                                    <a href="<?= $fileUlm['file_url'] ?>" target="_blank" class="btn btn-primary btn-sm" download>
-                                        <i class="bi bi-download"></i> Download <?= esc($fileUlm['judul']) ?>
-                                    </a>
-                                </div>
+                                <a href="<?= $fileUlm['file_url'] ?>" target="_blank" class="btn btn-outline-primary btn-sm" download>
+                                    <i class="bi bi-download"></i> Download Surat Pernyataan ULM
+                                </a>
                             <?php endif; ?>
                         </div>
 
