@@ -465,18 +465,13 @@ class HasilPengujian extends BaseController
             // Update terima_layanan_by
             $this->hasilPengujianModel->updateTerimaLayananBy($lnKode, $user_id, $user_id);
 
+            // Update layanan status ke 5 dan log sampel saat kirim
+            $this->hasilPengujianModel->updateLayananStatus($lnKode, 5);
+            $this->hasilPengujianModel->updateLogSampelVerifikasiHasilUji($lnKode);
+            
             // Check if all files uploaded
             $totalBelumUpload = $this->hasilPengujianModel->countMissingFilesForLayanan($lnKode);
-
-            $parentUpdated = false;
-            if ($totalBelumUpload === 0) {
-                // Update layanan status ke 5
-                $this->hasilPengujianModel->updateLayananStatus($lnKode, 5);
-                $parentUpdated = true;
-                
-                // Update log sampel
-                $this->hasilPengujianModel->updateLogSampelVerifikasiHasilUji($lnKode);
-            }
+            $parentUpdated = true;
 
             // Commit transaction
             if ($this->hasilPengujianModel->transStatus() === false) {
