@@ -33,9 +33,22 @@
                                    value="<?= esc($get->user_instansi ?? '') ?>" placeholder="Masukkan Alamat Instansi">
                         </div>
 
+                        <!-- Download File ULM (Hanya muncul jika pilih ULM) -->
+                        <div class="mb-3" id="downloadFileUlm" style="display: <?= $get->showBukti ? 'block' : 'none' ?>;">
+                            <?php if (isset($fileUlm) && $fileUlm): ?>
+                                <div class="alert alert-info">
+                                    <h6 class="mb-2"><i class="bi bi-file-earmark-text"></i> Download File</h6>
+                                    <!-- <p class="mb-2"><i class="bi bi-info-circle"></i> Silahkan download file surat pernyataan dari ULM berikut :</p> -->
+                                    <a href="<?= $fileUlm['file_url'] ?>" target="_blank" class="btn btn-primary btn-sm" download>
+                                        <i class="bi bi-download"></i> Download <?= esc($fileUlm['judul']) ?>
+                                    </a>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+
                         <!-- Upload Bukti (ULM) -->
                         <div class="mb-3" id="buktiWrapper" style="display: <?= $get->showBukti ? 'block' : 'none' ?>;">
-                            <label class="form-label">Upload Bukti</label>
+                            <label class="form-label"><i class="bi bi-paperclip"></i> Upload Bukti</label>
                             <input type="file" class="form-control" name="bukti_file">
                             <div id="buktiInfo" class="mt-2">
                                 <?php if (!empty($get->bukti ?? '')): ?>
@@ -44,7 +57,7 @@
                                     </a>
                                     <p class="text-muted small mt-1">Anda bisa unggah file baru untuk mengganti.</p>
                                 <?php else: ?>
-                                    <span class="text-danger">Belum ada bukti, silakan upload file.</span>
+                                    <span class="text-danger">Silahkan upload KTM atau surat pernyataan ULM</span>
                                 <?php endif; ?>
                             </div>
                         </div>
@@ -144,15 +157,20 @@ if (typeof buktiWrapper   === 'undefined')
 
 function toggleFields() {
     const value = identitySelect.value;
+    const downloadFileUlm = document.getElementById('downloadFileUlm');
+    
     if (value === 'ULM') {
         instansiField.style.display = 'none';
         buktiWrapper.style.display  = 'block';
+        if (downloadFileUlm) downloadFileUlm.style.display = 'block';
     } else if (value === 'NON ULM') {
         instansiField.style.display = 'block';
         buktiWrapper.style.display  = 'none';
+        if (downloadFileUlm) downloadFileUlm.style.display = 'none';
     } else {
         instansiField.style.display = 'none';
         buktiWrapper.style.display  = 'none';
+        if (downloadFileUlm) downloadFileUlm.style.display = 'none';
     }
 }
 

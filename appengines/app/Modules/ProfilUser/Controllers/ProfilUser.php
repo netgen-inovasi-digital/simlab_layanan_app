@@ -14,9 +14,27 @@ class ProfilUser extends BaseController
     {
         $data = [
             'title' => 'Profil',
-            'get'   => $this->getProfil()
+            'get'   => $this->getProfil(),
+            'fileUlm' => $this->getFileUlm()
         ];
         return view('Modules\ProfilUser\Views\v_profiluser', $data);
+    }
+
+    function getFileUlm()
+    {
+        $model = new MyModel('file_umum');
+        $file = $model->getDataById('file_id', 1);
+        
+        if ($file && $file->status === 'aktif' && !empty($file->file_path)) {
+            return [
+                'judul' => $file->judul,
+                'file_path' => $file->file_path,
+                'file_url' => base_url('uploads/fileumum/' . $file->file_path),
+                'deskripsi' => $file->deskripsi ?? ''
+            ];
+        }
+        
+        return null;
     }
 
     function getProfil()
