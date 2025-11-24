@@ -50,11 +50,6 @@ class CreateTLayananDetil extends Migration
                 'unsigned' => true,
                 'null' => true,
             ],
-            'catatan_pelanggan' => [
-                'type' => 'VARCHAR',
-                'constraint' => 255,
-                'null' => true,
-            ],
             'catatan_manajer' => [
                 'type' => 'VARCHAR',
                 'constraint' => 255,

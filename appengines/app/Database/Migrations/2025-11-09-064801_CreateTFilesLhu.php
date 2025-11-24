@@ -29,6 +29,10 @@ class CreateTFilesLhu extends Migration
                 'unsigned' => true, // <-- SAMAKAN dengan simlab_account_users.user_id
                 'null' => true,
             ],
+            'tanggal_terbit' => [
+                'type' => 'DATETIME',
+                'null' => true,
+            ],
         ]);
 
         $this->forge->addKey('file_id', true);

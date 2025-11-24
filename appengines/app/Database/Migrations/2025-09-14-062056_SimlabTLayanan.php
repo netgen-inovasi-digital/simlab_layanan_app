@@ -49,16 +49,19 @@ class CreateSimlabTLayanan extends Migration
                 'type' => 'DATETIME',
                 'null' => true,
             ],
-            'lhu_id' => [
+            'catatan_kaji_ulang' => [
+                'type' => 'TEXT',
+                'null' => true,
+            ],
+            'jumlah_kaji_ulang' => [
                 'type' => 'INT',
-                'unsigned' => true, // jika nanti mau jadikan FK ke t_files_lhu.file_id
+                'default' => 0,
                 'null' => true,
             ],
         ]);
 
         $this->forge->addKey('lnKode', true);
         $this->forge->addKey('user_id');
-        $this->forge->addKey('lhu_id');
 
         // create table first
         $this->forge->createTable('simlab_t_layanan', true);
@@ -66,9 +69,6 @@ class CreateSimlabTLayanan extends Migration
         // add FK via Forge (could also be done before createTable; doing before sometimes fails if ref table not exists)
         // but since simlab_account_users should exist earlier, we add via DB query or Forge:
         $this->forge->addForeignKey('user_id', 'simlab_account_users', 'user_id', 'SET NULL', 'CASCADE');
-
-        // If lhu_id should reference t_files_lhu.file_id, make sure t_files_lhu migration runs before this or add later.
-        // Note: Some DB engines require FK additions before/after; adapt order of migrations accordingly.
     }
 
     public function down()
