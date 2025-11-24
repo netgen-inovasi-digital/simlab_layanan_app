@@ -59,7 +59,7 @@ class FileUmum extends BaseController
 
         $validationRule = [
             'judul' => 'required',
-            'file' => 'max_size[file,5120]|ext_in[file,pdf,doc,docx,xls,xlsx,png,jpg,jpeg]',
+            'file' => 'max_size[file,5120]|ext_in[file,pdf,doc,docx]',
         ];
 
         if (!$this->validate($validationRule)) {
@@ -114,8 +114,8 @@ class FileUmum extends BaseController
             $id = bin2hex($this->encrypter->encrypt($row->{$this->id}));
             $response = array();
 
-            $response[] = $no++;
             $response[] = $row->judul;
+            $response[] = $row->deskripsi;
 
             $filePreview = '-';
             if (!empty($row->file_path)) {

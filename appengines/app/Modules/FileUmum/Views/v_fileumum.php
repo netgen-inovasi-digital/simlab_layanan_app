@@ -11,10 +11,11 @@
                 <table id="data-table" class="saytable border-top-bottom">
                     <thead>
                         <tr>
-                            <th show width="8%">Nomor</th>
-                            <th show>Nama File</th>
-                            <th>File</th>
-                            <th>Status</th>
+                            <th show width="5%">No</th>
+                            <th show width="15%" >Nama File</th>
+                            <th show width="20%" >Deskripsi</th>
+                            <th show width="8%" >File</th>
+                            <th show width="8%" >Status</th>
                             <th show class="action text-end">Aksi</th>
                         </tr>
                     </thead>
@@ -106,8 +107,8 @@
                     <div class="row mb-2">
                         <label class="col-md-4 col-form-label">File Upload</label>
                         <div class="col">
-                            <input type="file" class="form-control" name="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg">
-                            <small class="text-muted">Format: PDF, DOC, DOCX, XLS, XLSX, PNG, JPG, JPEG (Max 5MB). Kosongkan jika tidak mengganti file.</small>
+                            <input type="file" class="form-control" name="file" accept=".pdf,.doc,.docx">
+                            <small class="text-muted">Format: PDF, DOC, DOCX (Max 5MB). Kosongkan jika tidak mengganti file.</small>
                         </div>
                     </div>
 
@@ -125,7 +126,7 @@
                         <div class="col mt-2">
                             <div class="form-check form-switch">
                                 <input class="form-check-input" type="checkbox" name="status" id="status" checked>
-                                <label class="form-check-label" for="status">Aktif (Jika non-aktif: Template Belum Tersedia)</label>
+                                <label class="form-check-label" for="status">Aktif </label>
                             </div>
                         </div>
                     </div>
