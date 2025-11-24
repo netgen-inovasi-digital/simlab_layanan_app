@@ -81,6 +81,20 @@ class Pelayanan extends BaseController
             $builder->groupBy('d.uji_kode, d.kode_layanan, d.nama_layanan, d.kode_jenis');
             $details = $builder->get()->getResult();
 
+            // Get log sampel (timestamps) if available
+            $logRow = $db->table('t_log_sampel')->where('kode_layanan', $realId)->get()->getRow();
+            $log = null;
+            if ($logRow) {
+                $log = [
+                    'pengecekan' => $logRow->pengecekan ? date('d-m-Y H:i', strtotime($logRow->pengecekan)) : null,
+                    'pengujian' => $logRow->pengujian ? date('d-m-Y H:i', strtotime($logRow->pengujian)) : null,
+                    'verifikasi_hasil_uji' => $logRow->verifikasi_hasil_uji ? date('d-m-Y H:i', strtotime($logRow->verifikasi_hasil_uji)) : null,
+                    'penerbitan_lhus' => $logRow->penerbitan_lhus ? date('d-m-Y H:i', strtotime($logRow->penerbitan_lhus)) : null,
+                    'verifikasi_lhu' => $logRow->verifikasi_lhu ? date('d-m-Y H:i', strtotime($logRow->verifikasi_lhu)) : null,
+                    'penerbitan_lhu' => $logRow->penerbitan_lhu ? date('d-m-Y H:i', strtotime($logRow->penerbitan_lhu)) : null,
+                ];
+            }
+
             return $this->response->setJSON([
                 'success' => true,
                 'data' => [
@@ -106,7 +120,8 @@ class Pelayanan extends BaseController
                             'jumlah' => (int) ($detail->jumlah ?? 0),
                             'status' => $statusHtml
                         ];
-                    }, $details)
+                    }, $details),
+                    'log' => $log
                 ]
             ]);
         } catch (\Exception $e) {

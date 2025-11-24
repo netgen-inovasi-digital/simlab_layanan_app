@@ -518,6 +518,18 @@ class Keranjang extends KeranjangBase
                 throw new \RuntimeException('Gagal menyimpan identitas sampel');
             }
 
+            // Seed log sampel agar tahapan lain bisa langsung melakukan update timestamp
+            $modelLogSampel = new MyModel('t_log_sampel');
+            $logSampelData = [
+                'kode_layanan' => $lnKode,
+                'pengecekan' => date('Y-m-d H:i:s'),
+            ];
+
+            $insertLogResult = $modelLogSampel->insertData($logSampelData);
+            if (!$insertLogResult) {
+                throw new \RuntimeException('Gagal menyimpan log sampel');
+            }
+
             // Commit dan bersihkan keranjang
             $db->transComplete();
             $session->remove($this->sessionKey);
