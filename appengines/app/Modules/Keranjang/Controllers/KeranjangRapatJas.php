@@ -194,7 +194,6 @@ class KeranjangRapatJas extends KeranjangBase
                 'uji_kode'          => $item['kode'] ?? null,
                 'biaya'             => $item['biaya'] ?? 0,
                 'jumlah'            => $item['jumlah'] ?? 1,
-                'catatan_pelanggan' => $item['keterangan'] ?? null,
                 'nama_layanan'      => $item['layanan'] ?? null,
                 'status_layanan'    => 0,
                 'kode_jenis'        => $jenKodeValue,

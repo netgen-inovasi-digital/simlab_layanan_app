@@ -167,7 +167,7 @@ class Pelaksanaan extends BaseController
         // ambil detil + JOIN dengan t_files_lhus dan t_files_lhu (database baru) dan username uploader/approver
         $rows = $db->table('t_layanan_detil as d')
             ->select('
-            d.kode, d.uji_kode, d.nama_layanan, d.jumlah, d.catatan_pelanggan,
+            d.kode, d.uji_kode, d.nama_layanan, d.jumlah,
             d.files, d.status_layanan,
             lhus.file_lhus,
             lhus.catatan as ket_lhus,
@@ -211,8 +211,6 @@ class Pelaksanaan extends BaseController
             $layanan = !empty($row->nama_layanan) ? $row->nama_layanan : '-';
 
             $jumlah = (int) ($row->jumlah ?? 0);
-            $ket = trim((string) ($row->catatan_pelanggan ?? ''));
-            $ket = $ket === '' ? '-' : esc($ket);
 
             // Prioritas file: 1) LHUS dari t_files_lhus, 2) LHU dari file_lhu
             $fileUrl = null;
@@ -251,12 +249,11 @@ class Pelaksanaan extends BaseController
             $uploadLhusBy = !empty($row->upload_lhus_by) ? esc($row->upload_lhus_by) : '-';
             $accLhusBy = !empty($row->acc_lhus_by) ? esc($row->acc_lhus_by) : '-';
 
-            // urutan kolom dikembalikan seperti semula + 2 kolom tambahan di akhir
+            // urutan kolom dikembalikan tanpa keterangan
             $items[] = [
                 $no++,
                 $layanan,
                 $jumlah,
-                $ket,
                 $viewHtml,
                 $uploadLhusBy,   // Upload LHUS (username)
                 $accLhusBy       // Acc LHUS (username)
@@ -273,6 +270,7 @@ class Pelaksanaan extends BaseController
         $file = $this->request->getFile('lhu_file');
         $encId = $this->request->getPost('id');
         $detKode = $this->request->getPost('detKode');
+        $tanggalTerbit = $this->request->getPost('tanggal_terbit_lhu');
 
         if (empty($encId)) {
             return $this->response->setJSON([
@@ -302,6 +300,16 @@ class Pelaksanaan extends BaseController
             return $this->response->setJSON([
                 'res' => 'error',
                 'msg' => 'File tidak valid atau tidak dipilih',
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        }
+
+        // Validasi tanggal terbit LHU
+        if (empty($tanggalTerbit)) {
+            return $this->response->setJSON([
+                'res' => 'error',
+                'msg' => 'Tanggal terbit LHU harus diisi',
                 'xname' => csrf_token(),
                 'xhash' => csrf_hash()
             ]);
@@ -368,9 +376,33 @@ class Pelaksanaan extends BaseController
                 $msg = 'File LHU berhasil diunggah.';
             }
 
+            // Update/Insert tanggal terbit LHU ke t_log_sampel
+            $logSampel = $db->table('t_log_sampel')
+                ->where('kode_layanan', $lnKode)
+                ->get()->getRow();
+
+            $tanggalTerbitFormatted = date('Y-m-d H:i:s', strtotime($tanggalTerbit));
+
+            if ($logSampel) {
+                // Update existing record
+                $db->table('t_log_sampel')
+                    ->where('kode_layanan', $lnKode)
+                    ->update(['penerbitan_lhu' => $tanggalTerbitFormatted]);
+            } else {
+                // Insert new record
+                $db->table('t_log_sampel')->insert([
+                    'kode_layanan' => $lnKode,
+                    'penerbitan_lhu' => $tanggalTerbitFormatted
+                ]);
+            }
+
+            // Update status menjadi 8 (LHU Disetujui) setelah upload berhasil
+            $model = new MyModel($this->table);
+            $model->updateData(['lnStatus' => 8], $this->id, $lnKode);
+
             return $this->response->setJSON([
                 'res' => true,
-                'msg' => $msg,
+                'msg' => $msg . ' LHU berhasil dikirim.',
                 'url' => base_url('uploads/lhu/' . $filename),
                 'xname' => csrf_token(),
                 'xhash' => csrf_hash()
@@ -541,23 +573,10 @@ class Pelaksanaan extends BaseController
     {
         $btn = '<div id="' . $id . '" class="float-end d-flex align-items-center justify-content-end" style="gap:10px;">';
 
-        if ((int) $status >= 6) {
-            $safeUrl = ($lhuInfo['has'] && !empty($lhuInfo['url'])) ? esc($lhuInfo['url']) : '#';
-            $btn .= '<span class="text-primary btn-action" title="Upload LHU" onclick="openUploadModal(\'' . $id . '\', \'' . $safeUrl . '\')" style="cursor:pointer;">
-                        <i class="bi bi-cloud-upload"></i>
-                     </span>';
-        }
-
+        // Button Proses - hanya muncul jika status = 6 (Memproses LHU)
         if ((int) $status === 6) {
-            if ($allowAccept) {
-                $btn .= '<span class="text-success btn-action" title="Proses (Setujui LHU)" onclick="prosesItem(event)" style="cursor:pointer;">
-                            <i class="bi bi-check2-circle"></i>
-                         </span>';
-            } else {
-                $btn .= '<span class="text-muted btn-action" title="Unggah LHU terlebih dahulu baru bisa di-accept" style="cursor:not-allowed;opacity:0.5;">
-                            <i class="bi bi-check2-circle"></i>
-                         </span>';
-            }
+            $safeUrl = ($lhuInfo['has'] && !empty($lhuInfo['url'])) ? esc($lhuInfo['url']) : '#';
+            $btn .= '<button type="button" class="btn btn-sm btn-success" title="Upload & Kirim LHU" onclick="openUploadModal(\'' . $id . '\', \'' . $safeUrl . '\')"><i class="bi bi-send-check"></i> Proses</button>';
         }
 
         $btn .= '</div>';

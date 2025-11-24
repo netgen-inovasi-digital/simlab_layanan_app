@@ -188,7 +188,6 @@ class KeranjangLab extends KeranjangBase
                 'kode_jenis' => $jenKodeValue ?? 'C',
                 'jumlah' => (int) ($item['jumlah'] ?? 0),
                 'biaya' => (float) ($item['biaya'] ?? 0),
-                'catatan_pelanggan' => $item['keterangan'] ?? '',
                 'status_layanan' => 0,
             ];
 

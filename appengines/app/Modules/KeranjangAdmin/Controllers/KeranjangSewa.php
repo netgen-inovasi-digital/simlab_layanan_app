@@ -216,7 +216,6 @@ class KeranjangSewa extends KeranjangBase
                 'durasi'            => $durasi,
                 'tanggal_mulai'     => $tanggalMulai,
                 'tanggal_selesai'   => $tanggalSelesai,
-                'catatan_pelanggan' => $item['keterangan'] ?? null,
                 'biaya'             => $item['biaya'] ?? null,
                 'status_layanan'    => 0,
             ];

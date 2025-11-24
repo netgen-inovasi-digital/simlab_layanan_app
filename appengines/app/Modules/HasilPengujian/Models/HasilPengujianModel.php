@@ -298,19 +298,11 @@ class HasilPengujianModel extends Model
         $missingItems = [];
 
         foreach ($userDetRows as $dr) {
-            $hasFile = false;
-
-            $filesVal = $dr->files ?? 0;
-            if ($filesVal && (int)$filesVal > 0) {
-                $hasFile = true;
-            } else {
-                $fileRow = $this->getFileLhus($dr->kode);
-                if ($fileRow && !empty($fileRow->file_lhus)) {
-                    $hasFile = true;
-                }
-            }
-
-            if (!$hasFile) {
+            $filesVal = isset($dr->files) ? (int)$dr->files : null;
+            
+            // Hanya file dengan status 3 (terunggah) yang bisa dikirim
+            // Status lain berarti: null/0 = belum upload, 2 = ditolak, 0 = sudah terkirim, 1 = sudah diterima
+            if ($filesVal !== 3) {
                 $missingCount++;
                 $missingItems[] = $dr->kode ?? null;
             }
@@ -416,10 +408,9 @@ class HasilPengujianModel extends Model
         $sql = "
             SELECT COUNT(*) as total_belum_upload
             FROM t_layanan_detil d
-            LEFT JOIN t_files_lhus lhus ON lhus.kode = d.kode
             WHERE d.kode_layanan = ?
               AND d.status_layanan = 1
-              AND (lhus.file_id IS NULL OR lhus.file_lhus IS NULL OR lhus.file_lhus = '')
+              AND (d.files IS NULL OR d.files != 3)
         ";
 
         $result = $this->db->query($sql, [$lnKode])->getRow();

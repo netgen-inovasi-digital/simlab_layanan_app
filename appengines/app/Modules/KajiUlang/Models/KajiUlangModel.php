@@ -92,7 +92,7 @@ class KajiUlangModel extends Model
         if (!empty($statusArr)) {
             $builder->groupStart();
             foreach ($statusArr as $st) {
-                $st = (int)$st;
+                $st = (int) $st;
                 if ($st === 1) {
                     // Belum direview: lnStatus = 1 AND pending_for_manager > 0
                     $builder->orGroupStart()
@@ -133,7 +133,7 @@ class KajiUlangModel extends Model
      */
     public function isUserAuthorizedForLayanan($lnKode, int $userId): bool
     {
-        $count = (int)$this->db->table('t_layanan_detil as d')
+        $count = (int) $this->db->table('t_layanan_detil as d')
             ->join('r_tim rt', 'rt.uji_kode = d.uji_kode', 'inner')
             ->where('d.kode_layanan', $lnKode)
             ->where('rt.user_id', $userId)
@@ -188,10 +188,11 @@ class KajiUlangModel extends Model
 
         $builder = $this->db->table('t_layanan_detil');
         foreach ($items as $it) {
-            $detailKode = isset($it['detailKode']) ? (int)$it['detailKode'] : null;
+            $detailKode = isset($it['detailKode']) ? (int) $it['detailKode'] : null;
             $kom = isset($it['komentar']) ? $it['komentar'] : null;
 
-            if ($detailKode === null) continue;
+            if ($detailKode === null)
+                continue;
 
             $builder->where('kode', $detailKode)
                 ->where('kode_layanan', $lnKode)
@@ -228,7 +229,7 @@ class KajiUlangModel extends Model
      */
     public function isUserAuthorizedForUji(int $ujiKode, int $userId): bool
     {
-        $count = (int)$this->db->table('r_tim')
+        $count = (int) $this->db->table('r_tim')
             ->where('uji_kode', $ujiKode)
             ->where('user_id', $userId)
             ->countAllResults(false);
@@ -254,7 +255,7 @@ class KajiUlangModel extends Model
             $builder->where('status_layanan', $statusLayanan);
         }
 
-        return (int)$builder->countAllResults(false);
+        return (int) $builder->countAllResults(false);
     }
 
     /**
@@ -272,7 +273,7 @@ class KajiUlangModel extends Model
             ->orWhere('status_layanan IS NULL', null, false)
             ->groupEnd();
 
-        return (int)$builder->countAllResults(false);
+        return (int) $builder->countAllResults(false);
     }
 
     /**
@@ -290,7 +291,7 @@ class KajiUlangModel extends Model
             ->where('uji_kode', $ujiKode)
             ->where('(status_layanan IS NULL OR status_layanan != 1)')
             ->update([
-                'status_layanan'    => 1,
+                'status_layanan' => 1,
                 'terima_layanan_by' => $managerId
             ]);
 
@@ -312,8 +313,8 @@ class KajiUlangModel extends Model
             ->where('uji_kode', $ujiKode)
             ->where('(status_layanan IS NULL OR status_layanan != 2)')
             ->update([
-                'status_layanan'     => 2,
-                'terima_layanan_by'  => $managerId
+                'status_layanan' => 2,
+                'terima_layanan_by' => $managerId
             ]);
 
         return $this->db->affectedRows();
@@ -368,7 +369,7 @@ class KajiUlangModel extends Model
             ->where('kode', $detailKode)
             ->where('(status_layanan IS NULL OR status_layanan != 1)')
             ->update([
-                'status_layanan'    => 1,
+                'status_layanan' => 1,
                 'terima_layanan_by' => $managerId
             ]);
 
@@ -388,7 +389,7 @@ class KajiUlangModel extends Model
             ->where('kode', $detailKode)
             ->where('(status_layanan IS NULL OR status_layanan != 2)')
             ->update([
-                'status_layanan'    => 2,
+                'status_layanan' => 2,
                 'terima_layanan_by' => $managerId
             ]);
 
@@ -404,7 +405,7 @@ class KajiUlangModel extends Model
      */
     public function countPendingForManager($lnKode, int $userId): int
     {
-        $count = (int)$this->db->table('t_layanan_detil as d')
+        $count = (int) $this->db->table('t_layanan_detil as d')
             ->join('r_tim rt', 'rt.uji_kode = d.uji_kode', 'inner')
             ->where('d.kode_layanan', $lnKode)
             ->where('rt.user_id', $userId)

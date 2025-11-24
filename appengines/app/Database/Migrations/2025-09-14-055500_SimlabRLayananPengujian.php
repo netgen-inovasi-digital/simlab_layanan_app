@@ -51,26 +51,17 @@ class CreateRLayananPengujian extends Migration
         ]);
 
         $this->forge->addKey('kode', true);
-        $this->forge->addKey('kode_alat');
-        $this->forge->addKey('kode_parameter');
-        $this->forge->addKey('kode_jenis');
 
+        // Create table first
         $this->forge->createTable('r_layanan_pengujian', true);
 
-        // Tambah FK
-        $db = Database::connect();
-        $db->query("
-            ALTER TABLE `r_layanan_pengujian`
-                ADD CONSTRAINT `fk_rlaypeng_paraKode` 
-                    FOREIGN KEY (`kode_parameter`) REFERENCES `simlab_r_parameter` (`paraKode`) 
-                    ON DELETE CASCADE ON UPDATE CASCADE,
-                ADD CONSTRAINT `fk_rlaypeng_alatKode` 
-                    FOREIGN KEY (`kode_alat`) REFERENCES `simlab_r_alat` (`alatKode`) 
-                    ON DELETE CASCADE ON UPDATE CASCADE,
-                ADD CONSTRAINT `fk_rlaypeng_jenKode` 
-                    FOREIGN KEY (`kode_jenis`) REFERENCES `simlab_r_jenis` (`jenKode`) 
-                    ON DELETE CASCADE ON UPDATE CASCADE;
-        ");
+        // Tambah FK dengan mekanisme forge (lebih aman & portable)
+        $this->forge->addForeignKey('kode_parameter', 'simlab_r_parameter', 'paraKode', 'CASCADE', 'CASCADE');
+        $this->forge->addForeignKey('kode_alat', 'simlab_r_alat', 'alatKode', 'CASCADE', 'CASCADE');
+        $this->forge->addForeignKey('kode_jenis', 'simlab_r_jenis', 'jenKode', 'CASCADE', 'CASCADE');
+
+        // Apply alter table for foreign keys
+        $this->forge->processIndexes('r_layanan_pengujian');
     }
 
     public function down()

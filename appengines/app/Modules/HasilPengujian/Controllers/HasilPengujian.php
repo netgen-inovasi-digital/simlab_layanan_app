@@ -38,7 +38,7 @@ class HasilPengujian extends BaseController
 
         $data = [
             'title' => 'Data Hasil Pengujian',
-            'user'  => $modelUser->getDataById('user_id', $user_id),
+            'user' => $modelUser->getDataById('user_id', $user_id),
         ];
 
         return view('Modules\HasilPengujian\Views\v_hasilPengujian', $data);
@@ -301,12 +301,13 @@ class HasilPengujian extends BaseController
         $data = [];
         
         foreach ($list as $row) {
-            if ((int)$row->lnStatus < 4) continue;
+            if ((int) $row->lnStatus < 4)
+                continue;
 
             $id = bin2hex($this->encrypter->encrypt($row->lnKode));
             $pemesanNama = !empty($row->pemesan_name) ? $row->pemesan_name : '-';
-            $tipe        = !empty($row->pemesan_identity) ? $row->pemesan_identity : '-';
-            $tanggal     = !empty($row->lnTgl) ? date('d-m-Y H:i', strtotime($row->lnTgl)) : '-';
+            $tipe = !empty($row->pemesan_identity) ? $row->pemesan_identity : '-';
+            $tanggal = !empty($row->lnTgl) ? date('d-m-Y H:i', strtotime($row->lnTgl)) : '-';
 
             $colA = '
                 <div style="line-height:1.3;">
@@ -351,7 +352,9 @@ class HasilPengujian extends BaseController
             $fileUrl = base_url('uploads/lhus/' . ltrim($fileRow->file_lhus, '/'));
         }
 
-        if (!$rowHasFile) {
+        // Cek apakah file sudah terupload (status = 3) dari kolom detFilesMax
+        // Status 3 = terupload, siap dikirim
+        if ($detFilesMax !== 3) {
             $allUploaded = false;
         }
 
@@ -580,7 +583,7 @@ class HasilPengujian extends BaseController
      */
     private function doUpload(\CodeIgniter\HTTP\Files\UploadedFile $file): array
     {
-        $allowed = ['jpg','jpeg','png','pdf','doc','docx','xls','xlsx'];
+        $allowed = ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx', 'xls', 'xlsx'];
         $max = 5 * 1024 * 1024;
 
         if (!$file->isValid() || $file->hasMoved()) {
@@ -659,18 +662,29 @@ class HasilPengujian extends BaseController
      */
     private function formatStatus($lnStatus)
     {
-        switch ((int)$lnStatus) {
-            case 0: return '<span class="badge bg-secondary">Draft</span>';
-            case 1: return '<span class="badge bg-warning">In Review (Manajer)</span>';
-            case 2: return '<span class="badge bg-danger">Ditolak</span>';
-            case 3: return '<span class="badge bg-info">In Review (Admin)</span>';
-            case 4: return '<span class="badge bg-primary">Sedang dalam pengujian</span>';
-            case 5: return '<span class="badge bg-primary">LHUS sedang diverifikasi manajer</span>';
-            case 6: return '<span class="badge bg-success">LHUS Disetujui</span>';
-            case 7: return '<span class="badge bg-primary">Memproses LHU</span>';
-            case 8: return '<span class="badge bg-success">LHU sedang diproses</span>';
-            case 9: return '<span class="badge bg-dark">Pengujian Selesai</span>';
-            default: return '<span class="badge bg-dark">Unknown</span>';
+        switch ((int) $lnStatus) {
+            case 0:
+                return '<span class="badge bg-secondary">Draft</span>';
+            case 1:
+                return '<span class="badge bg-warning">In Review (Manajer)</span>';
+            case 2:
+                return '<span class="badge bg-danger">Ditolak</span>';
+            case 3:
+                return '<span class="badge bg-info">In Review (Admin)</span>';
+            case 4:
+                return '<span class="badge bg-primary">Sedang dalam pengujian</span>';
+            case 5:
+                return '<span class="badge bg-primary">LHUS sedang diverifikasi manajer</span>';
+            case 6:
+                return '<span class="badge bg-success">LHUS Disetujui</span>';
+            case 7:
+                return '<span class="badge bg-primary">Memproses LHU</span>';
+            case 8:
+                return '<span class="badge bg-success">LHU sedang diproses</span>';
+            case 9:
+                return '<span class="badge bg-dark">Pengujian Selesai</span>';
+            default:
+                return '<span class="badge bg-dark">Unknown</span>';
         }
     }
 
@@ -700,6 +714,6 @@ class HasilPengujian extends BaseController
         }
 
         // Fallback ke mapping lnStatus
-        return $this->formatStatus((int)$lnStatus);
+        return $this->formatStatus((int) $lnStatus);
     }
 }

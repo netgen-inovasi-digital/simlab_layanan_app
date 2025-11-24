@@ -208,7 +208,6 @@ class Keranjang extends KeranjangBase
                 'uji_kode'          => $item['kode'] ?? null,             // FK ke r_layanan_pengujian
                 'biaya'             => $item['biaya'] ?? 0,               // Total biaya item ini
                 'jumlah'            => $item['jumlah'] ?? 1,              // Jumlah item
-                'catatan_pelanggan' => null,                              // Tidak pakai keterangan lagi
                 'nama_layanan'      => $item['layanan'] ?? null,          // Nama layanan
                 'status_layanan'    => 0,                                 // Status default: 0
                 'kode_jenis'        => $jenKodeValue,                     // Kode jenis (2 char)

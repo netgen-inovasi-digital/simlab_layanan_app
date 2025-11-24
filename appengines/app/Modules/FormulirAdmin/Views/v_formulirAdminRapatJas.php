@@ -78,7 +78,7 @@
                                     <?php foreach ($categories as $c): ?>
                                         <?php
                                         $kode = isset($c->jenKode) ? $c->jenKode : (isset($c['jenKode']) ? $c['jenKode'] : '');
-                                        $nama = isset($c->jenNama) && trim((string)$c->jenNama) !== '' ? $c->jenNama : $kode;
+                                        $nama = isset($c->jenNama) && trim((string) $c->jenNama) !== '' ? $c->jenNama : $kode;
                                         ?>
                                         <option value="<?= esc($kode) ?>"><?= esc($nama) ?></option>
                                     <?php endforeach; ?>
@@ -91,16 +91,15 @@
                     <div class="col-md-4 d-flex flex-column justify-content-end" style="padding-left: 20px;">
                         <label class="form-label mb-1 fw-semibold">Pelanggan</label>
                         <div class="d-flex justify-content-end align-items-center gap-2">
-                            <select id="ker_pelanggan_select" class="form-select form-select-sm" style="max-width:400px;">
+                            <select id="ker_pelanggan_select" class="form-select form-select-sm"
+                                style="max-width:400px;">
                                 <option value=""></option>
                                 <?php if (!empty($users) && is_array($users)): ?>
                                     <?php foreach ($users as $u):
                                         $status = (isset($u->user_identity) && strtoupper($u->user_identity) === 'ULM') ? 'ULM' : 'NON ULM';
-                                    ?>
-                                        <option value="<?= esc($u->user_id) ?>"
-                                            data-email="<?= esc($u->user_email) ?>"
-                                            data-status="<?= esc($status) ?>"
-                                            data-name="<?= esc($u->user_name) ?>">
+                                        ?>
+                                        <option value="<?= esc($u->user_id) ?>" data-email="<?= esc($u->user_email) ?>"
+                                            data-status="<?= esc($status) ?>" data-name="<?= esc($u->user_name) ?>">
                                             <?= esc($u->user_name) ?> — <?= esc($u->user_email) ?> — <?= esc($status) ?>
                                         </option>
                                     <?php endforeach; ?>
@@ -207,7 +206,6 @@
                             <th width="30%">Parameter</th>
                             <th width="20%">Biaya</th>
                             <th width="15%">Jumlah</th>
-                            <th width="15%">Keterangan</th>
                             <th width="15%">Status</th>
                             <th width="15%">Keterangan Manajer</th>
                             <th width="10%">Acc</th>
@@ -215,7 +213,7 @@
                     </thead>
                     <tbody id="detail-body">
                         <tr>
-                            <td colspan="6" class="text-center">Loading...</td>
+                            <td colspan="7" class="text-center">Loading...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -290,7 +288,7 @@
             } catch (err) {
                 try {
                     if (typeof ker_layananTable.destroy === 'function') ker_layananTable.destroy();
-                } catch (e) {}
+                } catch (e) { }
                 ker_layananTable = null;
             }
         }
@@ -307,7 +305,7 @@
 
         if (ker_layananTable && typeof ker_layananTable.fetchData === 'function' && typeof ker_layananTable.getConfig === 'function') {
             const orig = ker_layananTable.fetchData.bind(ker_layananTable);
-            ker_layananTable.fetchData = function(opts = {}) {
+            ker_layananTable.fetchData = function (opts = {}) {
                 try {
                     const cfg = ker_layananTable.getConfig();
                     if (cfg && cfg.apiUrl && typeof cfg.apiUrl === 'string') cfg.apiUrl = normalizeDoubleQuestion(cfg.apiUrl);
@@ -345,7 +343,7 @@
     (function attachJenFilterListener() {
         const sel = document.getElementById('jenFilter');
         if (!sel) return;
-        sel.addEventListener('change', function() {
+        sel.addEventListener('change', function () {
             applyJenFilter();
         });
     })();
@@ -370,7 +368,7 @@
     // Patch table.fetchData untuk menormalisasi apiUrl bila helper createTable menambahkan '?ganda'
     if (table && typeof table.getConfig === 'function' && typeof table.fetchData === 'function') {
         const origFetch = table.fetchData.bind(table);
-        table.fetchData = function(opts = {}) {
+        table.fetchData = function (opts = {}) {
             try {
                 const cfg = table.getConfig();
                 if (cfg && cfg.apiUrl && typeof cfg.apiUrl === 'string') {
@@ -395,7 +393,7 @@
     // Event listener untuk filter dropdown
     var statusFilterEl = document.getElementById('statusFilter');
     if (statusFilterEl) {
-        statusFilterEl.addEventListener('change', function() {
+        statusFilterEl.addEventListener('change', function () {
             const selectedValue = this.value;
             const tableConfig = table.getConfig();
 
@@ -427,12 +425,12 @@
         const csrfToken = csrfInput ? csrfInput.value : '';
 
         fetch(url, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken
-                }
-            })
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRF-TOKEN': csrfToken
+            }
+        })
             .then(response => response.json())
             .then(data => {
                 if (data.xname && data.xhash) {
@@ -498,7 +496,7 @@
             if (!id) return;
 
             // gunakan sayConfirm jika tersedia (konsisten dengan UI)
-            const doApprove = function() {
+            const doApprove = function () {
                 const csrf = getCsrfTokenFromPage();
                 const headers = {
                     'X-Requested-With': 'XMLHttpRequest'
@@ -515,10 +513,10 @@
                 if (csrf && csrf.name && csrf.value) body.append(csrf.name, csrf.value);
 
                 fetch('<?= site_url("formuliradminrapatjas/approve/") ?>' + id, {
-                        method: 'POST',
-                        headers: headers,
-                        body: body
-                    })
+                    method: 'POST',
+                    headers: headers,
+                    body: body
+                })
 
                     .then(res => res.json())
                     .then(data => {
@@ -539,7 +537,7 @@
             };
 
             if (typeof sayConfirm === 'function') {
-                sayConfirm('Konfirmasi ', 'Setujui transaksi ini?', function() {
+                sayConfirm('Konfirmasi ', 'Setujui transaksi ini?', function () {
                     doApprove();
                 }, 'primary', 'Setujui');
 
@@ -599,12 +597,12 @@
 
         // Kirim POST ke endpoint keranjangDelete (sesuai routes yang ada)
         fetch('<?= site_url("keranjangadmin/delete/") ?>' + idx, {
-                method: 'POST',
-                body: form,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
+            method: 'POST',
+            body: form,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
             .then(res => res.json())
             .then(data => {
                 // update CSRF token jika server mengembalikan
@@ -626,7 +624,7 @@
                             reload: true
                         });
 
-                        setTimeout(function() {
+                        setTimeout(function () {
                             ker_updateKeranjangCounter();
                             ker_calculateGrandTotal();
                         }, 400);
@@ -663,9 +661,9 @@
             .then(data => {
                 tbody.innerHTML = '';
                 if (data.items && data.items.length > 0) {
-                    data.items.forEach(function(row) {
+                    data.items.forEach(function (row) {
                         let tr = '<tr>';
-                        row.forEach(function(col) {
+                        row.forEach(function (col) {
                             tr += '<td>' + col + '</td>';
                         });
                         tr += '</tr>';
@@ -685,11 +683,11 @@
 
 
     // ======= Pastiin #add membuka modalKeranjang (pelanggan ada di modal) =======
-    (function() {
+    (function () {
         var addBtn = document.querySelector('#add');
         if (!addBtn) return;
 
-        addBtn.addEventListener('click', function() {
+        addBtn.addEventListener('click', function () {
             try {
                 var modalEl = document.getElementById('modalKeranjang');
                 if (!modalEl) {
@@ -719,7 +717,7 @@
 
     var modalKeranjangEl = document.getElementById('modalKeranjang');
     if (modalKeranjangEl) {
-        modalKeranjangEl.addEventListener('shown.bs.modal', function() {
+        modalKeranjangEl.addEventListener('shown.bs.modal', function () {
             // init layanan table
             const layananApi = buildApiUrlWithOptionalParam('<?= site_url("keranjangadmin/dataListLayanan") ?>', '', '');
             if (!ker_layananTable) {
@@ -734,7 +732,7 @@
                 // patch fetchData untuk normalize api url
                 if (ker_layananTable && typeof ker_layananTable.fetchData === 'function' && typeof ker_layananTable.getConfig === 'function') {
                     const orig = ker_layananTable.fetchData.bind(ker_layananTable);
-                    ker_layananTable.fetchData = function(opts = {}) {
+                    ker_layananTable.fetchData = function (opts = {}) {
                         try {
                             const cfg = ker_layananTable.getConfig();
                             if (cfg && cfg.apiUrl && typeof cfg.apiUrl === 'string') {
@@ -751,7 +749,7 @@
                     ker_layananTable.fetchData({
                         reload: true
                     });
-                } catch (e) {}
+                } catch (e) { }
             }
 
             // init preview keranjang
@@ -765,7 +763,7 @@
                     numbering: true,
                     itemsPerPage: 100,
                     // hook supaya tidak menumpuk
-                    onData: function(items) {
+                    onData: function (items) {
                         const tbody = document.querySelector('#ker_preview-keranjang-table-body');
                         if (tbody) tbody.innerHTML = ''; // clear sebelum isi ulang
                     }
@@ -774,7 +772,7 @@
                 // force reload behavior (no append)
                 if (ker_previewKeranjangTable && typeof ker_previewKeranjangTable.fetchData === 'function') {
                     const orig = ker_previewKeranjangTable.fetchData.bind(ker_previewKeranjangTable);
-                    ker_previewKeranjangTable.fetchData = function(opts = {}) {
+                    ker_previewKeranjangTable.fetchData = function (opts = {}) {
                         return orig(Object.assign({}, opts, {
                             reload: true
                         }));
@@ -785,34 +783,34 @@
                     ker_previewKeranjangTable.fetchData({
                         reload: true
                     });
-                } catch (e) {}
+                } catch (e) { }
             }
 
             // bersihkan preview tbody sebelum render baru (defensive)
             const previewBody = document.getElementById('ker_preview-keranjang-table-body');
             if (previewBody) previewBody.innerHTML = '';
 
-            setTimeout(function() {
+            setTimeout(function () {
                 ker_updateKeranjangCounter();
                 ker_calculateGrandTotal();
             }, 400);
         });
 
         // saat modal hide -> bersihkan instance preview agar tidak menyimpan state yang aneh
-        modalKeranjangEl.addEventListener('hidden.bs.modal', function() {
+        modalKeranjangEl.addEventListener('hidden.bs.modal', function () {
             // optional: destroy instances if helper memberi method destroy
             try {
                 if (ker_layananTable && typeof ker_layananTable.destroy === 'function') {
                     ker_layananTable.destroy();
                     ker_layananTable = null;
                 }
-            } catch (e) {}
+            } catch (e) { }
             try {
                 if (ker_previewKeranjangTable && typeof ker_previewKeranjangTable.destroy === 'function') {
                     ker_previewKeranjangTable.destroy();
                     ker_previewKeranjangTable = null;
                 }
-            } catch (e) {}
+            } catch (e) { }
         });
     }
 
@@ -843,7 +841,7 @@
         return null;
     }
 
-    (function() {
+    (function () {
         const sel = document.getElementById('ker_pelanggan_select');
         if (!sel) return;
 
@@ -1059,7 +1057,7 @@
                     if (sel && data.pelanggan.user_id) {
                         try {
                             sel.value = data.pelanggan.user_id;
-                        } catch (e) {}
+                        } catch (e) { }
                     }
                 }
             })
@@ -1117,7 +1115,7 @@
     if (!window.__CLICK_BIND_FORMADM__) {
         window.__CLICK_BIND_FORMADM__ = true;
 
-        document.addEventListener('click', function(e) {
+        document.addEventListener('click', function (e) {
             // Tombol masukkan (.btnMasukkan)
             if (e.target.closest && e.target.closest('.btnMasukkan')) {
                 let btn = e.target.closest('.btnMasukkan');
@@ -1180,9 +1178,9 @@
                 }
 
                 fetch('<?= site_url("keranjangadmin/submit") ?>', {
-                        method: 'POST',
-                        body: formData
-                    })
+                    method: 'POST',
+                    body: formData
+                })
                     .then(res => res.json())
                     .then(res => {
                         if (res.xname && res.xhash) {
@@ -1209,7 +1207,7 @@
                                 ker_previewKeranjangTable.fetchData({
                                     reload: true
                                 });
-                                setTimeout(function() {
+                                setTimeout(function () {
                                     ker_updateKeranjangCounter();
                                     ker_calculateGrandTotal();
                                 }, 500);
@@ -1232,7 +1230,7 @@
                     ker_previewKeranjangTable.fetchData({
                         reload: true
                     });
-                    setTimeout(function() {
+                    setTimeout(function () {
                         ker_updateKeranjangCounter();
                         ker_calculateGrandTotal();
                     }, 500);
@@ -1252,7 +1250,7 @@
 
                 // gunakan confirm custom jika sayConfirm tersedia (lebih konsisten UI)
                 if (typeof sayConfirm === 'function') {
-                    sayConfirm('Konfirmasi', 'Apakah anda yakin ingin melakukan checkout?', function() {
+                    sayConfirm('Konfirmasi', 'Apakah anda yakin ingin melakukan checkout?', function () {
                         ker_doCheckout();
                     }, 'primary', 'Checkout');
                 } else {
@@ -1290,9 +1288,9 @@
         formData.append('selectedUserId', selectedVal);
 
         fetch('<?= site_url("keranjangadmin/checkout") ?>', {
-                method: 'POST',
-                body: formData
-            })
+            method: 'POST',
+            body: formData
+        })
             .then(res => res.json())
             .then(data => {
                 if (data.xname && data.xhash) {
@@ -1310,7 +1308,7 @@
                         ker_previewKeranjangTable.fetchData({
                             reload: true
                         });
-                        setTimeout(function() {
+                        setTimeout(function () {
                             ker_updateKeranjangCounter();
                             ker_calculateGrandTotal();
                         }, 500);
@@ -1357,11 +1355,11 @@
 
         if (select.options.length <= 1) {
             fetch('<?= site_url("keranjangadmin/kategoriList") ?>', {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json'
-                    }
-                })
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json'
+                }
+            })
                 .then(r => r.json())
                 .then(resp => {
                     if (!resp || !resp.categories) return;
@@ -1386,7 +1384,7 @@
     })();
 
 
-    (function() {
+    (function () {
         function applyOnce(selector) {
             const sel = document.querySelector(selector);
             if (!sel) return;
@@ -1406,7 +1404,7 @@
         }
 
         // apply pada DOM ready
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             applyOnce('#ker_pelanggan_select');
             applyOnce('#jenFilter');
         });
@@ -1414,8 +1412,8 @@
         // juga apply lagi saat modalKeranjang terbuka (untuk kasus option di-render dinamis)
         const modal = document.getElementById('modalKeranjang');
         if (modal) {
-            modal.addEventListener('shown.bs.modal', function() {
-                setTimeout(function() {
+            modal.addEventListener('shown.bs.modal', function () {
+                setTimeout(function () {
                     applyOnce('#ker_pelanggan_select');
                     applyOnce('#jenFilter');
                 }, 30);
