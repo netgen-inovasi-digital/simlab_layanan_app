@@ -233,12 +233,11 @@ class HasilPengujianModel extends Model
             MAX(d.status_layanan) AS status_group,
             d.terima_layanan_by,
             u.user_name AS acc_by,
-            m.metode_nama
+            (SELECT metode_nama FROM r_metode WHERE metode_kode = d.metode_pengujian LIMIT 1) AS metode_nama
         ");
 
         $builder->join('simlab_account_users u', 'u.user_id = d.terima_layanan_by', 'left');
         $builder->join('r_tim as rt', 'rt.uji_kode = d.uji_kode', 'inner');
-        $builder->join('r_metode as m', 'm.metode_kode = d.metode_pengujian', 'left');
 
         $builder->where('d.kode_layanan', $kode);
         $builder->where('rt.user_id', $userId);
