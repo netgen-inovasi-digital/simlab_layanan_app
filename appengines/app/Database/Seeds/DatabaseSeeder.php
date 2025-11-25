@@ -8,6 +8,7 @@ class DatabaseSeeder extends Seeder
 {
     public function run()
     {
+
         // Seeder untuk template lengkap
         // $this->call('SimlabSeeder');
         $this->call('CompleteNetxTemplateSeeder');

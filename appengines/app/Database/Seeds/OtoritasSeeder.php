@@ -247,6 +247,7 @@ class OtoritasSeeder extends Seeder
             ['id_otoritas'=>236,'role_id'=>6,'kode_menu'=>'16.3','status_otoritas'=>0],
             ['id_otoritas'=>237,'role_id'=>1,'kode_menu'=>'11.6','status_otoritas'=>0],
             ['id_otoritas'=>238,'role_id'=>1,'kode_menu'=>'12.6','status_otoritas'=>1],
+            ['id_otoritas'=>239,'role_id'=>1,'kode_menu'=>'25','status_otoritas'=>1],
         ]);
     }
 }

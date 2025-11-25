@@ -8,6 +8,7 @@ class CreateCompleteNetxTemplateDatabase extends Migration
 {
     public function up()
     {
+
         // 1. Categories table
         $this->forge->addField([
             'id_categories' => [
