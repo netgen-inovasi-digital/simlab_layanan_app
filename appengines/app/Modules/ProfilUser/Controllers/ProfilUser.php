@@ -4,6 +4,7 @@ namespace Modules\ProfilUser\Controllers;
 
 use App\Controllers\BaseController;
 use App\Models\MyModel;
+use App\Models\UserModel;
 
 class ProfilUser extends BaseController
 {
@@ -40,8 +41,12 @@ class ProfilUser extends BaseController
     function getProfil()
     {
         $idUser = session()->get('id_user'); 
-        $model  = new MyModel($this->table);
-        $user   = $model->getDataById($this->id, $idUser);
+        $model  = new UserModel();
+        $user   = $model->getUserById($idUser);
+
+        if (!$user) {
+            return null;
+        }
 
         $data = [
             'user_name'     => $user->user_name,
@@ -82,8 +87,8 @@ class ProfilUser extends BaseController
     $ulangiPassword = (string)$this->request->getPost('confirm_password');  // opsional
     $emailPost      = strtolower(trim((string)$this->request->getPost('email')));
 
-    $model = new MyModel($this->table);
-    $user  = $model->getDataById($this->id, session()->get('id_user'));
+    $userModel = new UserModel();
+    $user  = $userModel->getUserById(session()->get('id_user'));
 
     // Siapkan data awal
     $data = [
@@ -179,13 +184,9 @@ class ProfilUser extends BaseController
             ]);
         }
         // Cek unik
-        $db = \Config\Database::connect();
-        $exists = $db->table($this->table)
-            ->where('LOWER(user_email)', $emailPost)
-            ->where($this->id.' !=', (int)session()->get('id_user'))
-            ->countAllResults();
+        $emailExists = $userModel->isEmailExists($emailPost, (int)session()->get('id_user'));
 
-        if ($exists > 0) {
+        if ($emailExists) {
             return $this->response->setJSON([
                 'res'   => 'error',
                 'msg'   => 'Email sudah terpakai. Gunakan email lain.',
@@ -197,7 +198,7 @@ class ProfilUser extends BaseController
         $data['user_email'] = $emailPost;
     }
 
-    // ========== UBAH PASSWORD (OPSIONAL — HANYA JIKA DIISI) ==========
+    // ubah password
     if ($passwordLama !== '' || $passwordBaru !== '' || $ulangiPassword !== '') {
         if ($passwordLama === '' || $passwordBaru === '' || $ulangiPassword === '') {
             return $this->response->setJSON([
@@ -207,7 +208,7 @@ class ProfilUser extends BaseController
                 'xhash' => csrf_hash()
             ]);
         }
-        if (!password_verify($passwordLama, $user->user_password)) {
+        if (!$userModel->verifyPassword(session()->get('id_user'), $passwordLama)) {
             return $this->response->setJSON([
                 'res'   => 'error',
                 'msg'   => 'Password lama salah',
@@ -226,7 +227,7 @@ class ProfilUser extends BaseController
         $data['user_password'] = password_hash($ulangiPassword, PASSWORD_DEFAULT);
     }
 
-    // ========== UPLOAD BUKTI (KHUSUS ULM) ==========
+    // bukti
     if ($data['user_identity'] === 'ULM' && $hasNewBukti) {
         if (!empty($user->bukti)) {
             $oldPath = FCPATH . 'uploads' . DIRECTORY_SEPARATOR . 'bukti' . DIRECTORY_SEPARATOR . $user->bukti;
@@ -247,7 +248,7 @@ class ProfilUser extends BaseController
         $data['bukti'] = $uploadResult['filename'];
     }
 
-    $res = $model->updateData($data, $this->id, session()->get('id_user'));
+    $res = $userModel->updateUser($data, session()->get('id_user'));
 
     if ($res) {
         return $this->response->setJSON([
