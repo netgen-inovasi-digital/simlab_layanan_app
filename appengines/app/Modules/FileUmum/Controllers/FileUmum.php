@@ -119,7 +119,7 @@ class FileUmum extends BaseController
 
             $filePreview = '-';
             if (!empty($row->file_path)) {
-                $fileUrl = base_url('uploads/fileumum/' . $row->file_path);
+                $fileUrl = site_url('fileumum/download/' . $id);
                 $fileExt = pathinfo($row->file_path, PATHINFO_EXTENSION);
                 $filePreview = '<a href="' . $fileUrl . '" target="_blank" class="btn btn-sm btn-outline-primary">
                     <i class="bi bi-file-earmark-' . ($fileExt == 'pdf' ? 'pdf' : 'text') . '"></i> Lihat
@@ -128,7 +128,7 @@ class FileUmum extends BaseController
             $response[] = $filePreview;
 
             if ($row->status == 'non-aktif') {
-                $status = '<small class="text-danger"><i class="bi bi-x-circle"></i> Non-Aktif (Template Belum Tersedia)</small>';
+                $status = '<small class="text-danger"><i class="bi bi-x-circle"></i> Non-Aktif</small>';
             } else {
                 $status = '<small><i class="bi bi-check-circle text-primary"></i> Aktif</small>';
             }
@@ -140,6 +140,27 @@ class FileUmum extends BaseController
 
         $output = array("items" => $data);
         return $this->response->setJSON($output);
+    }
+
+    public function download($idenc)
+    {
+        $id = $this->encrypter->decrypt(hex2bin($idenc));
+        $model = new MyModel($this->table);
+        $get = $model->getDataById($this->id, $id);
+
+        if (!$get || empty($get->file_path)) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+
+        $filePath = FCPATH . 'uploads/fileumum/' . $get->file_path;
+        if (!file_exists($filePath)) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+
+        $ext = pathinfo($get->file_path, PATHINFO_EXTENSION);
+        $filename = $get->judul . '.' . $ext;
+
+        return $this->response->download($filePath, null)->setFileName($filename);
     }
 
     private function aksi($id)
