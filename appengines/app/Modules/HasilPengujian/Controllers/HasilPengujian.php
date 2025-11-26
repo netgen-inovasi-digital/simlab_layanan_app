@@ -1,16 +1,34 @@
-<?php 
+<?php
 
 namespace Modules\HasilPengujian\Controllers;
 
 use App\Controllers\BaseController;
 use App\Models\MyModel;
+use Modules\HasilPengujian\Models\HasilPengujianModel;
 
+/**
+ * HasilPengujian Controller
+ * 
+ * Controller untuk mengelola hasil pengujian laboratorium
+ * Menangani upload, submit, dan verifikasi LHUS (Laporan Hasil Uji Sampel)
+ */
 class HasilPengujian extends BaseController
 {
     private $table = 'simlab_t_layanan';
     private $id    = 'lnKode';
+    protected $encrypter;
+    protected $hasilPengujianModel;
 
-    
+    public function __construct()
+    {
+        $this->encrypter = \Config\Services::encrypter();
+        $this->hasilPengujianModel = new HasilPengujianModel();
+        helper('form');
+    }
+
+    /**
+     * Halaman utama hasil pengujian
+     */
     public function index()
     {
         $session = session();
@@ -20,576 +38,677 @@ class HasilPengujian extends BaseController
 
         $data = [
             'title' => 'Data Hasil Pengujian',
-            'user'  => $modelUser->getDataById('user_id', $user_id),
+            'user' => $modelUser->getDataById('user_id', $user_id),
         ];
 
         return view('Modules\HasilPengujian\Views\v_hasilPengujian', $data);
     }
 
-   public function dataList()
-{
-    $session = session();
-    $user_id = $session->get('id_user');
-
-    $model = new MyModel($this->table);
-    $modelDet = new MyModel('simlab_t_layanan_detil');
-    $data  = [];
-
-    // Ambil detil berdasarkan detPenyelia = user_id (prioritas)
-    $detilList = $modelDet->getAllDataById(['detPenyelia' => $user_id]);
-
-    // Jika kosong ambil semua baris yang user terkait (gabungan kedua kolom)
-    if (empty($detilList)) {
-        $db = \Config\Database::connect();
-        $builder = $db->table('simlab_t_layanan_detil as d');
-        $builder->select('d.detLnKode');
-        $builder->groupStart();
-        $builder->where('d.detPenyelia', $user_id);
-        $builder->orWhere('d.detManajerTeknis', $user_id);
-        $builder->groupEnd();
-        $rows = $builder->get()->getResult();
-        $detilList = $rows;
-    }
-
-    // Ambil lnKode yang sesuai dari tabel detil — robust untuk array objek/array
-    $lnKodeList = [];
-    foreach ($detilList as $item) {
-        if (is_array($item) && isset($item['detLnKode'])) {
-            $lnKodeList[] = $item['detLnKode'];
-        } elseif (is_object($item) && isset($item->detLnKode)) {
-            $lnKodeList[] = $item->detLnKode;
-        }
-    }
-
-    $lnKodeList = array_values(array_unique(array_filter($lnKodeList, function ($v) {
-        return $v !== null && $v !== '' && $v !== 0;
-    })));
-
-    if (empty($lnKodeList)) {
-        return $this->response->setJSON(["items" => []]);
-    }
-
-    $db = \Config\Database::connect();
-    $builder = $db->table('simlab_t_layanan as l');
-    $builder->select('l.*');
-    $builder->whereIn('l.lnKode', $lnKodeList);
-
-    // Tambahan: jangan ambil baris dengan lnStatus
-    $builder->where('l.lnStatus !=', 2);
-
-    $builder->orderBy('l.lnTgl', 'DESC');
-    $list = $builder->get()->getResult();
-
-    // Kelompokkan berdasarkan status 0-9
-    $grouped = [];
-    for ($i = 0; $i <= 9; $i++) {
-        $grouped[$i] = [];
-    }
-
-    foreach ($list as $row) {
-        $status = (int) $row->lnStatus;
-        if (!isset($grouped[$status])) {
-            $grouped[$status] = [];
-        }
-        $grouped[$status][] = $row;
-    }
-
-    // Urutkan data berdasarkan status 0 → 9
-    $finalList = [];
-    for ($i = 0; $i <= 9; $i++) {
-        $finalList = array_merge($finalList, $grouped[$i]);
-    }
-
-    $no = 1; // nomor urut
-    foreach ($finalList as $row) {
-
-        if ((int) $row->lnStatus < 4) {
-            continue;
-        }
-
-        $id = bin2hex($this->encrypter->encrypt($row->lnKode));
-        $response = [];
-
-        // Ambil item layanan dari tabel detail (tetap diambil, tapi tidak ditampilkan sebagai teks — kolom Item Layanan jadi tombol lihat)
-        $detil = $modelDet->getAllDataById(['detLnKode' => $row->lnKode]);
-
-        $items = [];
-        foreach ($detil as $d) {
-            if (isset($d->detLayanan) && !empty($d->detLayanan)) {
-                $items[] = $d->detLayanan;
-            } elseif (isset($d->detJenKode) && !empty($d->detJenKode)) {
-                $items[] = $d->detJenKode;
-            } else {
-                $items[] = '-';
-            }
-        }
-        $itemList = !empty($items) ? implode(', ', $items) : '-';
-
-        $noInvoiceTgl = '<div>'
-                      . ($row->lnNoTransaksi ?? '-') . '<br>'
-                      . (!empty($row->lnTgl) ? date('d-m-Y', strtotime($row->lnTgl)) : '-') 
-                      . '</div>';
-        $response[] = $noInvoiceTgl;
-
-        // === Perubahan: tambahkan kolom "Pemesan" sebelum Item Layanan ===
-        // gunakan lnOrangNama sebagai pemesan (escape sederhana)
-        $pemesan = isset($row->lnOrangNama) && $row->lnOrangNama !== '' ? htmlspecialchars($row->lnOrangNama, ENT_QUOTES, 'UTF-8') : '-';
-        $response[] = '<div>' . $pemesan . '</div>';
-
-        // === Perubahan: Kolom "Item Layanan" sekarang berisi tombol Lihat Detail saja ===
-        // tombol memanggil loadDetail(encId) di client
-        $lihatDetailBtn = '<button type="button" class="btn btn-sm btn-info" title="Lihat Detail Item Layanan" onclick="loadDetail(\'' . $id . '\')">'
-                        . '<i class="bi bi-eye"></i> Lihat Detail Layanan</button>';
-        $response[] = $lihatDetailBtn;
-
-        // Deteksi apakah LHUS file ada
-        $lhusInfo = $this->detectLhusFile($row);
-
-        // Default onclick handler untuk upload/lihat LHUS
-        $fileUrlEscaped = $lhusInfo['has'] ? esc($lhusInfo['url']) : '#';
-        $uploadOnclick  = 'openUploadModal(\'' . $id . '\', \'' . $fileUrlEscaped . '\')';
-
-        // Tombol tunggal: berubah teks sesuai kondisi (tetap tampil di kolom LHUS terpisah)
-        if ($lhusInfo['has']) {
-            $btnUpload = '<button class="btn btn-sm btn-outline-primary me-1" title="Lihat File" onclick="' . $uploadOnclick . '">'
-                       . '<i class="bi bi-eye"></i> Lihat File</button>';
-        } else {
-            $btnUpload = '<button class="btn btn-sm btn-outline-secondary me-1" title="Unggah File" onclick="' . $uploadOnclick . '">'
-                       . '<i class="bi bi-upload"></i> Unggah</button>';
-        }
-
-        // Kolom LHUS (Tinjau)
-        $response[] = $btnUpload;
-
-        // Kolom Status
-        $response[] = $this->formatStatus($row->lnStatus);
-
-        // === Perubahan: Kolom Aksi hanya berisi tombol Accept/Kirim LHUS ===
-        if ($lhusInfo['has']) {
-            // aktifkan tombol accept
-            $sendBtn = '<span class="text-success btn-action" title="Kirim LHUS" onclick="confirmApprove(event, \'' . $id . '\')">'
-                     . '<i class="bi bi-check-circle"></i></span>';
-        } else {
-            // tampilkan ikon disabled/ muted jika belum ada file
-            $sendBtn = '<span class="text-muted btn-action" title="Tidak ada file LHUS">'
-                     . '<i class="bi bi-check-circle"></i></span>';
-        }
-
-        $response[] = $sendBtn;
-
-        $data[] = $response;
-        $no++;
-    }
-
-    return $this->response->setJSON(["items" => $data]);
-}
-
-public function detailList($id)
-{
-    // tolerant decrypt (id dikirim sebagai hex dari client)
-    try {
-        $lnKode = $this->encrypter->decrypt(hex2bin($id));
-    } catch (\Throwable $e) {
-        // coba decrypt langsung (jika tidak hex)
-        try {
-            $lnKode = $this->encrypter->decrypt($id);
-        } catch (\Throwable $e2) {
-            return $this->response->setJSON([
-                'items' => [],
-                'error' => 'Invalid ID'
-            ]);
-        }
-    }
-
-    // Ambil detil layanan sesuai detLnKode
-    $model = new MyModel('simlab_t_layanan_detil d');
-    $joins = [
-        'simlab_r_layanan_pengujian lp' => 'lp.ujiKode = d.detUjiKode',
-        'simlab_r_parameter p'          => 'p.paraKode = lp.ujiParaKode',
-        'simlab_r_alat a'               => 'a.alatKode = lp.ujiAlatKode',
-    ];
-    $where = ['d.detLnKode' => $lnKode];
-
-    $select = "
-        d.detUjiKode,
-        lp.ujiLayanan,
-        p.paraNama,
-        a.alatNama,
-        d.detBiaya,
-        d.detKeterangan
-    ";
-
-    try {
-        $list = $model->getAllDataWithJoinWhereOrder($joins, $where, ['d.detUjiKode' => 'ASC'], $select);
-    } catch (\Throwable $e) {
-        // jika query error, kembalikan array kosong
-        return $this->response->setJSON(['items' => []]);
-    }
-
-    $data = [];
-    $no = 1;
-    foreach ($list as $row) {
-        $layanan = isset($row->ujiLayanan) ? $row->ujiLayanan : '-';
-        if (isset($row->paraNama) && !empty($row->paraNama)) {
-            $layanan .= ' (' . $row->paraNama . ')';
-        }
-
-        $biaya = isset($row->detBiaya) ? 'Rp ' . number_format($row->detBiaya, 0, ',', '.') : '-';
-        $ket   = isset($row->detKeterangan) && !empty($row->detKeterangan) ? $row->detKeterangan : '-';
-
-        $response = [];
-        $response[] = $no++;
-        $response[] = $layanan;
-        $response[] = $biaya;
-        $response[] = $ket;
-
-        $data[] = $response;
-    }
-
-    return $this->response->setJSON(['items' => $data]);
-}
-
-    private function detectLhusFile($row)
+    /**
+     * Get data list untuk tabel hasil pengujian
+     * Mendukung filter berdasarkan status layanan
+     */
+    public function dataList()
     {
-        $possibleFields = [
-            'lnLhus', 'lnLHUS', 'lnFileLhus', 'ln_file_lhus', 'lhus_file', 'ln_lhus', 'ln_lhus_file', 'ln_file_lhus_path'
-        ];
+        $session = session();
+        $user_id = (int) ($session->get('id_user') ?? 0);
 
-        // cek field di tabel utama dulu (meskipun kita sekarang menyimpan di detil)
-        foreach ($possibleFields as $f) {
-            if (isset($row->{$f}) && !empty($row->{$f})) {
-                $raw = $row->{$f};
+        // Parse lnStatus filter: "4", "4,5,6", atau token khusus "tolak" dan "terunggah"
+        $lnStatusParam = (string) ($this->request->getGet('lnStatus') ?? '');
+        list($lnStatusFilter, $wantReject, $wantUploaded) = $this->parseStatusFilter($lnStatusParam);
 
-                if (preg_match('/^https?:\/\//i', $raw)) {
-                    // jika URL absolute, anggap valid (tidak bisa cek via filesystem)
-                    return ['has' => true, 'url' => $raw];
-                }
+        // Get layanan codes related to user via model
+        $lnKodeList = $this->hasilPengujianModel->getLayananKodesByUserId($user_id);
 
-                // Buat path fisik dan cek file ada
-                $possiblePath = FCPATH . 'uploads/lhus/' . ltrim($raw, '/');
-                if (is_file($possiblePath)) {
-                    $possibleUrl = base_url('uploads/lhus/' . ltrim($raw, '/'));
-                    return ['has' => true, 'url' => $possibleUrl];
-                }
-
-                // jika tidak ada di filesystem, jangan klaim ada
-                return ['has' => false, 'url' => '#'];
-            }
+        if (empty($lnKodeList)) {
+            return $this->response->setJSON(["items" => []]);
         }
 
-        // Cek di tabel detil (kolom detil_LHUS)
-        if (isset($row->lnKode) && !empty($row->lnKode)) {
-            try {
-                $modelDet = new MyModel('simlab_t_layanan_detil');
-                $detils = $modelDet->getAllDataById(['detLnKode' => $row->lnKode]);
-                foreach ($detils as $d) {
-                    $detFields = ['detil_LHUS', 'detil_LHU', 'detFile', 'detLhus', 'detFileLhus', 'det_file_lhus'];
-                    foreach ($detFields as $df) {
-                        if (isset($d->{$df}) && !empty($d->{$df})) {
-                            $raw = $d->{$df};
-                            if (preg_match('/^https?:\/\//i', $raw)) {
-                                return ['has' => true, 'url' => $raw];
-                            }
-                            $possiblePath = FCPATH . 'uploads/lhus/' . ltrim($raw, '/');
-                            if (is_file($possiblePath)) {
-                                $possibleUrl = base_url('uploads/lhus/' . ltrim($raw, '/'));
-                                return ['has' => true, 'url' => $possibleUrl];
-                            }
-                        }
-                    }
-                }
-            } catch (\Throwable $e) {
-                // ignore, kembalikan tidak ada
-            }
-        }
+        // Get layanan list with filters via model
+        $list = $this->hasilPengujianModel->getLayananListForPenyelia(
+            $lnKodeList,
+            $user_id,
+            $lnStatusFilter,
+            $wantReject,
+            $wantUploaded
+        );
 
-        return ['has' => false, 'url' => '#'];
-    }
+        // Format response data
+        $data = $this->formatDataListResponse($list, $user_id);
 
- public function submit($idParam = null)
-{
-    // terima POST atau URL segment
-    $encId = $this->request->getPost('id') ?? $idParam ?? $this->request->uri->getSegment(3);
-
-    if (empty($encId)) {
-        return $this->response->setJSON([
-            'res' => 'error',
-            'msg' => 'ID missing',
-            'xname' => csrf_token(),
-            'xhash' => csrf_hash()
-        ]);
-    }
-
-    // coba dekripsi tolerant (hex or direct)
-    $lnKode = null;
-    try {
-        if (preg_match('/^[0-9a-f]+$/i', $encId)) {
-            $lnKode = $this->encrypter->decrypt(hex2bin($encId));
-        } else {
-            $lnKode = $this->encrypter->decrypt($encId);
-        }
-    } catch (\Throwable $e) {
-        return $this->response->setJSON([
-            'res' => 'error',
-            'msg' => 'Invalid ID',
-            'debug' => $e->getMessage(),
-            'xname' => csrf_token(),
-            'xhash' => csrf_hash()
-        ]);
-    }
-
-    $model = new MyModel($this->table);
-    $row = $model->getDataById($this->id, $lnKode);
-    if (!$row) {
-        return $this->response->setJSON([
-            'res' => 'error',
-            'msg' => 'Record not found',
-            'xname' => csrf_token(),
-            'xhash' => csrf_hash()
-        ]);
-    }
-
-    try {
-        $res = $model->updateData(['lnStatus' => 5], $this->id, $lnKode);
-        return $this->response->setJSON([
-            'res' => $res ? true : false,
-            'msg' => $res ? 'Lhus terkirim' : 'Gagal terkirim',
-            'xname' => csrf_token(),
-            'xhash' => csrf_hash()
-        ]);
-    } catch (\Throwable $e) {
-        return $this->response->setJSON([
-            'res' => 'error',
-            'msg' => 'Error saat update: ' . $e->getMessage(),
-            'xname' => csrf_token(),
-            'xhash' => csrf_hash()
-        ]);
-    }
-}
-
-    function doUpload($file)
-    {
-        // Pastikan file valid dan belum dipindahkan
-        if (!($file && $file->isValid() && !$file->hasMoved())) {
-            return ['status' => false, 'msg' => 'File tidak valid atau sudah dipindahkan'];
-        }
-
-        // Validasi tipe file (ekstensi & MIME)
-        $allowedExt  = ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx', 'xls', 'xlsx'];
-        $allowedMime = [
-            'image/jpeg', 'image/png',
-            'application/pdf',
-            'application/msword',
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            'application/vnd.ms-excel',
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        ];
-
-        $ext  = strtolower($file->getClientExtension());
-        $tmpName = $file->getTempName();
-
-        if (!is_file($tmpName)) {
-            return ['status' => false, 'msg' => 'File sementara tidak ditemukan'];
-        }
-
-        // Deteksi MIME yang lebih andal
-        $detectedMime = null;
-        if (function_exists('finfo_open')) {
-            $finfo = finfo_open(FILEINFO_MIME_TYPE);
-            $detectedMime = finfo_file($finfo, $tmpName);
-            finfo_close($finfo);
-        } else {
-            $detectedMime = $file->getClientMimeType();
-        }
-
-        if (!in_array($ext, $allowedExt) || !in_array($detectedMime, $allowedMime)) {
-            return ['status' => false, 'msg' => 'Format file tidak diperbolehkan'];
-        }
-
-        // Jika file gambar, periksa gambar asli
-        if (in_array($ext, ['jpg', 'jpeg', 'png'])) {
-            if (@getimagesize($tmpName) === false) {
-                return ['status' => false, 'msg' => 'File bukan gambar asli'];
-            }
-        }
-
-        // Validasi ukuran file (max 5MB default)
-        if ($file->getSize() > 5 * 1024 * 1024) {
-            return ['status' => false, 'msg' => 'Ukuran file maksimal 5MB'];
-        }
-
-        // Generate filename aman
-        try {
-            $rand = bin2hex(random_bytes(8));
-        } catch (\Exception $e) {
-            $rand = bin2hex(openssl_random_pseudo_bytes(8));
-        }
-        $filename = time() . '_' . $rand . '.' . $ext;
-
-        $path = FCPATH . 'uploads/lhus';
-        if (!is_dir($path)) {
-            @mkdir($path, 0755, true);
-        }
-
-        try {
-            $file->move($path, $filename, true);
-            $fullPath = $path . DIRECTORY_SEPARATOR . $filename;
-
-            // set permission file lebih ketat
-            if (is_file($fullPath)) {
-                @chmod($fullPath, 0644);
-            }
-
-        } catch (\Exception $e) {
-            return ['status' => false, 'msg' => 'Gagal memindahkan file: ' . $e->getMessage()];
-        }
-
-        return ['status' => true, 'filename' => $filename];
+        return $this->response->setJSON(["items" => $data]);
     }
 
     /**
-     * upload() = endpoint untuk mengunggah file LHUS
-     * - Behavior: upload file -> simpan nama file ke kolom detil_LHUS pada tabel simlab_t_layanan_detil
-     * - Parameter POST:
-     *    - id (wajib): lnKode terenkripsi (hex)
-     *    - detKode (opsional): jika diberikan, update hanya baris detKode tersebut; jika tidak, update semua detil dengan detLnKode = lnKode
+     * Get detail list untuk modal
      */
-    public function upload()
+    public function detailList($id = null)
     {
-        // menerima file input name 'lhus_file' dan post 'id' (terenkripsi hex)
-        $file = $this->request->getFile('lhus_file');
-        $encId = $this->request->getPost('id');
-        $detKode = $this->request->getPost('detKode'); // optional
+        if (!$id) {
+            return $this->response->setJSON(['items' => []]);
+        }
+
+        $session = session();
+        $user_id = (int) ($session->get('id_user') ?? 0);
+
+        // Decrypt kode layanan
+        try {
+            $kode = $this->decryptId($id);
+        } catch (\Exception $e) {
+            return $this->response->setJSON(['items' => []]);
+        }
+
+        // Check user authorization via model
+        if (!$this->hasilPengujianModel->isUserAuthorizedForLayanan($kode, $user_id)) {
+            return $this->response->setJSON(['items' => []]);
+        }
+
+        // Encrypted ln
+        $encLnId = bin2hex($this->encrypter->encrypt($kode));
+
+        // Get detail list via model
+        $rows = $this->hasilPengujianModel->getDetailListForPenyelia($kode, $user_id);
+
+        // Get layanan status via model
+        $layananRow = $this->hasilPengujianModel->getLayananStatus($kode);
+        $lnStatus = $layananRow->lnStatus ?? null;
+
+        // Format response
+        $data = [];
+        $no = 1;
+        $allUploaded = true;
+
+        foreach ($rows as $row) {
+            $response = $this->formatDetailRow($row, $no++, $encLnId, $lnStatus, $allUploaded);
+            $data[] = $response;
+        }
+
+        return $this->response->setJSON([
+            'res' => 'ok',
+            'items' => $data,
+            'encLn' => $encLnId,
+            'allFilesUploaded' => $allUploaded,
+            'lnKode' => $kode,
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
+        ]);
+    }
+
+    /**
+     * Submit LHUS ke manajer
+     */
+    public function submit($idParam = null)
+    {
+        $encId = $this->request->getPost('id') ?? $idParam ?? service('uri')->getSegment(3);
 
         if (empty($encId)) {
-            return $this->response->setJSON([
-                'res' => 'error',
-                'msg' => 'ID tidak ditemukan',
-                'xname' => csrf_token(),
-                'xhash' => csrf_hash()
-            ]);
+            return $this->jsonResponse('error', 'ID missing');
         }
 
         try {
-            $lnKode = $this->encrypter->decrypt(hex2bin($encId));
+            $lnKode = $this->decryptId($encId);
         } catch (\Throwable $e) {
-            return $this->response->setJSON([
-                'res' => 'error',
-                'msg' => 'ID tidak valid',
-                'xname' => csrf_token(),
-                'xhash' => csrf_hash()
-            ]);
+            return $this->jsonResponse('error', 'Invalid ID');
+        }
+
+        $session = session();
+        $user_id = (int) ($session->get('id_user') ?? 0);
+
+        // Check if record exists
+        $model = new MyModel($this->table);
+        $row = $model->getDataById($this->id, $lnKode);
+        if (!$row) {
+            return $this->jsonResponse('error', 'Record not found');
+        }
+
+        // Check for missing files
+        $missingData = $this->hasilPengujianModel->checkMissingFilesForUser($lnKode, $user_id);
+        
+        if ($missingData['missingCount'] > 0) {
+            return $this->jsonResponse(true, 
+                'Berhasil dikirim, sisa ' . $missingData['missingCount'] . ' layanan yang perlu diaccc', 
+                [
+                    'waiting_others' => true,
+                    'pending_total' => $missingData['missingCount'],
+                    'missing_detKode' => $missingData['missingItems'],
+                    'parent_updated' => false
+                ]
+            );
+        }
+
+        // Process submission with transaction
+        return $this->processSubmission($lnKode, $user_id);
+    }
+
+    /**
+     * Upload LHUS file
+     */
+    public function upload()
+    {
+        $file = $this->request->getFile('lhus_file');
+        $encId = $this->request->getPost('id');
+        $detKode = $this->request->getPost('detKode');
+
+        $session = session();
+        $user_id = $session->get('id_user');
+
+        if (empty($encId)) {
+            return $this->jsonResponse('error', 'ID tidak ditemukan');
+        }
+
+        try {
+            $lnKode = $this->decryptId($encId);
+        } catch (\Throwable $e) {
+            return $this->jsonResponse('error', 'ID tidak valid');
         }
 
         if (!($file && $file->isValid() && !$file->hasMoved())) {
-            return $this->response->setJSON([
-                'res' => 'error',
-                'msg' => 'File tidak valid atau tidak dipilih',
-                'xname' => csrf_token(),
-                'xhash' => csrf_hash()
-            ]);
+            return $this->jsonResponse('error', 'File tidak valid atau tidak dipilih');
         }
 
-        // Upload file ke storage
+        // Upload file
         $uploadResult = $this->doUpload($file);
         if (!$uploadResult['status']) {
-            return $this->response->setJSON([
-                'res' => 'error',
-                'msg' => $uploadResult['msg'],
-                'xname' => csrf_token(),
-                'xhash' => csrf_hash()
-            ]);
+            return $this->jsonResponse('error', $uploadResult['msg']);
         }
 
         $filename = $uploadResult['filename'];
 
-        // Simpan ke tabel detil: kolom detil_LHUS
-        $modelDet = new MyModel('simlab_t_layanan_detil');
-        $db = \Config\Database::connect();
-
+        // Save file info to database via model
         try {
             if (!empty($detKode)) {
-                // update single detKode
-                $ok = $db->table('simlab_t_layanan_detil')->where('detKode', $detKode)->update(['detil_LHUS' => $filename]);
-
-                if ($ok) {
-                    return $this->response->setJSON([
-                        'res' => true,
-                        'msg' => 'File LHUS berhasil diunggah ke detail (detKode).',
-                        'url' => base_url('uploads/lhus/' . $filename),
-                        'detKode' => $detKode,
-                        'xname' => csrf_token(),
-                        'xhash' => csrf_hash()
-                    ]);
-                } else {
-                    // rollback file
-                    $savedPath = FCPATH . 'uploads/lhus/' . $filename;
-                    if (is_file($savedPath)) @unlink($savedPath);
-
-                    $dberr = $db->error();
-                    return $this->response->setJSON([
-                        'res' => 'error',
-                        'msg' => 'Gagal menyimpan ke detail (detKode). DB Error: ' . ($dberr['message'] ?? 'Unknown'),
-                        'db' => $dberr,
-                        'xname' => csrf_token(),
-                        'xhash' => csrf_hash()
-                    ]);
-                }
+                return $this->handleSingleFileUpload($detKode, $lnKode, $filename, $user_id);
             } else {
-                // update semua detil yang berkaitan dengan lnKode
-                $ok = $db->table('simlab_t_layanan_detil')->where('detLnKode', $lnKode)->update(['detil_LHUS' => $filename]);
-
-                if ($ok) {
-                    return $this->response->setJSON([
-                        'res' => true,
-                        'msg' => 'File LHUS berhasil diunggah ke semua detil terkait.',
-                        'url' => base_url('uploads/lhus/' . $filename),
-                        'xname' => csrf_token(),
-                        'xhash' => csrf_hash()
-                    ]);
-                } else {
-                    // rollback file
-                    $savedPath = FCPATH . 'uploads/lhus/' . $filename;
-                    if (is_file($savedPath)) @unlink($savedPath);
-
-                    $dberr = $db->error();
-                    return $this->response->setJSON([
-                        'res' => 'error',
-                        'msg' => 'Gagal menyimpan ke detil. DB Error: ' . ($dberr['message'] ?? 'Unknown'),
-                        'db' => $dberr,
-                        'xname' => csrf_token(),
-                        'xhash' => csrf_hash()
-                    ]);
-                }
+                return $this->handleBulkFileUpload($lnKode, $filename, $user_id);
             }
         } catch (\Throwable $e) {
-            // rollback file
-            $savedPath = FCPATH . 'uploads/lhus/' . $filename;
-            if (is_file($savedPath)) @unlink($savedPath);
-
-            return $this->response->setJSON([
-                'res' => 'error',
-                'msg' => 'Error saat menyimpan ke detil: ' . $e->getMessage(),
-                'xname' => csrf_token(),
-                'xhash' => csrf_hash()
-            ]);
+            $this->deleteUploadedFile($filename);
+            return $this->jsonResponse('error', 'Error saat menyimpan ke detil: ' . $e->getMessage());
         }
     }
 
-    private function formatStatus($status)
+    /**
+     * Get sample identity information
+     */
+    public function getSampleIdentity($lnKode = null)
     {
-        switch ($status) {
-            case 0: return '<span class="badge bg-secondary">Draft</span>';
-            case 1: return '<span class="badge bg-warning">In Review (Manajer)</span>';
-            case 2: return '<span class="badge bg-danger">Ditolak</span>';
-            case 3: return '<span class="badge bg-info">In Review (Admin)</span>';
-            case 4: return '<span class="badge bg-primary">Menunggu Hasil Uji</span>';
-            case 5: return '<span class="badge bg-primary">Verifikasi Manajer </span>';
-            case 6: return '<span class="badge bg-success">LHUS Disetujui</span>';
-            case 7: return '<span class="badge bg-primary">Memproses LHU</span>';
-            case 8: return '<span class="badge bg-success">LHU Disetujui</span>';
-            case 9: return '<span class="badge bg-dark">Pengujian Selesai</span>';
-            default: return '<span class="badge bg-dark">Unknown</span>';
+        if (!$lnKode) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Kode layanan tidak ditemukan'
+            ]);
         }
+
+        $modelIdentitasSampel = new MyModel('t_identitas_sampel');
+        $sampleData = $modelIdentitasSampel->getDataById('kode_layanan', $lnKode);
+
+        if (!$sampleData) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Data identitas sampel tidak ditemukan'
+            ]);
+        }
+
+        return $this->response->setJSON([
+            'success' => true,
+            'data' => [
+                'jenis' => $sampleData->jenis ?? '-',
+                'kemasan' => $sampleData->kemasan ?? '-',
+                'sifat' => $sampleData->sifat ?? '-',
+                'sisa' => $sampleData->sisa ?? '-',
+                'deskripsi' => $sampleData->deskripsi ?? '-',
+                'keterangan_khusus' => $sampleData->keterangan_khusus ?? '-'
+            ]
+        ]);
+    }
+
+    
+    /**
+     * Parse status filter dari parameter GET
+     */
+    private function parseStatusFilter(string $lnStatusParam): array
+    {
+        $lnStatusFilter = [];
+        $wantReject = false;
+        $wantUploaded = false;
+        
+        if ($lnStatusParam !== '') {
+            foreach (preg_split('/[,\s]+/', $lnStatusParam, -1, PREG_SPLIT_NO_EMPTY) as $p) {
+                $tp = strtolower(trim($p));
+                if (in_array($tp, ['tolak','reject','ditolak'], true)) {
+                    $wantReject = true;
+                    continue;
+                }
+                if (in_array($tp, ['terunggah','uploaded'], true)) {
+                    $wantUploaded = true;
+                    continue;
+                }
+                if ($tp !== '' && is_numeric($tp)) {
+                    $lnStatusFilter[] = (int) $tp;
+                }
+            }
+            $lnStatusFilter = array_values(array_unique($lnStatusFilter));
+        }
+
+        return [$lnStatusFilter, $wantReject, $wantUploaded];
+    }
+
+    /**
+     * Format data list response untuk tabel
+     */
+    private function formatDataListResponse(array $list, int $user_id): array
+    {
+        $data = [];
+        
+        foreach ($list as $row) {
+            if ((int) $row->lnStatus < 4)
+                continue;
+
+            $id = bin2hex($this->encrypter->encrypt($row->lnKode));
+            $pemesanNama = !empty($row->pemesan_name) ? $row->pemesan_name : '-';
+            $tipe = !empty($row->pemesan_identity) ? $row->pemesan_identity : '-';
+            $tanggal = !empty($row->lnTgl) ? date('d-m-Y H:i', strtotime($row->lnTgl)) : '-';
+
+            $colA = '
+                <div style="line-height:1.3;">
+                    <span style="font-size:1rem; font-weight:600;">' . esc($pemesanNama) . '</span><br>
+                    <span style="font-size:0.9rem; color:#555;">' . esc($tanggal) . ' | ' . esc($tipe) . '</span>
+                </div>';
+
+            $colB = $this->formatStatusForPenyelia($row->lnStatus, $row->lnKode, $user_id);
+
+            $btn  = '<button type="button" class="btn btn-sm btn-info" title="Lihat Detail Item Layanan" onclick="loadDetail(\'' . $id . '\', \'' . $row->lnKode . '\')">'
+                  . '<i class="bi bi-upload"></i>Unggah LHUS</button>';
+
+            $data[] = [$colA, $colB, $btn];
+        }
+
+        return $data;
+    }
+
+    /**
+     * Format detail row untuk modal
+     */
+    private function formatDetailRow(object $row, int $no, string $encLnId, ?int $lnStatus, bool &$allUploaded): array
+    {
+        $response = [];
+        $response[] = $no;
+        $response[] = $row->nama_layanan ?? '-';
+        $response[] = isset($row->jumlah) ? (int)$row->jumlah : 0;
+
+        // Format metode
+        $metodeHtml = $this->formatKeteranganHtml($row->metode_nama ?? '');
+        $response[] = $metodeHtml;
+
+        // Check file status
+        $detFilesMax = isset($row->detFilesMax) ? (int)$row->detFilesMax : null;
+        $fileRow = $this->hasilPengujianModel->getFileLhus($row->kode);
+        
+        $rowHasFile = false;
+        $fileUrl = null;
+
+        if ($fileRow && !empty($fileRow->file_lhus)) {
+            $rowHasFile = true;
+            $fileUrl = base_url('uploads/lhus/' . ltrim($fileRow->file_lhus, '/'));
+        }
+
+        // Cek apakah file sudah terupload (status = 3) dari kolom detFilesMax
+        // Status 3 = terupload, siap dikirim
+        if ($detFilesMax !== 3) {
+            $allUploaded = false;
+        }
+
+        // Format action buttons
+        $combinedHtml = $this->formatActionButtons($rowHasFile, $fileUrl, $row->kode, $encLnId);
+        $response[] = $this->formatStatusBadge($detFilesMax, $lnStatus, $rowHasFile);
+        $response[] = $combinedHtml;
+
+        // Format keterangan manajer
+        $keteranganManajerHtml = $this->formatKeteranganManajerHtml($row->detKetManajer ?? '');
+        $response[] = $keteranganManajerHtml;
+
+        // Username approver
+        $accBy = !empty($row->acc_by) ? esc($row->acc_by) : '-';
+        $response[] = '<div class="text-center">'.$accBy.'</div>';
+
+        return $response;
+    }
+
+    /**
+     * Format metode HTML
+     */
+    private function formatKeteranganHtml(string $text): string
+    {
+        return '<div style="display:block; max-width:260px; min-width:160px; width:100%;'
+            . 'max-height:120px; min-height:48px; overflow-y:auto; overflow-x:hidden;'
+            . 'padding:4px 6px; border:1px solid #ddd; border-radius:4px; background:#f9f9f9;'
+            . 'white-space:pre-wrap; word-break:break-word; font-size:0.9rem;">'
+            . htmlspecialchars($text, ENT_QUOTES, 'UTF-8') .
+            '</div>';
+    }
+
+    /**
+     * Format keterangan manajer HTML
+     */
+    private function formatKeteranganManajerHtml(string $text): string
+    {
+        return '<div style="display:block; max-width:260px; min-width:160px; width:100%;'
+            . 'max-height:120px; min-height:48px; overflow-y:auto; overflow-x:hidden;'
+            . 'padding:4px 6px; border:1px solid #e6e6ff; border-radius:4px; background:#fbfbff;'
+            . 'white-space:pre-wrap; word-break:break-word; font-size:0.9rem; color:#333;">'
+            . htmlspecialchars($text, ENT_QUOTES, 'UTF-8') .
+            '</div>';
+    }
+
+    /**
+     * Format action buttons untuk upload dan view file
+     */
+    private function formatActionButtons(bool $hasFile, ?string $fileUrl, $detKode, string $encLnId): string
+    {
+        $combinedHtml = '<div class="d-flex justify-content-center gap-2 align-items-center">';
+
+        // Eye button
+        if ($hasFile && $fileUrl) {
+            $eyeButton = '<span class="text-primary btn-action" title="Lihat File" onclick="window.open(\'' . esc($fileUrl) . '\', \'_blank\')"><i class="bi bi-eye"></i></span>';
+        } else {
+            $eyeButton = '<span class="text-secondary btn-action" title="Belum ada file"><i class="bi bi-eye"></i></span>';
+        }
+
+        // Upload button
+        $detKodeAttr = htmlspecialchars($detKode ?? '', ENT_QUOTES, 'UTF-8');
+        $uploadInput = '<label class="mb-0 position-relative" style="cursor:pointer;">'
+                    . '<input type="file" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx" '
+                    . 'data-detlist="' . $detKodeAttr . '" data-detkode="' . $detKodeAttr . '" data-ln="' . $encLnId . '" '
+                    . 'class="d-none lhus-uploader-input" onchange="autoUploadFile(this)" />'
+                    . '<span class="text-primary btn-action" title="Unggah / Ubah File LHUS"><i class="bi bi-upload"></i></span>'
+                    . '</label>';
+
+        $combinedHtml .= $eyeButton . $uploadInput . '</div>';
+
+        return $combinedHtml;
+    }
+
+    /**
+     * Format status badge
+     */
+    private function formatStatusBadge(?int $detStatusLHUS, ?int $lnStatusInt, bool $rowHasFile): string
+    {
+        if ($detStatusLHUS === 2) {
+            return '<div class="text-center"><span class="badge bg-danger">lhus ditolak</span></div>';
+        } elseif ($detStatusLHUS === 3 && $rowHasFile) {
+            return '<div class="text-center"><span class="badge bg-info">lhus ter-unggah</span></div>';
+        } elseif ($detStatusLHUS === 1) {
+            return '<div class="text-center"><span class="badge bg-success">lhus diterima</span></div>';
+        } elseif ($lnStatusInt === 5) {
+            return '<div class="text-center"><span class="badge bg-primary">terkirim</span></div>';
+        } elseif ($rowHasFile) {
+            return '<div class="text-center"><span class="badge bg-success">ter-unggah</span></div>';
+        } else {
+            return '<div class="text-center"><span class="badge bg-warning text-dark">belum upload</span></div>';
+        }
+    }
+
+    /**
+     * Process submission dengan transaction
+     */
+    private function processSubmission($lnKode, int $user_id): object
+    {
+        try {
+            $this->hasilPengujianModel->transBegin();
+
+            // Update files status dari 3 (terunggah) ke 0 (terkirim)
+            $this->hasilPengujianModel->updateFilesStatusForUser($lnKode, $user_id, 3, 0);
+
+            // Update status di t_files_lhus
+            $this->hasilPengujianModel->updateFilesLhusStatusForUser($lnKode, $user_id, 3, 0);
+
+            // Update terima_layanan_by
+            $this->hasilPengujianModel->updateTerimaLayananBy($lnKode, $user_id, $user_id);
+
+            // Update layanan status ke 5 dan log sampel saat kirim
+            $this->hasilPengujianModel->updateLayananStatus($lnKode, 5);
+            $this->hasilPengujianModel->updateLogSampelVerifikasiHasilUji($lnKode);
+            
+            // Check if all files uploaded
+            $totalBelumUpload = $this->hasilPengujianModel->countMissingFilesForLayanan($lnKode);
+            $parentUpdated = true;
+
+            // Commit transaction
+            if ($this->hasilPengujianModel->transStatus() === false) {
+                $this->hasilPengujianModel->transRollback();
+                $dberr = $this->hasilPengujianModel->getError();
+                return $this->jsonResponse('error', 
+                    'Gagal menyimpan status pada detil/parent (transaksi gagal). DB Error: ' . ($dberr['message'] ?? 'Unknown'),
+                    ['db' => $dberr]
+                );
+            } else {
+                $this->hasilPengujianModel->transCommit();
+            }
+
+            // Prepare response
+            if ($totalBelumUpload > 0) {
+                return $this->jsonResponse(true, 
+                    'LHUS Anda berhasil dikirim ke manajer. Masih ada ' . $totalBelumUpload . ' layanan lain yang belum terupload.',
+                    [
+                        'waiting_others' => true,
+                        'pending_total' => $totalBelumUpload,
+                        'parent_updated' => false
+                    ]
+                );
+            }
+
+            return $this->jsonResponse(true, 
+                'Semua LHUS dalam invoice ini sudah lengkap dan terkirim ke manajer teknis!',
+                [
+                    'waiting_others' => false,
+                    'parent_updated' => $parentUpdated
+                ]
+            );
+            
+        } catch (\Throwable $e) {
+            if ($this->hasilPengujianModel->transStatus() !== false) {
+                $this->hasilPengujianModel->transRollback();
+            }
+            $dberr = $this->hasilPengujianModel->getError();
+            return $this->jsonResponse('error', 'Error saat update: ' . $e->getMessage(), ['db' => $dberr]);
+        }
+    }
+
+    /**
+     * Handle single file upload
+     */
+    private function handleSingleFileUpload(int $detKode, $lnKode, string $filename, int $user_id): object
+    {
+        // Update status files ke 3 (terunggah, belum dikirim)
+        $ok = $this->hasilPengujianModel->updateDetailFilesStatus($detKode, 3);
+
+        if ($ok) {
+            // Save file info
+            $this->hasilPengujianModel->saveFileLhus($detKode, $lnKode, $filename, $user_id, 3);
+
+            return $this->jsonResponse(true, 
+                'File LHUS berhasil diunggah (status: terunggah)',
+                [
+                    'url' => base_url('uploads/lhus/' . $filename),
+                    'detKode' => $detKode
+                ]
+            );
+        } else {
+            $this->deleteUploadedFile($filename);
+            $dberr = $this->hasilPengujianModel->getError();
+            return $this->jsonResponse('error', 
+                'Gagal menyimpan ke detail (detKode). DB Error: ' . ($dberr['message'] ?? 'Unknown'),
+                ['db' => $dberr]
+            );
+        }
+    }
+
+    /**
+     * Handle bulk file upload
+     */
+    private function handleBulkFileUpload($lnKode, string $filename, int $user_id): object
+    {
+        // Update status files ke 3 untuk semua detil yang relevan dengan user
+        $ok = $this->hasilPengujianModel->updateFilesStatusForUser($lnKode, $user_id, null, 3);
+
+        if ($ok) {
+            // Get detail rows
+            $detRows = $this->hasilPengujianModel->getDetailRowsForBulkUpload($lnKode, $user_id);
+
+            foreach ($detRows as $dr) {
+                $this->hasilPengujianModel->saveFileLhus($dr->kode, $lnKode, $filename, $user_id, 3);
+            }
+
+            return $this->jsonResponse(true, 
+                'File LHUS berhasil diunggah untuk layanan terkait Anda (status: terunggah)',
+                ['url' => base_url('uploads/lhus/' . $filename)]
+            );
+        } else {
+            $this->deleteUploadedFile($filename);
+            $dberr = $this->hasilPengujianModel->getError();
+            return $this->jsonResponse('error', 
+                'Gagal menyimpan ke detil. DB Error: ' . ($dberr['message'] ?? 'Unknown'),
+                ['db' => $dberr]
+            );
+        }
+    }
+
+    /**
+     * Upload file fisik ke server
+     */
+    private function doUpload(\CodeIgniter\HTTP\Files\UploadedFile $file): array
+    {
+        $allowed = ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx', 'xls', 'xlsx'];
+        $max = 5 * 1024 * 1024;
+
+        if (!$file->isValid() || $file->hasMoved()) {
+            return ['status' => false, 'msg' => 'File tidak valid atau sudah dipindah'];
+        }
+
+        if ($file->getSize() > $max) {
+            return ['status' => false, 'msg' => 'Ukuran file melebihi 5MB'];
+        }
+
+        $ext = strtolower($file->getClientExtension() ?: pathinfo($file->getClientName(), PATHINFO_EXTENSION));
+        if (!in_array($ext, $allowed)) {
+            return ['status' => false, 'msg' => 'Ekstensi file tidak diperbolehkan'];
+        }
+
+        $targetFolder = FCPATH . 'uploads/lhus/';
+        if (!is_dir($targetFolder)) {
+            if (!mkdir($targetFolder, 0755, true)) {
+                return ['status' => false, 'msg' => 'Gagal membuat folder upload'];
+            }
+        }
+
+        $newName = uniqid('lhus_', true) . '.' . $ext;
+        try {
+            $moved = $file->move($targetFolder, $newName);
+            if ($moved) {
+                return ['status' => true, 'filename' => $newName];
+            } else {
+                return ['status' => false, 'msg' => 'Gagal memindahkan file'];
+            }
+        } catch (\Throwable $e) {
+            return ['status' => false, 'msg' => 'Exception saat upload: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Delete uploaded file
+     */
+    private function deleteUploadedFile(string $filename): void
+    {
+        $savedPath = FCPATH . 'uploads/lhus/' . $filename;
+        if (is_file($savedPath)) {
+            @unlink($savedPath);
+        }
+    }
+
+    /**
+     * Decrypt ID dari encrypted string
+     */
+    private function decryptId(string $encId): string
+    {
+        if (preg_match('/^[0-9a-f]+$/i', $encId)) {
+            return $this->encrypter->decrypt(hex2bin($encId));
+        } else {
+            return $this->encrypter->decrypt($encId);
+        }
+    }
+
+    /**
+     * Format JSON response helper
+     */
+    private function jsonResponse($res, string $msg, array $extra = []): object
+    {
+        $response = array_merge([
+            'res' => $res,
+            'msg' => $msg,
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
+        ], $extra);
+
+        return $this->response->setJSON($response);
+    }
+
+    /**
+     * Format status badge untuk layanan umum
+     */
+    private function formatStatus($lnStatus)
+    {
+        switch ((int) $lnStatus) {
+            case 0:
+                return '<span class="badge bg-secondary">Draft</span>';
+            case 1:
+                return '<span class="badge bg-warning">In Review (Manajer)</span>';
+            case 2:
+                return '<span class="badge bg-danger">Ditolak</span>';
+            case 3:
+                return '<span class="badge bg-info">In Review (Admin)</span>';
+            case 4:
+                return '<span class="badge bg-primary">Sedang dalam pengujian</span>';
+            case 5:
+                return '<span class="badge bg-primary">LHUS sedang diverifikasi manajer</span>';
+            case 6:
+                return '<span class="badge bg-success">LHUS Disetujui</span>';
+            case 7:
+                return '<span class="badge bg-primary">Memproses LHU</span>';
+            case 8:
+                return '<span class="badge bg-success">LHU sedang diproses</span>';
+            case 9:
+                return '<span class="badge bg-dark">Pengujian Selesai</span>';
+            default:
+                return '<span class="badge bg-dark">Unknown</span>';
+        }
+    }
+
+    /**
+     * Format status untuk penyelia (dengan logic khusus berdasarkan files status)
+     */
+    private function formatStatusForPenyelia($lnStatus, $lnKode, $userId)
+    {
+        // PRIORITAS 1: ada detail milik user yang ditolak (files = 2)
+        if ($this->hasilPengujianModel->hasRejectedLhus($lnKode, $userId)) {
+            return '<span class="badge bg-danger">LHUS ditolak</span>';
+        }
+
+        // PRIORITAS 2: Cek apakah ada yang statusnya 3 (terunggah tapi belum dikirim)
+        if ($this->hasilPengujianModel->hasUploadedLhus($lnKode, $userId)) {
+            return '<span class="badge bg-info">Terunggah (belum dikirim)</span>';
+        }
+
+        // PRIORITAS 3: Cek apakah sudah diterima semua (files = 1)
+        if ($this->hasilPengujianModel->allUserLhusAccepted($lnKode, $userId)) {
+            return '<span class="badge bg-success">LHUS diterima</span>';
+        }
+
+        // PRIORITAS 4: Cek apakah sudah terkirim ke manajer (files = 0)
+        if ($this->hasilPengujianModel->hasSentLhus($lnKode, $userId)) {
+            return '<span class="badge bg-primary">Terkirim ke manajer teknis</span>';
+        }
+
+        // Fallback ke mapping lnStatus
+        return $this->formatStatus((int) $lnStatus);
     }
 }

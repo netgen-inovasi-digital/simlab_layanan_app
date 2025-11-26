@@ -99,7 +99,7 @@
             <span class="navbar-toggler" id="sidebarToggle">
                 <span class="navbar-toggler-icon"></span>
             </span>
-            <div class="me-4 d-flex">
+            <div class="me-4 d-flex align-items-center">
                 <a href="<?= base_url() ?>" target="_blank">
                     <button aria-label="button" type="button" class="btn btn-outline-primary btn-sm d-flex align-items-center">
                         <i class="bi bi-globe" style="font-size: 1rem;"></i>
@@ -107,7 +107,13 @@
                     </button>
                 </a>
                 <span class="divider vr ms-2 me-2"></span>
-                <a href="<?= base_url('profilpw') ?>" class="header-link nav-link" title="Profil">
+                <?php
+                $session = session();
+                $nama = esc($session->get('nama') ?? 'Pengguna');
+                $nama_role = esc($session->get('nama_role') ?? 'Role');
+                ?>
+                <span class="fw-bold me-3 d-none d-sm-block"><?= "{$nama} ({$nama_role})" ?></span>
+                <a href="<?= base_url('profiluser') ?>" class="header-link nav-link" title="Profil">
                     <button aria-label="button" type="button" class="btn btn-icon p-0 text-secondary">
                         <i class="bi bi-person-fill" style="font-size: 1.3rem;"></i>
                     </button>
@@ -132,6 +138,7 @@
     <script src="<?php echo base_url('assets/js/app.js?v=0.03') ?>"></script>
     <script src="<?php echo base_url('assets/js/sayJS.js?v=0.02') ?>"></script>
     <script src="<?php echo base_url('assets/js/sayTable.js?v=0.11') ?>"></script>
+    <script src="<?php echo base_url('assets/js/sayTable1.js?v=0.01') ?>"></script>
 
     <!-- Include the Quill library -->
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>

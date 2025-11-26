@@ -6,6 +6,14 @@
             </div>
 
             <div class="card-body">
+
+                <?php if (!empty($error)): ?>
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <?php echo esc($error); ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                <?php endif; ?>
                 <div class="row mb-3">
                     <div class="col-12">
                         <div class="card border-0 bg-light">
@@ -28,7 +36,7 @@
                                     <div class="col-md-2">
                                         <label for="periode" class="form-label small">Periode</label>
                                         <select id="periode" class="form-select">
-                                            <option value="hari_ini">Hari Ini</option>
+                                            <option value="hari_ini" selected>Hari Ini</option>
                                             <option value="7_hari">7 Hari Terakhir</option>
                                             <option value="pilih_bulan">Pilih Bulan</option>
                                             <option value="custom">Pilih Tanggal</option>
@@ -66,10 +74,11 @@
                                         <input type="date" id="akhir" class="form-control" disabled>
                                     </div>
 
-                                    <div class="col-md-2 d-flex align-items-end">
+                                    <div class="col-md-3 d-flex align-items-end">
                                         <div class="d-flex gap-2 w-100">
-                                            <button type="button" class="btn btn-primary w-100 rounded-pill py-2 tampil">Tampilkan</button>
-                                            <button type="button" class="btn btn-success w-100 rounded-pill py-2 download">Download</button>
+                                            <button type="button" class="btn btn-success w-100 rounded-pill py-2 download">
+                                                <i class="bi bi-file-earmark-excel me-1"></i> Download
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -78,36 +87,84 @@
                     </div>
                 </div>
 
-                <div id="rekap-hasil" class="mt-4"></div>
+                <div id="rekap-hasil" class="mt-4">
+                </div>
             </div>
         </div>
     </div>
 </div>
 
+<div class="modal fade" id="modalDownloadRekap" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="modalDownloadRekapLabel" aria-hidden="true">
+    <div class="modal-dialog modal-md" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalDownloadRekapLabel"><i class="bi bi-file-earmark-excel me-2"></i>Download Rekap Pembayaran</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label for="downloadJenisLayanan" class="form-label">Jenis Layanan</label>
+                        <select id="downloadJenisLayanan" class="form-select">
+                            <option value="semua">Semua</option>
+                            <?php foreach ($jenis_layanan_options as $option): ?>
+                            <option value="<?php echo esc($option->jenKode); ?>">
+                                <?php echo esc($option->jenKode . ' - ' . $option->jenNama); ?>
+                            </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="downloadTanggalAwal" class="form-label">Tanggal Awal</label>
+                        <input type="date" id="downloadTanggalAwal" class="form-control">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="downloadTanggalAkhir" class="form-label">Tanggal Akhir</label>
+                        <input type="date" id="downloadTanggalAkhir" class="form-control">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-light" type="button" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i> Batal
+                </button>
+                <button class="btn btn-success" type="button" onclick="executeDownload()">
+                    <i class="bi bi-download me-1"></i> Download Excel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 <script>
-    // --- ELEMENT SELECTORS ---
-    const periodeSelect = document.getElementById('periode');
-    const awalInput = document.getElementById('awal');
-    const akhirInput = document.getElementById('akhir');
-    const bulanWrapper = document.getElementById('bulan-wrapper');
-    const tahunWrapper = document.getElementById('tahun-wrapper');
-    const bulanSelect = document.getElementById('bulan');
-    const tahunInput = document.getElementById('tahun');
-    const awalWrapper = document.getElementById('awal-wrapper');
-    const akhirWrapper = document.getElementById('akhir-wrapper');
-    const rekapHasilContainer = document.getElementById('rekap-hasil');
+    var jenisLayananSelect = document.getElementById('jenis_layanan');
+    var periodeSelect = document.getElementById('periode');
+    var awalInput = document.getElementById('awal');
+    var akhirInput = document.getElementById('akhir');
+    var bulanWrapper = document.getElementById('bulan-wrapper');
+    var tahunWrapper = document.getElementById('tahun-wrapper');
+    var bulanSelect = document.getElementById('bulan');
+    var tahunInput = document.getElementById('tahun');
+    var awalWrapper = document.getElementById('awal-wrapper');
+    var akhirWrapper = document.getElementById('akhir-wrapper');
+    var rekapHasilContainer = document.getElementById('rekap-hasil');
 
-    // --- HELPER FUNCTIONS ---
     function formatDate(date) {
         return date.toISOString().split('T')[0];
     }
 
-    // --- PENGELOLAAN FILTER TANGGAL ---
+    function debounce(func, delay) {
+        let timeout;
+        return function(...args) {
+            const context = this;
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(context, args), delay);
+        };
+    }
+
     function setTanggalOtomatis() {
         const now = new Date();
         let awal, akhir;
 
-        // Reset semua dulu
         awalWrapper.classList.remove('d-none');
         akhirWrapper.classList.remove('d-none');
         bulanWrapper.classList.add('d-none');
@@ -116,11 +173,9 @@
         switch (periodeSelect.value) {
             case 'hari_ini':
                 awal = akhir = formatDate(now);
-                // DIKEMBALIKAN: Logika disabled/enabled dikembalikan seperti kode asli Anda
                 awalInput.disabled = true;
                 akhirInput.disabled = true;
                 break;
-
             case '7_hari':
                 const tujuhHariLalu = new Date(now);
                 tujuhHariLalu.setDate(now.getDate() - 6);
@@ -129,71 +184,109 @@
                 awalInput.disabled = true;
                 akhirInput.disabled = true;
                 break;
-
             case 'pilih_bulan':
                 awalWrapper.classList.add('d-none');
                 akhirWrapper.classList.add('d-none');
                 bulanWrapper.classList.remove('d-none');
                 tahunWrapper.classList.remove('d-none');
-                return; // Langsung keluar agar value tidak di-set
-
+                return;
             case 'custom':
                 awalInput.disabled = false;
                 akhirInput.disabled = false;
                 awalInput.value = '';
                 akhirInput.value = '';
-                return; // Langsung keluar agar value tidak di-set
+                return;
         }
-
         awalInput.value = awal;
         akhirInput.value = akhir;
     }
 
-    // --- FUNGSI UNTUK MERENDER TABEL ---
-    function renderRekapTable(data) {
-        const {
-            ulm,
-            non_ulm
-        } = data;
-        const formatCurrency = (number) => `Rp ${Intl.NumberFormat('id-ID').format(number)}`;
+    function renderAllTables(dataArray) {
+        const formatCurrency = (number) => `Rp ${Intl.NumberFormat('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(number)}`;
+        let allTablesHTML = ''; 
 
-        const createRow = (title, dataRow) => `
-            <tr>
-                <td class="text-start fw-bold">${title}</td>
-                <td>${formatCurrency(dataRow.total_pembayaran)}</td>
-                <td>${formatCurrency(dataRow.bahan_kimia)}</td>
-                <td>${formatCurrency(dataRow.operasional)}</td>
-                <td>${formatCurrency(dataRow.jasa_profesi)}</td>
-                <td>${formatCurrency(dataRow.pendapatan_instansi)}</td>
-            </tr>
-        `;
+        if (!dataArray || dataArray.length === 0) {
+            return '<div class="alert alert-info">Tidak ada data rekap untuk ditampilkan.</div>';
+        }
+        
+        dataArray.forEach(data => {
+            const { title, kolom_header, ulm_detail, non_ulm_detail, total_ulm, total_non_ulm } = data;
 
-        const tableHTML = `
-        <h5 class="mb-3">A. Layanan Pengujian Sampel</h5>
-        <div class="table-responsive">
-            <table class="table table-bordered text-center">
-                <thead class="table-light">
-                    <tr>
-                        <th class="text-start">Pendapatan</th>
-                        <th>Total Pembayaran</th>
-                        <th>Bahan Kimia (35%)</th>
-                        <th>Operasional (10%)</th>
-                        <th>Jasa Profesi (45%)</th>
-                        <th>Pendapatan Instansi (10%)</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${createRow('ULM', ulm)}
-                    ${createRow('Non-ULM', non_ulm)}
-                </tbody>
-            </table>
-        </div>`;
-        return tableHTML;
+            let headerHTML = '';
+            if (kolom_header && kolom_header.length > 0) {
+                kolom_header.forEach(kolom => {
+                    headerHTML += `<th class="text-nowrap">${kolom.kdKolomLabel} (${kolom.kdPersenNONULM}%)</th>`;
+                });
+            }
+
+            let ulmRowHTML = '';
+            if (kolom_header && kolom_header.length > 0) {
+                if (ulm_detail && ulm_detail.length > 0) {
+                    ulm_detail.forEach(detail => {
+                        ulmRowHTML += `<td>${formatCurrency(detail.value)}</td>`;
+                    });
+                } else {
+                    kolom_header.forEach(() => {
+                         ulmRowHTML += `<td>${formatCurrency(0)}</td>`;
+                    });
+                }
+            }
+
+
+            let nonUlmRowHTML = '';
+             if (kolom_header && kolom_header.length > 0) {
+                if (non_ulm_detail && non_ulm_detail.length > 0) {
+                    non_ulm_detail.forEach(detail => {
+                        nonUlmRowHTML += `<td>${formatCurrency(detail.value)}</td>`;
+                    });
+                } else {
+                    kolom_header.forEach(() => {
+                         nonUlmRowHTML += `<td>${formatCurrency(0)}</td>`;
+                    });
+                }
+            }
+            
+            allTablesHTML += `
+            <div class="mb-4"> 
+                <h5 class="mb-3">${title}</h5>
+                <div class="table-responsive">
+                    <table class="table table-bordered text-center">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="text-start">Pendapatan</th>
+                                <th class="text-nowrap">Total Pembayaran</th>
+                                ${headerHTML} 
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="text-start fw-bold">ULM</td>
+                                <td>${formatCurrency(total_ulm)}</td>
+                                ${ulmRowHTML}
+                            </tr>
+                            <tr>
+                                <td class="text-start fw-bold">Non-ULM</td>
+                                <td>${formatCurrency(total_non_ulm)}</td>
+                                ${nonUlmRowHTML}
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            `;
+        });
+        
+        return allTablesHTML; 
     }
 
-    // --- FUNGSI UTAMA UNTUK MENGAMBIL DAN MENAMPILKAN DATA ---
     function tampilkanRekap() {
-        const jenis = document.getElementById('jenis_layanan').value;
+        rekapHasilContainer.innerHTML = `
+            <div class="d-flex justify-content-center align-items-center" style="min-height: 150px;">
+                <span class="spinner-border text-primary" role="status" aria-hidden="true"></span>
+                <span class="ms-2">Memuat data...</span>
+            </div>`;
+
+        const jenis = jenisLayananSelect.value;
         let tanggal_awal = awalInput.value;
         let tanggal_akhir = akhirInput.value;
 
@@ -206,6 +299,7 @@
         }
 
         if (!tanggal_awal || !tanggal_akhir) {
+            rekapHasilContainer.innerHTML = ''; 
             if (typeof sayAlert === 'function') {
                 sayAlert('errorModal', 'Error', 'Mohon pilih tanggal awal dan akhir', 'warning');
             } else {
@@ -219,23 +313,12 @@
         fetch(apiUrl)
             .then(res => res.json())
             .then(response => {
-                let notificationHTML = '';
-                let tableData;
-
-                // PERUBAHAN: Menampilkan notifikasi DAN tabel berisi nol sesuai permintaan
                 if (response.success) {
-                    tableData = response.data;
+                    rekapHasilContainer.innerHTML = renderAllTables(response.data);
                 } else {
-                    // Buat notifikasi
-                    notificationHTML = `<div class="alert alert-info">Tidak ada data pembayaran yang ditemukan untuk periode yang dipilih.</div>`;
-                    // Buat data kosong untuk tabel
-                    tableData = {
-                        ulm: { total_pembayaran: 0, bahan_kimia: 0, operasional: 0, jasa_profesi: 0, pendapatan_instansi: 0 },
-                        non_ulm: { total_pembayaran: 0, bahan_kimia: 0, operasional: 0, jasa_profesi: 0, pendapatan_instansi: 0 }
-                    };
+                    const notificationHTML = `<div class="alert alert-info">${response.message || 'Tidak ada data pembayaran yang ditemukan.'}</div>`;
+                    rekapHasilContainer.innerHTML = notificationHTML;
                 }
-                // Gabungkan notifikasi (jika ada) dengan tabel
-                rekapHasilContainer.innerHTML = notificationHTML + renderRekapTable(tableData);
             })
             .catch(err => {
                 console.error('Fetch Error:', err);
@@ -243,19 +326,14 @@
             });
     }
 
-    // --- EVENT LISTENERS ---
-    document.querySelector('.tampil').addEventListener('click', function(e) {
-        e.preventDefault();
-        tampilkanRekap();
-    });
 
-    document.querySelector('.download').addEventListener('click', function() {
-        const jenis = document.getElementById('jenis_layanan').value;
+    function confirmDownload() {
+        const jenis = jenisLayananSelect.value;
         let tanggal_awal = awalInput.value;
         let tanggal_akhir = akhirInput.value;
 
         if (periodeSelect.value === 'pilih_bulan') {
-             const bulan = bulanSelect.value;
+            const bulan = bulanSelect.value;
             const tahun = tahunInput.value;
             tanggal_awal = `${tahun}-${bulan}-01`;
             const lastDayOfMonth = new Date(tahun, parseInt(bulan), 0);
@@ -264,19 +342,106 @@
 
         if (!tanggal_awal || !tanggal_akhir) {
             if (typeof sayAlert === 'function') {
-                sayAlert('errorModal', 'Error', 'Mohon pilih tanggal untuk di-download', 'warning');
+                sayAlert('errorModal', 'Error', 'Mohon atur periode filter utama terlebih dahulu', 'warning');
             } else {
-                alert('Mohon pilih tanggal untuk di-download');
+                alert('Mohon atur periode filter utama terlebih dahulu');
             }
             return;
         }
+
+        document.getElementById('downloadJenisLayanan').value = jenis;
+        document.getElementById('downloadTanggalAwal').value = tanggal_awal;
+        document.getElementById('downloadTanggalAkhir').value = tanggal_akhir;
         
-        const url = `<?php echo site_url('rekap/download'); ?>?jenis_layanan=${jenis}&tanggal_awal=${tanggal_awal}&tanggal_akhir=${tanggal_akhir}`;
-        window.open(url, '_blank');
+        $('#modalDownloadRekap').modal('show');
+    }
+
+    async function executeDownload() {
+        const jenis = document.getElementById('downloadJenisLayanan').value;
+        const tanggal_awal = document.getElementById('downloadTanggalAwal').value;
+        const tanggal_akhir = document.getElementById('downloadTanggalAkhir').value;
+
+        if (!tanggal_awal || !tanggal_akhir) {
+            if (typeof sayAlert === 'function') {
+                 sayAlert('errorModal', 'Error', 'Tanggal Awal dan Tanggal Akhir di modal harus diisi!', 'warning');
+            } else {
+                alert('Tanggal Awal dan Tanggal Akhir di modal harus diisi!');
+            }
+            return;
+        }
+
+        const checkUrl = `<?php echo site_url('rekap/datalist'); ?>?jenis_layanan=${jenis}&tanggal_awal=${tanggal_awal}&tanggal_akhir=${tanggal_akhir}`;
+
+        try {
+            const response = await fetch(checkUrl);
+            if (!response.ok) {
+                throw new Error('Server error saat cek data: ' + response.statusText);
+            }
+            
+            const result = await response.json();
+
+            if (result.success === false || !result.data || result.data.length === 0) {
+                if (typeof sayAlert === 'function') {
+                    sayAlert('errorModal', 'Info', 'Tidak ada data untuk diekspor pada periode yang dipilih.', 'info');
+                } else {
+                    alert('Tidak ada data untuk diekspor pada periode yang dipilih.');
+                }
+                return;
+            }
+
+            let grandTotalUlm = 0;
+            let grandTotalNonUlm = 0;
+            result.data.forEach(item => {
+                grandTotalUlm += item.total_ulm;
+                grandTotalNonUlm += item.total_non_ulm;
+            });
+
+            if (grandTotalUlm == 0 && grandTotalNonUlm == 0) {
+                if (typeof sayAlert === 'function') {
+                    sayAlert('errorModal', 'Info', 'Tidak ada data untuk diekspor (total 0).', 'info');
+                } else {
+                    alert('Tidak ada data untuk diekspor (total 0).');
+                }
+                return;
+            }
+
+            const downloadUrl = `<?php echo site_url('rekap/download'); ?>?jenis_layanan=${jenis}&tanggal_awal=${tanggal_awal}&tanggal_akhir=${tanggal_akhir}`;
+            window.open(downloadUrl, '_blank');
+            
+            $('#modalDownloadRekap').modal('hide');
+
+        } catch (error) {
+            console.error('Error during download check:', error);
+            if (typeof sayAlert === 'function') {
+                sayAlert('errorModal', 'Error', 'Gagal memverifikasi data: '(error.message || 'Unknown error'), 'error');
+            } else {
+                alert('Gagal memverifikasi data: ' + (error.message || 'Unknown error'));
+            }
+        }
+    }
+
+
+    
+    document.querySelector('.download').addEventListener('click', function(e) {
+        e.preventDefault();
+        confirmDownload(); 
     });
 
-    // --- INITIALIZATION ---
-    // DIKEMBALIKAN: Memanggil fungsi langsung saat script dimuat, sama seperti kode asli
+    jenisLayananSelect.addEventListener('change', tampilkanRekap);
+    
+    periodeSelect.addEventListener('change', () => {
+        setTanggalOtomatis();
+        tampilkanRekap(); 
+    });
+    
+    bulanSelect.addEventListener('change', tampilkanRekap);
+    
+    tahunInput.addEventListener('input', debounce(tampilkanRekap, 500));
+    
+    awalInput.addEventListener('change', tampilkanRekap);
+    akhirInput.addEventListener('change', tampilkanRekap);
+
+
     setTanggalOtomatis();
-    periodeSelect.addEventListener('change', setTanggalOtomatis);
+    tampilkanRekap();
 </script>

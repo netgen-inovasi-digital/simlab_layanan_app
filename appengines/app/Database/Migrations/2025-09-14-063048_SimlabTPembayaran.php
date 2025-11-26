@@ -4,59 +4,66 @@ namespace App\Database\Migrations;
 
 use CodeIgniter\Database\Migration;
 
-class CreateSimlabTPembayaran extends Migration
+class CreateTPembayaran extends Migration
 {
     public function up()
     {
         $this->forge->addField([
             'bayarKode' => [
-                'type'           => 'INT',
-                'constraint'     => 11,
-                'unsigned'       => true,
-                'auto_increment' => true
+                'type' => 'INT',
+                'unsigned' => true,
+                'auto_increment' => true,
             ],
             'bayarLnKode' => [
-                'type'       => 'INT',
-                'constraint' => 11,
-                'null'       => true
+                'type' => 'INT',
+                'unsigned' => true, // <-- pastikan unsigned sesuai simlab_t_layanan.lnKode
+                'null' => true,
             ],
             'bayarTotalBiaya' => [
-                'type'       => 'DOUBLE',
-                'null'       => true
+                'type' => 'DOUBLE',
+                'null' => true,
             ],
             'bayarInvoiceFile' => [
-                'type'       => 'VARCHAR',
+                'type' => 'VARCHAR',
                 'constraint' => 255,
-                'null'       => true
+                'null' => true,
             ],
             'bayarStatus' => [
-                'type'       => 'INT',
-                'constraint' => 11,
-                'default'    => 0,
-                'comment'    => '0=belum bayar; 1=sudah bayar'
+                'type' => 'INT',
+                'default' => 0,
             ],
             'bayarBuktiFile' => [
-                'type'       => 'VARCHAR',
+                'type' => 'VARCHAR',
                 'constraint' => 255,
-                'null'       => true
+                'null' => true,
             ],
             'bayarInvoiceNo' => [
-                'type'       => 'VARCHAR',
+                'type' => 'VARCHAR',
                 'constraint' => 50,
-                'null'       => true
+                'null' => true,
             ],
             'bayarInvoiceTgl' => [
-                'type'       => 'DATE',
-                'null'       => true
+                'type' => 'DATE',
+                'null' => true,
+            ],
+            'bayarCatatan' => [
+                'type' => 'VARCHAR',
+                'constraint' => 255,
+                'null' => true,
             ],
         ]);
 
         $this->forge->addKey('bayarKode', true);
-        $this->forge->createTable('simlab_t_pembayaran');
+        $this->forge->addKey('bayarLnKode');
+
+        // foreign key using Forge (safer)
+        $this->forge->addForeignKey('bayarLnKode', 'simlab_t_layanan', 'lnKode', 'RESTRICT', 'RESTRICT');
+
+        $this->forge->createTable('t_pembayaran', true);
     }
 
     public function down()
     {
-        $this->forge->dropTable('simlab_t_pembayaran');
+        $this->forge->dropTable('t_pembayaran', true);
     }
 }

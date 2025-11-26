@@ -13,6 +13,7 @@
                     <tr>
                         <th show width="8%">No.</th>
                         <th show>Username<i class="fa-solid fa-sort sort-icon"></i></th>
+                        <th show>Nama</th>
                         <th show>Role</th>
                         <th>Status</th>
                         <th show class="action text-end">Aksi<i class="fa-solid fa-forward-step sort-icon"></i></th>
@@ -62,9 +63,23 @@ modal.addEventListener('shown.bs.modal', function (e) {
                     </div>
 
                     <div class="row mb-2">
+                        <label class="col-md-4 col-form-label">Nama</label>
+                        <div class="col">
+                            <input name="nama" type="text" class="form-control" placeholder="Nama lengkap">
+                        </div>
+                    </div>
+
+                    <div class="row mb-2">
                         <label class="col-md-4 col-form-label">Password</label>
                         <div class="col">
                             <input name="password" type="password" class="form-control">
+                        </div>
+                    </div>
+
+                    <div class="row mb-2">
+                        <label class="col-md-4 col-form-label">Nomor Telepon</label>
+                        <div class="col">
+                            <input name="telepon" type="text" class="form-control" placeholder="Contoh: 081234567890">
                         </div>
                     </div>
 

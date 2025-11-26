@@ -8,23 +8,26 @@ class DatabaseSeeder extends Seeder
 {
     public function run()
     {
+
         // Seeder untuk template lengkap
-        $this->call('SimlabSeeder');
+        // $this->call('SimlabSeeder');
+        $this->call('CompleteNetxTemplateSeeder');
+
 
         // Seeder khusus aplikasi SIMLAB
         $this->call('RolesSeeder');
         $this->call('SimlabAccountSeeder');
-        $this->call('SimlabAccountUsersSeeder');
         $this->call('AlatSeeder');
-        $this->call('DiskonSeeder');
         $this->call('JenisSeeder');
-        $this->call('KolomKeuanganDetailSeeder');
-        $this->call('LayananPengujianSeeder');
-        $this->call('ParameterSeeder');
-        $this->call('SimlabTLayananSeeder');       // panggil layanan utama dulu
-        $this->call('SimlabTLayananDetilSeeder');  // baru detilnya
-        $this->call('SimlabTPembayaranSeeder');
-
+        $this->call('ParameterSeeder'); 
+        $this->call('RLayananPengujianSeeder');
+        $this->call('RTimSeeder');
+        $this->call('MenuSeeder');
+        $this->call('OtoritasSeeder');
+        $this->call('RMetodeSeeder');
+        $this->call('FileUmumSeeder');
+        
+        // $this->call('TransaksiSeeder');
         // Seeder tambahan jika ada:
         // $this->call('UsersSeeder');
         // $this->call('MenusSeeder');

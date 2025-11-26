@@ -485,5 +485,135 @@ class MyModel extends Model
 		return $row ? $row->$field : null;
 	}
 
+	// ===== delete data dengan cascade ke table lain ===== //
+	public function deleteDataWithCascade($where, $id, $cascadeTables = [])
+	{
+		$this->db->transBegin();
+		
+		// Hapus data dari tabel cascade terlebih dahulu
+		foreach ($cascadeTables as $cascadeTable => $cascadeWhere) {
+			$this->db->table($cascadeTable)
+					 ->where($cascadeWhere, $id)
+					 ->delete();
+		}
+		
+		// Hapus data utama
+		$this->builder->where($where, $id);
+		$this->builder->delete();
+		
+		if ($this->db->transStatus() === FALSE) {
+			$this->db->transRollback();
+			return false;
+		} else {
+			$this->db->transCommit();
+			return true;
+		}
+	}
+
+	// ===== update data dengan cascade ke table lain ===== //
+	public function updateDataWithCascade($data, $where, $id, $oldValue, $cascadeUpdates = [])
+	{
+		$this->db->transBegin();
+		
+		// Update data di tabel cascade terlebih dahulu
+		foreach ($cascadeUpdates as $cascadeTable => $cascadeConfig) {
+			$this->db->table($cascadeTable)
+					 ->where($cascadeConfig['where'], $oldValue)
+					 ->update([$cascadeConfig['field'] => $data[$where]]);
+		}
+		
+		// Update data utama
+		$this->builder->where($where, $id);
+		$this->builder->update($data);
+		
+		if ($this->db->transStatus() === FALSE) {
+			$this->db->transRollback();
+			return false;
+		} else {
+			$this->db->transCommit();
+			return true;
+		}
+	}
+
+	// ===== cek duplikat data berdasarkan field (case-insensitive) ===== //
+	public function checkDuplicateByField($field, $value, $excludeWhere = [], $caseInsensitive = true)
+	{
+		if ($caseInsensitive) {
+			// Menggunakan LOWER() untuk perbandingan case-insensitive
+			$this->builder->where("LOWER($field)", strtolower($value));
+		} else {
+			$this->builder->where($field, $value);
+		}
+		
+		// Exclude record tertentu (misalnya saat update, exclude ID yang sedang diedit)
+		if (!empty($excludeWhere)) {
+			foreach ($excludeWhere as $key => $val) {
+				$this->builder->where("$key !=", $val);
+			}
+		}
+		
+		$count = $this->builder->countAllResults();
+		return $count > 0; // Return true jika ada duplikat
+	}
+
+	// ===== cek duplikat data dengan multiple fields (case-insensitive) ===== //
+	public function checkDuplicateByFields($fields = [], $excludeWhere = [], $caseInsensitive = true)
+	{
+		if (!empty($fields)) {
+			foreach ($fields as $field => $value) {
+				if ($caseInsensitive) {
+					$this->builder->where("LOWER($field)", strtolower($value));
+				} else {
+					$this->builder->where($field, $value);
+				}
+			}
+		}
+		
+		// Exclude record tertentu
+		if (!empty($excludeWhere)) {
+			foreach ($excludeWhere as $key => $val) {
+				$this->builder->where("$key !=", $val);
+			}
+		}
+		
+		$count = $this->builder->countAllResults();
+		return $count > 0;
+	}
+
+	// ===== mengambil data menggunakan getWhere (untuk compatibility dengan kode lama) ===== //
+	public function getWhere($where = [])
+	{
+		if (!empty($where)) {
+			foreach ($where as $key => $value) {
+				// Support operator seperti 'id !=' => 5
+				if (strpos($key, ' ') !== false) {
+					// Jika ada operator (seperti 'id !=')
+					$this->builder->where($key, $value);
+				} elseif (is_array($value)) {
+					// Jika value adalah array, gunakan whereIn
+					$this->builder->whereIn($key, $value);
+				} else {
+					$this->builder->where($key, $value);
+				}
+			}
+		}
+		return $this->builder->get();
+	}
+
+	// ===== count data by multiple where conditions ===== //
+	public function countByWhere($where = [])
+	{
+		if (!empty($where)) {
+			foreach ($where as $key => $value) {
+				if (is_array($value)) {
+					$this->builder->whereIn($key, $value);
+				} else {
+					$this->builder->where($key, $value);
+				}
+			}
+		}
+		return $this->builder->countAllResults();
+	}
+
 
 }

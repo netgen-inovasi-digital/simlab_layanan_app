@@ -34,6 +34,7 @@ class AlatSeeder extends Seeder
             ['alatKode' => 'PH', 'alatNama' => 'pH meter'],
             ['alatKode' => 'PROKSIMAT', 'alatNama' => 'PARAMETER PROKSIMAT'],
             ['alatKode' => 'ROTATINGVISCO', 'alatNama' => 'Rotating Viscometer Digital'],
+            ['alatKode' => 'RR', 'alatNama' => 'ruangan rapat'],
             ['alatKode' => 'RTPCR', 'alatNama' => 'Instrumen RT PCR'],
             ['alatKode' => 'ruangan', 'alatNama' => 'testing p'],
             ['alatKode' => 'SAA', 'alatNama' => 'Instrumen SAA'],
@@ -61,8 +62,6 @@ class AlatSeeder extends Seeder
             ['alatKode' => 'VISKOMETER ', 'alatNama' => 'ROTATING VISKOMETER DIGITAL'],
         ];
 
-        // Insert batch (skips duplicates depending on DB constraints)
-        $builder = $this->db->table('simlab_r_alat');
-        $builder->insertBatch($data);
+        $this->db->table('simlab_r_alat')->insertBatch($data);
     }
 }
