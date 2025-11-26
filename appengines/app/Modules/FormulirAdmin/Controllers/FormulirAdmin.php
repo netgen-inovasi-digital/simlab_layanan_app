@@ -511,7 +511,7 @@ class FormulirAdmin extends BaseController
             case 8:
                 return '<span class="badge bg-success">LHU disetujui</span>';
             case 9:
-                return '<span class="badge bg-dark">Pengujian selesai</span>';
+                return '<span class="badge bg-secondary">Pengujian selesai</span>';
             default:
                 return '<span class="badge bg-dark">Unknown</span>';
         }
