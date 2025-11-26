@@ -277,11 +277,11 @@ class Pelayanan extends BaseController
 
             // Akses LHU
             $lnStatusVal = (int) ($row->lnStatus ?? 0);
-            $canViewLhu = ($kuisionerVal === 1 && $bayarStatusVal === 1 && in_array($lnStatusVal, [7, 8], true));
+            $canViewLhu = ($kuisionerVal === 1 && $bayarStatusVal === 1 && in_array($lnStatusVal, [7, 9], true));
             $lhuInfo = $this->detectLhuFile($row);
 
             if ($lhuInfo['has'] && $canViewLhu) {
-                $response[] = '<button class="btn btn-sm btn-outline-primary" onclick="window.open(\'' . esc($lhuInfo['url']) . '\', \'_blank\')" title="Buka LHU"><i class="bi bi-eye"></i> Lihat File LHU</button>';
+                $response[] = '<button class="btn btn-sm btn-outline-primary" onclick="window.open(\'' . esc($lhuInfo['url']) . '\', \'_blank\')" title="Buka LHU"><i class="bi bi-eye"></i> Lihat LHU</button>';
             } else {
                 $reason = 'File LHU tidak dapat diakses.';
                 if ($lhuInfo['has'] && !$canViewLhu) {

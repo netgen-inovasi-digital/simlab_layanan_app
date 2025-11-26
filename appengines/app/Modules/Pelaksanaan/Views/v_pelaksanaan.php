@@ -1,3 +1,15 @@
+<style>
+    .bubble-note {
+        border-radius: 20px;
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        padding: 1rem;
+        width: 100%;
+        resize: vertical;
+        min-height: 120px;
+    }
+</style>
+
 <div class="row">
     <div class="col-md-12">
         <div class="card">
@@ -136,12 +148,65 @@
 </div>
 
 
+<!-- Modal Pengujian Ulang -->
+<div class="modal fade" id="modalPengujianUlang" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+    <div class="modal-dialog modal-md" role="document" style="margin: 4% auto">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Pengujian Ulang</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formPengujianUlang" action="<?= site_url('pelaksanaan/pengujian-ulang') ?>" method="post"
+                    novalidate>
+                    <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>">
+                    <input type="hidden" name="id" id="pengujianUlangId" value="">
+                    <div class="mb-3">
+                        <label for="catatanPengujianUlang" class="form-label">Catatan Pengujian Ulang <span
+                                class="text-danger">*</span></label>
+                        <textarea class="bubble-note" id="catatanPengujianUlang" name="catatan"
+                            placeholder="Tuliskan alasan pengujian ulang..." required></textarea>
+                        <div class="form-text">Catatan ini akan tersimpan sebagai catatan kaji ulang.</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <button class="btn btn-light" type="button" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> Batal
+                </button>
+                <button class="btn btn-warning" type="button" id="btnPengujianUlangSubmit">
+                    <i class="bi bi-arrow-counterclockwise"></i> Buat Pengujian Ulang
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 <script>
     table = createTable({
         apiUrl: '<?php echo site_url("pelaksanaan/datalist") ?>',
         dataSrc: 'items'
     });
     addAction();
+
+    function openPengujianUlangModal(encId) {
+        const idInput = document.getElementById('pengujianUlangId');
+        if (idInput) idInput.value = encId || '';
+
+        const noteInput = document.getElementById('catatanPengujianUlang');
+        if (noteInput) noteInput.value = '';
+
+        const modalEl = document.getElementById('modalPengujianUlang');
+        if (!modalEl) return;
+
+        if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+            const modalInstance = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+            modalInstance.show();
+        } else if (typeof $ !== 'undefined' && $('#modalPengujianUlang').modal) {
+            $('#modalPengujianUlang').modal('show');
+        }
+    }
 
     // [ADDED] Helpers untuk build url + cache buster + binding filter
     if (typeof window.buildApiUrlWithOptionalParam !== 'function') {
@@ -592,6 +657,74 @@
                 console.error(err);
                 if (typeof sayAlert === 'function') sayAlert('errorModal', 'Error', 'Terjadi kesalahan saat upload.', 'warning');
                 else alert('Terjadi kesalahan saat upload.');
+            })
+            .finally(() => {
+                hideLoading();
+            });
+    });
+
+    document.getElementById('btnPengujianUlangSubmit')?.addEventListener('click', function (e) {
+        e.preventDefault();
+        const form = document.getElementById('formPengujianUlang');
+        if (!form) return;
+
+        const idValue = (document.getElementById('pengujianUlangId')?.value || '').trim();
+        const noteField = document.getElementById('catatanPengujianUlang');
+        const noteValue = noteField ? noteField.value.trim() : '';
+
+        if (idValue === '') {
+            if (typeof sayAlert === 'function') sayAlert('errorModal', 'Error', 'ID layanan tidak valid.', 'warning');
+            else alert('ID layanan tidak valid.');
+            return;
+        }
+
+        if (noteValue === '') {
+            if (typeof sayAlert === 'function') sayAlert('errorModal', 'Error', 'Catatan pengujian ulang wajib diisi.', 'warning');
+            else alert('Catatan pengujian ulang wajib diisi.');
+            return;
+        }
+
+        const formData = new FormData(form);
+        const csrfInput = form.querySelector('[name="<?= csrf_token() ?>"]');
+        const csrfToken = csrfInput ? csrfInput.value : '';
+
+        showLoading();
+
+        fetch(form.getAttribute('action'), {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-CSRF-TOKEN': csrfToken }
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.xname && data.xhash) {
+                    document.querySelectorAll('[name="' + data.xname + '"]').forEach(el => el.value = data.xhash);
+                }
+
+                if (data.res) {
+                    if (typeof table !== 'undefined') {
+                        table.fetchData({ reload: true });
+                    }
+
+                    if (typeof sayAlert === 'function') sayAlert('successModal', 'Berhasil', data.msg || 'Pengujian ulang berhasil dibuat.', 'success');
+                    else alert(data.msg || 'Pengujian ulang berhasil dibuat.');
+
+                    if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                        const modalEl = document.getElementById('modalPengujianUlang');
+                        const modalInstance = bootstrap.Modal.getInstance(modalEl);
+                        if (modalInstance) modalInstance.hide();
+                    } else if (typeof $ !== 'undefined' && $('#modalPengujianUlang').modal) {
+                        $('#modalPengujianUlang').modal('hide');
+                    }
+                } else {
+                    if (typeof sayAlert === 'function') sayAlert('errorModal', 'Error', data.msg || 'Pengujian ulang gagal.', 'warning');
+                    else alert(data.msg || 'Pengujian ulang gagal.');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                if (typeof sayAlert === 'function') sayAlert('errorModal', 'Error', 'Terjadi kesalahan saat memproses pengujian ulang.', 'warning');
+                else alert('Terjadi kesalahan saat memproses pengujian ulang.');
             })
             .finally(() => {
                 hideLoading();
