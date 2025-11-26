@@ -535,8 +535,19 @@
         });
     }
 
-    // Fungsi konfirmasi fleksibel
-    function sayConfirm(title, message, confirmCallback, type = 'danger') {
-        // Memanggil sayAlert dengan modal konfirmasi dan tipe tombol yang fleksibel
-        sayAlert('confirmModal', title, message, type, true, confirmCallback);
-    }
+    function sayConfirm(title, message, confirmCallback, type = 'primary', confirmLabel = 'Ya', cancelLabel = 'Batal') {
+    const modalId = 'confirmModal';
+    // panggil sayAlert untuk membuat modal dengan tombol yang punya ID unik
+    sayAlert(modalId, title, message, type, true, confirmCallback);
+
+    // tunggu sedikit supaya element ter-render, lalu set label sesuai param
+    setTimeout(() => {
+        const confirmBtn = document.getElementById(modalId + 'ConfirmButton');
+        const cancelBtn  = document.getElementById(modalId + 'CancelButton');
+
+        if (confirmBtn) confirmBtn.textContent = confirmLabel;
+        if (cancelBtn) cancelBtn.textContent = cancelLabel;
+    }, 20);
+}
+
+

@@ -8,63 +8,13 @@ class SimlabSeeder extends Seeder
 {
     public function run()
     {
-        // 1. Insert roles data
-        $this->db->table('roles')->insertBatch([
-            ['id_role' => 1, 'nama_role' => 'Admin', 'grup' => 'admin', 'status_role' => 1],
-            ['id_role' => 2, 'nama_role' => 'User', 'grup' => 'author', 'status_role' => 1],
-            ['id_role' => 8, 'nama_role' => 'Super Admin', 'grup' => null, 'status_role' => 1],
-        ]);
-
-        // 2. Insert users data (exact from SQL)
-        $this->db->table('users')->insertBatch([
-            [
-                'id_user' => 1,
-                'role_id' => 1,
-                'nama' => 'admin',
-                'email' => 'admin@gmail.com',
-                'username' => 'admin',
-                'password' => '$2y$10$xyGL25XKYGT5.ZRrLDuqm.WqYWAAXkf2v9gQ4dBDGBKY9kP3Z/WUe',
-                'last_login' => '2025-08-26 22:05:00',
-                'status_user' => 1,
-                'alamat' => null,
-                'telepon' => null,
-                'foto' => null
-            ],
-            [
-                'id_user' => 11,
-                'role_id' => 2,
-                'nama' => 'user',
-                'email' => 'user@gmail.com',
-                'username' => 'user',
-                'password' => '$2y$10$fY4ye1b5LxrPCETE9z2Hju9DNJuVnqZXRZ3mxgDXkwddIKXgnHeWe',
-                'last_login' => '2025-08-11 22:28:03',
-                'status_user' => 1,
-                'alamat' => '0',
-                'telepon' => '0',
-                'foto' => '0'
-            ],
-            [
-                'id_user' => 12,
-                'role_id' => 8,
-                'nama' => 'Super Admin',
-                'email' => 'superadmin@gmail.com',
-                'username' => 'superadmin',
-                'password' => '$2y$10$7qmnMG5YlxgW6RPaSZTmVupVuJfXo1bckyyVZdYFBss9V/zyQYjwK',
-                'last_login' => '2025-08-26 22:14:25',
-                'status_user' => 1,
-                'alamat' => '0',
-                'telepon' => '0',
-                'foto' => '0'
-            ],
-        ]);
-
-        // 3. Insert categories data (exact from SQL)
+        // categories
         $this->db->table('categories')->insertBatch([
             ['id_categories' => 46, 'nama' => 'Umum', 'slug' => 'umum', 'created_at' => '2025-07-16 07:13:19'],
             ['id_categories' => 49, 'nama' => 'dokumen A', 'slug' => 'dokumen-a', 'created_at' => '2025-08-11 22:00:40'],
         ]);
 
-        // 4. Insert hero data (exact from SQL)
+        // hero
         $this->db->table('hero')->insertBatch([
             [
                 'id_hero' => 3,
@@ -100,11 +50,11 @@ class SimlabSeeder extends Seeder
             ],
         ]);
 
-        // 5. Insert konfigurasi data (exact from SQL)
+        // konfigurasi
         $this->db->table('konfigurasi')->insert([
             'id_konfigurasi' => 1,
             'nama_profil' => 'Netx Template',
-            'deskripsi' => 'NetX Template adalah sebuah starter template engine berbasis CodeIgniter 4 (CI4) yang dirancang untuk memudahkan pengembangan website dengan struktur yang rapi, modular, dan siap pakai.',
+            'deskripsi' => 'NetX Template adalah sebuah starter template engine berbasis CodeIgniter 4 (CI4) yang dirancang untuk memudahkan pengembangan website dengan struktur yang rapi, modular, dan siap pakai. ',
             'alamat' => 'Kota Banjarbaru, Kalimantan Selatan',
             'telepon' => '083159236448',
             'email' => 'netgen.id@gmail.com',
@@ -112,10 +62,20 @@ class SimlabSeeder extends Seeder
             'provinsi' => 'Kalimantan Selatan',
             'logo' => '1754489500f9b1f5b62d.jpg',
             'peta' => '<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3982.668147624301!2d114.8010200744995!3d-3.4307116417292853!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2de683004aea87fd%3A0x908679b896616ec2!2sKlinik%20dan%20Apotek%20Medikidz!5e0!3m2!1sen!2sid!4v1751200717274!5m2!1sen!2sid" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>',
+            'rajaongkir_api_key' => 'Cs6xweDrd1a1384d96a3d754VgCErom8',
+            'rajaongkir_origin_subdistrict_id' => '3079',
+            'rajaongkir_origin_name' => 'BANGKAL, BANJARBARU, KALIMANTAN SELATAN',
+            'rajaongkir_couriers' => 'jne,sicepat,jnt,pos,tiki',
             'link' => 'profil'
         ]);
 
-        // 6. Insert layanan data (exact from SQL)
+        // landing_views (minimal row as in partial)
+        $this->db->table('landing_views')->insert([
+            'id_landing_views' => 1,
+            'viewed_at' => '2025-08-22 14:16:54',
+        ]);
+
+        // layanan
         $this->db->table('layanan')->insertBatch([
             [
                 'id_layanan' => 22,
@@ -164,297 +124,12 @@ class SimlabSeeder extends Seeder
             ],
         ]);
 
-        // 7. Insert menus data (exact from SQL)
-        $this->db->table('menus')->insertBatch([
-            ['id_menu' => 6, 'kode_menu' => '12', 'kode_induk' => '0', 'nama' => 'Dashboard', 'link' => 'dashboard/load', 'icon' => 'bi-house', 'sort_order' => 17],
-            ['id_menu' => 9, 'kode_menu' => '14', 'kode_induk' => '0', 'nama' => 'Pengumuman', 'link' => 'pengumuman', 'icon' => 'bi-megaphone', 'sort_order' => 19],
-            ['id_menu' => 10, 'kode_menu' => '15', 'kode_induk' => '0', 'nama' => 'Halaman', 'link' => 'pages', 'icon' => 'bi-file-text', 'sort_order' => 20],
-            ['id_menu' => 11, 'kode_menu' => '16', 'kode_induk' => '0', 'nama' => 'Tampilan', 'link' => '#', 'icon' => 'bi-display', 'sort_order' => 21],
-            ['id_menu' => 13, 'kode_menu' => '16.3', 'kode_induk' => '16', 'nama' => 'Slider', 'link' => 'hero', 'icon' => 'bi-three-dots-vertical', 'sort_order' => 24],
-            ['id_menu' => 14, 'kode_menu' => '16.1', 'kode_induk' => '16', 'nama' => 'Layanan', 'link' => 'mitra', 'icon' => 'bi-three-dots-vertical', 'sort_order' => 22],
-            ['id_menu' => 15, 'kode_menu' => '16.4', 'kode_induk' => '16', 'nama' => 'Informasi', 'link' => 'konfigurasi', 'icon' => 'bi-three-dots-vertical', 'sort_order' => 25],
-            ['id_menu' => 16, 'kode_menu' => '16.5', 'kode_induk' => '16', 'nama' => 'Sosial', 'link' => 'sosmed', 'icon' => 'bi-three-dots-vertical', 'sort_order' => 26],
-            ['id_menu' => 17, 'kode_menu' => '17', 'kode_induk' => '0', 'nama' => 'Urutan Tampilan', 'link' => 'layout', 'icon' => 'bi-layout-text-window', 'sort_order' => 27],
-            ['id_menu' => 18, 'kode_menu' => '18', 'kode_induk' => '0', 'nama' => 'Pengaturan', 'link' => '#', 'icon' => 'bi-gear', 'sort_order' => 28],
-            ['id_menu' => 19, 'kode_menu' => '18.1', 'kode_induk' => '18', 'nama' => 'Pengguna', 'link' => 'user', 'icon' => 'bi-person', 'sort_order' => 29],
-            ['id_menu' => 21, 'kode_menu' => '18.2', 'kode_induk' => '18', 'nama' => 'Otoritas', 'link' => 'otoritas', 'icon' => 'bi-shield-check', 'sort_order' => 30],
-            ['id_menu' => 20, 'kode_menu' => '18.3', 'kode_induk' => '18', 'nama' => 'Role', 'link' => 'role', 'icon' => 'bi-shield-lock', 'sort_order' => 31],
-            ['id_menu' => 23, 'kode_menu' => '18.4', 'kode_induk' => '18', 'nama' => 'Menu ', 'link' => 'menu', 'icon' => 'bi-people', 'sort_order' => 32],
-            ['id_menu' => 24, 'kode_menu' => '13', 'kode_induk' => '0', 'nama' => 'Berita', 'link' => 'posts', 'icon' => 'bi-newspaper', 'sort_order' => 18],
-            ['id_menu' => 28, 'kode_menu' => '16.2', 'kode_induk' => '16', 'nama' => 'Team', 'link' => 'team', 'icon' => 'bi-three-dots-vertical', 'sort_order' => 23],
-            ['id_menu' => 34, 'kode_menu' => '11', 'kode_induk' => '0', 'nama' => 'Data Master', 'link' => '#', 'icon' => 'bi-layout-text-window', 'sort_order' => 11],
-            ['id_menu' => 36, 'kode_menu' => '11.1', 'kode_induk' => '11', 'nama' => 'Kategori Layanan', 'link' => 'jenis', 'icon' => 'bi-three-dots-vertical', 'sort_order' => 12],
-            ['id_menu' => 37, 'kode_menu' => '11.2', 'kode_induk' => '11', 'nama' => 'Alat', 'link' => 'alat', 'icon' => 'bi-three-dots-vertical', 'sort_order' => 13],
-            ['id_menu' => 38, 'kode_menu' => '11.3', 'kode_induk' => '11', 'nama' => 'Parameter', 'link' => 'parameter', 'icon' => 'bi-three-dots-vertical', 'sort_order' => 14],
-            ['id_menu' => 39, 'kode_menu' => '11.4', 'kode_induk' => '11', 'nama' => 'Kolom Persentase', 'link' => 'persentase', 'icon' => 'bi-three-dots-vertical', 'sort_order' => 15],
-            ['id_menu' => 40, 'kode_menu' => '11.5', 'kode_induk' => '11', 'nama' => 'Layanan lab', 'link' => 'lab', 'icon' => 'bi-three-dots-vertical', 'sort_order' => 16],
-            ['id_menu' => 41, 'kode_menu' => '9', 'kode_induk' => '0', 'nama' => 'Pelaksanaan', 'link' => 'motif', 'icon' => 'bi-layout-text-window', 'sort_order' => 9],
-            ['id_menu' => 42, 'kode_menu' => '7', 'kode_induk' => '0', 'nama' => 'Riwayat', 'link' => 'riwayat', 'icon' => 'bi-layout-text-window', 'sort_order' => 7],
-            ['id_menu' => 43, 'kode_menu' => '5', 'kode_induk' => '0', 'nama' => 'Tagihan', 'link' => 'motif', 'icon' => 'bi-layout-text-window', 'sort_order' => 5],
-            ['id_menu' => 44, 'kode_menu' => '6', 'kode_induk' => '0', 'nama' => 'Pembayaran User', 'link' => 'pembayaran', 'icon' => 'bi-layout-text-window', 'sort_order' => 6],
-            ['id_menu' => 45, 'kode_menu' => '10', 'kode_induk' => '0', 'nama' => 'Riwayat', 'link' => 'motif', 'icon' => 'bi-layout-text-window', 'sort_order' => 10],
-            ['id_menu' => 46, 'kode_menu' => '8', 'kode_induk' => '0', 'nama' => 'Rekap', 'link' => 'motif', 'icon' => 'bi-layout-text-window', 'sort_order' => 8],
-            ['id_menu' => 47, 'kode_menu' => '4', 'kode_induk' => '0', 'nama' => 'Formulir Masuk', 'link' => 'motif', 'icon' => 'bi-layout-text-window', 'sort_order' => 4],
-            ['id_menu' => 48, 'kode_menu' => '1', 'kode_induk' => '0', 'nama' => 'Layanan', 'link' => 'pelayanan', 'icon' => 'bi-layout-text-window', 'sort_order' => 1],
-            ['id_menu' => 49, 'kode_menu' => '2', 'kode_induk' => '0', 'nama' => 'Pembayaran Admin', 'link' => 'pembayaran', 'icon' => 'bi-layout-text-window', 'sort_order' => 2],
-            ['id_menu' => 50, 'kode_menu' => '3', 'kode_induk' => '0', 'nama' => 'Profil', 'link' => 'profilpw', 'icon' => 'bi-layout-text-window', 'sort_order' => 3],
-            ['id_menu' => 51, 'kode_menu' => '19', 'kode_induk' => '0', 'nama' => 'Manajemen Akun Laboran', 'link' => 'laboran', 'icon' => 'bi-layout-text-window', 'sort_order' => 19],
-            ['id_menu' => 52, 'kode_menu' => '20', 'kode_induk' => '0', 'nama' => 'Manajemen Akun User', 'link' => 'akun', 'icon' => 'bi-layout-text-window', 'sort_order' => 20],
-            ['id_menu' => 53, 'kode_menu' => '21', 'kode_induk' => '0', 'nama' => 'Manajemen Akun Admin', 'link' => 'admin', 'icon' => 'bi-layout-text-window', 'sort_order' => 21],
-        ]);
-
-
-        // 8. Insert mitra data (exact from SQL)
-        $this->db->table('mitra')->insertBatch([
-            ['id_mitra' => 14, 'nama' => 'BIMA', 'foto' => '175293305338af992638.png', 'urutan' => 3, 'status' => 'Y'],
-            ['id_mitra' => 16, 'nama' => 'Tut Wuri Handayani', 'foto' => '17529330137b4677912f.png', 'urutan' => 1, 'status' => 'Y'],
-            ['id_mitra' => 19, 'nama' => 'LPPM', 'foto' => '1752933028429a38c250.png', 'urutan' => 2, 'status' => 'Y'],
-            ['id_mitra' => 20, 'nama' => 'DIKTISAINTEK BERDAMPAK', 'foto' => '1752933097403cb1c616.png', 'urutan' => 4, 'status' => 'Y'],
-            ['id_mitra' => 23, 'nama' => 'Tut Wuri Handayani', 'foto' => '175293315576c3452791.png', 'urutan' => 5, 'status' => 'Y'],
-            ['id_mitra' => 24, 'nama' => 'LPPM', 'foto' => '1752933169766c556b5d.png', 'urutan' => 6, 'status' => 'Y'],
-            ['id_mitra' => 25, 'nama' => 'BIMA', 'foto' => '1752933187684626179c.png', 'urutan' => 7, 'status' => 'Y'],
-            ['id_mitra' => 26, 'nama' => 'DIKTISAINTEK BERDAMPAK', 'foto' => '17529332156624c13061.png', 'urutan' => 8, 'status' => 'Y'],
-            ['id_mitra' => 27, 'nama' => 'Tut Wuri Handayani', 'foto' => '1752933992112ee8c1dc.png', 'urutan' => 9, 'status' => 'Y'],
-            ['id_mitra' => 28, 'nama' => 'LPPM', 'foto' => '1752934005f52689f1b2.png', 'urutan' => 10, 'status' => 'Y'],
-        ]);
-
-        // 9. Insert motifs data (exact from SQL)
-        $this->db->table('motifs')->insert([
-            'id' => 1,
-            'name' => 'Dragon',
-            'deskripsi' => 'Dragon adalah naga',
-            'foto' => '1754487655f4c01333af.jpg'
-        ]);
-
-        // 10. Insert navbar data (exact from SQL)
-        $this->db->table('navbar')->insertBatch([
-            ['id_navbar' => 11, 'kode_navbar' => '1', 'kode_induk' => '0', 'nama' => 'News', 'url' => 'berita', 'status' => 'N', 'sort_order' => 1],
-            ['id_navbar' => 31, 'kode_navbar' => '2', 'kode_induk' => '0', 'nama' => 'Youtube', 'url' => 'https://youtube.com/', 'status' => 'N', 'sort_order' => 2],
-            ['id_navbar' => 33, 'kode_navbar' => '4', 'kode_induk' => '0', 'nama' => 'Layanan', 'url' => '#services', 'status' => 'Y', 'sort_order' => 4],
-            ['id_navbar' => 34, 'kode_navbar' => '5', 'kode_induk' => '0', 'nama' => 'Team', 'url' => '#team', 'status' => 'N', 'sort_order' => 5],
-            ['id_navbar' => 35, 'kode_navbar' => '6', 'kode_induk' => '0', 'nama' => 'Pengumuman', 'url' => '#notice', 'status' => 'Y', 'sort_order' => 6],
-            ['id_navbar' => 36, 'kode_navbar' => '8', 'kode_induk' => '0', 'nama' => 'Mitra', 'url' => '#partner', 'status' => 'Y', 'sort_order' => 8],
-            ['id_navbar' => 38, 'kode_navbar' => '7', 'kode_induk' => '0', 'nama' => 'Berita', 'url' => '#news', 'status' => 'Y', 'sort_order' => 7],
-            ['id_navbar' => 40, 'kode_navbar' => '3', 'kode_induk' => '0', 'nama' => 'Profil', 'url' => 'hal/profil', 'status' => 'Y', 'sort_order' => 3],
-        ]);
-
-// 11. Insert otoritas data (exact from SQL - first 42 records)#
-        $this->db->table('otoritas')->insertBatch([
-            ['id_otoritas' => 1, 'role_id' => 1, 'kode_menu' => '3', 'status_otoritas' => 1],
-            ['id_otoritas' => 2, 'role_id' => 1, 'kode_menu' => '1', 'status_otoritas' => 1],
-            ['id_otoritas' => 3, 'role_id' => 1, 'kode_menu' => '4', 'status_otoritas' => 1],
-            ['id_otoritas' => 4, 'role_id' => 1, 'kode_menu' => '5', 'status_otoritas' => 1],
-            ['id_otoritas' => 5, 'role_id' => 1, 'kode_menu' => '6', 'status_otoritas' => 1],
-            ['id_otoritas' => 6, 'role_id' => 1, 'kode_menu' => '7', 'status_otoritas' => 1],
-            ['id_otoritas' => 7, 'role_id' => 1, 'kode_menu' => '2', 'status_otoritas' => 1],
-            ['id_otoritas' => 8, 'role_id' => 1, 'kode_menu' => '6.1', 'status_otoritas' => 0],
-            ['id_otoritas' => 9, 'role_id' => 1, 'kode_menu' => '6.2', 'status_otoritas' => 0],
-            ['id_otoritas' => 10, 'role_id' => 1, 'kode_menu' => '6.3', 'status_otoritas' => 0],
-            ['id_otoritas' => 11, 'role_id' => 1, 'kode_menu' => '6.4', 'status_otoritas' => 0],
-            ['id_otoritas' => 12, 'role_id' => 1, 'kode_menu' => '6.5', 'status_otoritas' => 0],
-            ['id_otoritas' => 13, 'role_id' => 1, 'kode_menu' => '7.1', 'status_otoritas' => 0],
-            ['id_otoritas' => 14, 'role_id' => 1, 'kode_menu' => '7.2', 'status_otoritas' => 0],
-            ['id_otoritas' => 15, 'role_id' => 1, 'kode_menu' => '7.3', 'status_otoritas' => 0],
-            ['id_otoritas' => 16, 'role_id' => 1, 'kode_menu' => '7.4', 'status_otoritas' => 0],
-            ['id_otoritas' => 20, 'role_id' => 2, 'kode_menu' => '1', 'status_otoritas' => 1],
-            ['id_otoritas' => 21, 'role_id' => 2, 'kode_menu' => '4', 'status_otoritas' => 0],
-            ['id_otoritas' => 22, 'role_id' => 2, 'kode_menu' => '5', 'status_otoritas' => 0],
-            ['id_otoritas' => 23, 'role_id' => 2, 'kode_menu' => '3', 'status_otoritas' => 1],
-            ['id_otoritas' => 24, 'role_id' => 1, 'kode_menu' => '8', 'status_otoritas' => 1],
-            ['id_otoritas' => 25, 'role_id' => 1, 'kode_menu' => '8.1', 'status_otoritas' => 0],
-            ['id_otoritas' => 26, 'role_id' => 1, 'kode_menu' => '8.2', 'status_otoritas' => 0],
-            ['id_otoritas' => 27, 'role_id' => 1, 'kode_menu' => '8.3', 'status_otoritas' => 0],
-            ['id_otoritas' => 28, 'role_id' => 1, 'kode_menu' => '8.4', 'status_otoritas' => 0],
-            ['id_otoritas' => 29, 'role_id' => 1, 'kode_menu' => '9', 'status_otoritas' => 1],
-            ['id_otoritas' => 30, 'role_id' => 2, 'kode_menu' => '10', 'status_otoritas' => 0],
-            ['id_otoritas' => 31, 'role_id' => 1, 'kode_menu' => '5.1', 'status_otoritas' => 0],
-            ['id_otoritas' => 32, 'role_id' => 1, 'kode_menu' => '5.2', 'status_otoritas' => 0],
-            ['id_otoritas' => 33, 'role_id' => 1, 'kode_menu' => '5.3', 'status_otoritas' => 0],
-            ['id_otoritas' => 34, 'role_id' => 1, 'kode_menu' => '5.4', 'status_otoritas' => 0],
-            ['id_otoritas' => 35, 'role_id' => 1, 'kode_menu' => '5.5', 'status_otoritas' => 0],
-            ['id_otoritas' => 36, 'role_id' => 8, 'kode_menu' => '1', 'status_otoritas' => 0],
-            ['id_otoritas' => 37, 'role_id' => 8, 'kode_menu' => '4', 'status_otoritas' => 0],
-            ['id_otoritas' => 38, 'role_id' => 8, 'kode_menu' => '5', 'status_otoritas' => 0],
-            ['id_otoritas' => 39, 'role_id' => 8, 'kode_menu' => '6', 'status_otoritas' => 0],
-            ['id_otoritas' => 40, 'role_id' => 8, 'kode_menu' => '6.1', 'status_otoritas' => 0],
-            ['id_otoritas' => 41, 'role_id' => 8, 'kode_menu' => '6.2', 'status_otoritas' => 0],
-            ['id_otoritas' => 42, 'role_id' => 8, 'kode_menu' => '6.3', 'status_otoritas' => 0],
-            ['id_otoritas' => 43, 'role_id' => 8, 'kode_menu' => '6.4', 'status_otoritas' => 0],
-            ['id_otoritas' => 44, 'role_id' => 8, 'kode_menu' => '6.5', 'status_otoritas' => 0],
-            ['id_otoritas' => 45, 'role_id' => 8, 'kode_menu' => '7', 'status_otoritas' => 0],
-            ['id_otoritas' => 46, 'role_id' => 8, 'kode_menu' => '8', 'status_otoritas' => 0],
-            ['id_otoritas' => 47, 'role_id' => 8, 'kode_menu' => '8.1', 'status_otoritas' => 0],
-            ['id_otoritas' => 48, 'role_id' => 8, 'kode_menu' => '8.2', 'status_otoritas' => 0],
-            ['id_otoritas' => 49, 'role_id' => 8, 'kode_menu' => '8.3', 'status_otoritas' => 0],
-            ['id_otoritas' => 50, 'role_id' => 8, 'kode_menu' => '8.4', 'status_otoritas' => 0],
-            ['id_otoritas' => 51, 'role_id' => 8, 'kode_menu' => '3', 'status_otoritas' => 0],
-            ['id_otoritas' => 52, 'role_id' => 8, 'kode_menu' => '9', 'status_otoritas' => 0],
-            ['id_otoritas' => 53, 'role_id' => 8, 'kode_menu' => '10', 'status_otoritas' => 0],
-            ['id_otoritas' => 54, 'role_id' => 8, 'kode_menu' => '2', 'status_otoritas' => 1],
-            ['id_otoritas' => 55, 'role_id' => 1, 'kode_menu' => '18', 'status_otoritas' => 0],
-            ['id_otoritas' => 56, 'role_id' => 1, 'kode_menu' => '17', 'status_otoritas' => 0],
-            ['id_otoritas' => 57, 'role_id' => 1, 'kode_menu' => '16', 'status_otoritas' => 0],
-            ['id_otoritas' => 58, 'role_id' => 1, 'kode_menu' => '15', 'status_otoritas' => 0],
-            ['id_otoritas' => 59, 'role_id' => 1, 'kode_menu' => '14', 'status_otoritas' => 0],
-            ['id_otoritas' => 60, 'role_id' => 1, 'kode_menu' => '13', 'status_otoritas' => 0],
-            ['id_otoritas' => 61, 'role_id' => 1, 'kode_menu' => '12', 'status_otoritas' => 0],
-            ['id_otoritas' => 62, 'role_id' => 1, 'kode_menu' => '11', 'status_otoritas' => 1],
-            ['id_otoritas' => 63, 'role_id' => 1, 'kode_menu' => '10', 'status_otoritas' => 1],
-            ['id_otoritas' => 64, 'role_id' => 1, 'kode_menu' => '19', 'status_otoritas' => 1],
-            ['id_otoritas' => 65, 'role_id' => 1, 'kode_menu' => '8.5', 'status_otoritas' => 0],
-            ['id_otoritas' => 66, 'role_id' => 1, 'kode_menu' => '10.1', 'status_otoritas' => 0],
-            ['id_otoritas' => 67, 'role_id' => 1, 'kode_menu' => '10.3', 'status_otoritas' => 0],
-            ['id_otoritas' => 68, 'role_id' => 1, 'kode_menu' => '10.2', 'status_otoritas' => 0],
-            ['id_otoritas' => 69, 'role_id' => 1, 'kode_menu' => '10.4', 'status_otoritas' => 0],
-            ['id_otoritas' => 70, 'role_id' => 8, 'kode_menu' => '8.5', 'status_otoritas' => 0],
-            ['id_otoritas' => 71, 'role_id' => 8, 'kode_menu' => '10.1', 'status_otoritas' => 0],
-            ['id_otoritas' => 72, 'role_id' => 8, 'kode_menu' => '10.3', 'status_otoritas' => 0],
-            ['id_otoritas' => 73, 'role_id' => 8, 'kode_menu' => '10.2', 'status_otoritas' => 0],
-            ['id_otoritas' => 74, 'role_id' => 8, 'kode_menu' => '10.4', 'status_otoritas' => 0],
-            ['id_otoritas' => 75, 'role_id' => 1, 'kode_menu' => '5.6', 'status_otoritas' => 0],
-            ['id_otoritas' => 76, 'role_id' => 8, 'kode_menu' => '5.1', 'status_otoritas' => 0],
-            ['id_otoritas' => 77, 'role_id' => 8, 'kode_menu' => '5.4', 'status_otoritas' => 0],
-            ['id_otoritas' => 78, 'role_id' => 8, 'kode_menu' => '5.2', 'status_otoritas' => 0],
-            ['id_otoritas' => 79, 'role_id' => 8, 'kode_menu' => '5.5', 'status_otoritas' => 0],
-            ['id_otoritas' => 80, 'role_id' => 8, 'kode_menu' => '5.6', 'status_otoritas' => 0],
-            ['id_otoritas' => 81, 'role_id' => 8, 'kode_menu' => '5.3', 'status_otoritas' => 0],
-            ['id_otoritas' => 82, 'role_id' => 8, 'kode_menu' => '7.1', 'status_otoritas' => 0],
-            ['id_otoritas' => 83, 'role_id' => 8, 'kode_menu' => '7.3', 'status_otoritas' => 0],
-            ['id_otoritas' => 84, 'role_id' => 8, 'kode_menu' => '7.2', 'status_otoritas' => 0],
-            ['id_otoritas' => 85, 'role_id' => 8, 'kode_menu' => '7.4', 'status_otoritas' => 0],
-            ['id_otoritas' => 86, 'role_id' => 8, 'kode_menu' => '15', 'status_otoritas' => 1],
-            ['id_otoritas' => 87, 'role_id' => 8, 'kode_menu' => '14', 'status_otoritas' => 1],
-            ['id_otoritas' => 88, 'role_id' => 8, 'kode_menu' => '15.1', 'status_otoritas' => 0],
-            ['id_otoritas' => 89, 'role_id' => 8, 'kode_menu' => '15.3', 'status_otoritas' => 0],
-            ['id_otoritas' => 90, 'role_id' => 8, 'kode_menu' => '15.4', 'status_otoritas' => 0],
-            ['id_otoritas' => 91, 'role_id' => 8, 'kode_menu' => '15.2', 'status_otoritas' => 0],
-            ['id_otoritas' => 92, 'role_id' => 8, 'kode_menu' => '13', 'status_otoritas' => 1],
-            ['id_otoritas' => 93, 'role_id' => 8, 'kode_menu' => '13.1', 'status_otoritas' => 0],
-            ['id_otoritas' => 94, 'role_id' => 8, 'kode_menu' => '13.2', 'status_otoritas' => 0],
-            ['id_otoritas' => 95, 'role_id' => 8, 'kode_menu' => '13.3', 'status_otoritas' => 0],
-            ['id_otoritas' => 96, 'role_id' => 8, 'kode_menu' => '13.5', 'status_otoritas' => 0],
-            ['id_otoritas' => 97, 'role_id' => 8, 'kode_menu' => '13.4', 'status_otoritas' => 0],
-            ['id_otoritas' => 98, 'role_id' => 8, 'kode_menu' => '11', 'status_otoritas' => 1],
-            ['id_otoritas' => 99, 'role_id' => 8, 'kode_menu' => '12', 'status_otoritas' => 1],
-            ['id_otoritas' => 100, 'role_id' => 2, 'kode_menu' => '12', 'status_otoritas' => 1],
-            ['id_otoritas' => 101, 'role_id' => 2, 'kode_menu' => '6', 'status_otoritas' => 1],
-            ['id_otoritas' => 102, 'role_id' => 1, 'kode_menu' => '11.1', 'status_otoritas' => 1],
-            ['id_otoritas' => 103, 'role_id' => 1, 'kode_menu' => '11.2', 'status_otoritas' => 1],
-            ['id_otoritas' => 104, 'role_id' => 1, 'kode_menu' => '11.3', 'status_otoritas' => 1],
-            ['id_otoritas' => 105, 'role_id' => 1, 'kode_menu' => '11.5', 'status_otoritas' => 1],
-            ['id_otoritas' => 106, 'role_id' => 1, 'kode_menu' => '11.4', 'status_otoritas' => 1],
-            ['id_otoritas' => 107, 'role_id' => 8, 'kode_menu' => '16', 'status_otoritas' => 1],
-            ['id_otoritas' => 108, 'role_id' => 8, 'kode_menu' => '16.3', 'status_otoritas' => 1],
-            ['id_otoritas' => 109, 'role_id' => 8, 'kode_menu' => '16.1', 'status_otoritas' => 1],
-            ['id_otoritas' => 110, 'role_id' => 8, 'kode_menu' => '16.5', 'status_otoritas' => 1],
-            ['id_otoritas' => 111, 'role_id' => 8, 'kode_menu' => '16.4', 'status_otoritas' => 1],
-            ['id_otoritas' => 112, 'role_id' => 8, 'kode_menu' => '16.2', 'status_otoritas' => 1],
-            ['id_otoritas' => 113, 'role_id' => 8, 'kode_menu' => '17', 'status_otoritas' => 1],
-            ['id_otoritas' => 114, 'role_id' => 8, 'kode_menu' => '18', 'status_otoritas' => 1],
-            ['id_otoritas' => 115, 'role_id' => 8, 'kode_menu' => '18.1', 'status_otoritas' => 1],
-            ['id_otoritas' => 116, 'role_id' => 8, 'kode_menu' => '18.3', 'status_otoritas' => 1],
-            ['id_otoritas' => 117, 'role_id' => 8, 'kode_menu' => '18.2', 'status_otoritas' => 1],
-            ['id_otoritas' => 118, 'role_id' => 8, 'kode_menu' => '18.4', 'status_otoritas' => 1],
-            ['id_otoritas' => 119, 'role_id' => 8, 'kode_menu' => '11.1', 'status_otoritas' => 1],
-            ['id_otoritas' => 120, 'role_id' => 8, 'kode_menu' => '11.2', 'status_otoritas' => 1],
-            ['id_otoritas' => 121, 'role_id' => 8, 'kode_menu' => '11.3', 'status_otoritas' => 1],
-            ['id_otoritas' => 122, 'role_id' => 8, 'kode_menu' => '11.4', 'status_otoritas' => 1],
-            ['id_otoritas' => 123, 'role_id' => 8, 'kode_menu' => '11.5', 'status_otoritas' => 1],
-            ['id_otoritas' => 124, 'role_id' => 8, 'kode_menu' => '19', 'status_otoritas' => 1],
-            ['id_otoritas' => 125, 'role_id' => 8, 'kode_menu' => '20', 'status_otoritas' => 1],
-            ['id_otoritas' => 126, 'role_id' => 1, 'kode_menu' => '20', 'status_otoritas' => 1],
-            ['id_otoritas' => 127, 'role_id' => 1, 'kode_menu' => '21', 'status_otoritas' => 1],
-            ['id_otoritas' => 128, 'role_id' => 8, 'kode_menu' => '21', 'status_otoritas' => 1],
-        ]);
-
-        // 12. Insert landing_views data (exact from SQL)
-        $this->db->table('landing_views')->insert([
-            'id_landing_views' => 1,
-            'viewed_at' => '2025-08-22 14:16:54',
-        ]);
-
-        // 13. Insert pengumuman data (exact from SQL)
-        $this->db->table('pengumuman')->insertBatch([
-            [
-                'id_pengumuman' => 2,
-                'user_id' => 1,
-                'judul' => 'Pengumuman Maintenance Sistem Ecomel',
-                'status' => 'tampil',
-                'tanggal' => '2025-06-25'
-            ],
-            [
-                'id_pengumuman' => 3,
-                'user_id' => 1,
-                'judul' => 'Pemberitahuan Keterlambatan Pengiriman',
-                'status' => 'tampil',
-                'tanggal' => '2025-06-25'
-            ],
-            [
-                'id_pengumuman' => 4,
-                'user_id' => 1,
-                'judul' => 'Promo Khusus Member Baru: Dapatkan Voucher Belanja!',
-                'status' => 'tampil',
-                'tanggal' => '2025-08-01'
-            ],
-        ]);
-
-        // 14. Insert posts data (exact from SQL)
-        $this->db->table('posts')->insertBatch([
-            [
-                'id_posts' => 54,
-                'categories_id' => 46,
-                'user_id' => 1,
-                'title' => 'Ecomel Resmi Diluncurkan: Platform Belanja Digital Baru untuk Generasi Cerdas dan Hemat',
-                'slug' => 'manfaat-berjalan-kaki-30-menit-setiap-hari',
-                'konten' => '<p><strong>Banjarbaru, 15 Juli 2025</strong> – Sebuah platform e-commerce terbaru bernama <strong>Ecomel</strong> resmi diluncurkan dan siap menjadi solusi belanja digital yang cepat, mudah, dan ramah pengguna. Dengan mengusung slogan <em>"Belanja Mudah, Hidup Cerah"</em>, Ecomel menawarkan pengalaman berbelanja yang efisien dengan harga terjangkau dan dukungan pada produk-produk lokal unggulan.</p><p>Peluncuran Ecomel dilangsungkan secara daring melalui siaran langsung di kanal media sosial resmi dan disambut antusias oleh para pengguna awal, pelaku UMKM, serta komunitas digital di Kalimantan Selatan. Dalam sambutannya, CEO Ecomel, Muhammad Nazar Gunawan menyampaikan:</p><blockquote>"Kami membangun Ecomel dengan semangat untuk menghadirkan e-commerce yang bukan hanya praktis, tapi juga memberdayakan. Kami percaya bahwa teknologi bisa menjadi jembatan antara kualitas, aksesibilitas, dan pemberdayaan lokal."</blockquote><p>Ecomel hadir dengan fitur-fitur unggulan seperti:</p><ol><li data-list="bullet"><span class="ql-ui" contenteditable="false"></span>Navigasi super ringan &amp; mobile friendly</li><li data-list="bullet"><span class="ql-ui" contenteditable="false"></span>Promo harian dan sistem cashback</li><li data-list="bullet"><span class="ql-ui" contenteditable="false"></span>Kategori khusus produk lokal dan UMKM</li><li data-list="bullet"><span class="ql-ui" contenteditable="false"></span>Pembayaran digital aman dan pengiriman cepat</li></ol><p><br></p>',
-                'excerpt' => 'Banjarbaru, 15 Juli 2025 – Sebuah platform e-commerce...',
-                'thumbnail' => '1755143835d1c4284c77.jpg',
-                'status' => 'publish',
-                'created_at' => '2025-06-25 16:11:29',
-                'updated_at' => '2025-08-14 11:57:15',
-                'published_at' => '2025-06-25 00:00:00',
-                'views' => 6
-            ],
-            [
-                'id_posts' => 63,
-                'categories_id' => 49,
-                'user_id' => 1,
-                'title' => 'Pentingnya Tidur Cukup untuk Kesehatan Tubuh dan Mental',
-                'slug' => 'pentingnya-tidur-cukup-untuk-kesehatan-tubuh-dan-mental',
-                'konten' => '<p>Tidur bukan sekadar istirahat â€" ini adalah kebutuhan dasar tubuh untuk memperbaiki dan memulihkan fungsi fisik serta mental. Kurang tidur dapat menyebabkan penurunan daya konsentrasi, gangguan suasana hati, dan penurunan sistem imun. Orang dewasa disarankan tidur 7â€"9 jam per malam. Untuk meningkatkan kualitas tidur, hindari layar sebelum tidur, jaga jadwal tidur yang konsisten, dan ciptakan lingkungan tidur yang nyaman dan gelap.</p>',
-                'excerpt' => 'Tidur bukan sekadar istirahat â€" ini adalah kebutuhan ...',
-                'thumbnail' => '17508752556585a56e62.jpg',
-                'status' => 'publish',
-                'created_at' => '2025-06-25 00:00:00',
-                'updated_at' => '2025-06-22 00:00:00',
-                'published_at' => '2025-06-22 00:00:00',
-                'views' => 2
-            ],
-        ]);
-
-        // 16. Insert sosmed data (exact from SQL)
-        $this->db->table('sosmed')->insertBatch([
-            ['id_sosmed' => 1, 'nama' => 'Facebook', 'link' => 'https://www.facebook.com/klinik', 'icon' => 'bi-facebook', 'status' => 'Y', 'urutan' => 0],
-            ['id_sosmed' => 2, 'nama' => 'Instagram', 'link' => 'https://www.instagram.com/klinik', 'icon' => 'bi-instagram', 'status' => 'Y', 'urutan' => 0],
-        ]);
-
-        // 17. Insert team data (exact from SQL)
-        $this->db->table('team')->insert([
-            'id_team' => 17,
-            'nama' => 'dr. Iskandar, M.Kes., Sp.A',
-            'spesialis' => 'Dokter Cinta',
-            'foto' => '175325369259f09b9399.png',
-            'urutan' => 1,
-            'status' => 'Y',
-            'link' => ''
-        ]);
-
-        // 18. Insert layout data (exact from SQL)
+        // layout
         $this->db->table('layout')->insertBatch([
             [
                 'id_layout' => 1,
                 'kode' => 'hero',
-                'html_section' => 'layout html' . "\r\n",
+                'html_section' => "layout html\r\n",
                 'konten_dinamis' => '{"judul": "Slider", "deskripsi": null}',
                 'urutan' => 1,
                 'status' => 'Y',
@@ -511,6 +186,229 @@ class SimlabSeeder extends Seeder
                 'created_at' => '2025-08-22 14:16:54',
                 'updated_at' => '2025-08-22 14:16:54'
             ],
+        ]);
+
+        // mitra
+        $this->db->table('mitra')->insertBatch([
+            ['id_mitra' => 14, 'nama' => 'BIMA', 'foto' => '175293305338af992638.png', 'urutan' => 3, 'status' => 'Y'],
+            ['id_mitra' => 16, 'nama' => 'Tut Wuri Handayani', 'foto' => '17529330137b4677912f.png', 'urutan' => 1, 'status' => 'Y'],
+            ['id_mitra' => 19, 'nama' => 'LPPM', 'foto' => '1752933028429a38c250.png', 'urutan' => 2, 'status' => 'Y'],
+            ['id_mitra' => 20, 'nama' => 'DIKTISAINTEK BERDAMPAK', 'foto' => '1752933097403cb1c616.png', 'urutan' => 4, 'status' => 'Y'],
+            ['id_mitra' => 23, 'nama' => 'Tut Wuri Handayani', 'foto' => '175293315576c3452791.png', 'urutan' => 5, 'status' => 'Y'],
+            ['id_mitra' => 24, 'nama' => 'LPPM', 'foto' => '1752933169766c556b5d.png', 'urutan' => 6, 'status' => 'Y'],
+            ['id_mitra' => 25, 'nama' => 'BIMA', 'foto' => '1752933187684626179c.png', 'urutan' => 7, 'status' => 'Y'],
+            ['id_mitra' => 26, 'nama' => 'DIKTISAINTEK BERDAMPAK', 'foto' => '17529332156624c13061.png', 'urutan' => 8, 'status' => 'Y'],
+            ['id_mitra' => 27, 'nama' => 'Tut Wuri Handayani', 'foto' => '1752933992112ee8c1dc.png', 'urutan' => 9, 'status' => 'Y'],
+            ['id_mitra' => 28, 'nama' => 'LPPM', 'foto' => '1752934005f52689f1b2.png', 'urutan' => 10, 'status' => 'Y'],
+        ]);
+
+        // motifs
+        $this->db->table('motifs')->insertBatch([
+            ['id' => 1, 'name' => 'Dragon', 'deskripsi' => 'Dragon adalah naga', 'foto' => '1754487655f4c01333af.jpg'],
+            ['id' => 4, 'name' => 'coba', 'deskripsi' => 'iya', 'foto' => '175963978578397eab6a.jpg'],
+            ['id' => 5, 'name' => 'coba lagi', 'deskripsi' => 'apa coba', 'foto' => '175963990908c3f485b1.jpg'],
+            ['id' => 6, 'name' => 'lagi', 'deskripsi' => 'lagi dong', 'foto' => '175964004215fcc46ddb.png'],
+        ]);
+
+        // navbar
+        $this->db->table('navbar')->insertBatch([
+            ['id_navbar' => 11, 'kode_navbar' => '1', 'kode_induk' => '0', 'nama' => 'News', 'url' => 'berita', 'status' => 'N', 'sort_order' => 1],
+            ['id_navbar' => 31, 'kode_navbar' => '2', 'kode_induk' => '0', 'nama' => 'Youtube', 'url' => 'https://youtube.com/', 'status' => 'N', 'sort_order' => 2],
+            ['id_navbar' => 33, 'kode_navbar' => '4', 'kode_induk' => '0', 'nama' => 'Layanan', 'url' => '#services', 'status' => 'Y', 'sort_order' => 4],
+            ['id_navbar' => 34, 'kode_navbar' => '5', 'kode_induk' => '0', 'nama' => 'Team', 'url' => '#team', 'status' => 'N', 'sort_order' => 5],
+            ['id_navbar' => 35, 'kode_navbar' => '6', 'kode_induk' => '0', 'nama' => 'Pengumuman', 'url' => '#notice', 'status' => 'Y', 'sort_order' => 6],
+            ['id_navbar' => 36, 'kode_navbar' => '8', 'kode_induk' => '0', 'nama' => 'Mitra', 'url' => '#partner', 'status' => 'Y', 'sort_order' => 8],
+            ['id_navbar' => 38, 'kode_navbar' => '7', 'kode_induk' => '0', 'nama' => 'Berita', 'url' => '#news', 'status' => 'Y', 'sort_order' => 7],
+            ['id_navbar' => 40, 'kode_navbar' => '3', 'kode_induk' => '0', 'nama' => 'Profil', 'url' => 'hal/profil', 'status' => 'Y', 'sort_order' => 3],
+        ]);
+
+        // pages
+        $this->db->table('pages')->insert([
+            'id_pages' => 60,
+            'user_id' => 1,
+            'title' => 'Profil',
+            'slug' => 'profil',
+            'konten' => '<p><strong>Ecomel</strong> adalah platform e-commerce yang hadir untuk menghadirkan pengalaman belanja digital yang mudah, aman, dan memberdayakan. Dibangun dengan semangat lokal dan inovasi teknologi, Ecomel menghubungkan pelanggan dengan berbagai produk berkualitas dari seluruh Indonesia, sekaligus menjadi rumah digital bagi pelaku UMKM untuk tumbuh bersama.</p><h3>💡 Visi</h3><p><strong>Menjadi platform e-commerce terpercaya yang menghubungkan masyarakat Indonesia dengan produk berkualitas melalui teknologi yang sederhana dan inklusif.</strong></p><h3>🎯 Misi</h3><ol><li data-list="ordered"><span class="ql-ui" contenteditable="false"></span>Memberikan pengalaman belanja online yang praktis, cepat, dan menyenangkan.</li><li data-list="ordered"><span class="ql-ui" contenteditable="false"></span>Mendukung pertumbuhan UMKM dan produk lokal melalui teknologi digital.</li><li data-list="ordered"><span class="ql-ui" contenteditable="false"></span>Menyediakan sistem pembayaran dan pengiriman yang aman, transparan, dan efisien.</li><li data-list="ordered"><span class="ql-ui" contenteditable="false"></span>Menjadi mitra strategis bagi pengguna, mitra usaha, dan komunitas digital.</li></ol><h3>🌱 Nilai-Nilai Kami</h3><ol><li data-list="bullet"><span class="ql-ui" contenteditable="false"></span><strong>Integritas</strong> – Kami menjaga kepercayaan pelanggan dan mitra dengan transparansi dan tanggung jawab.</li><li data-list="bullet"><span class="ql-ui" contenteditable="false"></span><strong>Inovasi</strong> – Kami terus berkembang dan berinovasi untuk menciptakan solusi belanja yang lebih baik.</li><li data-list="bullet"><span class="ql-ui" contenteditable="false"></span><strong>Kebermanfaatan</strong> – Kami percaya bahwa teknologi harus memberi dampak positif bagi masyarakat.</li><li data-list="bullet"><span class="ql-ui" contenteditable="false"></span><strong>Kebersamaan</strong> – Kami tumbuh bersama pelanggan dan pelaku usaha dalam semangat kolaborasi.</li></ol><h3>🔍 Apa yang Membuat Ecomel Berbeda?</h3><ol><li data-list="bullet"><span class="ql-ui" contenteditable="false"></span><strong>Fokus pada Produk Lokal:</strong> Kami memprioritaskan brand dan usaha lokal untuk menjangkau pasar lebih luas.</li><li data-list="bullet"><span class="ql-ui" contenteditable="false"></span><strong>UI/UX Sederhana &amp; Ringan:</strong> Desain aplikasi kami dibuat untuk semua kalangan, bahkan yang baru pertama kali belanja online.</li><li data-list="bullet"><span class="ql-ui" contenteditable="false"></span><strong>Layanan Pelanggan Responsif:</strong> Tim kami siap membantu melalui berbagai kanal dengan cepat dan ramah.</li><li data-list="bullet"><span class="ql-ui" contenteditable="false"></span><strong>Promo dan Program Loyalitas:</strong> Kami menghadirkan promo menarik setiap hari dan sistem poin belanja yang menguntungkan.</li></ol><h3>📍 Lokasi Kantor</h3><p>Jl. Bhayangkara, Kel. Sungai Besar, Banjarbaru Selatan,</p><p> Kota Banjarbaru, Kalimantan Selatan 70714</p><p> 📧 Email: info@ecomel.id</p><p> 📞 Telepon: 08xx-xxxx-xxxx</p>',
+            'status' => 'publish',
+            'created_at' => '2025-06-29 00:00:00',
+            'updated_at' => '2025-06-29 00:00:00',
+            'published_at' => '2025-06-29 00:00:00',
+            'views' => 27
+        ]);
+
+        // page_views (as in dump)
+        $this->db->table('page_views')->insertBatch([
+            ['id_page_views' => 1, 'page_id' => 60, 'viewed_at' => '2025-06-30 03:23:28'],
+            ['id_page_views' => 2, 'page_id' => 60, 'viewed_at' => '2025-06-30 14:18:32'],
+            ['id_page_views' => 3, 'page_id' => 60, 'viewed_at' => '2025-07-04 06:13:29'],
+            ['id_page_views' => 4, 'page_id' => 60, 'viewed_at' => '2025-07-12 12:29:55'],
+            ['id_page_views' => 5, 'page_id' => 60, 'viewed_at' => '2025-07-16 07:49:23'],
+            ['id_page_views' => 6, 'page_id' => 60, 'viewed_at' => '2025-07-16 09:49:08'],
+            ['id_page_views' => 7, 'page_id' => 60, 'viewed_at' => '2025-07-18 07:52:40'],
+            ['id_page_views' => 8, 'page_id' => 60, 'viewed_at' => '2025-07-18 07:57:11'],
+            ['id_page_views' => 9, 'page_id' => 60, 'viewed_at' => '2025-07-18 07:58:07'],
+            ['id_page_views' => 10, 'page_id' => 60, 'viewed_at' => '2025-07-18 08:31:49'],
+            ['id_page_views' => 11, 'page_id' => 60, 'viewed_at' => '2025-07-19 13:42:04'],
+            ['id_page_views' => 12, 'page_id' => 60, 'viewed_at' => '2025-07-21 18:13:33'],
+            ['id_page_views' => 13, 'page_id' => 60, 'viewed_at' => '2025-07-23 11:38:13'],
+            ['id_page_views' => 14, 'page_id' => 60, 'viewed_at' => '2025-07-27 02:11:17'],
+            ['id_page_views' => 15, 'page_id' => 60, 'viewed_at' => '2025-07-30 07:36:49'],
+            ['id_page_views' => 16, 'page_id' => 60, 'viewed_at' => '2025-07-30 07:43:23'],
+            ['id_page_views' => 17, 'page_id' => 60, 'viewed_at' => '2025-07-30 07:56:16'],
+            ['id_page_views' => 18, 'page_id' => 60, 'viewed_at' => '2025-07-30 11:24:49'],
+            ['id_page_views' => 19, 'page_id' => 60, 'viewed_at' => '2025-07-30 15:18:53'],
+            ['id_page_views' => 20, 'page_id' => 60, 'viewed_at' => '2025-07-31 21:09:04'],
+            ['id_page_views' => 21, 'page_id' => 60, 'viewed_at' => '2025-08-06 22:13:05'],
+            ['id_page_views' => 22, 'page_id' => 60, 'viewed_at' => '2025-08-14 13:50:58'],
+            ['id_page_views' => 23, 'page_id' => 60, 'viewed_at' => '2025-08-19 18:09:15'],
+            ['id_page_views' => 24, 'page_id' => 60, 'viewed_at' => '2025-08-19 21:44:52'],
+            ['id_page_views' => 25, 'page_id' => 60, 'viewed_at' => '2025-08-19 21:46:09'],
+            ['id_page_views' => 26, 'page_id' => 60, 'viewed_at' => '2025-09-03 13:26:18'],
+            ['id_page_views' => 27, 'page_id' => 60, 'viewed_at' => '2025-09-09 20:35:09'],
+        ]);
+
+        // pengumuman
+        $this->db->table('pengumuman')->insertBatch([
+            [
+                'id_pengumuman' => 2,
+                'user_id' => 1,
+                'judul' => 'Pengumuman Maintenance Sistem Ecomel',
+                'deskripsi' => "Halo, Sahabat Ecomel!\r\nKami akan melakukan maintenance sistem untuk peningkatan layanan pada:\r\n\r\n🗓️ Tanggal: Kamis, 18 Juli 2025\r\n⏰ Waktu: Pukul 23.00 – 03.00 WITA",
+                'status' => 'tampil',
+                'tanggal' => '2025-06-25'
+            ],
+            [
+                'id_pengumuman' => 3,
+                'user_id' => 1,
+                'judul' => 'Pemberitahuan Keterlambatan Pengiriman',
+                'deskripsi' => 'Kami informasikan bahwa terjadi gangguan distribusi akibat cuaca ekstrem di beberapa wilayah Kalimantan dan Sulawesi. Hal ini dapat menyebabkan keterlambatan pengiriman 1–3 hari dari estimasi awal.',
+                'status' => 'tampil',
+                'tanggal' => '2025-06-25'
+            ],
+            [
+                'id_pengumuman' => 4,
+                'user_id' => 1,
+                'judul' => 'Promo Khusus Member Baru: Dapatkan Voucher Belanja!',
+                'deskripsi' => "Kabar baik untuk kamu yang baru bergabung!\r\nDapatkan Voucher Belanja Rp25.000 tanpa minimum belanja, khusus untuk pengguna baru yang mendaftar akun Ecomel mulai 15–31 Juli 2025.",
+                'status' => 'tampil',
+                'tanggal' => '2025-08-01'
+            ],
+        ]);
+
+        // posts
+        $this->db->table('posts')->insertBatch([
+            [
+                'id_posts' => 54,
+                'categories_id' => 46,
+                'user_id' => 1,
+                'title' => 'Ecomel Resmi Diluncurkan: Platform Belanja Digital Baru untuk Generasi Cerdas dan Hemat',
+                'slug' => 'manfaat-berjalan-kaki-30-menit-setiap-hari',
+                'konten' => '<p><strong>Banjarbaru, 15 Juli 2025</strong> – Sebuah platform e-commerce terbaru bernama <strong>Ecomel</strong> resmi diluncurkan dan siap menjadi solusi belanja digital yang cepat, mudah, dan ramah pengguna. Dengan mengusung slogan <em>"Belanja Mudah, Hidup Cerah"</em>, Ecomel menawarkan pengalaman berbelanja yang efisien dengan harga terjangkau dan dukungan pada produk-produk lokal unggulan.</p><p>Peluncuran Ecomel dilangsungkan secara daring melalui siaran langsung di kanal media sosial resmi dan disambut antusias oleh para pengguna awal, pelaku UMKM, serta komunitas digital di Kalimantan Selatan. Dalam sambutannya, CEO Ecomel, Muhammad Nazar Gunawan menyampaikan:</p><blockquote>"Kami membangun Ecomel dengan semangat untuk menghadirkan e-commerce yang bukan hanya praktis, tapi juga memberdayakan. Kami percaya bahwa teknologi bisa menjadi jembatan antara kualitas, aksesibilitas, dan pemberdayaan lokal."</blockquote><p>Ecomel hadir dengan fitur-fitur unggulan seperti:</p><ol><li data-list="bullet"><span class="ql-ui" contenteditable="false"></span>Navigasi super ringan &amp; mobile friendly</li><li data-list="bullet"><span class="ql-ui" contenteditable="false"></span>Promo harian dan sistem cashback</li><li data-list="bullet"><span class="ql-ui" contenteditable="false"></span>Kategori khusus produk lokal dan UMKM</li><li data-list="bullet"><span class="ql-ui" contenteditable="false"></span>Pembayaran digital aman dan pengiriman cepat</li></ol><p><br></p>',
+                'excerpt' => 'Banjarbaru, 15 Juli 2025 – Sebuah platform e-commerce...',
+                'thumbnail' => '1755143835d1c4284c77.jpg',
+                'status' => 'publish',
+                'created_at' => '2025-06-25 16:11:29',
+                'updated_at' => '2025-08-14 11:57:15',
+                'published_at' => '2025-06-25 00:00:00',
+                'views' => 6
+            ],
+            [
+                'id_posts' => 55,
+                'categories_id' => 35,
+                'user_id' => 1,
+                'title' => 'Peran Gizi Seimbang dalam Menjaga Daya Tahan Tubuh',
+                'slug' => 'peran-gizi-seimbang-dalam-menjaga-daya-tahan-tubuh',
+                'konten' => '<p>Tubuh memerlukan nutrisi lengkap untuk berfungsi optimal. Gizi seimbang mencakup karbohidrat, protein, lemak sehat, vitamin, dan mineral. Sayur dan buah memberikan serat serta antioksidan, sementara protein membantu membangun dan memperbaiki jaringan. Mengonsumsi makanan olahan secara berlebihan dapat menurunkan imunitas. Cobalah makan dengan porsi seimbang dan utamakan bahan makanan segar.</p>',
+                'excerpt' => 'Tubuh memerlukan nutrisi lengkap untuk berfungsi optima...',
+                'thumbnail' => '17508684608c4aef997b.jpg',
+                'status' => 'publish',
+                'created_at' => '2025-06-25 00:00:00',
+                'updated_at' => '2025-06-23 00:00:00',
+                'published_at' => '2025-06-23 00:00:00',
+                'views' => 2
+            ],
+            [
+                'id_posts' => 56,
+                'categories_id' => 46,
+                'user_id' => 1,
+                'title' => 'Ecomel Day: Diskon Gede-Gedean Spesial 1 Bulan Peluncuran!',
+                'slug' => 'mengelola-stres-untuk-kesehatan-mental-yang-lebih-baik',
+                'konten' => '<p>Dalam rangka memperingati <strong>1 bulan peluncuran Ecomel</strong>, kami menghadirkan program <strong>Ecomel Day</strong>, yaitu promo besar-besaran selama 3 hari berturut-turut. Nikmati diskon hingga <strong>70%</strong> untuk semua kategori, <strong>flash sale setiap jam</strong>, dan <strong>gratis ongkir tanpa minimum belanja</strong>.</p><p>Program ini berlangsung mulai <strong>15 Agustus 2025</strong>. Jangan lewatkan kejutan tambahan berupa <strong>voucher cashback</strong> dan hadiah menarik untuk pelanggan aktif. Yuk, rayakan Ecomel Day dan jadikan belanja lebih hemat &amp; seru!</p>',
+                'excerpt' => 'Dalam rangka memperingati 1 bulan peluncuran Ecomel, ka...',
+                'thumbnail' => '17526500674de4f6c3b6.jpg',
+                'status' => 'publish',
+                'created_at' => '2025-06-25 00:00:00',
+                'updated_at' => '2025-06-24 00:00:00',
+                'published_at' => '2025-06-24 00:00:00',
+                'views' => 12
+            ],
+            [
+                'id_posts' => 63,
+                'categories_id' => 49,
+                'user_id' => 1,
+                'title' => 'Pentingnya Tidur Cukup untuk Kesehatan Tubuh dan Mental',
+                'slug' => 'pentingnya-tidur-cukup-untuk-kesehatan-tubuh-dan-mental',
+                'konten' => '<p>Tidur bukan sekadar istirahat â€" ini adalah kebutuhan dasar tubuh untuk memperbaiki dan memulihkan fungsi fisik serta mental. Kurang tidur dapat menyebabkan penurunan daya konsentrasi, gangguan suasana hati, dan penurunan sistem imun. Orang dewasa disarankan tidur 7â€"9 jam per malam. Untuk meningkatkan kualitas tidur, hindari layar sebelum tidur, jaga jadwal tidur yang konsisten, dan ciptakan lingkungan tidur yang nyaman dan gelap.</p>',
+                'excerpt' => 'Tidur bukan sekadar istirahat â€" ini adalah kebutuhan ...',
+                'thumbnail' => '17508752556585a56e62.jpg',
+                'status' => 'publish',
+                'created_at' => '2025-06-25 00:00:00',
+                'updated_at' => '2025-06-22 00:00:00',
+                'published_at' => '2025-06-22 00:00:00',
+                'views' => 2
+            ],
+        ]);
+
+        // post_views
+        $this->db->table('post_views')->insertBatch([
+            ['id_post_views' => 1, 'post_id' => 56, 'viewed_at' => '2025-06-30 03:21:43'],
+            ['id_post_views' => 2, 'post_id' => 63, 'viewed_at' => '2025-06-30 03:54:24'],
+            ['id_post_views' => 3, 'post_id' => 56, 'viewed_at' => '2025-06-30 14:17:57'],
+            ['id_post_views' => 4, 'post_id' => 55, 'viewed_at' => '2025-06-30 14:18:11'],
+            ['id_post_views' => 5, 'post_id' => 54, 'viewed_at' => '2025-07-01 03:20:27'],
+            ['id_post_views' => 6, 'post_id' => 56, 'viewed_at' => '2025-07-01 03:20:53'],
+            ['id_post_views' => 7, 'post_id' => 54, 'viewed_at' => '2025-07-01 04:15:46'],
+            ['id_post_views' => 8, 'post_id' => 56, 'viewed_at' => '2025-07-03 05:29:34'],
+            ['id_post_views' => 9, 'post_id' => 56, 'viewed_at' => '2025-07-03 13:02:01'],
+            ['id_post_views' => 10, 'post_id' => 63, 'viewed_at' => '2025-07-03 13:02:18'],
+            ['id_post_views' => 11, 'post_id' => 56, 'viewed_at' => '2025-07-04 06:13:02'],
+            ['id_post_views' => 12, 'post_id' => 56, 'viewed_at' => '2025-07-04 10:29:00'],
+            ['id_post_views' => 13, 'post_id' => 55, 'viewed_at' => '2025-07-04 10:29:16'],
+            ['id_post_views' => 14, 'post_id' => 56, 'viewed_at' => '2025-07-04 13:37:38'],
+            ['id_post_views' => 15, 'post_id' => 56, 'viewed_at' => '2025-07-12 13:35:30'],
+            ['id_post_views' => 16, 'post_id' => 54, 'viewed_at' => '2025-07-17 06:31:12'],
+            ['id_post_views' => 17, 'post_id' => 54, 'viewed_at' => '2025-07-17 07:56:20'],
+            ['id_post_views' => 18, 'post_id' => 54, 'viewed_at' => '2025-07-18 02:17:03'],
+            ['id_post_views' => 19, 'post_id' => 56, 'viewed_at' => '2025-07-23 11:47:36'],
+            ['id_post_views' => 20, 'post_id' => 56, 'viewed_at' => '2025-07-23 14:14:25'],
+            ['id_post_views' => 21, 'post_id' => 54, 'viewed_at' => '2025-07-26 05:50:20'],
+            ['id_post_views' => 22, 'post_id' => 56, 'viewed_at' => '2025-07-27 02:19:54'],
+        ]);
+
+        // sosmed
+        $this->db->table('sosmed')->insertBatch([
+            ['id_sosmed' => 1, 'nama' => 'Facebook', 'link' => 'https://www.facebook.com/klinik', 'icon' => 'bi-facebook', 'status' => 'Y', 'urutan' => 0],
+            ['id_sosmed' => 2, 'nama' => 'Instagram', 'link' => 'https://www.instagram.com/klinik', 'icon' => 'bi-instagram', 'status' => 'Y', 'urutan' => 0],
+        ]);
+
+        // team
+        $this->db->table('team')->insert([
+            'id_team' => 17,
+            'nama' => 'dr. Iskandar, M.Kes., Sp.A',
+            'spesialis' => 'Dokter Cinta',
+            'foto' => '175325369259f09b9399.png',
+            'urutan' => 1,
+            'status' => 'Y',
+            'link' => ''
+        ]);
+
+        // migrations
+        $this->db->table('migrations')->insertBatch([
+            ['id' => 1, 'version' => '2025_08_28_000001', 'class' => 'App\\Database\\Migrations\\CreateCompleteNetxTemplateDatabase', 'group' => 'default', 'namespace' => 'App', 'time' => 1762671377, 'batch' => 1],
+            ['id' => 2, 'version' => '2025-09-14-030200', 'class' => 'App\\Database\\Migrations\\CreateSimlabAccountUsers', 'group' => 'default', 'namespace' => 'App', 'time' => 1762693021, 'batch' => 2],
+            ['id' => 3, 'version' => '2025-09-14-030300', 'class' => 'App\\Database\\Migrations\\CreateSimlabAccount', 'group' => 'default', 'namespace' => 'App', 'time' => 1762693021, 'batch' => 2],
+            ['id' => 4, 'version' => '2025-09-14-055100', 'class' => 'App\\Database\\Migrations\\CreateSimlabRAlat', 'group' => 'default', 'namespace' => 'App', 'time' => 1762693021, 'batch' => 2],
+            ['id' => 5, 'version' => '2025-09-14-055200', 'class' => 'App\\Database\\Migrations\\CreateSimlabRJenis', 'group' => 'default', 'namespace' => 'App', 'time' => 1762693021, 'batch' => 2],
         ]);
     }
 }

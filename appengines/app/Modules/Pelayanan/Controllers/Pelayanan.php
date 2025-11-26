@@ -8,259 +8,383 @@ use App\Models\MyModel;
 class Pelayanan extends BaseController
 {
     private $table = 'simlab_t_layanan';
-    private $id    = 'lnKode';
+    private $id = 'lnKode';
     protected $encrypter;
+    private $sessionKey = 'keranjang';
+
+    private function getStatusClass($status)
+    {
+        return match ($status) {
+            0 => 'secondary',  // Pendaftaran
+            1 => 'info',       // Review Manajer
+            2 => 'danger',     // Ditolak
+            3 => 'info',       // Review Admin
+            4 => 'primary',    // Pengujian
+            5 => 'primary',    // Proses LHUS
+            6 => 'success',    // LHUS Disetujui
+            7 => 'primary',    // Proses LHU
+            8 => 'success',    // LHU Disetujui
+            9 => 'success',    // Selesai
+            default => 'secondary'
+        };
+    }
+
+    private function getStatusText($status)
+    {
+        return match ($status) {
+            0 => 'Pendaftaran',
+            1 => 'Review Petugas',
+            2 => 'Ditolak',
+            3 => 'In Review Petugas',
+            4 => 'Pengujian Dilakukan',
+            5 => 'Verifikasi Hasil Uji',
+            6 => 'Penerbitan LHUS',
+            7 => 'Verifikasi LHU',
+            8 => 'Penerbitan LHU',
+            9 => 'Selesai',
+            default => 'Tidak Diketahui'
+        };
+    }
 
     public function __construct()
     {
         $this->encrypter = \Config\Services::encrypter();
     }
 
+    public function getTrackingData($id)
+    {
+        try {
+            $realId = $this->encrypter->decrypt(hex2bin($id));
+            $model = new MyModel($this->table);
+            $data = $model->getDataById($this->id, $realId);
+
+            if (!$data) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Data tidak ditemukan'
+                ]);
+            }
+
+            // Get detail items with grouped data
+            $db = \Config\Database::connect();
+            $builder = $db->table('t_layanan_detil as d');
+            $builder->select("
+                d.uji_kode,
+                d.kode_layanan,
+                d.nama_layanan as detParameter,
+                d.kode_jenis,
+                SUM(d.jumlah) as jumlah,
+                SUM(d.biaya) as biaya,
+                MAX(d.status_layanan) as status_layanan
+            ");
+            $builder->where('d.kode_layanan', $realId);
+            $builder->groupBy('d.uji_kode, d.kode_layanan, d.nama_layanan, d.kode_jenis');
+            $details = $builder->get()->getResult();
+
+            // Get log sampel (timestamps) if available
+            $logRow = $db->table('t_log_sampel')->where('kode_layanan', $realId)->get()->getRow();
+            $log = null;
+            if ($logRow) {
+                $log = [
+                    'pengecekan' => $logRow->pengecekan ? date('d-m-Y H:i', strtotime($logRow->pengecekan)) : null,
+                    'pengujian' => $logRow->pengujian ? date('d-m-Y H:i', strtotime($logRow->pengujian)) : null,
+                    'verifikasi_hasil_uji' => $logRow->verifikasi_hasil_uji ? date('d-m-Y H:i', strtotime($logRow->verifikasi_hasil_uji)) : null,
+                    'penerbitan_lhus' => $logRow->penerbitan_lhus ? date('d-m-Y H:i', strtotime($logRow->penerbitan_lhus)) : null,
+                    'verifikasi_lhu' => $logRow->verifikasi_lhu ? date('d-m-Y H:i', strtotime($logRow->verifikasi_lhu)) : null,
+                    'penerbitan_lhu' => $logRow->penerbitan_lhu ? date('d-m-Y H:i', strtotime($logRow->penerbitan_lhu)) : null,
+                ];
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'data' => [
+                    'kode' => $data->lnKode,
+                    'statusText' => $this->getStatusText((int) $data->lnStatus),
+                    'tanggal' => date('d-m-Y', strtotime($data->lnTgl)),
+                    'noTransaksi' => $data->lnNoTransaksi ?? 'Belum tersedia',
+                    'details' => array_map(function ($detail) {
+                        $statusGroup = isset($detail->status_layanan) ? (int) $detail->status_layanan : null;
+
+                        if ($statusGroup === 0) {
+                            $statusHtml = '<span class="badge bg-warning">Pending</span>';
+                        } elseif ($statusGroup === 1) {
+                            $statusHtml = '<span class="badge bg-success">Diterima</span>';
+                        } elseif ($statusGroup === 2) {
+                            $statusHtml = '<span class="badge bg-danger">Ditolak</span>';
+                        } else {
+                            $statusHtml = '<span class="badge bg-secondary">Belum Diproses</span>';
+                        }
+                        return [
+                            'parameter' => $detail->detParameter ?? '-',
+                            'biaya' => number_format((float) ($detail->biaya ?? 0), 0, ',', '.'),
+                            'jumlah' => (int) ($detail->jumlah ?? 0),
+                            'status' => $statusHtml
+                        ];
+                    }, $details),
+                    'log' => $log
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat memuat data'
+            ]);
+        }
+    }
+
     public function index()
     {
-        $session  = session();
-        $user_id  = $session->get('id_user');
+        $session = session();
+        $user_id = $session->get('id_user');
 
         $modelUser = new MyModel('simlab_account_users');
 
+        // Ambil daftar kategori untuk modal keranjang
+        $db = \Config\Database::connect();
+        $builder = $db->table('r_layanan_pengujian as lp');
+        $builder->select('
+            DISTINCT TRIM(LEFT(lp.kode_jenis, 2)) as jenKode,
+            j.jenNama
+        ');
+        $builder->join('simlab_r_jenis j', 'j.jenKode = TRIM(LEFT(lp.kode_jenis, 2))', 'left');
+        $builder->where('lp.kode_jenis IS NOT NULL');
+        $builder->where('lp.kode_jenis !=', '');
+        $builder->orderBy('j.jenNama', 'ASC');
+        $categories = $builder->get()->getResult();
+
+        // Normalisasi categories
+        $normalized = [];
+        if (!empty($categories)) {
+            foreach ($categories as $c) {
+                $kode = isset($c->jenKode) ? trim((string) $c->jenKode) : '';
+                $nama = (isset($c->jenNama) && trim((string) $c->jenNama) !== '') ? trim((string) $c->jenNama) : $kode;
+                if ($kode !== '') {
+                    $normalized[] = (object) [
+                        'jenKode' => $kode,
+                        'jenNama' => $nama
+                    ];
+                }
+            }
+        }
+
         $data = [
             'title' => 'Data Pelayanan',
-            'user'  => $modelUser->getDataById('user_id', $user_id),
+            'user' => $modelUser->getDataById('user_id', $user_id),
+            'categories' => array_values($normalized),
         ];
 
         return view('Modules\Pelayanan\Views\v_pelayanan', $data);
     }
 
-   public function dataList()
-{
-    $session   = session();
-    $user_id   = $session->get('id_user');
+    public function dataList()
+    {
+        $session = session();
+        $user_id = (int) $session->get('id_user');
 
-    // Ambil user dari tabel simlab_account_users
-    $modelUser = new MyModel('simlab_account_users');
-    $user      = $modelUser->getDataById('user_id', $user_id);
+        // Ambil user login (opsional buat cek kuisioner fallback)
+        $modelUser = new MyModel('simlab_account_users');
+        $user = $modelUser->getDataById('user_id', $user_id);
 
-    // Jika user tidak ditemukan, kembalikan data kosong
-    if (!$user) {
-        return $this->response->setJSON(["items" => []]);
-    }
+        if (!$user || !$user_id) {
+            return $this->response->setJSON(["items" => []]);
+        }
 
-    $model = new MyModel($this->table);
-    $data  = [];
+        $db = \Config\Database::connect();
+        $data = [];
 
-    // Filter data pelayanan berdasarkan email login
-    $where = ['lnAccEmail' => $user->user_email];
-    $list  = $model->getAllDataById($where, ['lnTgl' => 'DESC']);
+        // Query dengan JOIN ke t_layanan_detil untuk filter kode_jenis = 'A' (sampel)
+        // Gunakan GROUP BY untuk menghindari duplikasi row jika ada multiple detail items
+        $builder = $db->table($this->table . ' as t');
+        $builder->select('t.lnKode, t.user_id, t.lnAccEmail, t.lnNoTransaksi, t.lnTgl, t.lnStatus, t.kuisioner');
+        $builder->join('t_layanan_detil d', 'd.kode_layanan = t.lnKode', 'inner');
+        $builder->where('t.user_id', $user_id);
+        $builder->where('d.kode_jenis', 'A');  // Filter hanya sampel (kode_jenis = 'A')
+        $builder->groupBy('t.lnKode, t.user_id, t.lnAccEmail, t.lnNoTransaksi, t.lnTgl, t.lnStatus, t.kuisioner');
+        $builder->orderBy('t.lnTgl', 'DESC');
 
-    foreach ($list as $index => $row) {
-        $id = bin2hex($this->encrypter->encrypt($row->lnKode));
-        $response = [];
+        $list = $builder->get()->getResult();
 
-        // Jika lnNoTransaksi kosong/null/trim = tampilkan "Belum tersedia"
-        $noTransaksi = (isset($row->lnNoTransaksi) && trim((string)$row->lnNoTransaksi) !== '')
-                        ? $row->lnNoTransaksi
-                        : 'Belum tersedia';
+        if (empty($list)) {
+            return $this->response->setJSON(["items" => []]);
+        }
 
-        $tanggal     = !empty($row->lnTgl) ? date('d-m-Y', strtotime($row->lnTgl)) : '-';
-        $response[]  = '<div>' . esc($noTransaksi) . '<br><small>' . esc($tanggal) . '</small></div>';
+        // --- Siapkan map pembayaran terakhir per lnKode (satu query) ---
+        $lnKodes = array_map(fn($r) => (int) $r->lnKode, $list);
 
-        // Status transaksi layanan
-        $response[] = $this->statusBadge($row->lnStatus);
+        $payRows = $db->table('t_pembayaran')
+            ->select('bayarLnKode, bayarStatus, bayarInvoiceNo, MAX(bayarKode) AS lastKode')
+            ->whereIn('bayarLnKode', $lnKodes)
+            ->groupBy('bayarLnKode, bayarStatus, bayarInvoiceNo')
+            ->orderBy('lastKode', 'DESC')
+            ->get()->getResult();
 
-        // cek kuisioner 
-        $kuisionerVal = 0;
-        if (isset($row->kuisioner) && $row->kuisioner !== '') {
-            $kuisionerVal = (int) $row->kuisioner;
-        } else {
-            $kuFields = ['kuisioner', 'user_kuisioner', 'lnKuisioner', 'ln_kuisioner', 'kuisioner_user'];
-            foreach ($kuFields as $kf) {
-                if (isset($user->{$kf}) && $user->{$kf} !== '') {
-                    $kuisionerVal = (int) $user->{$kf};
-                    break;
-                }
+        // Simpan yang terbaru per lnKode
+        $payMap = [];
+        foreach ($payRows as $p) {
+            $ln = (int) $p->bayarLnKode;
+            if (!isset($payMap[$ln])) {
+                $payMap[$ln] = [
+                    'status' => (int) $p->bayarStatus,
+                    'inv' => $p->bayarInvoiceNo ?? null,
+                ];
             }
         }
 
-        // ambil status pembayaran terakhir untuk lnKode ini
-        $bayarStatusVal = 0;
-        $bayarInvoiceNo = null;
-        try {
-            if (!empty($row->lnKode)) {
-                $db = \Config\Database::connect();
-                $pay = $db->table('simlab_t_pembayaran')
-                          ->select('bayarStatus, bayarInvoiceNo')
-                          ->where('bayarLnKode', $row->lnKode)
-                          ->orderBy('bayarKode', 'DESC')
-                          ->limit(1)
-                          ->get()
-                          ->getRow();
+        foreach ($list as $row) {
+            $id = bin2hex($this->encrypter->encrypt($row->lnKode));
+            $response = [];
 
-                if ($pay && isset($pay->bayarStatus)) {
-                    $bayarStatusVal = (int) $pay->bayarStatus;
-                }
-                if ($pay && isset($pay->bayarInvoiceNo)) {
-                    $bayarInvoiceNo = $pay->bayarInvoiceNo;
+            // No Transaksi + Tanggal
+            $noTransaksi = (isset($row->lnNoTransaksi) && trim((string) $row->lnNoTransaksi) !== '')
+                ? $row->lnNoTransaksi
+                : 'Belum tersedia';
+
+            $tanggal = !empty($row->lnTgl) ? date('d-m-Y', strtotime($row->lnTgl)) : '-';
+            $response[] = '<div>' . esc($noTransaksi) . '<br><small>' . esc($tanggal) . '</small></div>';
+
+            // Status layanan dengan tracking
+            $statusText = $this->getStatusText((int) ($row->lnStatus ?? 0));
+            $response[] = '<div class="d-flex gap-2 align-items-center">' .
+                '<button class="btn btn-sm btn-outline-primary" onclick="showTrackingModal(\'' . $id . '\', \'' . $row->lnKode . '\', ' . (int) ($row->lnStatus ?? 0) . ')">' .
+                '<i class="bi bi-activity"></i> ' . $statusText . '</button>' .
+                '</div>';
+
+            // Kuisioner (ambil dari row dulu, kalau kosong fallback dari user)
+            $kuisionerVal = 0;
+            if (isset($row->kuisioner) && $row->kuisioner !== '') {
+                $kuisionerVal = (int) $row->kuisioner;
+            } else {
+                $kuFields = ['kuisioner', 'user_kuisioner', 'lnKuisioner', 'ln_kuisioner', 'kuisioner_user'];
+                foreach ($kuFields as $kf) {
+                    if (isset($user->{$kf}) && $user->{$kf} !== '') {
+                        $kuisionerVal = (int) $user->{$kf};
+                        break;
+                    }
                 }
             }
-        } catch (\Throwable $e) {
-            $bayarStatusVal = 0;
-        }
 
-        // statusBayar: 1 = sudah bayar, 0 = lakukan pembayaran
-        $statusBayar = ($bayarStatusVal === 1) ? 1 : 0;
+            // Pembayaran terakhir untuk lnKode ini (pakai map hasil query)
+            $lnKodeInt = (int) $row->lnKode;
+            $bayarStatusVal = isset($payMap[$lnKodeInt]) ? $payMap[$lnKodeInt]['status'] : 0;
+            $bayarInvoiceNo = isset($payMap[$lnKodeInt]) ? $payMap[$lnKodeInt]['inv'] : null;
 
-        // status pembayaran
-       if ($statusBayar === 1) {
-            $response[] = '<button class="btn btn-sm btn-success" >'
-                        . '<i class="bi bi-credit-card"></i> Sudah Bayar</button>';
-        } else {
-            $response[] = '<button class="btn btn-sm btn-danger" onclick="lokasiPembayaran(' . (int)$row->lnKode . ')">'
-                        . '<i class="bi bi-credit-card"></i> Belum Bayar</button>';
-        }
+            // statusBayar: 1 = sudah bayar, 0 = belum
+            if ($bayarStatusVal === 1) {
+                $response[] = '<button class="btn btn-sm btn-success"><i class="bi bi-credit-card"></i> Sudah Bayar</button>';
+            } else {
+                $response[] = '<button class="btn btn-sm btn-info" onclick="lokasiPembayaran(' . $lnKodeInt . ')"><i class="bi bi-credit-card"></i> Belum Bayar</button>';
+            }
 
+            // Akses LHU
+            $lnStatusVal = (int) ($row->lnStatus ?? 0);
+            $canViewLhu = ($kuisionerVal === 1 && $bayarStatusVal === 1 && in_array($lnStatusVal, [7, 9], true));
+            $lhuInfo = $this->detectLhuFile($row);
 
-        // logic file LHU 
-        $lnStatusVal = isset($row->lnStatus) ? (int) $row->lnStatus : 0;
-        $canViewLhu = ($kuisionerVal === 1 && $bayarStatusVal === 1 && in_array($lnStatusVal, [7, 8], true));
-        $lhuInfo = $this->detectLhuFile($row);
-
-        if ($lhuInfo['has'] && $canViewLhu) {
-            $response[] = '<button class="btn btn-sm btn-outline-primary" onclick="window.open(\'' . esc($lhuInfo['url']) . '\', \'_blank\')" title="Buka LHU">'
-                        . '<i class="bi bi-eye"></i> Lihat File LHU</button>';
-        } else {
-            $reason = 'File LHU tidak dapat diakses.';
-            if ($lhuInfo['has'] && !$canViewLhu) {
-                if ($kuisionerVal !== 1) {
-                    $reason = 'Isi kuisioner ';
-                } elseif ($bayarStatusVal !== 1) {
-                    $reason = 'belum bayar';
-                } elseif (!in_array($lnStatusVal, [7,8], true)) {
+            if ($lhuInfo['has'] && $canViewLhu) {
+                $response[] = '<button class="btn btn-sm btn-outline-primary" onclick="window.open(\'' . esc($lhuInfo['url']) . '\', \'_blank\')" title="Buka LHU"><i class="bi bi-eye"></i> Lihat LHU</button>';
+            } else {
+                $reason = 'File LHU tidak dapat diakses.';
+                if ($lhuInfo['has'] && !$canViewLhu) {
+                    if ($kuisionerVal !== 1) {
+                        $reason = 'Isi kuisioner';
+                    } elseif ($bayarStatusVal !== 1) {
+                        $reason = 'Belum bayar';
+                    } elseif (!in_array($lnStatusVal, [7, 8], true)) {
+                        $reason = 'LHU diproses';
+                    }
+                } elseif (!$lhuInfo['has']) {
                     $reason = 'LHU diproses';
                 }
-            } elseif (!$lhuInfo['has']) {
-                $reason = 'LHU diproses';
+                $response[] = '<button class="btn btn-sm btn-secondary" disabled><i class="bi bi-eye-slash"></i> ' . esc($reason) . '</button>';
             }
 
-            $response[] = '<button class="btn btn-sm btn-secondary" disabled>'
-                        . '<i class="bi bi-eye-slash"></i> ' . esc($reason) . '</button>';
+            // Aksi detail (masking lnKode via enkripsi)
+            // $response[] = '<a href="javascript:void(0)" onclick="loadDetail(\'' . $id . '\')" class="btn btn-sm btn-info">Lihat pesanan</a>';
+
+            $data[] = $response;
         }
 
-
-        $response[] = '<a href="javascript:void(0)" onclick="loadDetail(\'' . $id . '\')" class="btn btn-sm btn-info">Lihat pesanan</a>';
-
-
-        $data[] = $response;
+        return $this->response->setJSON(["items" => $data]);
     }
-
-    return $this->response->setJSON(["items" => $data]);
-}
-
-
-    private function statusBadge($status)
-    {
-        $labels = [
-            0 => 'Draft',
-            1 => 'Sedang diverifikasi petugas',
-            2 => 'Ditolak',
-            3 => 'Sedang diverifikasi petugas',
-            4 => 'Pengujian sedang dilakukan',
-            5 => 'File LHUS sedang diproses',
-            6 => 'LHUS telah disetujui petugas',
-            7 => 'LHU disetujui oleh petugas',
-        ];
-        $class = [
-            0 => 'secondary',
-            1 => 'info',
-            2 => 'danger',
-            3 => 'info',
-            4 => 'primary',
-            5 => 'info',
-            6 => 'warning',
-            7 => 'warning',
-        ];
-
-        return isset($labels[$status])
-            ? '<span class="badge bg-' . $class[$status] . '">' . $labels[$status] . '</span>'
-            : '<span class="badge bg-secondary">Unknown</span>';
-    }
-
 
     public function detail($id)
     {
-        $id    = $this->encrypter->decrypt(hex2bin($id));
+        $id = $this->encrypter->decrypt(hex2bin($id));
         $model = new MyModel($this->table);
-        $get   = $model->getDataById($this->id, $id);
+        $get = $model->getDataById($this->id, $id);
 
         return view('Modules\Pelayanan\Views\v_detail', ['data' => $get]);
     }
 
-    
+
     public function detailList($id = null)
-{
-    if (!$id) {
-        return $this->response->setJSON(['items' => []]);
-    }
-
-    try {
-        $kode = $this->encrypter->decrypt(hex2bin($id));
-    } catch (\Exception $e) {
-        return $this->response->setJSON(['items' => []]);
-    }
-
-    // Encrypted hex parent
-    $encLnId = bin2hex($this->encrypter->encrypt($kode));
-
-    $db = \Config\Database::connect();
-    $builder = $db->table('simlab_t_layanan_detil as d');
-
-    $builder->select("
-        d.detUjiKode,
-        d.detLnKode,
-        d.detLayanan,
-        d.detJenKode,
-        GROUP_CONCAT(DISTINCT d.detKeterangan SEPARATOR ' | ') AS detKet,
-        SUM(d.detJumlah) AS jumlah,
-        SUM(d.detBiaya) AS detBiaya,
-        MAX(d.detStatus) AS detStatusGroup
-    ");
-    $builder->where('d.detLnKode', $kode);
-    $builder->groupBy('d.detUjiKode, d.detLnKode, d.detLayanan, d.detJenKode');
-    $rows = $builder->get()->getResult();
-
-    $data = [];
-    $no = 1;
-
-    foreach ($rows as $row) {
-        $response = [];
-        $response[] = $no++;
-        $response[] = $row->detLayanan ?? '-';
-        $response[] = isset($row->detBiaya) ? number_format($row->detBiaya, 0, ',', '.') : '-';
-        $response[] = isset($row->jumlah) ? (int)$row->jumlah : 0;
-        $response[] = $row->detKet ?? '';
-
-        // Status grouping (0 = pending, 1 = diterima, 2 = ditolak)
-        $statusGroup = isset($row->detStatusGroup) ? (int)$row->detStatusGroup : null;
-
-        if ($statusGroup === 0) {
-            $statusHtml = '<span class="badge bg-warning ">Pending</span>';
-        } elseif ($statusGroup === 1) {
-            $statusHtml = '<span class="badge bg-success">Diterima</span>';
-        } elseif ($statusGroup === 2) {
-            $statusHtml = '<span class="badge bg-danger">Ditolak</span>';
-        } else {
-            $statusHtml = '<span class="badge bg-secondary">Belum Diproses</span>';
+    {
+        if (!$id) {
+            return $this->response->setJSON(['items' => []]);
         }
 
-        $response[] = $statusHtml;
+        try {
+            $kode = $this->encrypter->decrypt(hex2bin($id));
+        } catch (\Exception $e) {
+            return $this->response->setJSON(['items' => []]);
+        }
 
-        $ujiKodeInt = (int)$row->detUjiKode;
-        $encLnForBtn = $encLnId;
+        // Encrypted hex parent
+        $encLnId = bin2hex($this->encrypter->encrypt($kode));
 
-        $data[] = $response;
+        $db = \Config\Database::connect();
+        $builder = $db->table('t_layanan_detil as d');
+
+        $builder->select("
+        d.uji_kode,
+        d.kode_layanan,
+        d.nama_layanan,
+        d.kode_jenis,
+        d.metode_pengujian,
+        m.nama AS metode_nama,
+        SUM(d.jumlah) AS jumlah,
+        SUM(d.biaya) AS detBiaya,
+        MAX(d.status_layanan) AS detStatusGroup
+    ");
+        $builder->join('r_metode m', 'm.metode_kode = d.metode_pengujian', 'left');
+        $builder->where('d.kode_layanan', $kode);
+        $builder->groupBy('d.uji_kode, d.kode_layanan, d.nama_layanan, d.kode_jenis, d.metode_pengujian, m.nama');
+        $rows = $builder->get()->getResult();
+
+        $data = [];
+        $no = 1;
+
+        foreach ($rows as $row) {
+            $response = [];
+            $response[] = $no++;
+            $response[] = $row->nama_layanan ?? '-';
+            $response[] = isset($row->detBiaya) ? number_format($row->detBiaya, 0, ',', '.') : '-';
+            $response[] = isset($row->jumlah) ? (int) $row->jumlah : 0;
+            $response[] = isset($row->metode_nama) && !empty($row->metode_nama) ? esc($row->metode_nama) : '-';
+
+            // Status grouping (0 = pending, 1 = diterima, 2 = ditolak)
+            $statusGroup = isset($row->detStatusGroup) ? (int) $row->detStatusGroup : null;
+
+            if ($statusGroup === 0) {
+                $statusHtml = '<span class="badge bg-warning ">Pending</span>';
+            } elseif ($statusGroup === 1) {
+                $statusHtml = '<span class="badge bg-success">Diterima</span>';
+            } elseif ($statusGroup === 2) {
+                $statusHtml = '<span class="badge bg-danger">Ditolak</span>';
+            } else {
+                $statusHtml = '<span class="badge bg-secondary">Belum Diproses</span>';
+            }
+
+            $response[] = $statusHtml;
+
+            $ujiKodeInt = (int) $row->uji_kode;
+            $encLnForBtn = $encLnId;
+
+            $data[] = $response;
+        }
+
+        return $this->response->setJSON(['items' => $data]);
     }
-
-    return $this->response->setJSON(['items' => $data]);
-}
 
 
     public function checkVerified()
@@ -275,63 +399,186 @@ class Pelayanan extends BaseController
             return $this->response->setJSON(['verified' => false, 'msg' => 'User tidak ditemukan.']);
         }
 
-        if ((int)$user->verifikasi === 1) {
+        if ((int) $user->verifikasi === 1) {
             return $this->response->setJSON(['verified' => true, 'msg' => 'Akun sudah terverifikasi.']);
         } else {
-            return $this->response->setJSON(['verified' => false,
-             'msg' => 'Akun belum diverifikasi. Silakan unggah bukti atau tunggu verifikasi.
-             ']);
+            return $this->response->setJSON([
+                'verified' => false,
+                'msg' => 'Akun belum diverifikasi. Silakan unggah bukti atau tunggu verifikasi.
+             '
+            ]);
+        }
+    }
+
+    public function getSampleIdentity($lnKode = null)
+    {
+        if (!$lnKode) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Kode layanan tidak ditemukan'
+            ]);
+        }
+
+        try {
+            $modelSample = new MyModel('t_identitas_sampel');
+            $sampleData = $modelSample->getWhere(['kode_layanan' => $lnKode])->getRow();
+
+            if (!$sampleData) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Data identitas sampel tidak ditemukan'
+                ]);
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'data' => [
+                    'jenis' => $sampleData->jenis ?? '-',
+                    'kemasan' => $sampleData->kemasan ?? '-',
+                    'sifat' => $sampleData->sifat ?? '-',
+                    'sisa' => $sampleData->sisa ?? '-',
+                    'deskripsi' => $sampleData->deskripsi ?? '-',
+                    'keterangan_khusus' => $sampleData->keterangan_khusus ?? '-'
+                ]
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Error fetching sample identity: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat memuat data identitas sampel'
+            ]);
         }
     }
 
     private function detectLhuFile($row)
     {
-        $possibleFields = [
-            'lnLhu', 'lnLHU', 'lnFileLhu', 'ln_file_lhu', 'lhu_file', 'ln_lhu', 'ln_lhu_file', 'ln_file_lhu_path'
-        ];
+        $lnKode = $row->lnKode ?? null;
+        if (!$lnKode) {
+            return ['has' => false, 'url' => '#'];
+        }
 
-        foreach ($possibleFields as $f) {
-            if (isset($row->{$f}) && !empty($row->{$f})) {
-                $raw = $row->{$f};
-                if (preg_match('/^https?:\/\//i', $raw)) {
-                    return ['has' => true, 'url' => $raw];
-                }
-                $possiblePath = FCPATH . 'uploads/lhu/' . ltrim($raw, '/');
-                if (is_file($possiblePath)) {
-                    $possibleUrl = base_url('uploads/lhu/' . ltrim($raw, '/'));
-                    return ['has' => true, 'url' => $possibleUrl];
-                }
+        try {
+            $db = \Config\Database::connect();
+            $builder = $db->table('t_files_lhu as lhu');
+
+            // Join dengan simlab_account_users untuk mendapatkan info uploader
+            $builder->select('lhu.file_id, lhu.kode, lhu.file, lhu.upload_by, acc.user_name as uploader_name');
+            $builder->join('simlab_account_users as acc', 'acc.user_id = lhu.upload_by', 'left');
+            $builder->where('lhu.kode', $lnKode);
+            $builder->orderBy('lhu.file_id', 'DESC');
+            $builder->limit(1);
+
+            $lhuFile = $builder->get()->getRow();
+
+            if (!$lhuFile) {
                 return ['has' => false, 'url' => '#'];
             }
+
+            // Gunakan kolom file
+            $filePath = $lhuFile->file ?? null;
+
+            if (empty($filePath)) {
+                return ['has' => false, 'url' => '#'];
+            }
+
+            // Jika sudah berupa URL lengkap
+            if (preg_match('/^https?:\/\//i', $filePath)) {
+                return [
+                    'has' => true,
+                    'url' => $filePath,
+                    'uploader' => $lhuFile->uploader_name ?? 'Unknown'
+                ];
+            }
+
+            // Jika berupa path file relatif
+            $possiblePath = FCPATH . 'uploads/lhu/' . ltrim($filePath, '/');
+            if (is_file($possiblePath)) {
+                $possibleUrl = base_url('uploads/lhu/' . ltrim($filePath, '/'));
+                return [
+                    'has' => true,
+                    'url' => $possibleUrl,
+                    'uploader' => $lhuFile->uploader_name ?? 'Unknown'
+                ];
+            }
+
+            // File tercatat di database tapi tidak ditemukan di storage
+            log_message('warning', "LHU file not found in storage: {$filePath} for lnKode: {$lnKode}");
+            return ['has' => false, 'url' => '#'];
+        } catch (\Throwable $e) {
+            log_message('error', 'Error detecting LHU file: ' . $e->getMessage());
+            return ['has' => false, 'url' => '#'];
+        }
+    }
+
+    public function kuesioner($id)
+    {
+        $idenc = $id;
+        try {
+            $lnKode = $this->encrypter->decrypt(hex2bin($idenc));
+        } catch (\Exception $e) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
 
-        // cek di tabel detil (khusus LHU: hanya cek kolom detil_LHU dan varian terkait)
-        if (isset($row->lnKode) && !empty($row->lnKode)) {
-            try {
-                $modelDet = new MyModel('simlab_t_layanan_detil');
-                $detils = $modelDet->getAllDataById(['detLnKode' => $row->lnKode]);
-                foreach ($detils as $d) {
-                    $detFields = ['detil_LHU', 'detFile', 'detFilelhu', 'det_file_lhu'];
-                    foreach ($detFields as $df) {
-                        if (isset($d->{$df}) && !empty($d->{$df})) {
-                            $raw = $d->{$df};
-                            if (preg_match('/^https?:\/\//i', $raw)) {
-                                return ['has' => true, 'url' => $raw];
-                            }
-                            $possiblePath = FCPATH . 'uploads/lhu/' . ltrim($raw, '/');
-                            if (is_file($possiblePath)) {
-                                $possibleUrl = base_url('uploads/lhu/' . ltrim($raw, '/'));
-                                return ['has' => true, 'url' => $possibleUrl];
-                            }
-                        }
-                    }
-                }
-            } catch (\Throwable $e) {
-                // ignore
+        $modelPertanyaan = new MyModel('simlab_t_kuesioner');
+        $pertanyaan = $modelPertanyaan->getAllDataWithJoinWhereOrder([], [], ['kuesioner_id' => 'ASC']);
+
+        $data = [
+            'title' => 'Kuesioner Kepuasan Pelanggan',
+            'pertanyaan' => $pertanyaan,
+            'idenc' => $idenc,
+        ];
+        return view('Modules\Pelayanan\Views\v_kuesioner_form_user', $data);
+    }
+
+    public function submit_kuesioner()
+    {
+        $session = session();
+        $user_id = $session->get('id_user');
+        $idenc = $this->request->getPost('idenc');
+
+        try {
+            $lnKode = $this->encrypter->decrypt(hex2bin($idenc));
+        } catch (\Exception $e) {
+            return $this->response->setJSON(['res' => false, 'msg' => 'ID Layanan tidak valid.', 'xname' => csrf_token(), 'xhash' => csrf_hash()]);
+        }
+
+        $jawaban_array = $this->request->getPost('jawaban');
+        if (empty($jawaban_array)) {
+            return $this->response->setJSON(['res' => false, 'msg' => 'Tidak ada jawaban yang dikirim.', 'xname' => csrf_token(), 'xhash' => csrf_hash()]);
+        }
+
+        $modelJawaban = new MyModel('simlab_t_kuesioner_jawaban');
+        $modelLayanan = new MyModel($this->table);
+        $db = \Config\Database::connect();
+
+        $db->transStart();
+
+        foreach ($jawaban_array as $id_pertanyaan => $jawaban) {
+            $existingAnswer = $modelJawaban->getWhere(['id_pertanyaan' => $id_pertanyaan, 'user_id' => $user_id])->getRow();
+            if (!$existingAnswer) {
+                $dataJawaban = [
+                    'id_pertanyaan' => $id_pertanyaan,
+                    'user_id' => $user_id,
+                    'jawaban' => $jawaban,
+                    'created_at' => date('Y-m-d H:i:s')
+                ];
+                $modelJawaban->insertData($dataJawaban);
             }
         }
 
-        return ['has' => false, 'url' => '#'];
-    }
+        $modelLayanan->updateData(['kuisioner' => 1, 'lnStatus' => 8], $this->id, $lnKode);
 
+        $db->transComplete();
+
+        if ($db->transStatus() === false) {
+            return $this->response->setJSON(['res' => false, 'msg' => 'Terjadi kegagalan saat menyimpan data.', 'xname' => csrf_token(), 'xhash' => csrf_hash()]);
+        }
+
+        return $this->response->setJSON([
+            'res' => 'refresh',
+            'link' => site_url('pelayanan'),
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
+        ]);
+    }
 }
