@@ -10,6 +10,7 @@ $routes->group('pelaksanaan', ['namespace' => 'Modules\Pelaksanaan\Controllers']
     $subroutes->get('datalist', 'Pelaksanaan::dataList');
     $subroutes->get('detaillist/(:any)', 'Pelaksanaan::detailList/$1');
     $subroutes->post('upload', 'Pelaksanaan::upload');
+    $subroutes->post('pengujian-ulang', 'Pelaksanaan::pengujianUlang');
     $subroutes->post('delete/(:any)', 'Pelaksanaan::delete/$1');
     $subroutes->post('proses/(:any)', 'Pelaksanaan::proses/$1');
     $subroutes->get('(:any)', 'Pelaksanaan::$1');

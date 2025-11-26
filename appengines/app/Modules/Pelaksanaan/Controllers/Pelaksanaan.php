@@ -368,11 +368,6 @@ class Pelaksanaan extends BaseController
                 // Ambil file_id yang baru saja dibuat
                 $newFileId = $db->insertID();
 
-                // Update lhu_id di simlab_t_layanan
-                $db->table('simlab_t_layanan')
-                    ->where('lnKode', $lnKode)
-                    ->update(['lhu_id' => $newFileId]);
-
                 $msg = 'File LHU berhasil diunggah.';
             }
 
@@ -396,9 +391,9 @@ class Pelaksanaan extends BaseController
                 ]);
             }
 
-            // Update status menjadi 8 (LHU Disetujui) setelah upload berhasil
+            // Update status menjadi 9 (LHU Disetujui) setelah upload berhasil
             $model = new MyModel($this->table);
-            $model->updateData(['lnStatus' => 8], $this->id, $lnKode);
+            $model->updateData(['lnStatus' => 9], $this->id, $lnKode);
 
             return $this->response->setJSON([
                 'res' => true,
@@ -419,6 +414,125 @@ class Pelaksanaan extends BaseController
                 'xhash' => csrf_hash()
             ]);
         }
+    }
+
+    public function pengujianUlang()
+    {
+        $response = [
+            'res' => false,
+            'msg' => 'Pengujian ulang gagal diproses.',
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
+        ];
+
+        if (strtolower($this->request->getMethod()) !== 'post') {
+            return $this->response->setJSON($response);
+        }
+
+        $encId = $this->request->getPost('id');
+        $catatan = trim((string) $this->request->getPost('catatan'));
+
+        if (empty($encId)) {
+            $response['msg'] = 'ID layanan tidak ditemukan.';
+            return $this->response->setJSON($response);
+        }
+
+        if ($catatan === '') {
+            $response['msg'] = 'Catatan pengujian ulang wajib diisi.';
+            return $this->response->setJSON($response);
+        }
+
+        try {
+            $lnKode = service('encrypter')->decrypt(hex2bin($encId));
+        } catch (\Throwable $e) {
+            try {
+                $lnKode = service('encrypter')->decrypt($encId);
+            } catch (\Throwable $e2) {
+                $response['msg'] = 'ID tidak valid.';
+                return $this->response->setJSON($response);
+            }
+        }
+
+        $model = new MyModel($this->table);
+        $row = $model->getDataById($this->id, $lnKode);
+
+        if (!$row) {
+            $response['msg'] = 'Data layanan tidak ditemukan.';
+            return $this->response->setJSON($response);
+        }
+
+        if ((int) $row->lnStatus !== 9) {
+            $response['msg'] = 'Pengujian ulang hanya bisa dilakukan pada layanan dengan status selesai.';
+            return $this->response->setJSON($response);
+        }
+
+        $db = \Config\Database::connect();
+        $db->transStart();
+
+        // Reset layanan utama dan catatan kaji ulang
+        $db->table('simlab_t_layanan')
+            ->where('lnKode', $lnKode)
+            ->set('lnStatus', 1)
+            ->set('jumlah_kaji_ulang', 'COALESCE(jumlah_kaji_ulang,0)+1', false)
+            ->set('catatan_kaji_ulang', $catatan)
+            ->set('kuisioner', 0)
+            ->update();
+
+        // Reset detil layanan
+        $db->table('t_layanan_detil')
+            ->where('kode_layanan', $lnKode)
+            ->set([
+                'status_layanan' => 0,
+                'terima_layanan_by' => null,
+                'catatan_manajer' => null,
+                'files' => null
+            ])
+            ->update();
+
+        // Reset file LHUS
+        $db->table('t_files_lhus')
+            ->where('kode_layanan', $lnKode)
+            ->set([
+                'file_lhus' => null,
+                'validasi_by' => null,
+                'upload_by' => null,
+                'status' => 0,
+                'catatan' => null
+            ])
+            ->update();
+
+        // Reset log sampel timestamps
+        $logData = [
+            'pengecekan' => date('Y-m-d H:i:s'),
+            'pengujian' => null,
+            'verifikasi_hasil_uji' => null,
+            'penerbitan_lhus' => null,
+            'verifikasi_lhu' => null,
+            'penerbitan_lhu' => null
+        ];
+
+        $logBuilder = $db->table('t_log_sampel');
+        $logExists = $logBuilder->where('kode_layanan', $lnKode)->get()->getRow();
+
+        if ($logExists) {
+            $logBuilder
+                ->where('kode_layanan', $lnKode)
+                ->set($logData)
+                ->update();
+        } else {
+            $logBuilder->insert(array_merge(['kode_layanan' => $lnKode], $logData));
+        }
+
+        $db->transComplete();
+
+        if ($db->transStatus() === false) {
+            $response['msg'] = 'Terjadi kesalahan saat menyimpan data.';
+            return $this->response->setJSON($response);
+        }
+
+        $response['res'] = true;
+        $response['msg'] = 'Pengujian ulang berhasil dibuat. Status layanan kembali ke Review Petugas.';
+        return $this->response->setJSON($response);
     }
 
     // upload helper
@@ -559,6 +673,7 @@ class Pelaksanaan extends BaseController
         switch ((int) $status) {
             case 7:
             case 8:
+            case 9:
                 return '<span class="badge bg-success">LHU Disetujui</span>';
             case 6:
                 return $uploaded === true
@@ -571,12 +686,31 @@ class Pelaksanaan extends BaseController
 
     private function aksiButton($id, $status, $allowAccept = true, $lhuInfo = ['has' => false, 'url' => '#'])
     {
-        $btn = '<div id="' . $id . '" class="float-end d-flex align-items-center justify-content-end" style="gap:10px;">';
+        $btn = '<div id="' . $id . '" class="float-end d-flex align-items-center justify-content-end" style="gap:6px;">';
 
-        // Button Proses - hanya muncul jika status = 6 (Memproses LHU)
+        $rawUrl = '#';
+        if (is_array($lhuInfo) && ($lhuInfo['has'] ?? false) && !empty($lhuInfo['url'])) {
+            $rawUrl = (string) $lhuInfo['url'];
+        }
+        $safeUrl = addslashes($rawUrl);
+
         if ((int) $status === 6) {
-            $safeUrl = ($lhuInfo['has'] && !empty($lhuInfo['url'])) ? esc($lhuInfo['url']) : '#';
-            $btn .= '<button type="button" class="btn btn-sm btn-success" title="Upload & Kirim LHU" onclick="openUploadModal(\'' . $id . '\', \'' . $safeUrl . '\')"><i class="bi bi-send-check"></i> Proses</button>';
+            $btn .= sprintf(
+                '<span class="btn-action text-success" role="button" title="Upload & Kirim LHU" onclick="openUploadModal(\'%s\', \'%s\')"><i class="bi bi-send-check"></i></span>',
+                $id,
+                $safeUrl
+            );
+        } else {
+            $btn .= '<span class="btn-action text-muted" style="cursor:not-allowed;opacity:.45;" title="Menunggu status Memproses LHU"><i class="bi bi-send-check"></i></span>';
+        }
+
+        $btn .= '<label class="divider">|</label>';
+
+        $canReTest = ((int) $status === 9);
+        if ($canReTest) {
+            $btn .= '<span class="btn-action text-warning" role="button" title="Pengujian Ulang" onclick="openPengujianUlangModal(\'' . $id . '\')"><i class="bi bi-arrow-counterclockwise"></i></span>';
+        } else {
+            $btn .= '<span class="btn-action text-muted" style="cursor:not-allowed;opacity:.45;" title="Pengujian Ulang belum tersedia"><i class="bi bi-arrow-counterclockwise"></i></span>';
         }
 
         $btn .= '</div>';
@@ -631,7 +765,7 @@ class Pelaksanaan extends BaseController
         }
 
         // set ke 8
-        $res = $model->updateData(['lnStatus' => 8], $this->id, $kode);
+        $res = $model->updateData(['lnStatus' => 9], $this->id, $kode);
 
         return $this->response->setJSON([
             'res' => $res,
