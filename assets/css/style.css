@@ -302,6 +302,20 @@ a {text-decoration: none;}
     padding-left: 1.5rem;
     display: none;
 }
+  .toggle-eye {
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    opacity: 0.7;
+    z-index: 10; 
+  }
+
+  @media (min-width: 1400px) {
+    .toggle-eye {
+      right: 15%;
+    }
+  }
 .submenu.show {
     display: block;
     border-top: 1px solid #ccc; 

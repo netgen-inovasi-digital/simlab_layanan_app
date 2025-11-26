@@ -36,12 +36,18 @@
         <div class="mb-3">
             <input name="email" type="email" class="form-control rounded-pill mx-auto" placeholder="Email" value="<?= old('email') ?>" required />
         </div>
-        <div class="mb-3">
-            <input name="pwd" type="password" class="form-control rounded-pill mx-auto" placeholder="Password" required />
+        <div class="mb-3 position-relative">
+            <input name="pwd" id="reg-password" type="password" 
+                   class="form-control rounded-pill mx-auto pe-5" 
+                   placeholder="Password" required style="padding-right: 45px;" />
+            <i id="toggleRegPassword" class="bi bi-eye position-absolute fs-5 toggle-eye"></i>
         </div>
-        <div class="mb-3">
-            <input  name="repwd" type="password"  class="form-control rounded-pill mx-auto"   placeholder="Ulangi Password" required 
-            />
+
+        <div class="mb-3 position-relative">
+            <input name="repwd" id="reg-repassword" type="password" 
+                   class="form-control rounded-pill mx-auto pe-5" 
+                   placeholder="Ulangi Password" required style="padding-right: 45px;" />
+            <i id="toggleRegRePassword" class="bi bi-eye position-absolute fs-5 toggle-eye"></i>
         </div>
 
     
@@ -67,3 +73,26 @@
     <?= form_close(); ?>
 
 </div>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        function setupPasswordToggle(inputId, toggleId) {
+            const toggleBtn = document.getElementById(toggleId);
+            const inputField = document.getElementById(inputId);
+
+            if (toggleBtn && inputField) {
+                toggleBtn.addEventListener('click', () => {
+                    const isPassword = inputField.type === 'password';
+                    inputField.type = isPassword ? 'text' : 'password';
+                    
+                    toggleBtn.classList.toggle('bi-eye');
+                    toggleBtn.classList.toggle('bi-eye-slash');
+                    toggleBtn.style.opacity = isPassword ? '1' : '0.7';
+                });
+            }
+        }
+
+        setupPasswordToggle('reg-password', 'toggleRegPassword');
+
+        setupPasswordToggle('reg-repassword', 'toggleRegRePassword');
+    });
+</script>

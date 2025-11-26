@@ -269,9 +269,12 @@ echo view($content, [
                             <input name="email" type="text" class="form-control rounded-pill mx-auto bg-light-gray"
                                 placeholder="Email" value="<?= old('email') ?>" required />
                         </div>
-                        <div class="mb-3">
-                            <input name="pwd" type="password" class="form-control rounded-pill mx-auto bg-light-gray"
-                                placeholder="Password" required />
+                        <div class="mb-3 position-relative">
+                            <input name="pwd" id="modal-password-input" type="password" 
+                                class="form-control rounded-pill mx-auto bg-light-gray pe-5"
+                                placeholder="Password" required style="padding-right: 45px;" />
+                                
+                            <i id="toggleModalPassword" class="bi bi-eye position-absolute fs-5 toggle-eye"></i>
                         </div>
                         <div class="d-grid">
                             <button type="submit" class="btn btn-primary rounded-pill mx-auto">MASUK</button>
@@ -363,7 +366,20 @@ echo view($content, [
     <script>
     document.addEventListener('DOMContentLoaded', function () {
         const authModal = new bootstrap.Modal(document.getElementById('authModal'));
+        const togglePassword = document.getElementById('toggleModalPassword');
+        const passwordField = document.getElementById('modal-password-input');
 
+        if(togglePassword && passwordField) {
+            togglePassword.addEventListener('click', () => {
+                const isPassword = passwordField.type === 'password';
+                passwordField.type = isPassword ? 'text' : 'password';
+                
+                togglePassword.classList.toggle('bi-eye');
+                togglePassword.classList.toggle('bi-eye-slash');
+                
+                togglePassword.style.opacity = isPassword ? '1' : '0.7';
+            });
+        }
         let adaAksiFormulir = false;
 
         <?php if (session()->getFlashdata('login_error')): ?>
