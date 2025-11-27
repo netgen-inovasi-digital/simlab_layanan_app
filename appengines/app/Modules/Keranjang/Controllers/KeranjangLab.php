@@ -88,6 +88,7 @@ class KeranjangLab extends KeranjangBase
         $detJumlah = isset($post['detJumlah']) ? (int) $post['detJumlah'] : 1;
         $detKeterangan = trim($post['detKeterangan'] ?? '');
         $jenKode = $post['jenKode'] ?? 'C'; // Default kode jenis untuk ruangan lab
+        $detNamaLayanan = $post['detNamaLayanan'] ?? null; // nama_layanan dari r_layanan_pengujian
 
         // Dapatkan diskon yang sebenarnya diterapkan
         $appliedDiskon = $this->getUserDiscount($detDiskon);
@@ -108,6 +109,7 @@ class KeranjangLab extends KeranjangBase
             'keterangan' => $detKeterangan,
             'biaya' => $biayaTotalBaru,
             'jenKode' => $jenKode, // Simpan jenKode untuk digunakan saat save
+            'nama_layanan' => $detNamaLayanan, // nama_layanan dari r_layanan_pengujian
         ];
     }
 
@@ -184,7 +186,7 @@ class KeranjangLab extends KeranjangBase
             $detil = [
                 'kode_layanan' => $lnKode,
                 'uji_kode' => $item['kode'] ?? null,
-                'nama_layanan' => $item['ruangan'] ?? '',
+                'nama_layanan' => $item['nama_layanan'] ?? null, // nama_layanan dari r_layanan_pengujian
                 'kode_jenis' => $jenKodeValue ?? 'C',
                 'jumlah' => (int) ($item['jumlah'] ?? 0),
                 'biaya' => (float) ($item['biaya'] ?? 0),
@@ -526,6 +528,7 @@ class KeranjangLab extends KeranjangBase
                         . 'data-kode="' . esc($row->kode ?? '', 'attr') . '" '
                         . 'data-parameter="' . esc($row->paraNama ?? '', 'attr') . '" '
                         . 'data-ruangan="' . esc($row->nama_layanan ?? '', 'attr') . '" '
+                        . 'data-nama-layanan="' . esc($row->nama_layanan ?? '', 'attr') . '" '
                         . 'data-biaya="' . $biaya . '" '
                         . 'data-diskon="' . $diskonDb . '" '
                         . 'data-jenKode="' . esc($jenKodeClean, 'attr') . '" '

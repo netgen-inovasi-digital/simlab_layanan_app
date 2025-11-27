@@ -65,12 +65,12 @@ echo view('Modules\Keranjang\Views\v_keranjang_alat', ['categories' => $categori
     }
 
     // Ambil kategori dari query string (jika ada)
-    const urlParams = new URLSearchParams(window.location.search);
-    const kategoriAlatFromUrl = urlParams.get('kategoriAlat');
-    const katKodeFromUrl = urlParams.get('katKode');
+    var urlParams = new URLSearchParams(window.location.search);
+    var kategoriAlatFromUrl = urlParams.get('kategoriAlat');
+    var katKodeFromUrl = urlParams.get('katKode');
 
     // Inisialisasi tabel utama menggunakan createTable
-    const baseMainPath = '<?= site_url("pelayanan_alat/datalist") ?>';
+    var baseMainPath = '<?= site_url("pelayanan_alat/datalist") ?>';
 
     let initialParamKey = null;
     let initialParamValue = null;
@@ -82,7 +82,7 @@ echo view('Modules\Keranjang\Views\v_keranjang_alat', ['categories' => $categori
         initialParamValue = katKodeFromUrl;
     }
 
-    const initialApiUrl = (initialParamKey) ?
+    var initialApiUrl = (initialParamKey) ?
         buildApiUrlWithOptionalParam(baseMainPath, initialParamKey, initialParamValue) :
         buildApiUrlWithOptionalParam(baseMainPath, '', '');
 

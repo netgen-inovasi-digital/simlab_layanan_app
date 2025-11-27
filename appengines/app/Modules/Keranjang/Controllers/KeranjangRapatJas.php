@@ -90,6 +90,7 @@ class KeranjangRapatJas extends KeranjangBase
         $detDiskon     = isset($post['detDiskon']) ? (float)$post['detDiskon'] : 0;
         $detJumlah     = isset($post['detJumlah']) ? (int)$post['detJumlah'] : 1;
         $detKeterangan = trim($post['detKeterangan'] ?? '');
+        $detNamaLayanan = $post['detNamaLayanan'] ?? null; // nama_layanan dari r_layanan_pengujian
 
         // Dapatkan diskon yang sebenarnya diterapkan
         $appliedDiskon = $this->getUserDiscount($detDiskon);
@@ -109,6 +110,7 @@ class KeranjangRapatJas extends KeranjangBase
             'jumlah'      => $jumlah,
             'keterangan'  => $detKeterangan,
             'biaya'       => $biayaTotalBaru,
+            'nama_layanan' => $detNamaLayanan, // nama_layanan dari r_layanan_pengujian
         ];
     }
 
@@ -194,7 +196,7 @@ class KeranjangRapatJas extends KeranjangBase
                 'uji_kode'          => $item['kode'] ?? null,
                 'biaya'             => $item['biaya'] ?? 0,
                 'jumlah'            => $item['jumlah'] ?? 1,
-                'nama_layanan'      => $item['layanan'] ?? null,
+                'nama_layanan'      => $item['nama_layanan'] ?? null, // nama_layanan dari r_layanan_pengujian
                 'status_layanan'    => 0,
                 'kode_jenis'        => $jenKodeValue,
                 'catatan_manajer'   => null,
@@ -522,6 +524,7 @@ class KeranjangRapatJas extends KeranjangBase
                         data-alat="' . esc($row->alatNama ?? '') . '" 
                         data-biaya="' . $row->biaya . '" 
                         data-parameter="' . esc($row->paraNama ?? '') . '"
+                        data-nama-layanan="' . esc($row->nama_layanan ?? '') . '"
                         data-diskon="' . $allowedDiskon . '" 
                         data-jenKode="' . esc($jenKodeClean) . '"
                         data-jenNama="' . esc($row->jenNama ?? '') . '"

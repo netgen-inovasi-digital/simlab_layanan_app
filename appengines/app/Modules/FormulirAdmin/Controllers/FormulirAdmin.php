@@ -355,22 +355,26 @@ class FormulirAdmin extends BaseController
         $builder = $db->table('t_layanan_detil as d');
 
         $builder->select("
-        d.uji_kode,
-        d.kode_layanan,
-        d.nama_layanan,
-        d.kode_jenis,
-        GROUP_CONCAT(DISTINCT d.catatan_manajer SEPARATOR ' | ') AS detKetLn,
-        SUM(d.jumlah) AS jumlah,
-        SUM(d.biaya) AS detBiaya,
-        MAX(d.status_layanan) AS detStatusGroup,
-        GROUP_CONCAT(DISTINCT acc.username SEPARATOR ' | ') AS accUsernames
-    ");
+            d.uji_kode,
+            d.kode_layanan,
+            d.nama_layanan,
+            d.kode_jenis,
+            d.metode_pengujian,
+            m.nama AS metode_nama,
+            GROUP_CONCAT(DISTINCT d.catatan_manajer SEPARATOR ' | ') AS detKetLn,
+            SUM(d.jumlah) AS jumlah,
+            SUM(d.biaya) AS detBiaya,
+            MAX(d.status_layanan) AS detStatusGroup,
+            GROUP_CONCAT(DISTINCT acc.username SEPARATOR ' | ') AS accUsernames
+        ");
 
         // join untuk ambil username dari terima_layanan_by
         $builder->join('simlab_account acc', 'acc.user_id = d.terima_layanan_by', 'left');
+        // join untuk ambil nama metode pengujian
+        $builder->join('r_metode m', 'm.metode_kode = d.metode_pengujian', 'left');
 
         $builder->where('d.kode_layanan', $kode);
-        $builder->groupBy('d.uji_kode, d.kode_layanan, d.nama_layanan, d.kode_jenis');
+        $builder->groupBy('d.uji_kode, d.kode_layanan, d.nama_layanan, d.kode_jenis, d.metode_pengujian, m.nama');
         $rows = $builder->get()->getResult();
 
         $data = [];
@@ -378,12 +382,18 @@ class FormulirAdmin extends BaseController
 
         foreach ($rows as $row) {
             $response = [];
+            // No
             $response[] = $no++;
+            // Layanan
             $response[] = $row->nama_layanan ?? '-';
+            // Metode
+            $response[] = isset($row->metode_nama) && !empty($row->metode_nama) ? esc($row->metode_nama) : '-';
+            // Biaya
             $response[] = isset($row->detBiaya) ? number_format($row->detBiaya, 0, ',', '.') : '-';
+            // Jumlah
             $response[] = isset($row->jumlah) ? (int) $row->jumlah : 0;
 
-            // status hasil grouping (1 = diterima, 2 = ditolak, lainnya = pending)
+            // Status hasil grouping (1 = diterima, 2 = ditolak, lainnya = pending)
             $statusGroup = isset($row->detStatusGroup) ? (int) $row->detStatusGroup : null;
             if ($statusGroup === 1) {
                 $statusHtml = '<span class="badge bg-success">Diterima</span>';
@@ -394,23 +404,39 @@ class FormulirAdmin extends BaseController
             }
             $response[] = $statusHtml;
 
-            // detKetLn (keterangan level layanan)
+            // Keterangan Manajer (detKetLn)
             $response[] = '<div 
-        style="display:block; max-width:240px; min-width:160px; width:100%;
-        max-height:120px; min-height:48px; overflow-y:auto; overflow-x:hidden;
-        padding:4px 6px; border:1px solid #ddd; border-radius:4px; background:#f9f9f9;
-        white-space:pre-wrap; word-break:break-word; font-size:0.9rem;">'
+                style="display:block; max-width:240px; min-width:160px; width:100%;
+                max-height:120px; min-height:48px; overflow-y:auto; overflow-x:hidden;
+                padding:4px 6px; border:1px solid #ddd; border-radius:4px; background:#f9f9f9;
+                white-space:pre-wrap; word-break:break-word; font-size:0.9rem;">'
                 . htmlspecialchars($row->detKetLn ?? '', ENT_QUOTES, 'UTF-8') .
                 '</div>';
 
-
-            // Username yang melakukan accept layanan (bisa >1 username bila multi-row dalam satu grup)
+            // ACC - Username yang melakukan accept layanan (bisa >1 username bila multi-row dalam satu grup)
             $accUsernames = trim((string) ($row->accUsernames ?? ''));
             $response[] = $accUsernames !== '' ? htmlspecialchars($accUsernames, ENT_QUOTES, 'UTF-8') : '-';
+            
             $data[] = $response;
         }
 
-        return $this->response->setJSON(['items' => $data]);
+        // Ambil data identitas sampel
+        $modelIdentitasSampel = new MyModel('t_identitas_sampel');
+        $sampleRow = $modelIdentitasSampel->getDataById('kode_layanan', $kode);
+        
+        $sampleData = [
+            'jenis' => $sampleRow->jenis ?? '-',
+            'kemasan' => $sampleRow->kemasan ?? '-',
+            'sifat' => $sampleRow->sifat ?? '-',
+            'sisa' => $sampleRow->sisa ?? '-',
+            'deskripsi' => $sampleRow->deskripsi ?? '-',
+            'keterangan_khusus' => $sampleRow->keterangan_khusus ?? '-'
+        ];
+
+        return $this->response->setJSON([
+            'items' => $data,
+            'sampleData' => $sampleData
+        ]);
     }
 
 

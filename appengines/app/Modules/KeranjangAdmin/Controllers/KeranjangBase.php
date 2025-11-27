@@ -350,14 +350,17 @@ abstract class KeranjangBase extends BaseController
 
     /**
      * Generate unique key untuk item - bisa di-override
+     * Untuk pengujian: kode + alat + metode_kode adalah kombinasi unik
+     * Artinya: layanan sama dengan metode berbeda = item berbeda
+     *          layanan sama dengan metode sama = item sama (jumlah digabung)
      */
     protected function generateItemKey(array $row): string
     {
         $kode = isset($row['kode']) ? trim((string)$row['kode']) : '';
         $alat = isset($row['alat']) ? trim((string)$row['alat']) : '';
-        $ket  = isset($row['keterangan']) ? trim((string)$row['keterangan']) : '';
+        $metode = isset($row['metode_kode']) ? trim((string)$row['metode_kode']) : '';
 
-        return md5($kode . '|' . $alat . '|' . $ket);
+        return md5($kode . '|' . $alat . '|' . $metode);
     }
 
     /**
