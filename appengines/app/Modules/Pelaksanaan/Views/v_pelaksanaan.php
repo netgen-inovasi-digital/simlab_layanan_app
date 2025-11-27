@@ -34,8 +34,8 @@
                     <thead>
                         <tr>
                             <th show width="5%">No.</th>
-                            <th show width="30%">Pemesan</th>
-                            <th show width="10%">LHUS</th>
+                            <th show width="27%">Pemesan</th>
+                            <th show width="13%">LHUS</th>
                             <th show width="10%">LHU</th>
                             <th show width="15%">Status</th>
                             <th show width="30%" class="action text-end">Aksi</th>
