@@ -2,7 +2,8 @@
     <div class="col-md-12">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <label class="card-title mb-0"><i class="bi bi-shield-check"></i> <?php echo "Invoice dan Verifikasi Pembayaran" ?></label>
+                <label class="card-title mb-0"><i class="bi bi-shield-check"></i>
+                    <?php echo "Invoice dan Verifikasi Pembayaran" ?></label>
             </div>
             <div class="card-body">
                 <!-- Filter Section -->
@@ -51,9 +52,9 @@
                     <thead>
                         <tr>
                             <th show width="5%">No</th>
-                            <th show width="10%">No. Invoice</th>
+                            <th show width="15%">No. Invoice</th>
                             <th show width="20%">Pemesan</th>
-                            <th show width="12%">Total Biaya</th>
+                            <th show width="12%">Detail Layanan</th>
                             <th show width="14%">File Invoice</th>
                             <th show width="14%">Bukti Bayar</th>
                             <th show width="18%">Status</th>
@@ -92,7 +93,8 @@
                 <div class="modal-body">
                     <!-- Tombol Lihat Bukti yang sudah ada -->
                     <div class="mb-3">
-                        <button type="button" class="btn btn-sm btn-outline-info w-100" id="btnViewExistingBukti" disabled>
+                        <button type="button" class="btn btn-sm btn-outline-info w-100" id="btnViewExistingBukti"
+                            disabled>
                             <i class="bi bi-eye"></i> Lihat Bukti Bayar yang Sudah Ada
                         </button>
                     </div>
@@ -185,7 +187,8 @@
                 <div class="modal-body">
                     <!-- Tombol Lihat Invoice yang sudah ada -->
                     <div class="mb-3">
-                        <button type="button" class="btn btn-sm btn-outline-info w-100" id="btnViewExistingInvoiceGabungan" disabled>
+                        <button type="button" class="btn btn-sm btn-outline-info w-100"
+                            id="btnViewExistingInvoiceGabungan" disabled>
                             <i class="bi bi-eye"></i> Lihat Invoice yang Sudah Ada
                         </button>
                     </div>
@@ -195,7 +198,8 @@
                         <label for="file_invoice_gabungan" class="form-label">
                             Pilih File Invoice (PDF) <span class="text-danger">*</span>
                         </label>
-                        <input type="file" class="form-control" id="file_invoice_gabungan" name="file_invoice" accept=".pdf" required>
+                        <input type="file" class="form-control" id="file_invoice_gabungan" name="file_invoice"
+                            accept=".pdf" required>
                         <div class="form-text" id="invoice-selection-gabungan">Format: PDF, Maksimal 5MB</div>
                     </div>
 
@@ -219,11 +223,72 @@
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                         <i class="bi bi-x-circle"></i> Batal
                     </button>
-                    <button type="button" class="btn btn-info text-white" id="btnUploadKirimInvoice" onclick="handleUploadKirimInvoice()">
+                    <button type="button" class="btn btn-info text-white" id="btnUploadKirimInvoice"
+                        onclick="handleUploadKirimInvoice()">
                         <i class="bi bi-cloud-upload"></i> Upload & Kirim
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Detail Layanan -->
+<div class="modal fade" id="modalDetailLayananAdmin" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-white text-black">
+                <h5 class="modal-title"><i class="bi bi-card-list"></i> Detail Layanan</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <small class="text-muted">Pemesan</small>
+                        <div class="fw-semibold" id="detailLayananPemesan">-</div>
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                        <small class="text-muted">No. Invoice</small>
+                        <div class="fw-semibold" id="detailLayananInvoice">-</div>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table id="detailLayananTable" class="saytable border-top-bottom align-middle">
+                        <thead>
+                            <tr>
+                                <th width="5%">No</th>
+                                <th width="22%">Parameter</th>
+                                <th width="22%">Instrumen/Alat</th>
+                                <th width="12%">Metode</th>
+                                <th width="10%">Diskon</th>
+                                <th width="12%">Biaya Satuan</th>
+                                <th width="7%">Jumlah</th>
+                                <th width="10%">Sub Total</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                        <tfoot>
+                            <tr class="table-active align-middle">
+                                <td colspan="8">
+                                    <div class="d-flex justify-content-end">
+                                        <div class="fw-bold fs-5">
+                                            TOTAL KESELURUHAN:
+                                            <span id="detailLayananTotal" class="text-primary">Rp 0</span>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> Tutup
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -237,7 +302,7 @@
     addAction();
 
     // Handle Filter Data
-    document.querySelector('.btnFilterData').addEventListener('click', function() {
+    document.querySelector('.btnFilterData').addEventListener('click', function () {
         const tanggalAwal = document.getElementById('tanggal_awal').value;
         const tanggalAkhir = document.getElementById('tanggal_akhir').value;
         const filterStatus = document.getElementById('filter_status').value;
@@ -274,7 +339,7 @@
     });
 
     // Handle Reset Filter
-    document.querySelector('.btnResetFilter').addEventListener('click', function() {
+    document.querySelector('.btnResetFilter').addEventListener('click', function () {
         document.getElementById('tanggal_awal').value = '';
         document.getElementById('tanggal_akhir').value = '';
         document.getElementById('filter_status').value = 'all';
@@ -329,7 +394,7 @@
     }
 
     // Handler untuk tombol Lihat Bukti
-    document.addEventListener('click', function(ev) {
+    document.addEventListener('click', function (ev) {
         const btn = ev.target.closest('#btnViewExistingBukti');
         if (!btn) return;
 
@@ -342,14 +407,14 @@
     });
 
     // Show filename when user selects a file
-    (function() {
+    (function () {
         const fi = document.getElementById('file_bukti');
         const sel = document.getElementById('bukti-selection');
         const viewBtn = document.getElementById('btnViewExistingBukti');
 
         if (!fi) return;
 
-        fi.addEventListener('change', function(e) {
+        fi.addEventListener('change', function (e) {
             const f = e.target.files && e.target.files[0];
             if (f) {
                 sel.textContent = 'File dipilih: ' + f.name + ' (' + (f.size / 1024).toFixed(2) + ' KB)';
@@ -383,9 +448,9 @@
         btnUpload.innerHTML = '<i class="bi bi-hourglass-split"></i> Uploading...';
 
         fetch('<?php echo site_url("pembayaran_admin/uploadBukti") ?>', {
-                method: 'POST',
-                body: formData
-            })
+            method: 'POST',
+            body: formData
+        })
             .then(response => response.json())
             .then(data => {
                 // Update CSRF token untuk request berikutnya
@@ -443,9 +508,9 @@
         formData.append(csrfName, csrfHash);
 
         fetch('<?php echo site_url("pembayaran_admin/terimaVerifikasi") ?>', {
-                method: 'POST',
-                body: formData
-            })
+            method: 'POST',
+            body: formData
+        })
             .then(response => response.json())
             .then(data => {
                 // Update CSRF token untuk request berikutnya
@@ -518,9 +583,9 @@
         btnTolak.innerHTML = '<i class="bi bi-hourglass-split"></i> Memproses...';
 
         fetch('<?php echo site_url("pembayaran_admin/tolakVerifikasi") ?>', {
-                method: 'POST',
-                body: formData
-            })
+            method: 'POST',
+            body: formData
+        })
             .then(response => response.json())
             .then(data => {
                 // Update CSRF token untuk request berikutnya
@@ -596,7 +661,7 @@
     }
 
     // Handler untuk tombol Lihat Invoice (Gabungan)
-    document.addEventListener('click', function(ev) {
+    document.addEventListener('click', function (ev) {
         const btn = ev.target.closest('#btnViewExistingInvoiceGabungan');
         if (!btn) return;
 
@@ -609,14 +674,14 @@
     });
 
     // Show filename when user selects invoice file (Gabungan)
-    (function() {
+    (function () {
         const fi = document.getElementById('file_invoice_gabungan');
         const sel = document.getElementById('invoice-selection-gabungan');
         const viewBtn = document.getElementById('btnViewExistingInvoiceGabungan');
 
         if (!fi) return;
 
-        fi.addEventListener('change', function(e) {
+        fi.addEventListener('change', function (e) {
             const f = e.target.files && e.target.files[0];
             if (f) {
                 sel.textContent = 'File dipilih: ' + f.name + ' (' + (f.size / 1024).toFixed(2) + ' KB)';
@@ -656,9 +721,9 @@
         btnUpload.innerHTML = '<i class="bi bi-hourglass-split"></i> Memproses...';
 
         fetch('<?php echo site_url("pembayaran_admin/uploadKirimInvoice") ?>', {
-                method: 'POST',
-                body: formData
-            })
+            method: 'POST',
+            body: formData
+        })
             .then(response => response.json())
             .then(data => {
                 // Update CSRF token untuk request berikutnya
@@ -732,7 +797,7 @@
     }
 
     // Handler untuk tombol Lihat Invoice
-    document.addEventListener('click', function(ev) {
+    document.addEventListener('click', function (ev) {
         const btn = ev.target.closest('#btnViewExistingInvoice');
         if (!btn) return;
 
@@ -745,14 +810,14 @@
     });
 
     // Show filename when user selects invoice file
-    (function() {
+    (function () {
         const fi = document.getElementById('file_invoice');
         const sel = document.getElementById('invoice-selection');
         const viewBtn = document.getElementById('btnViewExistingInvoice');
 
         if (!fi) return;
 
-        fi.addEventListener('change', function(e) {
+        fi.addEventListener('change', function (e) {
             const f = e.target.files && e.target.files[0];
             if (f) {
                 sel.textContent = 'File dipilih: ' + f.name + ' (' + (f.size / 1024).toFixed(2) + ' KB)';
@@ -786,9 +851,9 @@
         btnUpload.innerHTML = '<i class="bi bi-hourglass-split"></i> Uploading...';
 
         fetch('<?php echo site_url("pembayaran_admin/uploadInvoice") ?>', {
-                method: 'POST',
-                body: formData
-            })
+            method: 'POST',
+            body: formData
+        })
             .then(response => response.json())
             .then(data => {
                 // Update CSRF token untuk request berikutnya
@@ -866,9 +931,9 @@
         btnKirim.innerHTML = '<i class="bi bi-hourglass-split"></i> Mengirim...';
 
         fetch('<?php echo site_url("pembayaran_admin/kirimInvoice") ?>', {
-                method: 'POST',
-                body: formData
-            })
+            method: 'POST',
+            body: formData
+        })
             .then(response => response.json())
             .then(data => {
                 // Update CSRF token untuk request berikutnya
@@ -902,5 +967,68 @@
                 btnKirim.innerHTML = '<i class="bi bi-send"></i> Kirim ke Pelanggan';
                 sayAlert('errorModal', 'Error', 'Terjadi kesalahan: ' + error.message, 'error');
             });
+    }
+
+    let detailModalTable = null;
+
+    // Handler detail layanan - gunakan sayTable modal
+    document.addEventListener('click', function (event) {
+        const btn = event.target.closest('.btn-detail-layanan');
+        if (!btn) return;
+
+        const detailId = btn.getAttribute('data-detail-id');
+        if (!detailId) {
+            sayAlert('warningModal', 'Data Tidak Ditemukan', 'Detail layanan belum tersedia untuk baris ini.', 'warning');
+            return;
+        }
+
+        const pemesan = btn.getAttribute('data-pemesan') || '-';
+        const invoice = btn.getAttribute('data-invoice') || '-';
+        const totalValue = parseFloat(btn.getAttribute('data-total') || '0');
+
+        const pemesanEl = document.getElementById('detailLayananPemesan');
+        const invoiceEl = document.getElementById('detailLayananInvoice');
+        const totalEl = document.getElementById('detailLayananTotal');
+
+        if (pemesanEl) pemesanEl.textContent = pemesan;
+        if (invoiceEl) invoiceEl.textContent = invoice || '-';
+        if (totalEl) totalEl.textContent = formatCurrencyIDR(totalValue);
+
+        const targetUrl = '<?php echo site_url("pembayaran_admin/detailLayanan/") ?>' + detailId;
+
+        if (!detailModalTable) {
+            detailModalTable = createModal({
+                tableId: 'detailLayananTable',
+                apiUrl: targetUrl,
+                showFilter: false,
+                numbering: false,
+                treeview: false,
+                itemsPerPage: 10
+            });
+        } else {
+            detailModalTable.refresh({
+                apiUrl: targetUrl,
+                currentPage: 1
+            });
+        }
+
+        const modalElement = document.getElementById('modalDetailLayananAdmin');
+        if (modalElement) {
+            const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+            modal.show();
+        }
+    });
+
+    function formatCurrencyIDR(value) {
+        const number = Number(value) || 0;
+        if (typeof window.formatRupiahIntl === 'function') {
+            return window.formatRupiahIntl(number);
+        }
+
+        return new Intl.NumberFormat('id-ID', {
+            style: 'currency',
+            currency: 'IDR',
+            maximumFractionDigits: 0
+        }).format(number);
     }
 </script>

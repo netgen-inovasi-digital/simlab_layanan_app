@@ -167,6 +167,18 @@ class FormulirAdmin extends BaseController
             }
         }
 
+        $logMap = [];
+        if (!empty($lnKodes)) {
+            $logRows = $db->table('t_log_sampel')
+                ->select('kode_layanan, pengecekan')
+                ->whereIn('kode_layanan', $lnKodes)
+                ->get()->getResult();
+
+            foreach ($logRows as $log) {
+                $logMap[(int) $log->kode_layanan] = $log->pengecekan;
+            }
+        }
+
         foreach ($list as $row) {
             $lnStatusInt = (int) $row->lnStatus;
 
@@ -203,6 +215,7 @@ class FormulirAdmin extends BaseController
 
             // pakai lnKode (yang sudah ada di $row) sebagai sumber id
             $id = bin2hex($this->encrypter->encrypt($row->lnKode));
+            $lnKodeInt = (int) $row->lnKode;
             $response = [];
 
             // Ambil detail item layanan (tetap ada, seperti semula)
@@ -252,27 +265,42 @@ class FormulirAdmin extends BaseController
                 $personName = $row->lnAccEmail ?? '-';
             }
 
-
-
-            // Gunakan lnNoTransaksi hanya untuk ditampilkan, bukan dasar sorting
-            $invoiceNo = !empty($row->lnNoTransaksi) ? $row->lnNoTransaksi : 'Belum tersedia';
-
             $pemesanNama = !empty($personName) ? $personName : '-';
-            $tipe = !empty($userIdentity) ? $userIdentity : '-';
-            $tanggal = !empty($row->lnTgl) ? date('d-m-Y H:i', strtotime($row->lnTgl)) : '-';
+            $tipe = !empty($userIdentity) ? strtoupper($userIdentity) : '-';
+
+            $logDateRaw = $logMap[$lnKodeInt] ?? $row->lnTgl ?? null;
+            $tanggal = '-';
+            if (!empty($logDateRaw)) {
+                $ts = strtotime($logDateRaw);
+                if ($ts !== false) {
+                    $tanggal = date('d-m-Y H:i', $ts);
+                }
+            }
+
+            $metaParts = [];
+            if ($tanggal !== '-') {
+                $metaParts[] = $tanggal;
+            }
+            if ($tipe !== '-') {
+                $metaParts[] = $tipe;
+            }
+            $metaLine = !empty($metaParts) ? implode(' | ', $metaParts) : '-';
+
+            $badge = '';
+            if ((int) ($row->jumlah_kaji_ulang ?? 0) > 0) {
+                $badge = '<span class="badge bg-danger text-white ms-1" title="Data pengujian ulang">Uji Ulang</span>';
+            }
 
             $combined = '
                 <div style="line-height:1.3;">
-                    <span style="font-size:1rem; font-weight:600;">' . esc($pemesanNama) . '</span><br>
-                    <span style="font-size:0.9rem; color:#555;">' . esc($tanggal) . ' | ' . esc($tipe) . '</span>
+                    <span style="font-size:1rem; font-weight:600; display:block;">' . esc($pemesanNama) . '</span>
+                    <span style="font-size:0.9rem; color:#555;">' . esc($metaLine) . '</span>' . $badge . '
                 </div>';
 
             $response[] = $combined;
-            $response[] = esc($invoiceNo);
             $response[] = $this->formatStatus($row->lnStatus);
 
             // Status Pembayaran (sama seperti di Pelayanan)
-            $lnKodeInt = (int) $row->lnKode;
             $bayarStatusVal = isset($payMap[$lnKodeInt]) ? $payMap[$lnKodeInt]['status'] : 0;
             $invoiceFile = isset($payMap[$lnKodeInt]) ? $payMap[$lnKodeInt]['invoiceFile'] : null;
 
