@@ -55,11 +55,11 @@
                     <th width="5%">No</th>
                     <th width="15%">Layanan</th>
                     <th width="5%">Jumlah</th>
-                    <th width="25%" class="text-center">Metode</th>
-                    <th width="5%" class="text-center">Status File</th>
-                    <th width="5%" class="text-center">LHUS</th>
-                    <th width="20%" class="text-center">Keterangan Manajer</th>
-                    <th width="5%" class="text-center">Acc Manajer</th>
+                    <th width="25%">Metode</th>
+                    <th width="5%" >Status File</th>
+                    <th width="5%" >LHUS</th>
+                    <th width="20%">Keterangan Manajer</th>
+                    <th width="5%" >Acc Manajer</th>
                 </tr>
             </thead>
             <tbody></tbody>

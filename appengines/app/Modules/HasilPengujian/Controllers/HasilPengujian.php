@@ -324,7 +324,7 @@ class HasilPengujian extends BaseController
             $colB = $this->formatStatusForPenyelia($row->lnStatus, $row->lnKode, $user_id);
 
             $btn  = '<button type="button" class="btn btn-sm btn-info" title="Lihat Detail Item Layanan" onclick="loadDetail(\'' . $id . '\', \'' . $row->lnKode . '\')">'
-                  . '<i class="bi bi-upload"></i>Unggah LHUS</button>';
+                  . '<i class="bi bi-upload"></i> Unggah LHUS</button>';
 
             $data[] = [$colA, $colB, $btn];
         }
