@@ -79,7 +79,9 @@ class Pelaksanaan extends BaseController
         }
 
         foreach ($list as $row) {
-            if ((int) $row->lnStatus < 6)
+            $isKajiUlang = (int) ($row->jumlah_kaji_ulang ?? 0) > 0;
+
+            if ((int) $row->lnStatus < 6 && !$isKajiUlang)
                 continue;
 
             $id = bin2hex(service('encrypter')->encrypt($row->lnKode));
@@ -109,14 +111,19 @@ class Pelaksanaan extends BaseController
 
             // kolom LHUS (lihat)
             $response[] = '<button type="button" class="btn btn-sm btn-info" title="Lihat Detail Item Layanan" onclick="loadDetail(\'' . $id . '\')">
-                                <i class="bi bi-eye"></i> Lihat File
-                           </button>';
+                              <i class="bi bi-eye"></i> Lihat LHUS
+                          </button>';
+
+            // kolom LHU history
+            $response[] = '<button type="button" class="btn btn-sm btn-outline-primary" title="Riwayat LHU" onclick="showLhuHistory(\'' . $id . '\')">
+                              <i class="bi bi-files"></i> Lihat LHU
+                          </button>';
 
             // deteksi file LHU
             $lhuInfo = $this->detectLhuFile($row);
 
             // kolom status (single badge)
-            $response[] = '<div id="status-cell-' . $id . '">' . $this->formatStatus($row->lnStatus, $lhuInfo['has']) . '</div>';
+            $response[] = '<div id="status-cell-' . $id . '">' . $this->formatStatus($row->lnStatus, $lhuInfo['has'], $isKajiUlang) . '</div>';
 
             // ❗️RULE BARU: boleh accept jika status=6 DAN file LHU sudah ada
             $allowAccept = ((int) $row->lnStatus === 6 && $lhuInfo['has'] === true);
@@ -263,6 +270,75 @@ class Pelaksanaan extends BaseController
         return $this->response->setJSON(['items' => $items]);
     }
 
+    public function lhuList($id = null)
+    {
+        if (!$id) {
+            return $this->response->setJSON(['items' => []]);
+        }
+
+        try {
+            $lnKode = service('encrypter')->decrypt(hex2bin($id));
+        } catch (\Throwable $e) {
+            try {
+                $lnKode = service('encrypter')->decrypt($id);
+            } catch (\Throwable $e2) {
+                return $this->response->setJSON(['items' => []]);
+            }
+        }
+
+        $db = \Config\Database::connect();
+
+        try {
+            $rows = $db->table('t_files_lhu AS lhu')
+                ->select('lhu.file_id, lhu.file, lhu.tanggal_terbit, lhu.upload_by, users.user_name AS uploader_name')
+                ->join('simlab_account_users AS users', 'users.user_id = lhu.upload_by', 'left')
+                ->where('lhu.kode', $lnKode)
+                ->orderBy('CASE WHEN lhu.tanggal_terbit IS NULL THEN 1 ELSE 0 END', 'ASC', false)
+                ->orderBy('lhu.tanggal_terbit', 'ASC')
+                ->orderBy('lhu.file_id', 'ASC')
+                ->get()->getResult();
+        } catch (\Throwable $e) {
+            log_message('error', 'Pelaksanaan::lhuList error: ' . $e->getMessage());
+            return $this->response->setJSON(['items' => []]);
+        }
+
+        if (empty($rows)) {
+            return $this->response->setJSON(['items' => []]);
+        }
+
+        $items = [];
+        foreach ($rows as $index => $row) {
+            $tanggal = '-';
+            if (!empty($row->tanggal_terbit)) {
+                try {
+                    $tanggal = date('d/m/Y H:i', strtotime($row->tanggal_terbit));
+                } catch (\Throwable $e) {
+                    $tanggal = $row->tanggal_terbit;
+                }
+            }
+
+            $fileName = $row->file ?? '-';
+            $fileUrl = null;
+            if (!empty($row->file)) {
+                if (preg_match('/^https?:\/\//i', $row->file)) {
+                    $fileUrl = $row->file;
+                } else {
+                    $fileUrl = base_url('uploads/lhu/' . ltrim($row->file, '/'));
+                }
+            }
+
+            $items[] = [
+                'no' => $index + 1,
+                'tanggal' => $tanggal,
+                'filename' => $fileName,
+                'uploader' => $row->uploader_name ?? '-',
+                'url' => $fileUrl
+            ];
+        }
+
+        return $this->response->setJSON(['items' => $items]);
+    }
+
 
 
     public function upload()
@@ -296,6 +372,20 @@ class Pelaksanaan extends BaseController
             }
         }
 
+        $layananModel = new MyModel($this->table);
+        $layananRow = $layananModel->getDataById($this->id, $lnKode);
+
+        if (!$layananRow) {
+            return $this->response->setJSON([
+                'res' => 'error',
+                'msg' => 'Data layanan tidak ditemukan',
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        }
+
+        $isUjiUlang = (int) ($layananRow->jumlah_kaji_ulang ?? 0) > 0;
+
         if (!($file && $file->isValid() && !$file->hasMoved())) {
             return $this->response->setJSON([
                 'res' => 'error',
@@ -310,6 +400,17 @@ class Pelaksanaan extends BaseController
             return $this->response->setJSON([
                 'res' => 'error',
                 'msg' => 'Tanggal terbit LHU harus diisi',
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        }
+
+        try {
+            $tanggalTerbitFormatted = (new \DateTime($tanggalTerbit))->format('Y-m-d H:i:s');
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'res' => 'error',
+                'msg' => 'Format tanggal terbit tidak valid',
                 'xname' => csrf_token(),
                 'xhash' => csrf_hash()
             ]);
@@ -333,50 +434,60 @@ class Pelaksanaan extends BaseController
         $db = \Config\Database::connect();
 
         try {
-            // Upload LHU ke t_files_lhu (database baru)
-            // Cek apakah sudah ada record untuk lnKode ini
-            $existingFile = $db->table('t_files_lhu')
-                ->where('kode', $lnKode)
-                ->get()->getRow();
+            $msg = 'File LHU berhasil diunggah.';
 
-            if ($existingFile) {
-                // Update record yang sudah ada
-                $db->table('t_files_lhu')
-                    ->where('kode', $lnKode)
-                    ->update([
-                        'file' => $filename,
-                        'upload_by' => $user_id
-                    ]);
-
-                // Hapus file lama jika ada
-                if (!empty($existingFile->file) && $existingFile->file !== $filename) {
-                    $oldFilePath = FCPATH . 'uploads/lhu/' . ltrim($existingFile->file, '/');
-                    if (is_file($oldFilePath)) {
-                        @unlink($oldFilePath);
-                    }
-                }
-
-                $msg = 'File LHU berhasil diperbarui.';
-            } else {
-                // Insert record baru jika belum ada
+            if ($isUjiUlang) {
+                // Selalu sisipkan catatan baru untuk uji ulang agar riwayat tersimpan
                 $db->table('t_files_lhu')->insert([
                     'kode' => $lnKode,
                     'file' => $filename,
-                    'upload_by' => $user_id
+                    'upload_by' => $user_id,
+                    'tanggal_terbit' => $tanggalTerbitFormatted
                 ]);
+                $msg = 'File LHU uji ulang berhasil diunggah.';
+            } else {
+                // Upload LHU ke t_files_lhu (database baru)
+                // Cek apakah sudah ada record untuk lnKode ini
+                $existingFile = $db->table('t_files_lhu')
+                    ->where('kode', $lnKode)
+                    ->orderBy('file_id', 'DESC')
+                    ->limit(1)
+                    ->get()->getRow();
 
-                // Ambil file_id yang baru saja dibuat
-                $newFileId = $db->insertID();
+                if ($existingFile) {
+                    // Update record yang sudah ada
+                    $db->table('t_files_lhu')
+                        ->where('file_id', $existingFile->file_id)
+                        ->update([
+                            'file' => $filename,
+                            'upload_by' => $user_id,
+                            'tanggal_terbit' => $tanggalTerbitFormatted
+                        ]);
 
-                $msg = 'File LHU berhasil diunggah.';
+                    // Hapus file lama jika ada (hanya untuk unggahan non uji ulang)
+                    if (!empty($existingFile->file) && $existingFile->file !== $filename) {
+                        $oldFilePath = FCPATH . 'uploads/lhu/' . ltrim($existingFile->file, '/');
+                        if (is_file($oldFilePath)) {
+                            @unlink($oldFilePath);
+                        }
+                    }
+
+                    $msg = 'File LHU berhasil diperbarui.';
+                } else {
+                    // Insert record baru jika belum ada
+                    $db->table('t_files_lhu')->insert([
+                        'kode' => $lnKode,
+                        'file' => $filename,
+                        'upload_by' => $user_id,
+                        'tanggal_terbit' => $tanggalTerbitFormatted
+                    ]);
+                }
             }
 
             // Update/Insert tanggal terbit LHU ke t_log_sampel
             $logSampel = $db->table('t_log_sampel')
                 ->where('kode_layanan', $lnKode)
                 ->get()->getRow();
-
-            $tanggalTerbitFormatted = date('Y-m-d H:i:s', strtotime($tanggalTerbit));
 
             if ($logSampel) {
                 // Update existing record
@@ -392,8 +503,7 @@ class Pelaksanaan extends BaseController
             }
 
             // Update status menjadi 9 (LHU Disetujui) setelah upload berhasil
-            $model = new MyModel($this->table);
-            $model->updateData(['lnStatus' => 9], $this->id, $lnKode);
+            $layananModel->updateData(['lnStatus' => 9], $this->id, $lnKode);
 
             return $this->response->setJSON([
                 'res' => true,
@@ -668,8 +778,12 @@ class Pelaksanaan extends BaseController
         return ['has' => false, 'url' => '#'];
     }
 
-    private function formatStatus($status, $uploaded = null)
+    private function formatStatus($status, $uploaded = null, $isKajiUlang = false)
     {
+        if ($isKajiUlang && (int) $status <= 5) {
+            return '<span class="badge bg-warning text-dark">Pengujian Ulang</span>';
+        }
+
         switch ((int) $status) {
             case 7:
             case 8:

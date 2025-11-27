@@ -159,6 +159,35 @@
     </div>
 </div>
 
+<!-- Modal Catatan Kaji Ulang -->
+<div class="modal fade" id="modalCatatanKajiUlang" tabindex="-1" aria-labelledby="modalCatatanKajiUlangLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="modalCatatanKajiUlangLabel">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>Catatan Kaji Ulang
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-bold text-muted small">Jumlah Kaji Ulang:</label>
+                    <p class="mb-0" id="jumlahKajiUlang">-</p>
+                </div>
+                <div>
+                    <label class="form-label fw-bold text-muted small">Catatan:</label>
+                    <div class="border rounded p-3" style="max-height: 300px; overflow-y: auto; background-color: #f8f9fa;">
+                        <p class="mb-0 text-wrap" id="catatanKajiUlangContent" style="white-space: pre-wrap;">-</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     table = createTable({
         apiUrl: '<?php echo site_url("hasilpengujian/datalist") ?>',
@@ -167,12 +196,69 @@
     addAction();
 
     // ============================================================
-    // CREATE MODAL WRAPPER (untuk isolasi tabel di dalam modal)
+    // EVENT DELEGATION UNTUK BADGE UJI ULANG
+    // Menggunakan onclick langsung di element untuk menghindari duplikat listener
     // ============================================================
-    function createModal(customConfig = {}) {
-        // Langsung gunakan createTable untuk konsistensi
-        return createTable(customConfig);
+    
+    // ============================================================
+    // FUNGSI UNTUK MENAMPILKAN MODAL CATATAN KAJI ULANG
+    // ============================================================
+    function showCatatanKajiUlang(encId) {
+        const url = '<?php echo site_url("hasilpengujian/getCatatanKajiUlang/") ?>' + encId;
+        
+        // Hapus semua backdrop yang mungkin tertinggal
+        document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+        
+        // Reset body class jika ada modal yang tidak tertutup dengan benar
+        document.body.classList.remove('modal-open');
+        document.body.style.removeProperty('overflow');
+        document.body.style.removeProperty('padding-right');
+        
+        const modalElement = document.getElementById('modalCatatanKajiUlang');
+        if (!modalElement) {
+            alert('Modal tidak ditemukan');
+            return;
+        }
+        
+        // Pindahkan modal ke body jika belum di body (untuk menghindari masalah stacking context)
+        if (modalElement.parentElement !== document.body) {
+            document.body.appendChild(modalElement);
+        }
+        
+        // Set loading state
+        document.getElementById('jumlahKajiUlang').textContent = 'Memuat...';
+        document.getElementById('catatanKajiUlangContent').textContent = 'Memuat...';
+        
+        // Dispose existing modal instance if any to prevent duplicates
+        let modalInstance = bootstrap.Modal.getInstance(modalElement);
+        if (modalInstance) {
+            modalInstance.dispose();
+        }
+        
+        // Create fresh modal instance and show
+        modalInstance = new bootstrap.Modal(modalElement);
+        modalInstance.show();
+        
+        // Fetch data
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('jumlahKajiUlang').textContent = data.data.jumlah_kaji_ulang + ' kali';
+                    document.getElementById('catatanKajiUlangContent').textContent = data.data.catatan_kaji_ulang || '-';
+                } else {
+                    document.getElementById('jumlahKajiUlang').textContent = '-';
+                    document.getElementById('catatanKajiUlangContent').textContent = data.message || 'Gagal memuat data';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('jumlahKajiUlang').textContent = '-';
+                document.getElementById('catatanKajiUlangContent').textContent = 'Terjadi kesalahan saat memuat data';
+            });
     }
+
+
 
     document.querySelector('#btnSimpan')?.addEventListener('click', function(e) {
         e.preventDefault();
@@ -235,8 +321,8 @@
     // ============================================================
     // LOAD DETAIL LAYANAN (MODAL)
     // ============================================================
-    let trackingDetailTable;
-    let cachedSampleData = {}; // Cache untuk identitas sampel
+    var trackingDetailTable;
+    var cachedSampleData = {}; // Cache untuk identitas sampel
 
     function loadSampleIdentity(lnKode) {
         const sampleSection = document.getElementById('sampleIdentitySection');
@@ -319,15 +405,17 @@
                 }
             }
 
-            trackingDetailTable = createModal({
-                tableId: 'tableDetail',
-                apiUrl: `<?php echo site_url("hasilpengujian/detailList/") ?>${id}`,
-                itemsPerPage: 10,
-                showFilter: false,
-                treeview: false,
-                numbering: false,
-                dataSrc: 'items'
-            });
+            if (!trackingDetailTable) {
+                trackingDetailTable = createTable({
+                    tableId: 'tableDetail',
+                    apiUrl: `<?php echo site_url("hasilpengujian/detailList/") ?>${id}`,
+                    itemsPerPage: 10,
+                    showFilter: false,
+                    treeview: false,
+                    numbering: false,
+                    dataSrc: 'items'
+                });
+            }
             
             console.log('trackingDetailTable created:', trackingDetailTable);
 
@@ -422,7 +510,7 @@ if (typeof window.normalizeDoubleQuestion !== 'function') {
 (function patchFetchData(){
   if (typeof table !== 'undefined' && table && typeof table.getConfig === 'function' && typeof table.fetchData === 'function' && !table.__fetchPatchedHP) {
       const _origFetch = table.fetchData.bind(table);
-      let _currentAbort = null;
+      var _currentAbort = null;
       table.fetchData = function(opts = {}) {
           try {
               const cfg = table.getConfig();
@@ -479,7 +567,7 @@ async function autoUploadFile(input) {
     const encLn = input.getAttribute('data-ln') || '';
     const detlist = input.getAttribute('data-detlist') || '';
     const detCodes = detlist.split(',').map(s => s.trim()).filter(Boolean);
-    let detKodeToSend = '';
+    var detKodeToSend = '';
     if (detCodes.length === 1) detKodeToSend = detCodes[0];
 
     const fd = new FormData();
@@ -577,346 +665,6 @@ attachUploaderTriggers();
 if (typeof table !== 'undefined' && table.on) {
     table.on('draw', attachUploaderTriggers); // if createTable exposes events
 }
-</script>
-
-<script>
-document.addEventListener('click', function(ev) {
-    const target = ev.target;
-    const btn = target.closest ? target.closest('#btnViewExistingLhus') : null;
-    if (!btn) return;
-    const url = btn.getAttribute('data-url') || btn.dataset.url || null;
-    if (url && url !== '#' && url !== '') {
-        const w = window.open('', '_blank');
-        if (w) {
-            try { w.opener = null; w.location = url; } catch (err) { window.open(url, '_blank'); }
-        } else { window.open(url, '_blank'); }
-    } else {
-        sayAlert('errorModal','Info','Tidak ada file bukti.','warning');
-    }
-});
-
-(function() {
-    const fi = document.getElementById('lhus_file');
-    const sel = document.getElementById('lhus-selection');
-    if (!fi) return;
-    fi.addEventListener('change', function(e) {
-        const f = e.target.files && e.target.files[0];
-        if (f) {
-            if (sel) sel.textContent = 'Anda memilih: ' + f.name;
-            const viewBtn = document.getElementById('btnViewExistingLhus');
-            if (viewBtn) viewBtn.setAttribute('disabled', 'disabled');
-        } else {
-            if (sel) sel.textContent = 'Anda bisa unggah file baru untuk mengganti.';
-        }
-    });
-})();
-
-document.getElementById('btnUploadLhus')?.addEventListener('click', function(e) {
-    e.preventDefault();
-    const form = document.getElementById('formUploadLhus');
-    const formData = new FormData(form);
-    const url = form.getAttribute('action');
-    const csrfInput = document.querySelector('[name="<?= csrf_token() ?>"]');
-    const csrfToken = csrfInput ? csrfInput.value : '';
-
-    if (!formData.get('lhus_file') || formData.get('lhus_file').size === 0) {
-        sayAlert('errorModal','Error','Pilih file terlebih dahulu.','warning');
-        return;
-    }
-
-    showLoading();
-
-    fetch(url, {
-        method: 'POST',
-        body: formData,
-        headers: { 'X-CSRF-TOKEN': csrfToken }
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.xname && data.xhash) {
-            document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => input.value = data.xhash);
-        }
-        if (data.res === true) {
-            sayAlert('successModal','Berhasil', data.msg || 'File berhasil diunggah.','success');
-            $('#modalUploadLhus').modal('hide');
-            if (typeof table !== 'undefined') table.fetchData({ reload: true });
-        } else {
-            sayAlert('errorModal','Gagal', data.msg || 'Upload gagal.','warning');
-        }
-    })
-    .catch(err => { console.error(err); sayAlert('errorModal','Error','Terjadi kesalahan saat upload.','warning'); })
-    .finally(() => { hideLoading(); });
-});
-
-function doSendLhus(encId) {
-    const csrfInput = document.querySelector('[name="<?= csrf_token() ?>"]');
-    const csrfToken = csrfInput ? csrfInput.value : '';
-    // disable send button segera
-    const btnKirim = document.getElementById('btnKirimDetail');
-    if (btnKirim) {
-        btnKirim.setAttribute('disabled', 'disabled');
-    }
-    showLoading();
-
-    if (!encId || encId === '') {
-        hideLoading();
-        if (btnKirim) btnKirim.removeAttribute('disabled');
-        sayAlert('errorModal','Error','ID tidak ditemukan.','warning');
-        return;
-    }
-
-    const body = new URLSearchParams();
-    body.append('id', encId);
-
-    fetch('<?php echo site_url("hasilpengujian/submit") ?>', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': csrfToken
-        },
-        body: body.toString()
-    })
-    .then(res => {
-        if (!res.ok) return res.text().then(t => { throw new Error('HTTP ' + res.status + ': ' + t); });
-        return res.json();
-    })
-    .then(data => {
-        if (data.xname && data.xhash) {
-            document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => input.value = data.xhash);
-        }
-
-        // 1) TUTUP modal detail segera (sebelum notifikasi)
-        try {
-            const modalEl = document.getElementById('modalDetail');
-            if (modalEl) {
-                // Bootstrap 5 preferred
-                if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-                    const inst = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
-                    try { inst.hide(); } catch (e) { /* ignore */ }
-                } else if (typeof $ !== 'undefined') {
-                    // jQuery fallback
-                    try { $('#modalDetail').modal('hide'); } catch (e) {}
-                }
-            }
-        } catch (e) {
-            console.warn('hide modal error', e);
-        }
-
-        // 2) Tampilkan notifikasi
-        if (data.res === true) {
-            if (typeof sayAlert === 'function') {
-                sayAlert('successModal','Berhasil', data.msg || 'File berhasil dikirim.','success');
-            } else {
-                alert(data.msg || 'File berhasil dikirim.');
-            }
-
-            // 3) refresh tabel sedikit setelah notifikasi ditampilkan
-            const REFRESH_DELAY = 300; // ms - sesuaikan jika perlu
-            setTimeout(function() {
-                try {
-                    if (typeof table !== 'undefined' && typeof table.fetchData === 'function') {
-                        table.fetchData({ reload: true });
-                    }
-                }
-            });
-    }
-</script>
-
-<script>
-    /* [ADDED] Helpers agar URL filter bersih & fetch cache-busted */
-    if (typeof window.buildApiUrlWithOptionalParam !== 'function') {
-        function buildApiUrlWithOptionalParam(path, key, value) {
-            try {
-                const u = new URL(path, window.location.origin);
-                const params = new URLSearchParams(u.search);
-                if (key && String(key) !== '') {
-                    if (typeof value !== 'undefined' && value !== null && String(value) !== '') {
-                        params.set(key, String(value));
-                    } else {
-                        params.delete(key);
-                    }
-                }
-                const s = params.toString();
-                return u.pathname + (s ? '?' + s : '');
-            } catch (e) {
-                if (key && String(key) !== '' && value !== null && String(value) !== '') {
-                    return path + (path.includes('?') ? '&' : '?') + encodeURIComponent(key) + '=' + encodeURIComponent(String(value));
-                }
-                return path;
-            }
-        }
-    }
-    if (typeof window.normalizeDoubleQuestion !== 'function') {
-        function normalizeDoubleQuestion(url) {
-            if (typeof url !== 'string') return url;
-            url = url.replace(/\?([^?]*)\?/, '?$1&');
-            url = url.replace(/&{2,}/g, '&');
-            url = url.replace(/\?&/, '?');
-            if (url.endsWith('&')) url = url.slice(0, -1);
-            return url;
-        }
-    }
-
-    /* [ADDED] Patch fetchData agar tambahkan cache-buster */
-    (function patchFetchData() {
-        if (typeof table !== 'undefined' && table && typeof table.getConfig === 'function' && typeof table.fetchData === 'function' && !table.__fetchPatchedHP) {
-            const _origFetch = table.fetchData.bind(table);
-            let _currentAbort = null;
-            table.fetchData = function (opts = {}) {
-                try {
-                    const cfg = table.getConfig();
-                    if (cfg && typeof cfg.apiUrl === 'string') {
-                        const u = new URL(cfg.apiUrl, window.location.origin);
-                        u.searchParams.set('_ts', Date.now().toString());
-                        cfg.apiUrl = normalizeDoubleQuestion(u.pathname + (u.search ? u.search : ''));
-                    }
-                } catch (err) { }
-                try { if (_currentAbort) _currentAbort.abort(); } catch (e) { }
-                try { _currentAbort = new AbortController(); opts.signal = _currentAbort.signal; } catch (e) { }
-                return _origFetch(opts);
-            };
-            table.__fetchPatchedHP = true;
-        }
-    })();
-
-    /* [ADDED] Wiring dropdown Status → param lnStatus */
-    (function attachStatusFilter() {
-        const sel = document.getElementById('statusFilter');
-        if (!sel || sel.dataset.bound === '1') return;
-        sel.addEventListener('change', function () {
-            const val = (this.value || '').toString().trim();
-            if (table?.getConfig) {
-                const cfg = table.getConfig();
-                cfg.apiUrl = normalizeDoubleQuestion(
-                    buildApiUrlWithOptionalParam('<?php echo site_url("hasilpengujian/datalist") ?>', 'lnStatus', (val === '' ? null : val))
-                );
-                table.fetchData({ reload: true, page: 1 });
-            }
-        });
-        sel.dataset.bound = '1';
-    })();
-</script>
-
-<script>
-    /**
-     * autoUploadFile(input)
-     * - Input element must have attributes:
-     *    data-ln = encrypted ln (hex)
-     *    data-detlist = comma separated detKode(s) OR empty
-     * Behavior: upload file via fetch to hasilpengujian/upload and update UI inline.
-     */
-    async function autoUploadFile(input) {
-        if (!input || !input.files || input.files.length === 0) return;
-        const file = input.files[0];
-        const name = file.name || '';
-        const ext = name.split('.').pop().toLowerCase();
-        const allowedExt = ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx', 'xls', 'xlsx'];
-        const maxSize = 5 * 1024 * 1024;
-        if (!allowedExt.includes(ext)) { alert('Format file tidak diperbolehkan.'); input.value = ''; return; }
-        if (file.size > maxSize) { alert('Ukuran file maksimal 5MB.'); input.value = ''; return; }
-
-        const encLn = input.getAttribute('data-ln') || '';
-        const detlist = input.getAttribute('data-detlist') || '';
-        const detCodes = detlist.split(',').map(s => s.trim()).filter(Boolean);
-        let detKodeToSend = '';
-        if (detCodes.length === 1) detKodeToSend = detCodes[0];
-
-        const fd = new FormData();
-        fd.append('lhus_file', file, file.name);
-        fd.append('id', encLn);
-        if (detKodeToSend) fd.append('detKode', detKodeToSend);
-
-        // attach CSRF if present in DOM as hidden input (common CI pattern)
-        const csrfInput = document.querySelector('[name="<?= csrf_token() ?>"]');
-        if (csrfInput) fd.append(csrfInput.name, csrfInput.value);
-
-        // UI: set uploading state on nearest button (if any)
-        const parent = input.parentElement;
-        const btn = parent ? parent.querySelector('button') : null;
-        const originalHtml = btn ? btn.innerHTML : null;
-        if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Mengunggah...'; }
-
-        try {
-            const res = await fetch('<?php echo site_url("hasilpengujian/upload") ?>', {
-                method: 'POST',
-                body: fd,
-                credentials: 'same-origin'
-            });
-            const json = await res.json();
-            if (json.xname && json.xhash) {
-                document.querySelectorAll('[name="' + json.xname + '"]').forEach(i => i.value = json.xhash);
-            }
-
-            if (json && (json.res === true || json.res === 'true')) {
-                const fileUrl = json.url || null;
-
-                // Update tombol lihat file di kolom LHUS
-                const tr = input.closest('tr');
-                if (tr && fileUrl) {
-                    // Cari tombol eye (lihat file) di row yang sama
-                    const eyeIcon = tr.querySelector('.bi-eye');
-                    if (eyeIcon && eyeIcon.parentElement) {
-                        const eyeSpan = eyeIcon.parentElement;
-                        // Update tombol eye menjadi aktif dengan URL file
-                        eyeSpan.className = 'text-primary btn-action';
-                        eyeSpan.title = 'Lihat File';
-                        eyeSpan.setAttribute('onclick', 'window.open(\'' + fileUrl + '\', \'_blank\')');
-                        eyeSpan.style.cursor = 'pointer';
-                    }
-
-                    // Update status badge ke "lhus ter-unggah"
-                    const statusCell = tr.querySelector('td:nth-child(5)'); // kolom Status File
-                    if (statusCell) {
-                        statusCell.innerHTML = '<div class="text-center"><span class="badge bg-info">lhus ter-unggah</span></div>';
-                    }
-                }
-
-                // Reset input file
-                input.value = '';
-
-                if (typeof sayAlert === 'function') {
-                    sayAlert('successModal', 'Berhasil', json.msg || 'File berhasil diunggah.', 'success');
-                    // Reload detail untuk memastikan semua data terupdate
-                    setTimeout(() => {
-                        loadDetail(encLn);
-                    }, 500);
-                } else {
-                    alert(json.msg || 'File berhasil diunggah.');
-                }
-            } else {
-                const message = (json && json.msg) ? json.msg : 'Gagal mengunggah file.';
-                if (typeof sayAlert === 'function') sayAlert('errorModal', 'Gagal', message, 'warning'); else alert(message);
-                input.value = '';
-            }
-        } catch (err) {
-            console.error(err);
-            if (typeof sayAlert === 'function') sayAlert('errorModal', 'Error', 'Terjadi kesalahan saat mengunggah file.', 'warning'); else alert('Terjadi kesalahan saat mengunggah file.');
-            input.value = '';
-        }
-    }
-
-    /* Utility: attach click-to-open file input for rows created by server data.
-       Server will render input.lhus-uploader-input inside LHUS column - see controller detailList() output.
-       If table is re-rendered, ensure addAction() (existing) runs again or call attachUploaderTriggers().
-    */
-    function attachUploaderTriggers() {
-        document.querySelectorAll('input.lhus-uploader-input').forEach(function (inp) {
-            // ensure event only once
-            if (!inp.dataset._hasAutoUpload) {
-                inp.dataset._hasAutoUpload = '1';
-                inp.addEventListener('change', function () { autoUploadFile(inp); });
-            }
-        });
-    }
-
-    // initial attach (if table loads elements on render)
-    attachUploaderTriggers();
-
-    // Re-attach after table fetches new data (if your createTable calls addAction or trigger event, ensure attachUploaderTriggers runs)
-    if (typeof table !== 'undefined' && table.on) {
-        table.on('draw', attachUploaderTriggers); // if createTable exposes events
-    }
 </script>
 
 <script>
@@ -1099,7 +847,7 @@ function doSendLhus(encId) {
         }
         try {
             e.preventDefault();
-            let id = e.currentTarget && e.currentTarget.closest ? e.currentTarget.closest('div').id : null;
+            var id = e.currentTarget && e.currentTarget.closest ? e.currentTarget.closest('div').id : null;
             if (!id) return;
             return sayConfirm(
                 'Konfirmasi',

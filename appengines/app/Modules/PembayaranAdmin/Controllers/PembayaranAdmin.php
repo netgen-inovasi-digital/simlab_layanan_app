@@ -37,7 +37,7 @@ class PembayaranAdmin extends BaseController
 
             // Query SEMUA pembayaran dengan lnStatus > 3 (admin melihat semua data)
             $builder = $db->table('t_pembayaran');
-            $builder->select('t_pembayaran.*, simlab_t_layanan.lnKode, simlab_t_layanan.lnAccEmail, simlab_t_layanan.lnNoTransaksi, simlab_t_layanan.lnTgl, simlab_t_layanan.lnStatus, simlab_t_layanan.user_id');
+            $builder->select('t_pembayaran.*, simlab_t_layanan.lnKode, simlab_t_layanan.lnAccEmail, simlab_t_layanan.lnNoTransaksi, simlab_t_layanan.lnTgl, simlab_t_layanan.lnStatus, simlab_t_layanan.user_id, simlab_t_layanan.jumlah_kaji_ulang');
             $builder->join('simlab_t_layanan', 't_pembayaran.bayarLnKode = simlab_t_layanan.lnKode', 'inner');
             $builder->where('simlab_t_layanan.lnStatus >', 2);
 
@@ -138,15 +138,40 @@ class PembayaranAdmin extends BaseController
                 $aksi = $this->aksiButton($encrypted_id, $paymentStatus, $row->bayarBuktiFile, $row->bayarInvoiceFile, $row->lnNoTransaksi, $tempInvoiceFile, $u);
 
                 $pemesanNama = !empty($personName) ? $personName : '-';
-                $tipe = !empty($userIdentity) ? $userIdentity : '-';
+                $tipe = !empty($userIdentity) ? strtoupper($userIdentity) : '-';
                 $tanggal = !empty($row->lnTgl) ? date('d-m-Y H:i', strtotime($row->lnTgl)) : '-';
 
-                // Format gabungan seperti di Tagihan (Nama + Tanggal + Tipe)
+                $badge = '';
+                if ((int) ($row->jumlah_kaji_ulang ?? 0) > 0) {
+                    $badge = '<span class="badge bg-danger text-white ms-1" title="Data uji ulang">Uji Ulang</span>';
+                }
+
                 $combined = '
                     <div style="line-height:1.3;">
-                        <span style="font-size:1rem; font-weight:600;">' . esc($pemesanNama) . '</span><br>
-                        <span style="font-size:0.9rem; color:#555;">' . esc($tanggal) . ' | ' . esc($tipe) . '</span>
+                        <span style="font-size:1rem; font-weight:600;">' . esc($pemesanNama) . '</span>
+                        <div style="font-size:0.9rem; color:#555; display:flex; align-items:center; gap:6px;">
+                            <span>' . esc($tipe) . '</span>' . $badge . '
+                        </div>
                     </div>';
+
+                $invoiceNumber = !empty($row->bayarInvoiceNo)
+                    ? esc($row->bayarInvoiceNo)
+                    : '<span class="text-muted">-</span>';
+
+                $invoiceDisplay = '
+                    <div style="line-height:1.3;">
+                        <span class="fw-semibold">' . $invoiceNumber . '</span><br>
+                        <span class="text-muted" style="font-size:0.85rem;">' . esc($tanggal) . '</span>
+                    </div>';
+
+                $detailTotal = (float) ($row->bayarTotalBiaya ?? 0);
+                $encodedLn = bin2hex(service('encrypter')->encrypt($row->lnKode));
+                $detailButton = '<button type="button" class="btn btn-sm btn-outline-primary btn-detail-layanan"' .
+                    ' data-detail-id="' . esc($encodedLn, 'attr') . '"' .
+                    ' data-pemesan="' . esc($pemesanNama, 'attr') . '"' .
+                    ' data-invoice="' . esc($row->bayarInvoiceNo ?? '-', 'attr') . '"' .
+                    ' data-total="' . $detailTotal . '">' .
+                    '<i class="bi bi-card-list"></i> Detail</button>';
 
                 // Kolom File Invoice - dengan logic seperti di Tagihan
                 $fileInvoiceDisplay = '';
@@ -183,13 +208,13 @@ class PembayaranAdmin extends BaseController
 
                 // Response array: 8 kolom
                 $data[] = [
-                    !empty($row->bayarInvoiceNo) ? esc($row->bayarInvoiceNo) : '<span class="text-muted">-</span>', // No. Invoice
-                    $combined, // Pemesan (Nama + Tanggal + Tipe)
-                    'Rp ' . number_format($row->bayarTotalBiaya, 0, ',', '.'), // Total Biaya
-                    $fileInvoiceDisplay, // File Invoice (dengan badge jika baru upload)
-                    $buktiBayar, // Bukti Bayar
-                    $status, // Status
-                    $aksi // Aksi
+                    $invoiceDisplay,
+                    $combined,
+                    $detailButton,
+                    $fileInvoiceDisplay,
+                    $buktiBayar,
+                    $status,
+                    $aksi
                 ];
             }
 
@@ -201,6 +226,54 @@ class PembayaranAdmin extends BaseController
                 "error" => $e->getMessage()
             ]);
         }
+    }
+
+    /**
+     * Detail layanan untuk modal (digunakan oleh sayTable di view)
+     */
+    public function detailLayanan($encLnKode = null)
+    {
+        if (empty($encLnKode)) {
+            return $this->response->setJSON(['items' => [], 'total' => 0]);
+        }
+
+        try {
+            $lnKode = service('encrypter')->decrypt(hex2bin($encLnKode));
+        } catch (\Throwable $e) {
+            return $this->response->setJSON(['items' => [], 'total' => 0]);
+        }
+
+        $db = \Config\Database::connect();
+        $rows = $db->table('t_layanan_detil d')
+            ->select('d.nama_layanan, d.jumlah, d.biaya, rl.nama_layanan AS ref_nama, rl.kode_alat, rl.diskon AS ref_diskon, alat.alatNama, metode.nama AS metode_nama')
+            ->join('r_layanan_pengujian rl', 'rl.kode = d.uji_kode', 'left')
+            ->join('simlab_r_alat alat', 'alat.alatKode = rl.kode_alat', 'left')
+            ->join('r_metode metode', 'metode.metode_kode = d.metode_pengujian', 'left')
+            ->where('d.kode_layanan', $lnKode)
+            ->get()->getResult();
+
+        $items = [];
+        foreach ($rows as $idx => $det) {
+            $qty = max(1, (int) ($det->jumlah ?? 0));
+            $subtotal = (float) ($det->biaya ?? 0);
+            $unit = $qty > 0 ? $subtotal / $qty : $subtotal;
+
+            $items[] = [
+                $idx + 1,
+                esc($det->nama_layanan ?? $det->ref_nama ?? '-', 'html'),
+                esc($det->alatNama ?? $det->kode_alat ?? '-', 'html'),
+                esc($det->metode_nama ?? '-', 'html'),
+                $this->formatDiskonValue($det->ref_diskon ?? 0),
+                $this->formatCurrencyIDR($unit),
+                $qty,
+                $this->formatCurrencyIDR($subtotal),
+            ];
+        }
+
+        return $this->response->setJSON([
+            'items' => $items,
+            'total' => count($items)
+        ]);
     }
 
     /**
@@ -276,6 +349,28 @@ class PembayaranAdmin extends BaseController
             default:
                 return '<span class="badge bg-secondary">Unknown</span>';
         }
+    }
+
+    private function formatCurrencyIDR($value)
+    {
+        return 'Rp ' . number_format((float) $value, 0, ',', '.');
+    }
+
+    private function formatDiskonValue($value)
+    {
+        $number = (float) $value;
+        if (!is_finite($number) || $number === 0.0) {
+            return '-';
+        }
+
+        if (abs($number) <= 100) {
+            if (fmod($number, 1.0) === 0.0) {
+                return number_format($number, 0, ',', '.') . '%';
+            }
+            return rtrim(rtrim(number_format($number, 2, ',', '.'), '0'), ',') . '%';
+        }
+
+        return $this->formatCurrencyIDR($number);
     }
 
     /**
