@@ -64,17 +64,18 @@
                     <thead>
                         <tr>
                             <th width="5%">No</th>
-                            <th width="30%">Parameter</th>
-                            <th width="20%">Biaya</th>
-                            <th width="15%">Jumlah</th>
-                            <th width="15%">Status</th>
-                            <th width="15%">Keterangan Manajer</th>
-                            <th width="10%">Acc</th>
+                            <th width="25%">Layanan</th>
+                            <th width="20%">Metode</th>
+                            <th width="10%">Biaya</th>
+                            <th width="8%">Jumlah</th>
+                            <th width="10%">Status</th>
+                            <th width="12%">Keterangan Manajer</th>
+                            <th width="10%">ACC</th>
                         </tr>
                     </thead>
                     <tbody id="detail-body">
                         <tr>
-                            <td colspan="7" class="text-center">Loading...</td>
+                            <td colspan="8" class="text-center">Loading...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -379,13 +380,13 @@
                         tbody.innerHTML += tr;
                     });
                 } else {
-                    tbody.innerHTML = '<tr><td colspan="7" class="text-center">Tidak ada data</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="8" class="text-center">Tidak ada data</td></tr>';
                 }
                 $('#modalDetail').modal('show');
             })
             .catch(error => {
                 console.error(error);
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error load data</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error load data</td></tr>';
                 $('#modalDetail').modal('show');
             });
     }
