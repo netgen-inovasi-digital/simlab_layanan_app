@@ -99,14 +99,14 @@
                             <td>
                                 <?= esc($layanan->judul ?? 'Data Tidak Tersedia') ?>
                             </td>
-                            <td>
+                            <td data-order="<?= $layanan->biaya ?>">
                                 <?= 'Rp ' . number_format($layanan->biaya ?? 0, 0, ',', '.') ?>
                             </td>
                             <td>
                                 <?= esc($layanan->satuan ?? '-') ?>
                             </td>
                             <td>
-                                <?= esc($layanan->ujiJenKode ?? '') ?></td>
+                                <?= esc($layanan->kode_jenis ?? '') ?></td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>
