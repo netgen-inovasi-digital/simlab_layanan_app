@@ -79,6 +79,41 @@
                         </tr>
                     </tbody>
                 </table>
+
+                <!-- Sample Identity Details Section -->
+                <div class="detail-table mt-4" id="sampleIdentitySection">
+                    <h6 class="mb-3">Identitas Sampel:</h6>
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="fw-bold text-muted small">Jenis Sampel:</label>
+                                    <p class="mb-0" id="sampleJenis">-</p>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="fw-bold text-muted small">Kemasan Sampel:</label>
+                                    <p class="mb-0" id="sampleKemasan">-</p>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="fw-bold text-muted small">Sifat Sampel:</label>
+                                    <p class="mb-0" id="sampleSifat">-</p>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="fw-bold text-muted small">Sisa Sampel:</label>
+                                    <p class="mb-0" id="sampleSisa">-</p>
+                                </div>
+                                <div class="col-12 mb-3">
+                                    <label class="fw-bold text-muted small">Deskripsi:</label>
+                                    <p class="mb-0 text-wrap" id="sampleDeskripsi">-</p>
+                                </div>
+                                <div class="col-12">
+                                    <label class="fw-bold text-muted small">Keterangan Khusus:</label>
+                                    <p class="mb-0 text-wrap" id="sampleKeteranganKhusus">-</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-light" type="button" data-bs-dismiss="modal">
@@ -364,7 +399,15 @@
     function loadDetail(id) {
         const url = '<?php echo site_url("formuliradmin/detaillist/") ?>' + id;
         const tbody = document.querySelector('#detail-body');
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center">Loading...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center">Loading...</td></tr>';
+
+        // Reset identitas sampel
+        document.getElementById('sampleJenis').textContent = '-';
+        document.getElementById('sampleKemasan').textContent = '-';
+        document.getElementById('sampleSifat').textContent = '-';
+        document.getElementById('sampleSisa').textContent = '-';
+        document.getElementById('sampleDeskripsi').textContent = '-';
+        document.getElementById('sampleKeteranganKhusus').textContent = '-';
 
         fetch(url)
             .then(response => response.json())
@@ -382,6 +425,17 @@
                 } else {
                     tbody.innerHTML = '<tr><td colspan="8" class="text-center">Tidak ada data</td></tr>';
                 }
+
+                // Populate identitas sampel
+                if (data.sampleData) {
+                    document.getElementById('sampleJenis').textContent = data.sampleData.jenis || '-';
+                    document.getElementById('sampleKemasan').textContent = data.sampleData.kemasan || '-';
+                    document.getElementById('sampleSifat').textContent = data.sampleData.sifat || '-';
+                    document.getElementById('sampleSisa').textContent = data.sampleData.sisa || '-';
+                    document.getElementById('sampleDeskripsi').textContent = data.sampleData.deskripsi || '-';
+                    document.getElementById('sampleKeteranganKhusus').textContent = data.sampleData.keterangan_khusus || '-';
+                }
+
                 $('#modalDetail').modal('show');
             })
             .catch(error => {

@@ -420,7 +420,23 @@ class FormulirAdmin extends BaseController
             $data[] = $response;
         }
 
-        return $this->response->setJSON(['items' => $data]);
+        // Ambil data identitas sampel
+        $modelIdentitasSampel = new MyModel('t_identitas_sampel');
+        $sampleRow = $modelIdentitasSampel->getDataById('kode_layanan', $kode);
+        
+        $sampleData = [
+            'jenis' => $sampleRow->jenis ?? '-',
+            'kemasan' => $sampleRow->kemasan ?? '-',
+            'sifat' => $sampleRow->sifat ?? '-',
+            'sisa' => $sampleRow->sisa ?? '-',
+            'deskripsi' => $sampleRow->deskripsi ?? '-',
+            'keterangan_khusus' => $sampleRow->keterangan_khusus ?? '-'
+        ];
+
+        return $this->response->setJSON([
+            'items' => $data,
+            'sampleData' => $sampleData
+        ]);
     }
 
 
