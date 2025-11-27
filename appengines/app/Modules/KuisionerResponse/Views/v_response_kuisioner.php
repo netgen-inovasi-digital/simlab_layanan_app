@@ -42,7 +42,7 @@
 </div>
 
 <script>
-    const responseTable = createTable({
+    var responseTable = createTable({
         tableId: 'response-table',
         apiUrl: '<?= site_url("response_kuisioner/datalist") ?>',
         numbering: true,
