@@ -34,10 +34,11 @@
                     <thead>
                         <tr>
                             <th show width="5%">No.</th>
-                            <th show width="35%">Pemesan</th>
+                            <th show width="30%">Pemesan</th>
                             <th show width="10%">LHUS</th>
+                            <th show width="10%">LHU</th>
                             <th show width="15%">Status</th>
-                            <th show width="25%" class="action text-end">Aksi</th>
+                            <th show width="30%" class="action text-end">Aksi</th>
                         </tr>
                     </thead>
                     <tbody id="table-body"></tbody>
@@ -50,7 +51,7 @@
 
 <!--  Modal Detail -->
 <div class="modal fade" id="modalDetail" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
-    <div class="modal-dialog modal-lg" role="document" style="margin: 2% auto">
+    <div class="modal-dialog modal-xl" role="document" style="margin: 2% auto">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Detail Item Layanan</h5>
@@ -63,9 +64,9 @@
                             <th width="5%">No</th>
                             <th width="45%">Layanan</th>
                             <th width="10%">Jumlah</th>
-                            <th width="15%">File LHUS</th>
-                            <th width="15%">Upload LHUS</th>
-                            <th width="15%">Acc LHUS</th>
+                            <th width="10%">File LHUS</th>
+                            <th width="15%">Diunggah oleh</th>
+                            <th width="18%">Diverifikasi oleh</th>
                         </tr>
                     </thead>
                     <tbody id="detail-body">
@@ -75,6 +76,46 @@
                     </tbody>
 
                 </table>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-light" type="button" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Upload LHU -->
+<div class="modal fade" id="modalLhuHistory" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+    <div class="modal-dialog modal-xl" role="document" style="margin: 2% auto">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Riwayat LHU</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="lhu-history-empty" class="alert alert-warning d-none">
+                    <i class="bi bi-info-circle"></i> Belum ada file LHU yang diunggah untuk layanan ini.
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-bordered align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th width="8%">No</th>
+                                <th width="25%">Tanggal Terbit</th>
+                                <th width="35%">Nama File</th>
+                                <th width="22%">Diunggah Oleh</th>
+                                <th width="10%">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lhu-history-body">
+                            <tr>
+                                <td colspan="5" class="text-center text-muted">Belum ada data.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-light" type="button" data-bs-dismiss="modal">
@@ -477,6 +518,82 @@
                     modal.show();
                 } else {
                     $('#modalDetail').modal('show');
+                }
+            });
+    }
+
+    function showLhuHistory(encId) {
+        const modalEl = document.getElementById('modalLhuHistory');
+        if (!modalEl) return;
+
+        const tbody = document.getElementById('lhu-history-body');
+        const emptyAlert = document.getElementById('lhu-history-empty');
+
+        if (emptyAlert) emptyAlert.classList.add('d-none');
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center">Memuat data...</td></tr>';
+        }
+
+        const modal = (typeof bootstrap !== 'undefined' && bootstrap.Modal)
+            ? bootstrap.Modal.getOrCreateInstance(modalEl)
+            : new bootstrap.Modal(modalEl);
+        modal.show();
+
+        fetch('<?php echo site_url("pelaksanaan/lhulist/") ?>' + encId, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(response => {
+                if (!response.ok) throw new Error('Network response was not ok');
+                return response.json();
+            })
+            .then(data => {
+                const items = Array.isArray(data.items) ? data.items : [];
+                if (!tbody) return;
+
+                if (!items.length) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Belum ada data.</td></tr>';
+                    if (emptyAlert) emptyAlert.classList.remove('d-none');
+                    return;
+                }
+
+                if (emptyAlert) emptyAlert.classList.add('d-none');
+                tbody.innerHTML = '';
+
+                items.forEach((item, index) => {
+                    const tr = document.createElement('tr');
+
+                    const columns = [
+                        item.no ?? (index + 1),
+                        item.tanggal || '-',
+                        item.filename || '-',
+                        item.uploader || '-'
+                    ];
+
+                    columns.forEach(value => {
+                        const td = document.createElement('td');
+                        td.textContent = (value !== null && value !== undefined && value !== '') ? value : '-';
+                        tr.appendChild(td);
+                    });
+
+                    const actionTd = document.createElement('td');
+                    if (item.url) {
+                        const link = document.createElement('a');
+                        link.href = item.url;
+                        link.target = '_blank';
+                        link.rel = 'noopener';
+                        link.className = 'btn btn-sm btn-primary';
+                        link.innerHTML = '<i class="bi bi-eye"></i> Lihat';
+                        actionTd.appendChild(link);
+                    } else {
+                        actionTd.innerHTML = '<span class="text-muted">-</span>';
+                    }
+                    tr.appendChild(actionTd);
+
+                    tbody.appendChild(tr);
+                });
+            })
+            .catch(error => {
+                console.error(error);
+                if (tbody) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Gagal memuat data.</td></tr>';
                 }
             });
     }
