@@ -97,6 +97,7 @@ class Keranjang extends KeranjangBase
         $detDiskon     = isset($post['detDiskon']) ? (float)$post['detDiskon'] : 0;
         $detJumlah     = isset($post['detJumlah']) ? (int)$post['detJumlah'] : 1;
         $detMetode     = $post['detMetode']    ?? null;
+        $detNamaLayanan = $post['detNamaLayanan'] ?? null; // nama_layanan dari r_layanan_pengujian
 
         // DEBUG: Log diskon dari database
         log_message('debug', 'ProcessItem - Diskon dari database: ' . $detDiskon);
@@ -122,6 +123,7 @@ class Keranjang extends KeranjangBase
             'jumlah'      => $jumlah,
             'metode_kode' => $detMetode,
             'biaya'       => $biayaTotalBaru,
+            'nama_layanan' => $detNamaLayanan, // nama_layanan dari r_layanan_pengujian
         ];
     }
 
@@ -208,7 +210,7 @@ class Keranjang extends KeranjangBase
                 'uji_kode'          => $item['kode'] ?? null,             // FK ke r_layanan_pengujian
                 'biaya'             => $item['biaya'] ?? 0,               // Total biaya item ini
                 'jumlah'            => $item['jumlah'] ?? 1,              // Jumlah item
-                'nama_layanan'      => $item['layanan'] ?? null,          // Nama layanan
+                'nama_layanan'      => $item['nama_layanan'] ?? null,     // Nama layanan dari r_layanan_pengujian
                 'status_layanan'    => 0,                                 // Status default: 0
                 'kode_jenis'        => $jenKodeValue,                     // Kode jenis (2 char)
                 'catatan_manajer'   => null,                              // Default null
@@ -393,6 +395,7 @@ class Keranjang extends KeranjangBase
                         data-alat="' . esc($row->alatNama ?? '') . '" 
                         data-biaya="' . $row->biaya . '" 
                         data-parameter="' . esc($row->paraNama ?? '') . '"
+                        data-nama-layanan="' . esc($row->nama_layanan ?? '') . '"
                         data-diskon="' . $allowedDiskon . '" 
                         data-jenKode="' . esc($jenKodeClean) . '"
                         data-jenNama="' . esc($row->jenNama ?? '') . '"
