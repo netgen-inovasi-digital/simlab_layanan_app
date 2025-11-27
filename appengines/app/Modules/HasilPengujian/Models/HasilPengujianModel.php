@@ -223,9 +223,9 @@ class HasilPengujianModel extends Model
             ANY_VALUE(d.kode_layanan) AS kode_layanan,
             ANY_VALUE(d.nama_layanan) AS nama_layanan,
             ANY_VALUE(d.kode_jenis) AS kode_jenis,
-            GROUP_CONCAT(DISTINCT d.catatan_manajer SEPARATOR ' | ') AS detKet,
-            GROUP_CONCAT(DISTINCT d.catatan_manajer SEPARATOR ' | ') AS detKetManajer,
-            GROUP_CONCAT(DISTINCT d.catatan_manajer SEPARATOR ' | ') AS detKetLhus,
+            GROUP_CONCAT(DISTINCT COALESCE(lhus.catatan, '') SEPARATOR ' | ') AS detKet,
+            GROUP_CONCAT(DISTINCT COALESCE(lhus.catatan, '') SEPARATOR ' | ') AS detKetManajer,
+            GROUP_CONCAT(DISTINCT COALESCE(lhus.catatan, '') SEPARATOR ' | ') AS detKetLhus,
             GROUP_CONCAT(DISTINCT d.files SEPARATOR ',') AS detFilesList,
             MAX(d.files) AS detFilesMax,
             SUM(d.jumlah) AS jumlah,
@@ -238,6 +238,7 @@ class HasilPengujianModel extends Model
 
         $builder->join('simlab_account_users u', 'u.user_id = d.terima_layanan_by', 'left');
         $builder->join('r_tim as rt', 'rt.uji_kode = d.uji_kode', 'inner');
+        $builder->join('t_files_lhus as lhus', 'lhus.kode = d.kode', 'left');
 
         $builder->where('d.kode_layanan', $kode);
         $builder->where('rt.user_id', $userId);
