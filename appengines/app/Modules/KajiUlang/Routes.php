@@ -10,6 +10,7 @@ $routes->group('kajiulang', ['namespace' => 'Modules\KajiUlang\Controllers'], fu
     $subroutes->get('datalist', 'KajiUlang::datalist');
     $subroutes->get('detailList/(:any)', 'KajiUlang::detailList/$1');
     $subroutes->get('getSampleIdentity/(:any)', 'KajiUlang::getSampleIdentity/$1');
+    $subroutes->get('getCatatanKajiUlang/(:any)', 'KajiUlang::getCatatanKajiUlang/$1');
 
     $subroutes->post('kirim', 'KajiUlang::kirim');
     $subroutes->post('approveDetail', 'KajiUlang::approveDetail');

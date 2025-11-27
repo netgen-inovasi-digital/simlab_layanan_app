@@ -72,10 +72,10 @@ class KajiUlang extends BaseController
             $tipe = !empty($row->pemesan_identity) ? $row->pemesan_identity : '-';
             $tanggal = !empty($row->lnTgl) ? date('d-m-Y H:i', strtotime($row->lnTgl)) : '-';
 
-            // Badge Uji Ulang
+            // Badge Uji Ulang (clickable)
             $badge = '';
             if ((int) ($row->jumlah_kaji_ulang ?? 0) > 0) {
-                $badge = '<span class="badge bg-danger text-white ms-1" title="Data pengujian ulang">Uji Ulang</span>';
+                $badge = '<span class="badge bg-danger text-white ms-1 badge-uji-ulang" style="cursor:pointer;" data-id="' . $id . '" title="Klik untuk melihat catatan kaji ulang">Uji Ulang</span>';
             }
 
             $combined = '
@@ -678,6 +678,46 @@ class KajiUlang extends BaseController
                 'sisa' => $sampleData->sisa ?? '-',
                 'deskripsi' => $sampleData->deskripsi ?? '-',
                 'keterangan_khusus' => $sampleData->keterangan_khusus ?? '-'
+            ]
+        ]);
+    }
+
+    /**
+     * Get catatan kaji ulang for modal
+     */
+    public function getCatatanKajiUlang($encId = null)
+    {
+        if (!$encId) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'ID tidak ditemukan'
+            ]);
+        }
+
+        try {
+            $lnKode = $this->encrypter->decrypt(hex2bin($encId));
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'ID tidak valid'
+            ]);
+        }
+
+        $model = new MyModel($this->table);
+        $row = $model->getDataById($this->id, $lnKode);
+
+        if (!$row) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Data tidak ditemukan'
+            ]);
+        }
+
+        return $this->response->setJSON([
+            'success' => true,
+            'data' => [
+                'catatan_kaji_ulang' => $row->catatan_kaji_ulang ?? '-',
+                'jumlah_kaji_ulang' => (int) ($row->jumlah_kaji_ulang ?? 0)
             ]
         ]);
     }

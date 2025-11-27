@@ -109,10 +109,39 @@
       </div>
 
       <div class="modal-footer">
-        <!-- Tidak ada tombol “Kirim” sesuai permintaan -->
+        <!-- Tidak ada tombol "Kirim" sesuai permintaan -->
       </div>
     </div>
   </div>
+</div>
+
+<!-- Modal Catatan Kaji Ulang -->
+<div class="modal fade" id="modalCatatanKajiUlang" tabindex="-1" aria-labelledby="modalCatatanKajiUlangLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="modalCatatanKajiUlangLabel">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>Catatan Kaji Ulang
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-bold text-muted small">Jumlah Kaji Ulang:</label>
+                    <p class="mb-0" id="jumlahKajiUlang">-</p>
+                </div>
+                <div>
+                    <label class="form-label fw-bold text-muted small">Catatan:</label>
+                    <div class="border rounded p-3" style="max-height: 300px; overflow-y: auto; background-color: #f8f9fa;">
+                        <p class="mb-0 text-wrap" id="catatanKajiUlangContent" style="white-space: pre-wrap;">-</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -159,7 +188,7 @@
     (function patchFetchData(){
       if (typeof table !== 'undefined' && table && typeof table.getConfig === 'function' && typeof table.fetchData === 'function' && !table.__fetchPatchedTL) {
           const _origFetch = table.fetchData.bind(table);
-          let _currentAbort = null;
+          var _currentAbort = null;
           table.fetchData = function(opts = {}) {
               try {
                   const cfg = table.getConfig();
@@ -207,7 +236,7 @@
         const csrfName  = csrfInput ? csrfInput.getAttribute("name") : "";
         const csrfToken = csrfInput ? csrfInput.value : "";
 
-        let formData = new FormData();
+        var formData = new FormData();
         if (csrfName) formData.append(csrfName, csrfToken);
 
         fetch('<?php echo site_url("tinjaulhus/proses/") ?>' + id + '/' + aksi, {
@@ -233,7 +262,7 @@
     }
 
     // Cache untuk data identitas sampel
-    const cachedSampleData = {};
+    var cachedSampleData = {};
 
     function loadSampleIdentity(lnKode) {
         const sampleSection = document.getElementById('sampleIdentitySection');
@@ -300,7 +329,7 @@
                 tbody.innerHTML = '';
                 if (data.items && data.items.length > 0) {
                     data.items.forEach(function(row) {
-                        let tr = '<tr>';
+                        var tr = '<tr>';
                         row.forEach(function(col) { tr += '<td>' + col + '</td>'; });
                         tr += '</tr>';
                         tbody.innerHTML += tr;
@@ -319,7 +348,7 @@
 
                 try {
                     if (typeof bootstrap !== 'undefined') {
-                        let modalInstance = bootstrap.Modal.getInstance(modalEl);
+                        var modalInstance = bootstrap.Modal.getInstance(modalEl);
                         if (!modalInstance) modalInstance = new bootstrap.Modal(modalEl);
                         if (!modalEl.classList.contains('show')) modalInstance.show();
                     } else if (typeof $ === 'function') {
@@ -335,7 +364,7 @@
                 try {
                     const modalEl = document.getElementById('modalDetail');
                     if (typeof bootstrap !== 'undefined') {
-                        let modalInstance = bootstrap.Modal.getInstance(modalEl);
+                        var modalInstance = bootstrap.Modal.getInstance(modalEl);
                         if (!modalInstance) modalInstance = new bootstrap.Modal(modalEl);
                         if (!modalEl.classList.contains('show')) modalInstance.show();
                     } else if (typeof $ === 'function') {
@@ -448,7 +477,7 @@
 
     // Debounce helper
     function debounce(fn, wait) {
-        let t;
+        var t;
         return function(...args) {
             clearTimeout(t);
             t = setTimeout(() => fn.apply(this, args), wait);
@@ -587,4 +616,54 @@
     // Expose helper (opsional)
     window.saveAllDetKetLhus = saveAllDetKetLhus;
 })();
+
+// ============================================================
+// EVENT DELEGATION UNTUK BADGE UJI ULANG
+// ============================================================
+document.addEventListener('click', function (e) {
+    // BADGE UJI ULANG - Klik untuk melihat catatan kaji ulang
+    const badgeUjiUlang = e.target.closest ? e.target.closest('.badge-uji-ulang') : null;
+    if (badgeUjiUlang) {
+        e.preventDefault();
+        e.stopPropagation();
+        const encId = badgeUjiUlang.dataset.id;
+        if (encId) {
+            showCatatanKajiUlang(encId);
+        }
+        return;
+    }
+});
+
+// ============================================================
+// FUNGSI UNTUK MENAMPILKAN MODAL CATATAN KAJI ULANG
+// ============================================================
+function showCatatanKajiUlang(encId) {
+    const url = '<?php echo site_url("tinjaulhus/getCatatanKajiUlang/") ?>' + encId;
+    
+    // Set loading state
+    document.getElementById('jumlahKajiUlang').textContent = 'Memuat...';
+    document.getElementById('catatanKajiUlangContent').textContent = 'Memuat...';
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('modalCatatanKajiUlang'));
+    modal.show();
+    
+    // Fetch data
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('jumlahKajiUlang').textContent = data.data.jumlah_kaji_ulang + ' kali';
+                document.getElementById('catatanKajiUlangContent').textContent = data.data.catatan_kaji_ulang || '-';
+            } else {
+                document.getElementById('jumlahKajiUlang').textContent = '-';
+                document.getElementById('catatanKajiUlangContent').textContent = data.message || 'Gagal memuat data';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('jumlahKajiUlang').textContent = '-';
+            document.getElementById('catatanKajiUlangContent').textContent = 'Terjadi kesalahan saat memuat data';
+        });
+}
 </script>
