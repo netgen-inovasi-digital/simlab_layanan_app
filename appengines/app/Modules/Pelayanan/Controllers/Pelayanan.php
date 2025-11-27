@@ -275,28 +275,42 @@ class Pelayanan extends BaseController
                 $response[] = '<button class="btn btn-sm btn-info" onclick="lokasiPembayaran(' . $lnKodeInt . ')"><i class="bi bi-credit-card"></i> Belum Bayar</button>';
             }
 
-            // Akses LHU
+            // Akses LHU & kuisioner
             $lnStatusVal = (int) ($row->lnStatus ?? 0);
-            $canViewLhu = ($kuisionerVal === 1 && $bayarStatusVal === 1 && in_array($lnStatusVal, [7, 9], true));
+            $canFillKuesioner = ($kuisionerVal !== 1 && $lnStatusVal === 9);
+            $canViewLhu = ($kuisionerVal === 1 && $bayarStatusVal === 1 && $lnStatusVal === 9);
             $lhuInfo = $this->detectLhuFile($row);
 
+            $lhuButtons = [];
+
+            if ($canFillKuesioner) {
+                $lhuButtons[] = '<button class="btn btn-sm btn-warning" onclick="loadContent(\'pelayanan/kuesioner/' . $id . '\')"><i class="bi bi-chat-square-text"></i> Isi Kuisioner</button>';
+            }
+
             if ($lhuInfo['has'] && $canViewLhu) {
-                $response[] = '<button class="btn btn-sm btn-outline-primary" onclick="window.open(\'' . esc($lhuInfo['url']) . '\', \'_blank\')" title="Buka LHU"><i class="bi bi-eye"></i> Lihat LHU</button>';
-            } else {
+                $lhuButtons[] = '<button class="btn btn-sm btn-outline-primary" onclick="window.open(\'' . esc($lhuInfo['url']) . '\', \'_blank\')" title="Buka LHU"><i class="bi bi-eye"></i> Lihat LHU</button>';
+            } elseif (!$canFillKuesioner) {
                 $reason = 'File LHU tidak dapat diakses.';
                 if ($lhuInfo['has'] && !$canViewLhu) {
                     if ($kuisionerVal !== 1) {
                         $reason = 'Isi kuisioner';
                     } elseif ($bayarStatusVal !== 1) {
                         $reason = 'Belum bayar';
-                    } elseif (!in_array($lnStatusVal, [7, 8], true)) {
+                    } elseif ($lnStatusVal !== 9) {
                         $reason = 'LHU diproses';
                     }
                 } elseif (!$lhuInfo['has']) {
                     $reason = 'LHU diproses';
                 }
-                $response[] = '<button class="btn btn-sm btn-secondary" disabled><i class="bi bi-eye-slash"></i> ' . esc($reason) . '</button>';
+                $lhuButtons[] = '<button class="btn btn-sm btn-secondary" disabled><i class="bi bi-eye-slash"></i> ' . esc($reason) . '</button>';
             }
+
+            $buttonHtml = '';
+            foreach ($lhuButtons as $btnHtml) {
+                $buttonHtml .= '<div>' . $btnHtml . '</div>';
+            }
+
+            $response[] = '<div class="d-flex flex-column gap-2 align-items-start">' . $buttonHtml . '</div>';
 
             // Aksi detail (masking lnKode via enkripsi)
             // $response[] = '<a href="javascript:void(0)" onclick="loadDetail(\'' . $id . '\')" class="btn btn-sm btn-info">Lihat pesanan</a>';
@@ -566,7 +580,7 @@ class Pelayanan extends BaseController
             }
         }
 
-        $modelLayanan->updateData(['kuisioner' => 1, 'lnStatus' => 8], $this->id, $lnKode);
+        $modelLayanan->updateData(['kuisioner' => 1], $this->id, $lnKode);
 
         $db->transComplete();
 
