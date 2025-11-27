@@ -195,33 +195,49 @@
     });
     addAction();
 
-    document.addEventListener('click', function (e) {
-        // BADGE UJI ULANG - Klik untuk melihat catatan kaji ulang
-        const badgeUjiUlang = e.target.closest ? e.target.closest('.badge-uji-ulang') : null;
-        if (badgeUjiUlang) {
-            e.preventDefault();
-            e.stopPropagation();
-            const encId = badgeUjiUlang.dataset.id;
-            if (encId) {
-                showCatatanKajiUlang(encId);
-            }
-            return;
-        }
-    });
-
+    // ============================================================
+    // EVENT DELEGATION UNTUK BADGE UJI ULANG
+    // Menggunakan onclick langsung di element untuk menghindari duplikat listener
+    // ============================================================
+    
     // ============================================================
     // FUNGSI UNTUK MENAMPILKAN MODAL CATATAN KAJI ULANG
     // ============================================================
     function showCatatanKajiUlang(encId) {
         const url = '<?php echo site_url("hasilpengujian/getCatatanKajiUlang/") ?>' + encId;
         
+        // Hapus semua backdrop yang mungkin tertinggal
+        document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+        
+        // Reset body class jika ada modal yang tidak tertutup dengan benar
+        document.body.classList.remove('modal-open');
+        document.body.style.removeProperty('overflow');
+        document.body.style.removeProperty('padding-right');
+        
+        const modalElement = document.getElementById('modalCatatanKajiUlang');
+        if (!modalElement) {
+            alert('Modal tidak ditemukan');
+            return;
+        }
+        
+        // Pindahkan modal ke body jika belum di body (untuk menghindari masalah stacking context)
+        if (modalElement.parentElement !== document.body) {
+            document.body.appendChild(modalElement);
+        }
+        
         // Set loading state
         document.getElementById('jumlahKajiUlang').textContent = 'Memuat...';
         document.getElementById('catatanKajiUlangContent').textContent = 'Memuat...';
         
-        // Show modal
-        const modal = new bootstrap.Modal(document.getElementById('modalCatatanKajiUlang'));
-        modal.show();
+        // Dispose existing modal instance if any to prevent duplicates
+        let modalInstance = bootstrap.Modal.getInstance(modalElement);
+        if (modalInstance) {
+            modalInstance.dispose();
+        }
+        
+        // Create fresh modal instance and show
+        modalInstance = new bootstrap.Modal(modalElement);
+        modalInstance.show();
         
         // Fetch data
         fetch(url)

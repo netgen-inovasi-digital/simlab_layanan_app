@@ -309,10 +309,10 @@ class HasilPengujian extends BaseController
             $tipe = !empty($row->pemesan_identity) ? $row->pemesan_identity : '-';
             $tanggal = !empty($row->lnTgl) ? date('d-m-Y H:i', strtotime($row->lnTgl)) : '-';
 
-            // Badge Uji Ulang (clickable)
+            // Badge Uji Ulang (clickable) - menggunakan onclick langsung
             $badge = '';
             if ((int) ($row->jumlah_kaji_ulang ?? 0) > 0) {
-                $badge = '<span class="badge bg-danger text-white ms-1 badge-uji-ulang" style="cursor:pointer;" data-id="' . $id . '" title="Klik untuk melihat catatan kaji ulang">Uji Ulang</span>';
+                $badge = '<span class="badge bg-danger text-white ms-1" style="cursor:pointer;" onclick="event.stopPropagation(); showCatatanKajiUlang(\'' . $id . '\');" title="Klik untuk melihat catatan kaji ulang">Uji Ulang</span>';
             }
 
             $colA = '
