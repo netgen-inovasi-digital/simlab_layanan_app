@@ -288,7 +288,7 @@ class Pelayanan extends BaseController
             }
 
             if ($lhuInfo['has'] && $canViewLhu) {
-                $lhuButtons[] = '<button class="btn btn-sm btn-outline-primary" onclick="window.open(\'' . esc($lhuInfo['url']) . '\', \'_blank\')" title="Buka LHU"><i class="bi bi-eye"></i> Lihat LHU</button>';
+                $lhuButtons[] = '<button class="btn btn-sm btn-outline-primary" onclick="showPelayananLhuHistory(\'' . $id . '\')"><i class="bi bi-eye"></i> LHU</button>';
             } elseif (!$canFillKuesioner) {
                 $reason = 'File LHU tidak dapat diakses.';
                 if ($lhuInfo['has'] && !$canViewLhu) {
@@ -462,6 +462,84 @@ class Pelayanan extends BaseController
                 'message' => 'Terjadi kesalahan saat memuat data identitas sampel'
             ]);
         }
+    }
+
+    public function lhuList($id = null)
+    {
+        if (!$id) {
+            return $this->response->setJSON(['items' => []]);
+        }
+
+        $session = session();
+        $userId = (int) ($session->get('id_user') ?? 0);
+        if ($userId <= 0) {
+            return $this->response->setJSON(['items' => []]);
+        }
+
+        try {
+            $lnKode = $this->encrypter->decrypt(hex2bin($id));
+        } catch (\Throwable $e) {
+            try {
+                $lnKode = $this->encrypter->decrypt($id);
+            } catch (\Throwable $e2) {
+                return $this->response->setJSON(['items' => []]);
+            }
+        }
+
+        $model = new MyModel($this->table);
+        $layanan = $model->getDataById($this->id, $lnKode);
+
+        if (!$layanan || (int) ($layanan->user_id ?? 0) !== $userId) {
+            return $this->response->setJSON(['items' => []]);
+        }
+
+        $db = \Config\Database::connect();
+
+        try {
+            $rows = $db->table('t_files_lhu AS lhu')
+                ->select('lhu.file_id, lhu.file, lhu.tanggal_terbit')
+                ->where('lhu.kode', $lnKode)
+                ->orderBy('CASE WHEN lhu.tanggal_terbit IS NULL THEN 1 ELSE 0 END', 'ASC', false)
+                ->orderBy('lhu.tanggal_terbit', 'ASC')
+                ->orderBy('lhu.file_id', 'ASC')
+                ->get()->getResult();
+        } catch (\Throwable $e) {
+            log_message('error', 'Pelayanan::lhuList error: ' . $e->getMessage());
+            return $this->response->setJSON(['items' => []]);
+        }
+
+        if (empty($rows)) {
+            return $this->response->setJSON(['items' => []]);
+        }
+
+        $items = [];
+        foreach ($rows as $index => $row) {
+            $tanggal = '-';
+            if (!empty($row->tanggal_terbit)) {
+                try {
+                    $tanggal = date('d/m/Y H:i', strtotime($row->tanggal_terbit));
+                } catch (\Throwable $e) {
+                    $tanggal = $row->tanggal_terbit;
+                }
+            }
+
+            $fileUrl = null;
+            if (!empty($row->file)) {
+                if (preg_match('/^https?:\/\//i', $row->file)) {
+                    $fileUrl = $row->file;
+                } else {
+                    $fileUrl = base_url('uploads/lhu/' . ltrim($row->file, '/'));
+                }
+            }
+
+            $items[] = [
+                'no' => $index + 1,
+                'tanggal' => $tanggal,
+                'url' => $fileUrl,
+            ];
+        }
+
+        return $this->response->setJSON(['items' => $items]);
     }
 
     private function detectLhuFile($row)
