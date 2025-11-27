@@ -628,6 +628,10 @@ async function autoUploadFile(input) {
                 // Reload detail untuk memastikan semua data terupdate
                 setTimeout(() => {
                     loadDetail(encLn);
+                    // Refresh tabel utama untuk menampilkan status terbaru
+                    if (typeof table !== 'undefined' && typeof table.fetchData === 'function') {
+                        table.fetchData({ reload: true });
+                    }
                 }, 500);
             } else {
                 alert(json.msg || 'File berhasil diunggah.');
