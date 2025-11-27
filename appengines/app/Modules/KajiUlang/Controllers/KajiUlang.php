@@ -72,10 +72,16 @@ class KajiUlang extends BaseController
             $tipe = !empty($row->pemesan_identity) ? $row->pemesan_identity : '-';
             $tanggal = !empty($row->lnTgl) ? date('d-m-Y H:i', strtotime($row->lnTgl)) : '-';
 
+            // Badge Uji Ulang
+            $badge = '';
+            if ((int) ($row->jumlah_kaji_ulang ?? 0) > 0) {
+                $badge = '<span class="badge bg-danger text-white ms-1" title="Data pengujian ulang">Uji Ulang</span>';
+            }
+
             $combined = '
                 <div style="line-height:1.3;">
                     <span style="font-size:1rem; font-weight:600;">' . esc($pemesanNama) . '</span><br>
-                    <span style="font-size:0.9rem; color:#555;">' . esc($tanggal) . ' | ' . esc($tipe) . '</span>
+                    <span style="font-size:0.9rem; color:#555;">' . esc($tanggal) . ' | ' . esc($tipe) . '</span>' . $badge . '
                 </div>';
 
             $response[] = $combined;
