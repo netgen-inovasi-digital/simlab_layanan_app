@@ -653,6 +653,16 @@ class PembayaranAdmin extends BaseController
                 ]);
             }
 
+            // Nomor invoice harus unik di seluruh pembayaran
+            if ($this->invoiceNumberExists($invoiceNo)) {
+                return $this->response->setJSON([
+                    'res' => false,
+                    'msg' => 'Nomor invoice sudah digunakan',
+                    'xname' => csrf_token(),
+                    'xhash' => csrf_hash()
+                ]);
+            }
+
             // Validasi file invoice (wajib diupload)
             if (!($file && $file->isValid() && !$file->hasMoved())) {
                 return $this->response->setJSON([
@@ -803,6 +813,27 @@ class PembayaranAdmin extends BaseController
         } catch (\Exception $e) {
             return ['status' => false, 'msg' => 'Gagal memindahkan file: ' . $e->getMessage()];
         }
+    }
+
+    /**
+     * Periksa apakah nomor invoice sudah dipakai pembayaran lain.
+     */
+    private function invoiceNumberExists(string $invoiceNo, $excludeId = null): bool
+    {
+        $invoiceNo = trim($invoiceNo);
+        if ($invoiceNo === '') {
+            return false;
+        }
+
+        $builder = \Config\Database::connect()->table($this->table);
+        $builder->select($this->id);
+        $builder->where('bayarInvoiceNo', $invoiceNo);
+
+        if ($excludeId !== null && $excludeId !== '') {
+            $builder->where($this->id . ' !=', $excludeId);
+        }
+
+        return (bool) $builder->get()->getFirstRow();
     }
 
     /**
@@ -1094,9 +1125,8 @@ class PembayaranAdmin extends BaseController
                 ]);
             }
 
-            // Cek apakah nomor invoice sudah ada
-            $cekInvoice = $model->getDataByArray(['bayarInvoiceNo' => $noInvoice]);
-            if ($cekInvoice) {
+            // Cek apakah nomor invoice sudah ada di pembayaran lain
+            if ($this->invoiceNumberExists($noInvoice, $id)) {
                 return $this->response->setJSON([
                     'res' => false,
                     'msg' => 'Nomor invoice sudah digunakan',

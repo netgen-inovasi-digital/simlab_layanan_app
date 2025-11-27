@@ -232,7 +232,7 @@ class TinjauLHUS extends BaseController
             elseif ($statusLhus === 3)
                 $statusBadge = '<span class="badge bg-info">Terunggah (Belum Kirim)</span>';
             elseif ($statusLhus === 0)
-                $statusBadge = '<span class="badge bg-warning">Terkirim (Menunggu Review)</span>';
+                $statusBadge = '<span class="badge bg-warning">Belum diverifikasi</span>';
             else
                 $statusBadge = '<span class="badge bg-secondary">Belum Diproses</span>';
 
@@ -281,9 +281,20 @@ class TinjauLHUS extends BaseController
         $detKode = (int) $input['detKode'];
         $ket = $input['ket'] ?? null;
 
+        $session = session();
+        $userId = (int) ($session->get('id_user') ?? 0);
+        if ($userId <= 0) {
+            return $this->response->setJSON([
+                'res' => false,
+                'msg' => 'User tidak terautentikasi',
+                'xname' => csrf_token(),
+                'xhash' => csrf_hash()
+            ]);
+        }
+
         try {
-            $ok = $this->tinjauLhusModel->updateFileLhusCatatan($detKode, $ket);
-            
+            $ok = $this->tinjauLhusModel->updateFileLhusCatatan($detKode, $ket, $userId);
+
             return $this->response->setJSON([
                 'res' => $ok,
                 'msg' => $ok ? 'Keterangan LHUS disimpan' : 'Tidak ada perubahan',

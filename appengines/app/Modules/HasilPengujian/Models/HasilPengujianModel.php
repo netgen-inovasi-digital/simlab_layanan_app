@@ -138,7 +138,7 @@ class HasilPengujianModel extends Model
             }
 
             foreach ($lnStatusFilter as $s) {
-                switch ((int)$s) {
+                switch ((int) $s) {
                     case 4: // "Sedang dalam pengujian"
                         $builder->orGroupStart()
                             ->where('COALESCE(agg.has_reject_for_user,0) =', 0)
@@ -169,7 +169,7 @@ class HasilPengujianModel extends Model
 
                     default:
                         $builder->orGroupStart()
-                            ->where('l.lnStatus', (int)$s)
+                            ->where('l.lnStatus', (int) $s)
                             ->where('COALESCE(agg.has_reject_for_user,0) =', 0)
                             ->groupStart()
                             ->where('COALESCE(agg.pending_for_user,0) >', 0)
@@ -195,7 +195,7 @@ class HasilPengujianModel extends Model
      */
     public function isUserAuthorizedForLayanan($lnKode, int $userId): bool
     {
-        $count = (int)$this->db->table('t_layanan_detil as d')
+        $count = (int) $this->db->table('t_layanan_detil as d')
             ->join('r_tim as rt', 'rt.uji_kode = d.uji_kode', 'inner')
             ->where('d.kode_layanan', $lnKode)
             ->where('rt.user_id', $userId)
@@ -217,32 +217,42 @@ class HasilPengujianModel extends Model
     {
         $builder = $this->db->table('t_layanan_detil as d');
 
-        $builder->select("
+        $builder->select('
             d.kode,
-            ANY_VALUE(d.uji_kode) AS uji_kode,
-            ANY_VALUE(d.kode_layanan) AS kode_layanan,
-            ANY_VALUE(d.nama_layanan) AS nama_layanan,
-            ANY_VALUE(d.kode_jenis) AS kode_jenis,
-            GROUP_CONCAT(DISTINCT d.catatan_manajer SEPARATOR ' | ') AS detKet,
-            GROUP_CONCAT(DISTINCT d.catatan_manajer SEPARATOR ' | ') AS detKetManajer,
-            GROUP_CONCAT(DISTINCT d.catatan_manajer SEPARATOR ' | ') AS detKetLhus,
-            GROUP_CONCAT(DISTINCT d.files SEPARATOR ',') AS detFilesList,
-            MAX(d.files) AS detFilesMax,
-            SUM(d.jumlah) AS jumlah,
-            SUM(d.biaya) AS detBiaya,
-            MAX(d.status_layanan) AS status_group,
-            ANY_VALUE(d.terima_layanan_by) AS terima_layanan_by,
-            ANY_VALUE(u.user_name) AS acc_by,
-            (SELECT nama FROM r_metode WHERE metode_kode = d.metode_pengujian LIMIT 1) AS metode_nama
-        ");
+            d.uji_kode,
+            d.kode_layanan,
+            d.nama_layanan,
+            d.kode_jenis,
+            d.files AS detFilesMax,
+            d.jumlah,
+            d.biaya,
+            d.status_layanan,
+            d.terima_layanan_by,
+            u.user_name AS acc_by,
+            metode.nama AS metode_nama,
+            lhus.file_lhus,
+            lhus.catatan AS catatan_lhus,
+            lhus.status AS lhus_status
+        ');
 
         $builder->join('simlab_account_users u', 'u.user_id = d.terima_layanan_by', 'left');
         $builder->join('r_tim as rt', 'rt.uji_kode = d.uji_kode', 'inner');
+        $builder->join('r_metode metode', 'metode.metode_kode = d.metode_pengujian', 'left');
+        $builder->join(
+            '(SELECT lhus1.* FROM t_files_lhus lhus1 
+                INNER JOIN (
+                    SELECT kode, MAX(file_id) AS max_file_id 
+                    FROM t_files_lhus 
+                    GROUP BY kode
+                ) lhus2 ON lhus1.kode = lhus2.kode AND lhus1.file_id = lhus2.max_file_id
+            ) lhus',
+            'lhus.kode = d.kode',
+            'left'
+        );
 
         $builder->where('d.kode_layanan', $kode);
         $builder->where('rt.user_id', $userId);
         $builder->where('d.status_layanan', 1);
-        $builder->groupBy('d.kode');
 
         return $builder->get()->getResult();
     }
@@ -298,8 +308,8 @@ class HasilPengujianModel extends Model
         $missingItems = [];
 
         foreach ($userDetRows as $dr) {
-            $filesVal = isset($dr->files) ? (int)$dr->files : null;
-            
+            $filesVal = isset($dr->files) ? (int) $dr->files : null;
+
             // Hanya file dengan status 3 (terunggah) yang bisa dikirim
             // Status lain berarti: null/0 = belum upload, 2 = ditolak, 0 = sudah terkirim, 1 = sudah diterima
             if ($filesVal !== 3) {
@@ -414,7 +424,7 @@ class HasilPengujianModel extends Model
         ";
 
         $result = $this->db->query($sql, [$lnKode])->getRow();
-        return $result ? (int)$result->total_belum_upload : 0;
+        return $result ? (int) $result->total_belum_upload : 0;
     }
 
     /**
@@ -539,7 +549,7 @@ class HasilPengujianModel extends Model
      */
     public function hasRejectedLhus($lnKode, int $userId): bool
     {
-        $count = (int)$this->db->table('t_layanan_detil')
+        $count = (int) $this->db->table('t_layanan_detil')
             ->select('1')
             ->join('r_tim rt', 'rt.uji_kode = t_layanan_detil.uji_kode', 'inner')
             ->where('t_layanan_detil.kode_layanan', $lnKode)
@@ -561,7 +571,7 @@ class HasilPengujianModel extends Model
      */
     public function hasUploadedLhus($lnKode, int $userId): bool
     {
-        $count = (int)$this->db->table('t_layanan_detil as d')
+        $count = (int) $this->db->table('t_layanan_detil as d')
             ->select('1')
             ->join('r_tim rt', 'rt.uji_kode = d.uji_kode', 'inner')
             ->where('d.kode_layanan', $lnKode)
@@ -583,7 +593,7 @@ class HasilPengujianModel extends Model
      */
     public function allUserLhusAccepted($lnKode, int $userId): bool
     {
-        $totalUserActive = (int)$this->db->table('t_layanan_detil as d')
+        $totalUserActive = (int) $this->db->table('t_layanan_detil as d')
             ->join('r_tim rt', 'rt.uji_kode = d.uji_kode', 'inner')
             ->where('d.kode_layanan', $lnKode)
             ->where('d.status_layanan', 1)
@@ -594,7 +604,7 @@ class HasilPengujianModel extends Model
             return false;
         }
 
-        $acceptedCount = (int)$this->db->table('t_layanan_detil as d')
+        $acceptedCount = (int) $this->db->table('t_layanan_detil as d')
             ->join('r_tim rt', 'rt.uji_kode = d.uji_kode', 'inner')
             ->where('d.kode_layanan', $lnKode)
             ->where('d.status_layanan', 1)
@@ -614,7 +624,7 @@ class HasilPengujianModel extends Model
      */
     public function hasSentLhus($lnKode, int $userId): bool
     {
-        $count = (int)$this->db->table('t_layanan_detil as d')
+        $count = (int) $this->db->table('t_layanan_detil as d')
             ->select('1')
             ->join('r_tim rt', 'rt.uji_kode = d.uji_kode', 'inner')
             ->where('d.kode_layanan', $lnKode)
