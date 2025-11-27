@@ -35,12 +35,11 @@
                     <thead>
                         <tr>
                             <th show width="5%">No.</th>
-                            <th show width="25%">Pemesan</th>
-                            <th show width="15%">No Invoice</th>
-                            <th show width="12%">Status</th>
-                            <th show width="12%">Status Pembayaran</th>
-                            <th show width="13%">Detail Layanan</th>
-                            <th show width="13%" class="action text-end">Aksi<i class="bi bi-code sort-icon"></i></th>
+                            <th show width="30%">Pemesan</th>
+                            <th show width="20%">Status</th>
+                            <th show width="15%">Status Pembayaran</th>
+                            <th show width="15%">Detail Layanan</th>
+                            <th show width="15%" class="action text-end">Aksi<i class="bi bi-code sort-icon"></i></th>
                         </tr>
                     </thead>
                     <tbody id="table-body"></tbody>

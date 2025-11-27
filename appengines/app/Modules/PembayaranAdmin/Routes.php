@@ -8,6 +8,7 @@ $routes->group('pembayaran_admin', ['namespace' => 'Modules\PembayaranAdmin\Cont
 
     $subroutes->get('/', 'PembayaranAdmin::index');
     $subroutes->get('dataList', 'PembayaranAdmin::dataList');
+    $subroutes->get('detailLayanan/(:any)', 'PembayaranAdmin::detailLayanan/$1');
     $subroutes->post('uploadInvoice', 'PembayaranAdmin::uploadInvoice');
     $subroutes->post('kirimInvoice', 'PembayaranAdmin::kirimInvoice');
     $subroutes->post('uploadKirimInvoice', 'PembayaranAdmin::uploadKirimInvoice');

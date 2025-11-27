@@ -309,10 +309,16 @@ class HasilPengujian extends BaseController
             $tipe = !empty($row->pemesan_identity) ? $row->pemesan_identity : '-';
             $tanggal = !empty($row->lnTgl) ? date('d-m-Y H:i', strtotime($row->lnTgl)) : '-';
 
+            // Badge Uji Ulang (clickable) - menggunakan onclick langsung
+            $badge = '';
+            if ((int) ($row->jumlah_kaji_ulang ?? 0) > 0) {
+                $badge = '<span class="badge bg-danger text-white ms-1" style="cursor:pointer;" onclick="event.stopPropagation(); showCatatanKajiUlang(\'' . $id . '\');" title="Klik untuk melihat catatan kaji ulang">Uji Ulang</span>';
+            }
+
             $colA = '
                 <div style="line-height:1.3;">
                     <span style="font-size:1rem; font-weight:600;">' . esc($pemesanNama) . '</span><br>
-                    <span style="font-size:0.9rem; color:#555;">' . esc($tanggal) . ' | ' . esc($tipe) . '</span>
+                    <span style="font-size:0.9rem; color:#555;">' . esc($tanggal) . ' | ' . esc($tipe) . '</span>' . $badge . '
                 </div>';
 
             $colB = $this->formatStatusForPenyelia($row->lnStatus, $row->lnKode, $user_id);
@@ -710,5 +716,45 @@ class HasilPengujian extends BaseController
 
         // Fallback ke mapping lnStatus
         return $this->formatStatus((int) $lnStatus);
+    }
+
+    /**
+     * Get catatan kaji ulang for modal
+     */
+    public function getCatatanKajiUlang($encId = null)
+    {
+        if (!$encId) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'ID tidak ditemukan'
+            ]);
+        }
+
+        try {
+            $lnKode = $this->encrypter->decrypt(hex2bin($encId));
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'ID tidak valid'
+            ]);
+        }
+
+        $model = new MyModel($this->table);
+        $row = $model->getDataById($this->id, $lnKode);
+
+        if (!$row) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Data tidak ditemukan'
+            ]);
+        }
+
+        return $this->response->setJSON([
+            'success' => true,
+            'data' => [
+                'catatan_kaji_ulang' => $row->catatan_kaji_ulang ?? '-',
+                'jumlah_kaji_ulang' => (int) ($row->jumlah_kaji_ulang ?? 0)
+            ]
+        ]);
     }
 }
