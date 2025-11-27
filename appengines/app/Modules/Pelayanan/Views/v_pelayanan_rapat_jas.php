@@ -78,13 +78,13 @@
     }
 
     //    Ambil kategori dari query string (jika ada)
-    const urlParams = new URLSearchParams(window.location.search);
-    const kategoriLayananFromUrl = urlParams.get('kategoriLayanan');
-    const jenKodeFromUrl = urlParams.get('jenKode');
+    var urlParams = new URLSearchParams(window.location.search);
+    var kategoriLayananFromUrl = urlParams.get('kategoriLayanan');
+    var jenKodeFromUrl = urlParams.get('jenKode');
 
     // Inisialisasi tabel utama menggunakan createTable
 
-    const baseMainPath = '<?= site_url("pelayananrapatjas/datalist") ?>';
+    var baseMainPath = '<?= site_url("pelayananrapatjas/datalist") ?>';
 
     // Prioritas: kategoriLayanan > jenKode
     let initialParamKey = null;
@@ -97,7 +97,7 @@
         initialParamValue = jenKodeFromUrl;
     }
 
-    const initialApiUrl = (initialParamKey) ?
+    var initialApiUrl = (initialParamKey) ?
         buildApiUrlWithOptionalParam(baseMainPath, initialParamKey, initialParamValue) :
         buildApiUrlWithOptionalParam(baseMainPath, '', '');
 

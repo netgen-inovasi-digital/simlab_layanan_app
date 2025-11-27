@@ -283,7 +283,7 @@
 </div>
 
 <script>
-    let trackingDetailTableAlat;
+    var trackingDetailTableAlat;
 
     // Fungsi ini akan dipanggil dari v_pelayanan_alat.php
     function showTrackingModal(id, lnKode, lnStatus) {
