@@ -438,14 +438,16 @@ class Keranjang extends KeranjangBase
         $session = session();
         $keranjang = $session->get($this->sessionKey) ?? [];
 
-        // HAPUS DUPLIKAT berdasarkan kombinasi kode+alat+keterangan
+        // HAPUS DUPLIKAT berdasarkan kombinasi kode+alat+metode_kode
+        // Layanan sama dengan metode berbeda = item berbeda
+        // Layanan sama dengan metode sama = item sama (digabung)
         $unique = [];
         $cleaned = [];
         foreach ($keranjang as $row) {
             $kode = isset($row['kode']) ? trim((string)$row['kode']) : '';
             $alat = isset($row['alat']) ? trim((string)$row['alat']) : '';
-            $ket  = isset($row['keterangan']) ? trim((string)$row['keterangan']) : '';
-            $key  = md5($kode . '|' . $alat . '|' . $ket);
+            $metode = isset($row['metode_kode']) ? trim((string)$row['metode_kode']) : '';
+            $key  = md5($kode . '|' . $alat . '|' . $metode);
             if (!isset($unique[$key])) {
                 $unique[$key] = true;
                 $cleaned[] = $row;
