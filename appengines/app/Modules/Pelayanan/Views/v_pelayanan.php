@@ -34,14 +34,48 @@
     </div>
 </div>
 
+<!-- Modal Riwayat LHU -->
+<div class="modal fade" id="modalPelayananLhu" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title mb-0">Daftar LHU</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info d-none" id="pelayanan-lhu-empty">Belum ada LHU yang bisa ditampilkan.</div>
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th style="width:10%">No.</th>
+                                <th style="width:45%">Tanggal terbit</th>
+                                <th style="width:45%" class="text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pelayanan-lhu-body">
+                            <tr>
+                                <td colspan="3" class="text-center text-muted">Tidak ada data.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     /**
      * buildApiUrlWithOptionalParam
      * - path: path ke endpoint, mis. '<?= site_url("pelayanan/datalist") ?>'
-     * - key/value: jika diberikan, tambahkan sebagai query string (tanpa page/limit)
-     *
+        * - key / value: jika diberikan, tambahkan sebagai query string(tanpa page / limit)
+            *
      * Output: path atau path + '?key=value'
-     */
+        */
     function buildApiUrlWithOptionalParam(path, key, value) {
         try {
             const u = new URL(path, window.location.origin);
@@ -107,7 +141,7 @@
         apiUrl: initialApiUrl,
         numbering: true,
         dataSrc: 'items',
-        onData: function(items) {
+        onData: function (items) {
             // default render
         }
     });
@@ -115,7 +149,7 @@
     // patch fetchData main table agar normalisasi jika helper menghasilkan '?ganda'
     if (table && typeof table.fetchData === 'function' && typeof table.getConfig === 'function') {
         const origFetch = table.fetchData.bind(table);
-        table.fetchData = function(opts = {}) {
+        table.fetchData = function (opts = {}) {
             try {
                 const cfg = table.getConfig();
                 if (cfg && cfg.apiUrl && typeof cfg.apiUrl === 'string') {
@@ -156,12 +190,12 @@
         const csrfToken = csrfInput ? csrfInput.value : '';
 
         fetch(url, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken
-                }
-            })
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRF-TOKEN': csrfToken
+            }
+        })
             .then(res => res.json())
             .then(data => {
                 if (data.xname && data.xhash) {
@@ -206,9 +240,9 @@
             .then(data => {
                 tbody.innerHTML = '';
                 if (data.items && data.items.length > 0) {
-                    data.items.forEach(function(row) {
+                    data.items.forEach(function (row) {
                         var tr = '<tr>';
-                        row.forEach(function(col) {
+                        row.forEach(function (col) {
                             tr += '<td>' + col + '</td>';
                         });
                         tr += '</tr>';
@@ -224,5 +258,70 @@
                 tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error load data</td></tr>';
                 $('#modalDetail').modal('show');
             });
+    }
+
+    function showPelayananLhuHistory(encId) {
+        const modalEl = document.getElementById('modalPelayananLhu');
+        if (!modalEl) return;
+
+        const tbody = document.getElementById('pelayanan-lhu-body');
+        const emptyAlert = document.getElementById('pelayanan-lhu-empty');
+
+        if (emptyAlert) emptyAlert.classList.add('d-none');
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="3" class="text-center">Memuat data...</td></tr>';
+        }
+
+        const modalInstance = (typeof bootstrap !== 'undefined' && bootstrap.Modal)
+            ? bootstrap.Modal.getOrCreateInstance(modalEl)
+            : null;
+
+        if (modalInstance) {
+            modalInstance.show();
+        } else if (typeof $ !== 'undefined' && $('#modalPelayananLhu').modal) {
+            $('#modalPelayananLhu').modal('show');
+        }
+
+        fetch('<?= site_url("pelayanan/lhulist/") ?>' + encId, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(res => res.json())
+            .then(data => {
+                if (!tbody) return;
+                const items = Array.isArray(data.items) ? data.items : [];
+                if (items.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">Tidak ada data.</td></tr>';
+                    if (emptyAlert) emptyAlert.classList.remove('d-none');
+                    return;
+                }
+
+                const rows = items.map(row => {
+                    const safeDate = escapeHtml(row.tanggal ?? '-');
+                    const hasUrl = row.url && row.url !== '#';
+                    const actionHtml = hasUrl
+                        ? '<a class="btn btn-sm btn-outline-primary" href="' + escapeHtml(row.url) + '" target="_blank" rel="noopener"><i class="bi bi-eye"></i> Lihat</a>'
+                        : '<span class="text-muted">Tidak tersedia</span>';
+                    return '<tr>' +
+                        '<td>' + row.no + '.</td>' +
+                        '<td>' + safeDate + '</td>' +
+                        '<td class="text-center">' + actionHtml + '</td>' +
+                        '</tr>';
+                }).join('');
+
+                tbody.innerHTML = rows;
+            })
+            .catch(err => {
+                console.error(err);
+                if (tbody) {
+                    tbody.innerHTML = '<tr><td colspan="3" class="text-center text-danger">Gagal memuat data.</td></tr>';
+                }
+            });
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
     }
 </script>

@@ -275,28 +275,42 @@ class Pelayanan extends BaseController
                 $response[] = '<button class="btn btn-sm btn-info" onclick="lokasiPembayaran(' . $lnKodeInt . ')"><i class="bi bi-credit-card"></i> Belum Bayar</button>';
             }
 
-            // Akses LHU
+            // Akses LHU & kuisioner
             $lnStatusVal = (int) ($row->lnStatus ?? 0);
-            $canViewLhu = ($kuisionerVal === 1 && $bayarStatusVal === 1 && in_array($lnStatusVal, [7, 9], true));
+            $canFillKuesioner = ($kuisionerVal !== 1 && $lnStatusVal === 9);
+            $canViewLhu = ($kuisionerVal === 1 && $bayarStatusVal === 1 && $lnStatusVal === 9);
             $lhuInfo = $this->detectLhuFile($row);
 
+            $lhuButtons = [];
+
+            if ($canFillKuesioner) {
+                $lhuButtons[] = '<button class="btn btn-sm btn-warning" onclick="loadContent(\'pelayanan/kuesioner/' . $id . '\')"><i class="bi bi-chat-square-text"></i> Isi Kuisioner</button>';
+            }
+
             if ($lhuInfo['has'] && $canViewLhu) {
-                $response[] = '<button class="btn btn-sm btn-outline-primary" onclick="window.open(\'' . esc($lhuInfo['url']) . '\', \'_blank\')" title="Buka LHU"><i class="bi bi-eye"></i> Lihat LHU</button>';
-            } else {
+                $lhuButtons[] = '<button class="btn btn-sm btn-outline-primary" onclick="showPelayananLhuHistory(\'' . $id . '\')"><i class="bi bi-eye"></i> LHU</button>';
+            } elseif (!$canFillKuesioner) {
                 $reason = 'File LHU tidak dapat diakses.';
                 if ($lhuInfo['has'] && !$canViewLhu) {
                     if ($kuisionerVal !== 1) {
                         $reason = 'Isi kuisioner';
                     } elseif ($bayarStatusVal !== 1) {
                         $reason = 'Belum bayar';
-                    } elseif (!in_array($lnStatusVal, [7, 8], true)) {
+                    } elseif ($lnStatusVal !== 9) {
                         $reason = 'LHU diproses';
                     }
                 } elseif (!$lhuInfo['has']) {
                     $reason = 'LHU diproses';
                 }
-                $response[] = '<button class="btn btn-sm btn-secondary" disabled><i class="bi bi-eye-slash"></i> ' . esc($reason) . '</button>';
+                $lhuButtons[] = '<button class="btn btn-sm btn-secondary" disabled><i class="bi bi-eye-slash"></i> ' . esc($reason) . '</button>';
             }
+
+            $buttonHtml = '';
+            foreach ($lhuButtons as $btnHtml) {
+                $buttonHtml .= '<div>' . $btnHtml . '</div>';
+            }
+
+            $response[] = '<div class="d-flex flex-column gap-2 align-items-start">' . $buttonHtml . '</div>';
 
             // Aksi detail (masking lnKode via enkripsi)
             // $response[] = '<a href="javascript:void(0)" onclick="loadDetail(\'' . $id . '\')" class="btn btn-sm btn-info">Lihat pesanan</a>';
@@ -450,6 +464,84 @@ class Pelayanan extends BaseController
         }
     }
 
+    public function lhuList($id = null)
+    {
+        if (!$id) {
+            return $this->response->setJSON(['items' => []]);
+        }
+
+        $session = session();
+        $userId = (int) ($session->get('id_user') ?? 0);
+        if ($userId <= 0) {
+            return $this->response->setJSON(['items' => []]);
+        }
+
+        try {
+            $lnKode = $this->encrypter->decrypt(hex2bin($id));
+        } catch (\Throwable $e) {
+            try {
+                $lnKode = $this->encrypter->decrypt($id);
+            } catch (\Throwable $e2) {
+                return $this->response->setJSON(['items' => []]);
+            }
+        }
+
+        $model = new MyModel($this->table);
+        $layanan = $model->getDataById($this->id, $lnKode);
+
+        if (!$layanan || (int) ($layanan->user_id ?? 0) !== $userId) {
+            return $this->response->setJSON(['items' => []]);
+        }
+
+        $db = \Config\Database::connect();
+
+        try {
+            $rows = $db->table('t_files_lhu AS lhu')
+                ->select('lhu.file_id, lhu.file, lhu.tanggal_terbit')
+                ->where('lhu.kode', $lnKode)
+                ->orderBy('CASE WHEN lhu.tanggal_terbit IS NULL THEN 1 ELSE 0 END', 'ASC', false)
+                ->orderBy('lhu.tanggal_terbit', 'ASC')
+                ->orderBy('lhu.file_id', 'ASC')
+                ->get()->getResult();
+        } catch (\Throwable $e) {
+            log_message('error', 'Pelayanan::lhuList error: ' . $e->getMessage());
+            return $this->response->setJSON(['items' => []]);
+        }
+
+        if (empty($rows)) {
+            return $this->response->setJSON(['items' => []]);
+        }
+
+        $items = [];
+        foreach ($rows as $index => $row) {
+            $tanggal = '-';
+            if (!empty($row->tanggal_terbit)) {
+                try {
+                    $tanggal = date('d/m/Y H:i', strtotime($row->tanggal_terbit));
+                } catch (\Throwable $e) {
+                    $tanggal = $row->tanggal_terbit;
+                }
+            }
+
+            $fileUrl = null;
+            if (!empty($row->file)) {
+                if (preg_match('/^https?:\/\//i', $row->file)) {
+                    $fileUrl = $row->file;
+                } else {
+                    $fileUrl = base_url('uploads/lhu/' . ltrim($row->file, '/'));
+                }
+            }
+
+            $items[] = [
+                'no' => $index + 1,
+                'tanggal' => $tanggal,
+                'url' => $fileUrl,
+            ];
+        }
+
+        return $this->response->setJSON(['items' => $items]);
+    }
+
     private function detectLhuFile($row)
     {
         $lnKode = $row->lnKode ?? null;
@@ -566,7 +658,7 @@ class Pelayanan extends BaseController
             }
         }
 
-        $modelLayanan->updateData(['kuisioner' => 1, 'lnStatus' => 8], $this->id, $lnKode);
+        $modelLayanan->updateData(['kuisioner' => 1], $this->id, $lnKode);
 
         $db->transComplete();
 
