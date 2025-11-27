@@ -580,6 +580,7 @@
                 detAlat: btn.dataset.alat,
                 detBiaya: biaya,
                 detParameter: btn.dataset.parameter,
+                detNamaLayanan: btn.dataset.namaLayanan || '',
                 detDiskon: diskon,
                 detJumlah: jumlah,
                 detMetode: metodeValue,
