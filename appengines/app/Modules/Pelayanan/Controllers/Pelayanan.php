@@ -646,14 +646,26 @@ class Pelayanan extends BaseController
         $db->transStart();
 
         foreach ($jawaban_array as $id_pertanyaan => $jawaban) {
-            $existingAnswer = $modelJawaban->getWhere(['id_pertanyaan' => $id_pertanyaan, 'user_id' => $user_id])->getRow();
-            if (!$existingAnswer) {
-                $dataJawaban = [
+            $jawabanText = is_array($jawaban) ? json_encode($jawaban) : (string) $jawaban;
+
+            $existingAnswer = $modelJawaban
+                ->getWhere([
                     'id_pertanyaan' => $id_pertanyaan,
                     'user_id' => $user_id,
-                    'jawaban' => $jawaban,
-                    'created_at' => date('Y-m-d H:i:s')
-                ];
+                    'kode_layanan' => $lnKode,
+                ])->getRow();
+
+            $dataJawaban = [
+                'id_pertanyaan' => $id_pertanyaan,
+                'user_id' => $user_id,
+                'kode_layanan' => $lnKode,
+                'jawaban' => $jawabanText,
+                'created_at' => date('Y-m-d H:i:s')
+            ];
+
+            if ($existingAnswer) {
+                $modelJawaban->updateData($dataJawaban, 'id_jawaban', $existingAnswer->id_jawaban);
+            } else {
                 $modelJawaban->insertData($dataJawaban);
             }
         }
