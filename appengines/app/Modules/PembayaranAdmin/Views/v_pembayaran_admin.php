@@ -969,7 +969,7 @@
             });
     }
 
-    let detailModalTable = null;
+    var detailModalTable = null;
 
     // Handler detail layanan - gunakan sayTable modal
     document.addEventListener('click', function (event) {

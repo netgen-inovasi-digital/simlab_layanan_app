@@ -345,7 +345,7 @@
             sampleSection.style.display = 'block';
         } else {
             // Fetch data baru dari server
-            fetch(`<?php echo site_url("hasilpengujian/getSampleIdentity/") ?>${lnKode}`)
+            fetch(<?php echo site_url("hasilpengujian/getSampleIdentity/") ?>${lnKode})
                 .then(response => response.json())
                 .then(data => {
                     if (data.success && data.data) {
@@ -408,7 +408,7 @@
             if (!trackingDetailTable) {
                 trackingDetailTable = createTable({
                     tableId: 'tableDetail',
-                    apiUrl: `<?php echo site_url("hasilpengujian/detailList/") ?>${id}`,
+                    apiUrl: <?php echo site_url("hasilpengujian/detailList/") ?>${id},
                     itemsPerPage: 10,
                     showFilter: false,
                     treeview: false,
@@ -423,7 +423,7 @@
             // Gunakan setTimeout untuk memastikan data sudah dimuat
             setTimeout(async function() {
                 try {
-                    const response = await fetch(`<?php echo site_url("hasilpengujian/detailList/") ?>${id}`);
+                    const response = await fetch(<?php echo site_url("hasilpengujian/detailList/") ?>${id});
                     const data = await response.json();
                     
                     console.log('Modal data loaded:', data);
