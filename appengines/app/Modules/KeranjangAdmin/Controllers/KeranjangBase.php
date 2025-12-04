@@ -4,6 +4,7 @@ namespace Modules\KeranjangAdmin\Controllers;
 
 use App\Controllers\BaseController;
 use App\Models\MyModel;
+use Modules\KeranjangAdmin\Models\KeranjangAdminModel;
 
 /**
  * Base Controller untuk semua jenis keranjang ADMIN
@@ -16,6 +17,7 @@ abstract class KeranjangBase extends BaseController
     protected $config;
     protected $encrypter;
     protected $sessionKey;
+    protected $keranjangAdminModel;
 
     // Table names (dari config)
     protected $tableLayanan;
@@ -26,6 +28,7 @@ abstract class KeranjangBase extends BaseController
     public function __construct()
     {
         $this->encrypter = \Config\Services::encrypter();
+        $this->keranjangAdminModel = new KeranjangAdminModel();
 
         // Harus di-set oleh child class
         if (!$this->jenisLayanan) {
@@ -246,21 +249,9 @@ abstract class KeranjangBase extends BaseController
      */
     protected function getCategories(): array
     {
-        $db = \Config\Database::connect();
-        $builder = $db->table($this->tablePengujian . ' as lp');
-
         $jenisCol = $this->config['columns']['jenis'] ?? 'kode_jenis';
 
-        $builder->select("
-            DISTINCT TRIM(LEFT(lp.{$jenisCol}, 2)) as jenKode,
-            j.jenNama
-        ");
-        $builder->join('simlab_r_jenis j', "j.jenKode = TRIM(LEFT(lp.{$jenisCol}, 2))", 'left');
-        $builder->where("lp.{$jenisCol} IS NOT NULL");
-        $builder->where("lp.{$jenisCol} !=", '');
-        $builder->orderBy('j.jenNama', 'ASC');
-
-        $categories = $builder->get()->getResult();
+        $categories = $this->keranjangAdminModel->getKategoriByTable($this->tablePengujian, $jenisCol);
 
         // Normalisasi
         $normalized = [];
@@ -542,7 +533,7 @@ abstract class KeranjangBase extends BaseController
         $modelLayanan    = new MyModel($this->tableLayanan);
         $modelDetil      = new MyModel($this->tableLayananDetail);
         $modelIdentitasSampel = new MyModel('t_identitas_sampel');
-        $db = \Config\Database::connect();
+        $db = $this->keranjangAdminModel->getDb();
 
         $db->transStart();
 
@@ -874,7 +865,6 @@ abstract class KeranjangBase extends BaseController
         }
 
         // Jika keranjang tidak kosong, recalc diskon & biaya masing-masing item
-        $db = \Config\Database::connect();
         $diskonCache = []; // cache ujiDiskon per kode
 
         foreach ($keranjang as $i => $item) {
@@ -886,8 +876,7 @@ abstract class KeranjangBase extends BaseController
             if ($isUlm && $kode !== '') {
                 if (!array_key_exists($kode, $diskonCache)) {
                     try {
-                        $row = $db->table('r_layanan_pengujian')->select('diskon')->where('kode', $kode)->get()->getRow();
-                        $diskonCache[$kode] = ($row && isset($row->diskon)) ? (float)$row->diskon : 0.0;
+                        $diskonCache[$kode] = $this->keranjangAdminModel->getDiskonByKode($kode);
                     } catch (\Throwable $e) {
                         $diskonCache[$kode] = 0.0;
                     }

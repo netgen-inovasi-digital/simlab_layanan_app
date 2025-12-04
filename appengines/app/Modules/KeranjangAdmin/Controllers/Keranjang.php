@@ -172,7 +172,6 @@ class Keranjang extends KeranjangBase
     protected function saveDetailLayanan(int $lnKode, array $keranjang): void
     {
         $modelDetil = new MyModel($this->tableLayananDetail);
-        $db = \Config\Database::connect();
 
         foreach ($keranjang as $i => $item) {
             // Ambil jenKode dari keranjang atau fallback ke tabel pengujian supaya sesuai FK
@@ -187,18 +186,7 @@ class Keranjang extends KeranjangBase
 
             if ($jenKodeValue === null && isset($item['kode']) && $item['kode'] !== '') {
                 try {
-                    $pengujian = $db->table($this->tablePengujian)
-                        ->select('kode_jenis')
-                        ->where('kode', $item['kode'])
-                        ->get()
-                        ->getRow();
-
-                    if ($pengujian && $pengujian->kode_jenis !== null) {
-                        $jenKodeValue = trim((string) $pengujian->kode_jenis);
-                        if ($jenKodeValue === '') {
-                            $jenKodeValue = null;
-                        }
-                    }
+                    $jenKodeValue = $this->keranjangAdminModel->getKodeJenisByKode($this->tablePengujian, $item['kode']);
                 } catch (\Throwable $e) {
                     log_message('warning', "Failed to fetch jenKode from pengujian for kode: {$item['kode']}");
                 }
@@ -225,12 +213,8 @@ class Keranjang extends KeranjangBase
             // Insert ke tabel detil
             $res = $modelDetil->insertData($detil);
             if (!$res) {
-                $error = $db->error();
                 log_message('error', 'Insert gagal ke ' . $this->tableLayananDetail . '. Data: ' . json_encode($detil));
-                log_message('error', 'DB Error Code: ' . $error['code']);
-                log_message('error', 'DB Error Message: ' . $error['message']);
-
-                throw new \RuntimeException('Gagal simpan detail: ' . ($error['message'] ?? 'Unknown error'));
+                throw new \RuntimeException('Gagal simpan detail layanan');
             }
         }
     }
@@ -276,38 +260,11 @@ class Keranjang extends KeranjangBase
         }
 
         try {
-            // Query menggunakan Query Builder
-            $db = \Config\Database::connect();
-            $builder = $db->table($this->tablePengujian . ' as lp');
-
             // Gunakan config columns mapping
             $cols = $this->config['columns'];
 
-            $builder->select("
-                lp.{$cols['kode']} as kode,
-                lp.{$cols['biaya']} as biaya,
-                lp.{$cols['diskon']} as diskon,
-                lp.{$cols['nama']} as nama_layanan,
-                lp.{$cols['jenis']} as kode_jenis,
-                lp.{$cols['satuan']} as satuan,
-                p.paraNama,
-                a.alatNama,
-                j.jenNama
-            ");
-
-            // Joins dari config
-            $builder->join('simlab_r_parameter p', 'p.paraKode = lp.' . $cols['parameter'], 'left');
-            $builder->join('simlab_r_alat a', 'a.alatKode = lp.' . $cols['alat'], 'left');
-            $builder->join('simlab_r_jenis j', 'j.jenKode = lp.' . $cols['jenis'], 'left');
-
-            // Filter kategori
-            if ($jenKodeFilter !== '') {
-                $builder->where("TRIM(LEFT(lp.{$cols['jenis']}, 2))", $jenKodeFilter);
-            }
-
-            $builder->orderBy("lp.{$cols['kode']}", 'ASC');
-
-            $listUji = $builder->get()->getResult();
+            // Query menggunakan model
+            $listUji = $this->keranjangAdminModel->getLayananPengujianList($this->tablePengujian, $cols, $jenKodeFilter);
 
             // Filter search query
             if ($q !== '') {
