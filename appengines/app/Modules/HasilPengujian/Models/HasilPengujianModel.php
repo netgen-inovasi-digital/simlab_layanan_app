@@ -225,7 +225,7 @@ class HasilPengujianModel extends Model
             ANY_VALUE(d.kode_jenis) AS kode_jenis,
             GROUP_CONCAT(DISTINCT COALESCE(lhus.catatan, '') SEPARATOR ' | ') AS detKet,
             GROUP_CONCAT(DISTINCT COALESCE(lhus.catatan, '') SEPARATOR ' | ') AS detKetManajer,
-            GROUP_CONCAT(DISTINCT COALESCE(lhus.catatan, '') SEPARATOR ' | ') AS detKetLhus,
+            GROUP_CONCAT(DISTINCT COALESCE(lhus.catatan, '') SEPARATOR ' | ') AS catatan_lhus,
             GROUP_CONCAT(DISTINCT d.files SEPARATOR ',') AS detFilesList,
             MAX(d.files) AS detFilesMax,
             SUM(d.jumlah) AS jumlah,
@@ -233,12 +233,25 @@ class HasilPengujianModel extends Model
             MAX(d.status_layanan) AS status_group,
             ANY_VALUE(d.terima_layanan_by) AS terima_layanan_by,
             ANY_VALUE(u.user_name) AS acc_by,
-            (SELECT nama FROM r_metode WHERE metode_kode = d.metode_pengujian LIMIT 1) AS metode_nama
+            (SELECT nama FROM r_metode WHERE metode_kode = d.metode_pengujian LIMIT 1) AS metode_nama,
+            ANY_VALUE(lhus.file_lhus) AS file_lhus
         ");
 
         $builder->join('simlab_account_users u', 'u.user_id = d.terima_layanan_by', 'left');
         $builder->join('r_tim as rt', 'rt.uji_kode = d.uji_kode', 'inner');
-        $builder->join('t_files_lhus as lhus', 'lhus.kode = d.kode', 'left');
+        
+        // Subquery untuk ambil hanya 1 file terbaru per kode
+        $builder->join(
+            '(SELECT lhus1.* FROM t_files_lhus lhus1 
+              INNER JOIN (
+                SELECT kode, MAX(file_id) as max_file_id 
+                FROM t_files_lhus 
+                GROUP BY kode
+              ) lhus2 ON lhus1.kode = lhus2.kode AND lhus1.file_id = lhus2.max_file_id
+            ) lhus',
+            'lhus.kode = d.kode',
+            'left'
+        );
 
         $builder->where('d.kode_layanan', $kode);
         $builder->where('rt.user_id', $userId);

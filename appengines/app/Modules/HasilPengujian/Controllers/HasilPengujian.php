@@ -610,7 +610,7 @@ class HasilPengujian extends BaseController
             }
         }
 
-        $newName = uniqid('lhus_', true) . '.' . $ext;
+        $newName = uniqid('', true) . '.' . $ext;
         try {
             $moved = $file->move($targetFolder, $newName);
             if ($moved) {
