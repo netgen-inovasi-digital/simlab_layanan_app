@@ -50,7 +50,7 @@
 
       <div class="modal-body">
         <div class="table-responsive">
-          <table class="table table-bordered align-middle">
+          <table id="tableDetail" class="table table-bordered align-middle">
             <thead>
               <tr>
                 <th style="min-width:40px; width:5%;">No</th>
@@ -313,65 +313,69 @@
     }
 
     // Load detail LN -> tampilkan modal
+    var trackingDetailTable = null;
     function loadDetail(id) {
-        const url = '<?php echo site_url("tinjaulhus/detaillist/") ?>' + id;
-        const tbody = document.querySelector('#detail-body');
-        tbody.innerHTML = '<tr><td colspan="8" class="text-center">Loading...</td></tr>';
+        const modalEl = document.getElementById('modalDetail');
+        if (modalEl) {
+            modalEl.dataset.encLn = id;
+        }
 
-        fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-            .then(response => {
-                if (!response.ok) {
-                    return response.text().then(t => { throw new Error('HTTP ' + response.status + ': ' + t); });
-                }
-                return response.json();
-            })
-            .then(data => {
-                tbody.innerHTML = '';
-                if (data.items && data.items.length > 0) {
-                    data.items.forEach(function(row) {
-                        var tr = '<tr>';
-                        row.forEach(function(col) { tr += '<td>' + col + '</td>'; });
-                        tr += '</tr>';
-                        tbody.innerHTML += tr;
-                    });
-                } else {
-                    tbody.innerHTML = '<tr><td colspan="8" class="text-center">Tidak ada data</td></tr>';
-                }
+        // Clear existing table body and pagination before creating new modal table
+        const tableDetail = document.getElementById('tableDetail');
+        if (tableDetail) {
+            const tbody = tableDetail.querySelector('tbody');
+            if (tbody) tbody.innerHTML = '';
+        }
+        
+        // Remove existing filter and pagination for tableDetail
+        const existingFilter = document.getElementById('filter-container-tableDetail');
+        if (existingFilter) existingFilter.remove();
+        const existingPagination = document.getElementById('pagination-tableDetail');
+        if (existingPagination) existingPagination.remove();
+
+        // Selalu buat ulang modal table dengan URL baru (untuk handle reload)
+        trackingDetailTable = createModal({
+            tableId: 'tableDetail',
+            apiUrl: `<?php echo site_url("tinjaulhus/detaillist/") ?>${id}`,
+            itemsPerPage: 10,
+            showFilter: false,
+            treeview: false,
+            numbering: false,
+            dataSrc: 'items'
+        });
+
+        // Load identitas sampel dan data tambahan setelah modal dibuat
+        setTimeout(async function() {
+            try {
+                const response = await fetch(`<?php echo site_url("tinjaulhus/detaillist/") ?>${id}`);
+                const data = await response.json();
 
                 // Load identitas sampel
                 if (data.lnKode) {
                     loadSampleIdentity(data.lnKode);
                 }
 
-                const modalEl = document.getElementById('modalDetail');
-                if (modalEl) modalEl.dataset.encLn = data.encLn || id;
-
-                try {
-                    if (typeof bootstrap !== 'undefined') {
-                        var modalInstance = bootstrap.Modal.getInstance(modalEl);
-                        if (!modalInstance) modalInstance = new bootstrap.Modal(modalEl);
-                        if (!modalEl.classList.contains('show')) modalInstance.show();
-                    } else if (typeof $ === 'function') {
-                        if (!$('#modalDetail').hasClass('show')) $('#modalDetail').modal('show');
-                    }
-                } catch (err) {
-                    console.warn('Modal show error', err);
+                // Update encLn dari response
+                if (data.encLn && modalEl) {
+                    modalEl.dataset.encLn = data.encLn;
                 }
-            })
-            .catch(error => {
-                console.error('loadDetail error:', error);
-                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error load data</td></tr>';
-                try {
-                    const modalEl = document.getElementById('modalDetail');
-                    if (typeof bootstrap !== 'undefined') {
-                        var modalInstance = bootstrap.Modal.getInstance(modalEl);
-                        if (!modalInstance) modalInstance = new bootstrap.Modal(modalEl);
-                        if (!modalEl.classList.contains('show')) modalInstance.show();
-                    } else if (typeof $ === 'function') {
-                        if (!$('#modalDetail').hasClass('show')) $('#modalDetail').modal('show');
-                    }
-                } catch (e) {}
-            });
+            } catch (error) {
+                console.error('Error loading additional data:', error);
+            }
+        }, 300);
+
+        // Show modal
+        try {
+            if (typeof bootstrap !== 'undefined') {
+                var modalInstance = bootstrap.Modal.getInstance(modalEl);
+                if (!modalInstance) modalInstance = new bootstrap.Modal(modalEl);
+                if (!modalEl.classList.contains('show')) modalInstance.show();
+            } else if (typeof $ === 'function') {
+                if (!$('#modalDetail').hasClass('show')) $('#modalDetail').modal('show');
+            }
+        } catch (err) {
+            console.warn('Modal show error', err);
+        }
     }
 
     // Handler: Simpan keterangan LHUS per baris (manual)

@@ -354,9 +354,15 @@ class HasilPengujian extends BaseController
         $rowHasFile = !empty($currentFile);
         $fileUrl = $rowHasFile ? base_url('uploads/lhus/' . ltrim($currentFile, '/')) : null;
 
-        // Cek apakah file sudah terupload (status = 3) dari kolom detFilesMax
-        // Status 3 = terupload, siap dikirim
-        if ($detFilesMax !== 3) {
+        // Cek apakah file sudah siap untuk dikirim
+        // Status yang valid untuk tombol kirim:
+        // - Status 1 = sudah diterima (tidak perlu kirim lagi, sudah OK)
+        // - Status 3 = terupload, siap dikirim
+        // Status yang belum siap:
+        // - Status 2 = ditolak (perlu unggah ulang)
+        // - Status 0/null = belum ada file
+        $isReadyToSend = ($detFilesMax === 1 || $detFilesMax === 3);
+        if (!$isReadyToSend) {
             $allUploaded = false;
         }
 
