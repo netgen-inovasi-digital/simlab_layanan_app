@@ -15,7 +15,7 @@ use Modules\HasilPengujian\Models\HasilPengujianModel;
 class HasilPengujian extends BaseController
 {
     private $table = 'simlab_t_layanan';
-    private $id    = 'lnKode';
+    private $id = 'lnKode';
     protected $encrypter;
     protected $hasilPengujianModel;
 
@@ -163,10 +163,11 @@ class HasilPengujian extends BaseController
 
         // Check for missing files
         $missingData = $this->hasilPengujianModel->checkMissingFilesForUser($lnKode, $user_id);
-        
+
         if ($missingData['missingCount'] > 0) {
-            return $this->jsonResponse(true, 
-                'Berhasil dikirim, sisa ' . $missingData['missingCount'] . ' layanan yang perlu diaccc', 
+            return $this->jsonResponse(
+                true,
+                'Berhasil dikirim, sisa ' . $missingData['missingCount'] . ' layanan yang perlu diaccc',
                 [
                     'waiting_others' => true,
                     'pending_total' => $missingData['missingCount'],
@@ -262,7 +263,7 @@ class HasilPengujian extends BaseController
         ]);
     }
 
-    
+
     /**
      * Parse status filter dari parameter GET
      */
@@ -271,15 +272,15 @@ class HasilPengujian extends BaseController
         $lnStatusFilter = [];
         $wantReject = false;
         $wantUploaded = false;
-        
+
         if ($lnStatusParam !== '') {
             foreach (preg_split('/[,\s]+/', $lnStatusParam, -1, PREG_SPLIT_NO_EMPTY) as $p) {
                 $tp = strtolower(trim($p));
-                if (in_array($tp, ['tolak','reject','ditolak'], true)) {
+                if (in_array($tp, ['tolak', 'reject', 'ditolak'], true)) {
                     $wantReject = true;
                     continue;
                 }
-                if (in_array($tp, ['terunggah','uploaded'], true)) {
+                if (in_array($tp, ['terunggah', 'uploaded'], true)) {
                     $wantUploaded = true;
                     continue;
                 }
@@ -299,7 +300,7 @@ class HasilPengujian extends BaseController
     private function formatDataListResponse(array $list, int $user_id): array
     {
         $data = [];
-        
+
         foreach ($list as $row) {
             if ((int) $row->lnStatus < 4)
                 continue;
@@ -323,8 +324,8 @@ class HasilPengujian extends BaseController
 
             $colB = $this->formatStatusForPenyelia($row->lnStatus, $row->lnKode, $user_id);
 
-            $btn  = '<button type="button" class="btn btn-sm btn-info" title="Lihat Detail Item Layanan" onclick="loadDetail(\'' . $id . '\', \'' . $row->lnKode . '\')">'
-                  . '<i class="bi bi-upload"></i>Unggah LHUS</button>';
+            $btn = '<button type="button" class="btn btn-sm btn-info" title="Lihat Detail Item Layanan" onclick="loadDetail(\'' . $id . '\', \'' . $row->lnKode . '\')">'
+                . '<i class="bi bi-upload"></i> Unggah LHUS</button>';
 
             $data[] = [$colA, $colB, $btn];
         }
@@ -340,23 +341,18 @@ class HasilPengujian extends BaseController
         $response = [];
         $response[] = $no;
         $response[] = $row->nama_layanan ?? '-';
-        $response[] = isset($row->jumlah) ? (int)$row->jumlah : 0;
+        $response[] = isset($row->jumlah) ? (int) $row->jumlah : 0;
 
         // Format metode
         $metodeHtml = $this->formatKeteranganHtml($row->metode_nama ?? '');
         $response[] = $metodeHtml;
 
         // Check file status
-        $detFilesMax = isset($row->detFilesMax) ? (int)$row->detFilesMax : null;
-        $fileRow = $this->hasilPengujianModel->getFileLhus($row->kode);
-        
-        $rowHasFile = false;
-        $fileUrl = null;
+        $detFilesMax = isset($row->detFilesMax) ? (int) $row->detFilesMax : null;
+        $currentFile = $row->file_lhus ?? null;
 
-        if ($fileRow && !empty($fileRow->file_lhus)) {
-            $rowHasFile = true;
-            $fileUrl = base_url('uploads/lhus/' . ltrim($fileRow->file_lhus, '/'));
-        }
+        $rowHasFile = !empty($currentFile);
+        $fileUrl = $rowHasFile ? base_url('uploads/lhus/' . ltrim($currentFile, '/')) : null;
 
         // Cek apakah file sudah terupload (status = 3) dari kolom detFilesMax
         // Status 3 = terupload, siap dikirim
@@ -370,12 +366,12 @@ class HasilPengujian extends BaseController
         $response[] = $combinedHtml;
 
         // Format keterangan manajer
-        $keteranganManajerHtml = $this->formatKeteranganManajerHtml($row->detKetManajer ?? '');
+        $keteranganManajerHtml = $this->formatKeteranganManajerHtml($row->catatan_lhus ?? '');
         $response[] = $keteranganManajerHtml;
 
         // Username approver
         $accBy = !empty($row->acc_by) ? esc($row->acc_by) : '-';
-        $response[] = '<div class="text-center">'.$accBy.'</div>';
+        $response[] = '<div class="text-center">' . $accBy . '</div>';
 
         return $response;
     }
@@ -423,11 +419,11 @@ class HasilPengujian extends BaseController
         // Upload button
         $detKodeAttr = htmlspecialchars($detKode ?? '', ENT_QUOTES, 'UTF-8');
         $uploadInput = '<label class="mb-0 position-relative" style="cursor:pointer;">'
-                    . '<input type="file" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx" '
-                    . 'data-detlist="' . $detKodeAttr . '" data-detkode="' . $detKodeAttr . '" data-ln="' . $encLnId . '" '
-                    . 'class="d-none lhus-uploader-input" onchange="autoUploadFile(this)" />'
-                    . '<span class="text-primary btn-action" title="Unggah / Ubah File LHUS"><i class="bi bi-upload"></i></span>'
-                    . '</label>';
+            . '<input type="file" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx" '
+            . 'data-detlist="' . $detKodeAttr . '" data-detkode="' . $detKodeAttr . '" data-ln="' . $encLnId . '" '
+            . 'class="d-none lhus-uploader-input" onchange="autoUploadFile(this)" />'
+            . '<span class="text-primary btn-action" title="Unggah / Ubah File LHUS"><i class="bi bi-upload"></i></span>'
+            . '</label>';
 
         $combinedHtml .= $eyeButton . $uploadInput . '</div>';
 
@@ -442,7 +438,7 @@ class HasilPengujian extends BaseController
         if ($detStatusLHUS === 2) {
             return '<div class="text-center"><span class="badge bg-danger">lhus ditolak</span></div>';
         } elseif ($detStatusLHUS === 3 && $rowHasFile) {
-            return '<div class="text-center"><span class="badge bg-info">lhus ter-unggah</span></div>';
+            return '<div class="text-center"><span class="badge bg-info">lhus terunggah</span></div>';
         } elseif ($detStatusLHUS === 1) {
             return '<div class="text-center"><span class="badge bg-success">lhus diterima</span></div>';
         } elseif ($lnStatusInt === 5) {
@@ -474,7 +470,7 @@ class HasilPengujian extends BaseController
             // Update layanan status ke 5 dan log sampel saat kirim
             $this->hasilPengujianModel->updateLayananStatus($lnKode, 5);
             $this->hasilPengujianModel->updateLogSampelVerifikasiHasilUji($lnKode);
-            
+
             // Check if all files uploaded
             $totalBelumUpload = $this->hasilPengujianModel->countMissingFilesForLayanan($lnKode);
             $parentUpdated = true;
@@ -483,7 +479,8 @@ class HasilPengujian extends BaseController
             if ($this->hasilPengujianModel->transStatus() === false) {
                 $this->hasilPengujianModel->transRollback();
                 $dberr = $this->hasilPengujianModel->getError();
-                return $this->jsonResponse('error', 
+                return $this->jsonResponse(
+                    'error',
                     'Gagal menyimpan status pada detil/parent (transaksi gagal). DB Error: ' . ($dberr['message'] ?? 'Unknown'),
                     ['db' => $dberr]
                 );
@@ -493,7 +490,8 @@ class HasilPengujian extends BaseController
 
             // Prepare response
             if ($totalBelumUpload > 0) {
-                return $this->jsonResponse(true, 
+                return $this->jsonResponse(
+                    true,
                     'LHUS Anda berhasil dikirim ke manajer. Masih ada ' . $totalBelumUpload . ' layanan lain yang belum terupload.',
                     [
                         'waiting_others' => true,
@@ -503,14 +501,15 @@ class HasilPengujian extends BaseController
                 );
             }
 
-            return $this->jsonResponse(true, 
+            return $this->jsonResponse(
+                true,
                 'Semua LHUS dalam invoice ini sudah lengkap dan terkirim ke manajer teknis!',
                 [
                     'waiting_others' => false,
                     'parent_updated' => $parentUpdated
                 ]
             );
-            
+
         } catch (\Throwable $e) {
             if ($this->hasilPengujianModel->transStatus() !== false) {
                 $this->hasilPengujianModel->transRollback();
@@ -532,7 +531,8 @@ class HasilPengujian extends BaseController
             // Save file info
             $this->hasilPengujianModel->saveFileLhus($detKode, $lnKode, $filename, $user_id, 3);
 
-            return $this->jsonResponse(true, 
+            return $this->jsonResponse(
+                true,
                 'File LHUS berhasil diunggah (status: terunggah)',
                 [
                     'url' => base_url('uploads/lhus/' . $filename),
@@ -542,7 +542,8 @@ class HasilPengujian extends BaseController
         } else {
             $this->deleteUploadedFile($filename);
             $dberr = $this->hasilPengujianModel->getError();
-            return $this->jsonResponse('error', 
+            return $this->jsonResponse(
+                'error',
                 'Gagal menyimpan ke detail (detKode). DB Error: ' . ($dberr['message'] ?? 'Unknown'),
                 ['db' => $dberr]
             );
@@ -565,14 +566,16 @@ class HasilPengujian extends BaseController
                 $this->hasilPengujianModel->saveFileLhus($dr->kode, $lnKode, $filename, $user_id, 3);
             }
 
-            return $this->jsonResponse(true, 
+            return $this->jsonResponse(
+                true,
                 'File LHUS berhasil diunggah untuk layanan terkait Anda (status: terunggah)',
                 ['url' => base_url('uploads/lhus/' . $filename)]
             );
         } else {
             $this->deleteUploadedFile($filename);
             $dberr = $this->hasilPengujianModel->getError();
-            return $this->jsonResponse('error', 
+            return $this->jsonResponse(
+                'error',
                 'Gagal menyimpan ke detil. DB Error: ' . ($dberr['message'] ?? 'Unknown'),
                 ['db' => $dberr]
             );
@@ -673,7 +676,7 @@ class HasilPengujian extends BaseController
             case 3:
                 return '<span class="badge bg-info">In Review (Admin)</span>';
             case 4:
-                return '<span class="badge bg-primary">Sedang dalam pengujian</span>';
+                return '<span class="badge bg-info">Pengujian</span>';
             case 5:
                 return '<span class="badge bg-primary">LHUS sedang diverifikasi manajer</span>';
             case 6:
@@ -711,7 +714,7 @@ class HasilPengujian extends BaseController
 
         // PRIORITAS 4: Cek apakah sudah terkirim ke manajer (files = 0)
         if ($this->hasilPengujianModel->hasSentLhus($lnKode, $userId)) {
-            return '<span class="badge bg-primary">Terkirim ke manajer teknis</span>';
+            return '<span class="badge bg-info">Menunggu verifikasi</span>';
         }
 
         // Fallback ke mapping lnStatus

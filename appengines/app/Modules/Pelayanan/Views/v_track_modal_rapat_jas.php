@@ -275,7 +275,7 @@
 </div>
 
 <script>
-    let trackingDetailTableRapatJas;
+    var trackingDetailTableRapatJas;
 
     // Fungsi ini akan dipanggil dari v_pelayanan_rapat_jas.php
     function showFullTrackingModalRapatJas(id, lnKode, lnStatus) {

@@ -19,7 +19,7 @@ class TinjauLhusModel extends Model
     public function getActiveLayananCodesByUser($userId)
     {
         $db = $this->db;
-        
+
         $detRows = $db->table('t_layanan_detil as d')
             ->distinct()
             ->select('d.kode_layanan')
@@ -53,7 +53,7 @@ class TinjauLhusModel extends Model
         }
 
         $db = $this->db;
-        
+
         return $db->table('simlab_t_layanan as l')
             ->select('l.*, u.user_name as pemesan_name, u.user_email as pemesan_email, u.user_identity as pemesan_identity')
             ->join('simlab_account_users as u', 'u.user_id = l.user_id', 'left')
@@ -77,7 +77,7 @@ class TinjauLhusModel extends Model
         }
 
         $db = $this->db;
-        
+
         $rowsG = $db->table('t_layanan_detil')
             ->select("
                 kode_layanan,
@@ -119,7 +119,7 @@ class TinjauLhusModel extends Model
         }
 
         $db = $this->db;
-        
+
         $rowsU = $db->table('t_layanan_detil as d')
             ->select("
                 d.kode_layanan,
@@ -159,7 +159,7 @@ class TinjauLhusModel extends Model
     public function getDetailListByLayananAndUser($lnKode, $userId)
     {
         $db = $this->db;
-        
+
         $builder = $db->table('t_layanan_detil as d');
         $builder->select("
             d.kode,
@@ -200,21 +200,44 @@ class TinjauLhusModel extends Model
     }
 
     /**
-     * Update catatan di t_files_lhus
-     * 
-     * @param int $detKode
-     * @param string|null $catatan
-     * @return bool
+     * Simpan catatan ke t_files_lhus (selalu diarahkan ke tabel file, tidak lagi di t_layanan_detil).
+     * Ketika record file belum tersedia (edge-case), method akan membuat placeholder agar catatan tetap tercatat.
      */
-    public function updateFileLhusCatatan($detKode, $catatan)
+    public function updateFileLhusCatatan(int $detKode, ?string $catatan, ?int $actorId = null): bool
     {
         $db = $this->db;
-        
-        $res = $db->table('t_files_lhus')
-            ->where('kode', $detKode)
-            ->update(['catatan' => $catatan]);
 
-        return $db->affectedRows() > 0 || $res === true;
+        // Ambil file LHUS terbaru untuk detil ini
+        $latest = $db->table('t_files_lhus')
+            ->select('file_id')
+            ->where('kode', $detKode)
+            ->orderBy('file_id', 'DESC')
+            ->limit(1)
+            ->get()
+            ->getRow();
+
+        if ($latest) {
+            $res = $db->table('t_files_lhus')
+                ->where('file_id', $latest->file_id)
+                ->update(['catatan' => $catatan]);
+
+            return $db->affectedRows() > 0 || $res === true;
+        }
+
+        // Jika belum ada record di t_files_lhus (kasus jarang), buat placeholder baru
+        $layanan = $this->getLayananKodeByDetailKode($detKode);
+        $insertData = [
+            'kode' => $detKode,
+            'kode_layanan' => $layanan->kode_layanan ?? null,
+            'catatan' => $catatan,
+            'status' => null,
+        ];
+
+        if ($actorId) {
+            $insertData['validasi_by'] = $actorId;
+        }
+
+        return $db->table('t_files_lhus')->insert($insertData);
     }
 
     /**
@@ -226,7 +249,7 @@ class TinjauLhusModel extends Model
     public function getLayananKodeByDetailKode($detKode)
     {
         $db = $this->db;
-        
+
         return $db->table('t_layanan_detil')
             ->select('kode_layanan')
             ->where('kode', $detKode)
@@ -244,7 +267,7 @@ class TinjauLhusModel extends Model
     public function updateDetailFilesStatus($detKode, $filesStatus)
     {
         $db = $this->db;
-        
+
         return $db->table('t_layanan_detil')
             ->where('kode', $detKode)
             ->update(['files' => $filesStatus]);
@@ -261,7 +284,7 @@ class TinjauLhusModel extends Model
     public function updateFileLhusValidation($detKode, $status, $validasiBy)
     {
         $db = $this->db;
-        
+
         return $db->table('t_files_lhus')
             ->where('kode', $detKode)
             ->update([
@@ -279,7 +302,7 @@ class TinjauLhusModel extends Model
     public function getLayananStatusSummary($lnKode)
     {
         $db = $this->db;
-        
+
         return $db->query("
             SELECT 
                 COUNT(*) AS total,
@@ -311,7 +334,7 @@ class TinjauLhusModel extends Model
     public function updateLogSampelLhus($lnKode, $currentTime)
     {
         $db = $this->db;
-        
+
         try {
             $logUpdate = [
                 'penerbitan_lhus' => $currentTime,
@@ -395,7 +418,7 @@ class TinjauLhusModel extends Model
     public function getUserStatusSummaryForLayanan($lnKode, $userId)
     {
         $db = $this->db;
-        
+
         return $db->table('t_layanan_detil as d')
             ->select("
                 COUNT(*) AS total,
@@ -419,7 +442,7 @@ class TinjauLhusModel extends Model
     public function getGlobalStatusSummaryForLayanan($lnKode)
     {
         $db = $this->db;
-        
+
         return $db->query("
             SELECT 
                 COUNT(*) AS total,
@@ -440,7 +463,7 @@ class TinjauLhusModel extends Model
     public function checkUserAccessToLayanan($lnKode, $userId)
     {
         $db = $this->db;
-        
+
         $checkBuilder = $db->table('t_layanan_detil as d');
         $checkBuilder->select('1');
         $checkBuilder->join('r_tim as rt', 'rt.uji_kode = d.uji_kode', 'inner');
@@ -460,7 +483,7 @@ class TinjauLhusModel extends Model
     public function getSampleIdentityByLayanan($lnKode)
     {
         $db = $this->db;
-        
+
         return $db->table('t_identitas_sampel')
             ->where('kode_layanan', $lnKode)
             ->get()

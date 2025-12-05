@@ -218,9 +218,9 @@
     }
 
     //  Inisialisasi variabel global untuk tabel modal
-    let layananTable = null;
-    let previewKeranjangTable = null;
-    const jenFilter = document.getElementById('jenFilter');
+    var layananTable = null;
+    var previewKeranjangTable = null;
+    var jenFilter = document.getElementById('jenFilter');
 
     /* Helper build URL layanan (untuk modal)
     - memastikan jika jen diberikan -> url ...?jenKode=A*/
@@ -580,6 +580,7 @@
                 detAlat: btn.dataset.alat,
                 detBiaya: biaya,
                 detParameter: btn.dataset.parameter,
+                detNamaLayanan: btn.dataset.namaLayanan || '',
                 detDiskon: diskon,
                 detJumlah: jumlah,
                 detMetode: metodeValue,

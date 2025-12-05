@@ -331,7 +331,7 @@
 </div>
 
 <script>
-    let trackingDetailTable;
+    var trackingDetailTable;
 
     // Fungsi ini akan dipanggil dari v_pelayanan.php
     function showFullTrackingModal(id, lnKode, lnStatus) {

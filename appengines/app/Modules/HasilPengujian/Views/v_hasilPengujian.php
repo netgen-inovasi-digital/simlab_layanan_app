@@ -55,11 +55,11 @@
                     <th width="5%">No</th>
                     <th width="15%">Layanan</th>
                     <th width="5%">Jumlah</th>
-                    <th width="25%" class="text-center">Metode</th>
-                    <th width="5%" class="text-center">Status File</th>
-                    <th width="5%" class="text-center">LHUS</th>
-                    <th width="20%" class="text-center">Keterangan Manajer</th>
-                    <th width="5%" class="text-center">Acc Manajer</th>
+                    <th width="25%">Metode</th>
+                    <th width="5%" >Status File</th>
+                    <th width="5%" >LHUS</th>
+                    <th width="20%">Keterangan Manajer</th>
+                    <th width="5%" >Acc Manajer</th>
                 </tr>
             </thead>
             <tbody></tbody>
@@ -345,7 +345,7 @@
             sampleSection.style.display = 'block';
         } else {
             // Fetch data baru dari server
-            fetch(`<?php echo site_url("hasilpengujian/getSampleIdentity/") ?>${lnKode}`)
+            fetch(<?php echo site_url("hasilpengujian/getSampleIdentity/") ?>${lnKode})
                 .then(response => response.json())
                 .then(data => {
                     if (data.success && data.data) {
@@ -408,7 +408,7 @@
             if (!trackingDetailTable) {
                 trackingDetailTable = createTable({
                     tableId: 'tableDetail',
-                    apiUrl: `<?php echo site_url("hasilpengujian/detailList/") ?>${id}`,
+                    apiUrl: <?php echo site_url("hasilpengujian/detailList/") ?>${id},
                     itemsPerPage: 10,
                     showFilter: false,
                     treeview: false,
@@ -423,7 +423,7 @@
             // Gunakan setTimeout untuk memastikan data sudah dimuat
             setTimeout(async function() {
                 try {
-                    const response = await fetch(`<?php echo site_url("hasilpengujian/detailList/") ?>${id}`);
+                    const response = await fetch(<?php echo site_url("hasilpengujian/detailList/") ?>${id});
                     const data = await response.json();
                     
                     console.log('Modal data loaded:', data);
@@ -628,6 +628,10 @@ async function autoUploadFile(input) {
                 // Reload detail untuk memastikan semua data terupdate
                 setTimeout(() => {
                     loadDetail(encLn);
+                    // Refresh tabel utama untuk menampilkan status terbaru
+                    if (typeof table !== 'undefined' && typeof table.fetchData === 'function') {
+                        table.fetchData({ reload: true });
+                    }
                 }, 500);
             } else {
                 alert(json.msg || 'File berhasil diunggah.');
