@@ -166,8 +166,8 @@ class HasilPengujian extends BaseController
 
         if ($missingData['missingCount'] > 0) {
             return $this->jsonResponse(
-                true,
-                'Berhasil dikirim, sisa ' . $missingData['missingCount'] . ' layanan yang perlu diaccc',
+                'error',
+                'Masih ada ' . $missingData['missingCount'] . ' layanan yang belum di-upload file LHUS-nya. Silakan upload terlebih dahulu.',
                 [
                     'waiting_others' => true,
                     'pending_total' => $missingData['missingCount'],

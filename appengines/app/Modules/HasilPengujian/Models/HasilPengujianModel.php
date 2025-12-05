@@ -292,7 +292,7 @@ class HasilPengujianModel extends Model
     }
 
     /**
-     * Check if user has missing files
+     * Check if user has missing files (files that need to be uploaded before sending)
      * 
      * @param int|string $lnKode Layanan code
      * @param int $userId User ID
@@ -314,9 +314,15 @@ class HasilPengujianModel extends Model
         foreach ($userDetRows as $dr) {
             $filesVal = isset($dr->files) ? (int)$dr->files : null;
             
-            // Hanya file dengan status 3 (terunggah) yang bisa dikirim
-            // Status lain berarti: null/0 = belum upload, 2 = ditolak, 0 = sudah terkirim, 1 = sudah diterima
-            if ($filesVal !== 3) {
+            // Status files:
+            // NULL = belum upload sama sekali
+            // 2 = ditolak (perlu upload ulang)
+            // 3 = terunggah (siap dikirim) - OK
+            // 0 = sudah terkirim - OK
+            // 1 = sudah diterima - OK
+            // 
+            // Yang dianggap 'missing' hanya NULL dan 2 (ditolak)
+            if ($filesVal === null || $filesVal === 2) {
                 $missingCount++;
                 $missingItems[] = $dr->kode ?? null;
             }
@@ -412,19 +418,27 @@ class HasilPengujianModel extends Model
     }
 
     /**
-     * Check if all files are uploaded for layanan
+     * Check if all files are uploaded for layanan (across all users)
      * 
      * @param int|string $lnKode Layanan code
      * @return int Count of items without files
      */
     public function countMissingFilesForLayanan($lnKode): int
     {
+        // Status files:
+        // NULL = belum upload sama sekali
+        // 2 = ditolak (perlu upload ulang)
+        // 3 = terunggah (siap dikirim) - OK
+        // 0 = sudah terkirim - OK  
+        // 1 = sudah diterima - OK
+        //
+        // Yang dianggap 'missing' hanya NULL dan 2 (ditolak)
         $sql = "
             SELECT COUNT(*) as total_belum_upload
             FROM t_layanan_detil d
             WHERE d.kode_layanan = ?
               AND d.status_layanan = 1
-              AND (d.files IS NULL OR d.files != 3)
+              AND (d.files IS NULL OR d.files = 2)
         ";
 
         $result = $this->db->query($sql, [$lnKode])->getRow();
