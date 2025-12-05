@@ -36,12 +36,12 @@
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Detail Review Layanan</h5>
+                <h5 class="modal-title">Review Layanan</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h6 class="mb-0">Detail Item Layanan</h6>
+                    <h6 class="mb-0">Detail Layanan</h6>
                 </div>
 
                 <table id="tableDetail" class="saytable border-top-bottom">
@@ -137,11 +137,8 @@
 <script>
     // ============================================================
     // CREATE MODAL WRAPPER (untuk isolasi tabel di dalam modal)
+    // Menggunakan createModal dari sayTable.js
     // ============================================================
-    function createModal(customConfig = {}) {
-        // Langsung gunakan createTable untuk konsistensi
-        return createTable(customConfig);
-    }
 
     // ============================================================
     // HELPERS URL
@@ -193,7 +190,14 @@
     });
     addAction();
 
-    // Patch normalize apiUrl saat reload
+    
+    // HELPER: Hapus pagination sebelum reload (mencegah flicker)
+    function removePaginationBeforeReload(tableId) {
+        const paging = document.getElementById(`pagination-${tableId}`);
+        if (paging) paging.remove();
+    }
+
+    // Patch normalize apiUrl saat reload + mencegah pagination flicker
     if (typeof table !== 'undefined' && table && typeof table.getConfig === 'function' && typeof table.fetchData === 'function' && !table.__fetchPatched) {
         const _origFetch = table.fetchData.bind(table);
         var _currentAbort = null;
@@ -204,6 +208,10 @@
                     const u = new URL(cfg.apiUrl, window.location.origin);
                     u.searchParams.set('_ts', Date.now().toString()); // cache-buster
                     cfg.apiUrl = normalizeDoubleQuestion(u.pathname + (u.search ? u.search : ''));
+                }
+                // Hapus pagination sebelum reload untuk mencegah flicker
+                if (opts.reload === true && cfg) {
+                    removePaginationBeforeReload(cfg.tableId || 'data-table');
                 }
             } catch (err) { }
             try { if (_currentAbort) _currentAbort.abort(); } catch (e) { }
@@ -301,8 +309,13 @@
             }
 
             if (data.res) {
-                // Reload data silent jika perlu
-                if (typeof table !== 'undefined') table.fetchData({ reload: true });
+                // Reload tabel utama dengan delay kecil (dipanggil setelah modal ditutup)
+                setTimeout(function() {
+                    // Hapus pagination sebelum reload untuk mencegah flicker
+                    removePaginationBeforeReload('data-table');
+                    // Reload data silent
+                    if (typeof table !== 'undefined') table.fetchData({ reload: true });
+                }, 150);
                 return { ok: true, data: data };
             } else {
                 console.warn('Gagal menyimpan komentar:', data.msg || null);
@@ -339,15 +352,65 @@
         }
     });
 
+    // Event listener untuk modal hidden (setelah modal benar-benar tertutup)
+    // Reset state tabel detail untuk mencegah pagination flicker dan data cache
+    document.addEventListener('hidden.bs.modal', function(e) {
+        if (e.target.id === 'modalDetail') {
+            // Reset tabel detail setelah modal ditutup
+            if (typeof resetDetailTable === 'function') {
+                resetDetailTable();
+            }
+        }
+    });
+
     // ============================================================
     // LOAD DETAIL LAYANAN (MODAL)
     // ============================================================
-    var trackingDetailTable;
+    var trackingDetailTable = null;
     var cachedSampleData = {}; // Cache untuk identitas sampel
+    var lastLoadedDetailId = null; // Track ID terakhir yang di-load
+
+    // Helper: Reset tabel detail sepenuhnya (destroy dan buat ulang)
+    function resetDetailTable() {
+        // Hapus pagination
+        const paging = document.getElementById('pagination-tableDetail');
+        if (paging) paging.remove();
+        
+        // Hapus filter jika ada
+        const filter = document.getElementById('filter-container-tableDetail');
+        if (filter) filter.remove();
+        
+        // Kosongkan tbody
+        const tbody = document.querySelector('#tableDetail tbody');
+        if (tbody) tbody.innerHTML = '';
+        
+        // Reset instance
+        trackingDetailTable = null;
+        lastLoadedDetailId = null;
+    }
 
     function loadDetail(id, lnKode) {
-        // Initialize or refresh the detail table with createModal (isolated)
-        if (!trackingDetailTable) {
+        // PENTING: Selalu hapus pagination sebelum load data baru
+        removePaginationBeforeReload('tableDetail');
+        
+        // Kosongkan tbody untuk mencegah data lama terlihat
+        const tbody = document.querySelector('#tableDetail tbody');
+        if (tbody) tbody.innerHTML = '';
+        
+        // Update ID yang sedang di-load
+        lastLoadedDetailId = id;
+        
+        // Simpan referensi config tabel utama sebelum operasi
+        // (untuk mencegah konflik dengan variabel global sayTable)
+        
+        // Jika instance sudah ada, update config dan fetch ulang
+        if (trackingDetailTable && trackingDetailTable.getConfig && trackingDetailTable.fetchData) {
+            const cfg = trackingDetailTable.getConfig();
+            cfg.apiUrl = `<?php echo site_url("kajiulang/detailList/") ?>${id}`;
+            // Force reload dengan parameter reload: true
+            trackingDetailTable.fetchData({ reload: true, page: 1 });
+        } else {
+            // Buat instance baru jika belum ada - menggunakan createModal dari sayTable.js
             trackingDetailTable = createModal({
                 tableId: 'tableDetail',
                 apiUrl: `<?php echo site_url("kajiulang/detailList/") ?>${id}`,
@@ -356,10 +419,6 @@
                 treeview: false,
                 numbering: false,
                 dataSrc: 'items'
-            });
-        } else {
-            trackingDetailTable.refresh({
-                apiUrl: `<?php echo site_url("kajiulang/detailList/") ?>${id}`
             });
         }
 
@@ -492,11 +551,31 @@
             }
 
             if (data.res) {
-                // Reload detail dan table
+                // Hapus pagination tabel detail sebelum reload (mencegah flicker)
+                removePaginationBeforeReload('tableDetail');
+                
+                // Reload tabel detail tanpa membuat instance baru
                 const modalEl = document.getElementById('modalDetail');
                 const savedLnKode = modalEl ? modalEl.dataset.lnKode : '';
-                try { loadDetail(ln, savedLnKode); } catch (err) { console.error('loadDetail error', err); }
-                if (typeof table !== 'undefined') table.fetchData({ reload: true });
+                const currentDetailId = modalEl ? modalEl.dataset.encLn : ln;
+                
+                // Refresh data tabel detail jika instance sudah ada
+                if (trackingDetailTable && trackingDetailTable.getConfig && trackingDetailTable.fetchData) {
+                    const cfg = trackingDetailTable.getConfig();
+                    cfg.apiUrl = `<?php echo site_url("kajiulang/detailList/") ?>${currentDetailId}`;
+                    trackingDetailTable.fetchData({ reload: true, page: 1 });
+                }
+                
+                // Reload tabel utama dengan delay kecil untuk menghindari konflik variabel global sayTable
+                setTimeout(function() {
+                    // Hapus pagination tabel utama sebelum reload (mencegah flicker)
+                    removePaginationBeforeReload('data-table');
+                    
+                    // Reload tabel utama
+                    if (typeof table !== 'undefined' && table.fetchData) {
+                        table.fetchData({ reload: true });
+                    }
+                }, 100);
             } else {
                 console.warn((isAccept ? 'Gagal menyetujui' : 'Gagal menolak'), data.msg || null);
             }
@@ -508,9 +587,6 @@
         }
     }
 
-    // ============================================================
-    // EVENT DELEGATION UNTUK APPROVE/REJECT BUTTONS
-    // ============================================================
     document.addEventListener('click', function (e) {
         // ACCEPT BUTTON
         const acceptEl = e.target.closest ? e.target.closest('.btn-accept-manager') : null;

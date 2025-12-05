@@ -132,9 +132,9 @@ class KajiUlang extends BaseController
 
         foreach ($rows as $row) {
             $response = [];
-            $response[] = $no++;
+            $response[] = (string) $no++;
             $response[] = $row->nama_layanan ?? '-';
-            $response[] = isset($row->jumlah) ? (int) $row->jumlah : 0;
+            $response[] = isset($row->jumlah) ? (string) $row->jumlah : '0';
 
             $response[] = isset($row->metode_nama) && !empty($row->metode_nama) ? esc($row->metode_nama) : '-';
 

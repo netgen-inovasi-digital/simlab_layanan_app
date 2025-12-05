@@ -97,8 +97,9 @@
 </div>
 
 <script>
-    table = createTable({
+    table = createModal({
         apiUrl: '<?php echo site_url("kajiulang/detaillist/" . $idenc) ?>',
+        tableId: 'data-table',
         onLoaded: function (data) {
             // Store encrypted layanan ID for use in buttons
             window.encLnId = data.encLn;
