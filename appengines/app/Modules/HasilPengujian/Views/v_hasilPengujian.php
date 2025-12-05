@@ -41,12 +41,12 @@
   <div class="modal-dialog modal-xl modal-dialog-centered" role="document" style="max-width:1200px; margin: 1.5% auto;">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Detail Item Layanan</h5>
+        <h5 class="modal-title">Detail hasil pengujian</h5>
         <button id="btnSaveKomentar" type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h6 class="mb-0">Detail Item Layanan</h6>
+            <h6 class="mb-0">Item Layanan</h6>
         </div>
 
         <table id="tableDetail" class="saytable border-top-bottom">
