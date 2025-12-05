@@ -9,6 +9,12 @@ class Kuesioner extends BaseController
 {
     private $table = 'simlab_t_kuesioner';
     private $id = 'kuesioner_id';
+    protected $encrypter;
+
+    public function __construct()
+    {
+        $this->encrypter = \Config\Services::encrypter();
+    }
 
     public function index()
     {
