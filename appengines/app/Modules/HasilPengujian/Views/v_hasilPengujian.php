@@ -41,12 +41,12 @@
   <div class="modal-dialog modal-xl modal-dialog-centered" role="document" style="max-width:1200px; margin: 1.5% auto;">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Detail Item Layanan</h5>
+        <h5 class="modal-title">Detail hasil pengujian</h5>
         <button id="btnSaveKomentar" type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h6 class="mb-0">Detail Item Layanan</h6>
+            <h6 class="mb-0">Item Layanan</h6>
         </div>
 
         <table id="tableDetail" class="saytable border-top-bottom">
@@ -323,6 +323,7 @@
     // ============================================================
     var trackingDetailTable;
     var cachedSampleData = {}; // Cache untuk identitas sampel
+    var currentDetailId = null; // Track current detail ID for reload
 
     function loadSampleIdentity(lnKode) {
         const sampleSection = document.getElementById('sampleIdentitySection');
@@ -345,7 +346,7 @@
             sampleSection.style.display = 'block';
         } else {
             // Fetch data baru dari server
-            fetch(<?php echo site_url("hasilpengujian/getSampleIdentity/") ?>${lnKode})
+            fetch(`<?php echo site_url("hasilpengujian/getSampleIdentity/") ?>${lnKode}`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.success && data.data) {
@@ -375,6 +376,9 @@
     function loadDetail(id, lnKode) {
         console.log('loadDetail called with id:', id, 'lnKode:', lnKode);
         
+        // Simpan current id untuk reload
+        currentDetailId = id;
+        
         // Show modal first
         const modalElement = document.getElementById('modalDetail');
         if (modalElement) {
@@ -391,7 +395,7 @@
             }
         }
         
-        // Then create table and load data after modal is shown
+        // Then create modal table and load data after modal is shown
         setTimeout(() => {
             // Simpan encLn dan lnKode ke modal dataset
             const modalDetailEl = document.getElementById('modalDetail');
@@ -405,25 +409,37 @@
                 }
             }
 
-            if (!trackingDetailTable) {
-                trackingDetailTable = createTable({
-                    tableId: 'tableDetail',
-                    apiUrl: <?php echo site_url("hasilpengujian/detailList/") ?>${id},
-                    itemsPerPage: 10,
-                    showFilter: false,
-                    treeview: false,
-                    numbering: false,
-                    dataSrc: 'items'
-                });
+            // Clear existing table body and pagination before creating new modal table
+            const tableDetail = document.getElementById('tableDetail');
+            if (tableDetail) {
+                const tbody = tableDetail.querySelector('tbody');
+                if (tbody) tbody.innerHTML = '';
             }
             
-            console.log('trackingDetailTable created:', trackingDetailTable);
+            // Remove existing filter and pagination for tableDetail
+            const existingFilter = document.getElementById('filter-container-tableDetail');
+            if (existingFilter) existingFilter.remove();
+            const existingPagination = document.getElementById('pagination-tableDetail');
+            if (existingPagination) existingPagination.remove();
+
+            // Selalu buat ulang modal table dengan URL baru (untuk handle reload)
+            trackingDetailTable = createModal({
+                tableId: 'tableDetail',
+                apiUrl: `<?php echo site_url("hasilpengujian/detailList/") ?>${id}`,
+                itemsPerPage: 10,
+                showFilter: false,
+                treeview: false,
+                numbering: false,
+                dataSrc: 'items'
+            });
+            
+            console.log('trackingDetailTable created with createModal:', trackingDetailTable);
 
             // Check button status setelah modal dibuat
             // Gunakan setTimeout untuk memastikan data sudah dimuat
             setTimeout(async function() {
                 try {
-                    const response = await fetch(<?php echo site_url("hasilpengujian/detailList/") ?>${id});
+                    const response = await fetch(`<?php echo site_url("hasilpengujian/detailList/") ?>${id}`);
                     const data = await response.json();
                     
                     console.log('Modal data loaded:', data);
@@ -446,6 +462,11 @@
                             btnKirim.classList.add('disabled');
                             console.log('Button kirim DISABLED - not all files uploaded');
                         }
+                    }
+                    
+                    // Re-attach uploader triggers setelah tabel dimuat
+                    if (typeof attachUploaderTriggers === 'function') {
+                        attachUploaderTriggers();
                     }
                 } catch (error) {
                     console.error('Error checking button status:', error);
@@ -645,6 +666,12 @@ async function autoUploadFile(input) {
         console.error(err);
         if (typeof sayAlert === 'function') sayAlert('errorModal','Error','Terjadi kesalahan saat mengunggah file.','warning'); else alert('Terjadi kesalahan saat mengunggah file.');
         input.value = '';
+    } finally {
+        // Restore button state
+        if (btn && originalHtml !== null) {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+        }
     }
 }
 

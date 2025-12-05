@@ -225,7 +225,7 @@ class HasilPengujianModel extends Model
             ANY_VALUE(d.kode_jenis) AS kode_jenis,
             GROUP_CONCAT(DISTINCT COALESCE(lhus.catatan, '') SEPARATOR ' | ') AS detKet,
             GROUP_CONCAT(DISTINCT COALESCE(lhus.catatan, '') SEPARATOR ' | ') AS detKetManajer,
-            GROUP_CONCAT(DISTINCT COALESCE(lhus.catatan, '') SEPARATOR ' | ') AS detKetLhus,
+            GROUP_CONCAT(DISTINCT COALESCE(lhus.catatan, '') SEPARATOR ' | ') AS catatan_lhus,
             GROUP_CONCAT(DISTINCT d.files SEPARATOR ',') AS detFilesList,
             MAX(d.files) AS detFilesMax,
             SUM(d.jumlah) AS jumlah,
@@ -233,12 +233,25 @@ class HasilPengujianModel extends Model
             MAX(d.status_layanan) AS status_group,
             ANY_VALUE(d.terima_layanan_by) AS terima_layanan_by,
             ANY_VALUE(u.user_name) AS acc_by,
-            (SELECT nama FROM r_metode WHERE metode_kode = d.metode_pengujian LIMIT 1) AS metode_nama
+            (SELECT nama FROM r_metode WHERE metode_kode = d.metode_pengujian LIMIT 1) AS metode_nama,
+            ANY_VALUE(lhus.file_lhus) AS file_lhus
         ");
 
         $builder->join('simlab_account_users u', 'u.user_id = d.terima_layanan_by', 'left');
         $builder->join('r_tim as rt', 'rt.uji_kode = d.uji_kode', 'inner');
-        $builder->join('t_files_lhus as lhus', 'lhus.kode = d.kode', 'left');
+        
+        // Subquery untuk ambil hanya 1 file terbaru per kode
+        $builder->join(
+            '(SELECT lhus1.* FROM t_files_lhus lhus1 
+              INNER JOIN (
+                SELECT kode, MAX(file_id) as max_file_id 
+                FROM t_files_lhus 
+                GROUP BY kode
+              ) lhus2 ON lhus1.kode = lhus2.kode AND lhus1.file_id = lhus2.max_file_id
+            ) lhus',
+            'lhus.kode = d.kode',
+            'left'
+        );
 
         $builder->where('d.kode_layanan', $kode);
         $builder->where('rt.user_id', $userId);
@@ -279,7 +292,7 @@ class HasilPengujianModel extends Model
     }
 
     /**
-     * Check if user has missing files
+     * Check if user has missing files (files that need to be uploaded before sending)
      * 
      * @param int|string $lnKode Layanan code
      * @param int $userId User ID
@@ -301,9 +314,15 @@ class HasilPengujianModel extends Model
         foreach ($userDetRows as $dr) {
             $filesVal = isset($dr->files) ? (int)$dr->files : null;
             
-            // Hanya file dengan status 3 (terunggah) yang bisa dikirim
-            // Status lain berarti: null/0 = belum upload, 2 = ditolak, 0 = sudah terkirim, 1 = sudah diterima
-            if ($filesVal !== 3) {
+            // Status files:
+            // NULL = belum upload sama sekali
+            // 2 = ditolak (perlu upload ulang)
+            // 3 = terunggah (siap dikirim) - OK
+            // 0 = sudah terkirim - OK
+            // 1 = sudah diterima - OK
+            // 
+            // Yang dianggap 'missing' hanya NULL dan 2 (ditolak)
+            if ($filesVal === null || $filesVal === 2) {
                 $missingCount++;
                 $missingItems[] = $dr->kode ?? null;
             }
@@ -399,19 +418,27 @@ class HasilPengujianModel extends Model
     }
 
     /**
-     * Check if all files are uploaded for layanan
+     * Check if all files are uploaded for layanan (across all users)
      * 
      * @param int|string $lnKode Layanan code
      * @return int Count of items without files
      */
     public function countMissingFilesForLayanan($lnKode): int
     {
+        // Status files:
+        // NULL = belum upload sama sekali
+        // 2 = ditolak (perlu upload ulang)
+        // 3 = terunggah (siap dikirim) - OK
+        // 0 = sudah terkirim - OK  
+        // 1 = sudah diterima - OK
+        //
+        // Yang dianggap 'missing' hanya NULL dan 2 (ditolak)
         $sql = "
             SELECT COUNT(*) as total_belum_upload
             FROM t_layanan_detil d
             WHERE d.kode_layanan = ?
               AND d.status_layanan = 1
-              AND (d.files IS NULL OR d.files != 3)
+              AND (d.files IS NULL OR d.files = 2)
         ";
 
         $result = $this->db->query($sql, [$lnKode])->getRow();
