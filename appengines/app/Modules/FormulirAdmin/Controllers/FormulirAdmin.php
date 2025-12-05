@@ -4,6 +4,7 @@ namespace Modules\FormulirAdmin\Controllers;
 
 use App\Controllers\BaseController;
 use App\Models\MyModel;
+use Modules\FormulirAdmin\Models\FormulirAdminModel;
 
 class FormulirAdmin extends BaseController
 {
@@ -11,10 +12,12 @@ class FormulirAdmin extends BaseController
     private $id = 'lnKode';
     protected $encrypter;
     private $sessionKey = 'keranjang_formadmin';
+    protected $formulirAdminModel;
 
     public function __construct()
     {
         $this->encrypter = \Config\Services::encrypter();
+        $this->formulirAdminModel = new FormulirAdminModel();
     }
 
     /**
@@ -29,29 +32,10 @@ class FormulirAdmin extends BaseController
         $modelUser = new MyModel('simlab_account_users');
 
         // Ambil user list untuk dropdown pemilih pelanggan
-        // Coba beberapa method model yang mungkin tersedia
-        $users = [];
-        if (method_exists($modelUser, 'getAllData')) {
-            $users = $modelUser->getAllData();
-        } elseif (method_exists($modelUser, 'getAllDataWithOrder')) {
-            $users = $modelUser->getAllDataWithOrder(['user_name' => 'ASC']);
-        } else {
-            // fallback ke query builder jika MyModel tidak punya helper
-            $db = \Config\Database::connect();
-            $users = $db->table('simlab_account_users')->select('user_id, user_name, user_email, user_identity, user_instansi')->orderBy('user_name', 'ASC')->get()->getResult();
-        }
+        $users = $modelUser->getAllDataWithOrder(['user_name' => 'ASC']);
 
-        // Ambil daftar kategori yang benar-benar ada di data pengujian
-        $db = \Config\Database::connect();
-        $builder = $db->table('r_layanan_pengujian as lp');
-
-        $builder->select(' DISTINCT TRIM(LEFT(lp.kode_jenis, 2)) as jenKode, j.jenNama ');
-        $builder->join('simlab_r_jenis j', 'j.jenKode = TRIM(LEFT(lp.kode_jenis, 2))', 'left');
-        $builder->where('lp.kode_jenis IS NOT NULL');
-        $builder->where('lp.kode_jenis !=', '');
-        $builder->orderBy('j.jenNama', 'ASC');
-
-        $categoriesRaw = $builder->get()->getResult();
+        // Ambil daftar kategori menggunakan model
+        $categoriesRaw = $this->formulirAdminModel->getKategoriLayanan();
 
         // NORMALISASI kategori
         $categories = [];
@@ -143,41 +127,12 @@ class FormulirAdmin extends BaseController
 
         $userModel = new MyModel('simlab_account_users');
         $layananDet = new MyModel('t_layanan_detil');
-        $db = \Config\Database::connect();
 
-        // Siapkan map pembayaran terakhir per lnKode (sama seperti di Pelayanan)
+        // Siapkan map pembayaran terakhir per lnKode menggunakan model
         $lnKodes = array_map(fn($r) => (int) $r->lnKode, $list);
 
-        $payRows = $db->table('t_pembayaran')
-            ->select('bayarLnKode, bayarStatus, bayarInvoiceNo, bayarInvoiceFile, MAX(bayarKode) AS lastKode')
-            ->whereIn('bayarLnKode', $lnKodes)
-            ->groupBy('bayarLnKode, bayarStatus, bayarInvoiceNo, bayarInvoiceFile')
-            ->orderBy('lastKode', 'DESC')
-            ->get()->getResult();
-
-        $payMap = [];
-        foreach ($payRows as $p) {
-            $ln = (int) $p->bayarLnKode;
-            if (!isset($payMap[$ln])) {
-                $payMap[$ln] = [
-                    'status' => (int) $p->bayarStatus,
-                    'inv' => $p->bayarInvoiceNo ?? null,
-                    'invoiceFile' => $p->bayarInvoiceFile ?? null,
-                ];
-            }
-        }
-
-        $logMap = [];
-        if (!empty($lnKodes)) {
-            $logRows = $db->table('t_log_sampel')
-                ->select('kode_layanan, pengecekan')
-                ->whereIn('kode_layanan', $lnKodes)
-                ->get()->getResult();
-
-            foreach ($logRows as $log) {
-                $logMap[(int) $log->kode_layanan] = $log->pengecekan;
-            }
-        }
+        $payMap = $this->formulirAdminModel->getPembayaranMapByLnKodes($lnKodes);
+        $logMap = $this->formulirAdminModel->getLogSampelMapByLnKodes($lnKodes);
 
         foreach ($list as $row) {
             $lnStatusInt = (int) $row->lnStatus;
@@ -245,13 +200,8 @@ class FormulirAdmin extends BaseController
 
             // 3) Jika masih belum ketemu, cari user_id dari invoice (lnNoTransaksi)
             if (!$u && !empty($row->lnNoTransaksi)) {
-                $qb = $db->table($this->table);
-                $qb->select('user_id')
-                    ->where('lnNoTransaksi', $row->lnNoTransaksi)
-                    ->where('user_id IS NOT NULL', null, false);
-                $res = $qb->get()->getResult();
-                if (!empty($res)) {
-                    $foundUserId = (int) $res[0]->user_id;
+                $foundUserId = $this->formulirAdminModel->findUserIdByNoTransaksi($this->table, $row->lnNoTransaksi);
+                if ($foundUserId !== null) {
                     $u = $userModel->getDataById('user_id', $foundUserId);
                 }
             }
@@ -351,31 +301,8 @@ class FormulirAdmin extends BaseController
         // Encrypted hex parent (disimpan jika perlu dipakai di tempat lain)
         $encLnId = bin2hex($this->encrypter->encrypt($kode));
 
-        $db = \Config\Database::connect();
-        $builder = $db->table('t_layanan_detil as d');
-
-        $builder->select("
-            d.uji_kode,
-            d.kode_layanan,
-            d.nama_layanan,
-            d.kode_jenis,
-            d.metode_pengujian,
-            m.nama AS metode_nama,
-            GROUP_CONCAT(DISTINCT d.catatan_manajer SEPARATOR ' | ') AS detKetLn,
-            SUM(d.jumlah) AS jumlah,
-            SUM(d.biaya) AS detBiaya,
-            MAX(d.status_layanan) AS detStatusGroup,
-            GROUP_CONCAT(DISTINCT acc.username SEPARATOR ' | ') AS accUsernames
-        ");
-
-        // join untuk ambil username dari terima_layanan_by
-        $builder->join('simlab_account acc', 'acc.user_id = d.terima_layanan_by', 'left');
-        // join untuk ambil nama metode pengujian
-        $builder->join('r_metode m', 'm.metode_kode = d.metode_pengujian', 'left');
-
-        $builder->where('d.kode_layanan', $kode);
-        $builder->groupBy('d.uji_kode, d.kode_layanan, d.nama_layanan, d.kode_jenis, d.metode_pengujian, m.nama');
-        $rows = $builder->get()->getResult();
+        // Ambil detail layanan menggunakan model
+        $rows = $this->formulirAdminModel->getDetailLayananGrouped((int) $kode);
 
         $data = [];
         $no = 1;
@@ -470,13 +397,8 @@ class FormulirAdmin extends BaseController
             }
 
             if ($lnKode !== null) {
-                // ambil header layanan untuk menemukan user_id / lnAccEmail
-                $db = \Config\Database::connect();
-                $row = $db->table($this->table)
-                    ->select('user_id, lnAccEmail')
-                    ->where($this->id, $lnKode)
-                    ->get()
-                    ->getRow();
+                // ambil header layanan untuk menemukan user_id / lnAccEmail menggunakan model
+                $row = $this->formulirAdminModel->getLayananHeaderById($this->table, $this->id, (int) $lnKode);
 
                 $phoneRaw = '';
                 $userObj = null;
@@ -599,14 +521,8 @@ class FormulirAdmin extends BaseController
                 return $this->response->setJSON($response);
             }
 
-            // Cek bayarStatus terlebih dahulu
-            $db = \Config\Database::connect();
-            $paymentCheck = $db->table('t_pembayaran')
-                ->select('bayarStatus')
-                ->where('bayarLnKode', $lnKode)
-                ->orderBy('bayarKode', 'DESC')
-                ->limit(1)
-                ->get()->getRow();
+            // Cek bayarStatus terlebih dahulu menggunakan model
+            $paymentCheck = $this->formulirAdminModel->getLastPaymentStatus((int) $lnKode);
 
             if (!$paymentCheck || (int) $paymentCheck->bayarStatus !== 1) {
                 $response['msg'] = 'Tidak dapat menyetujui - Pembayaran belum lunas.';
