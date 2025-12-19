@@ -259,7 +259,7 @@ echo view($content, [
                     <div id="login-view">
                         <h5 class="fw-bold mb-4 text-center">Silakan Masuk</h5>
                         <?php if (session()->getFlashdata('login_error')): ?>
-                            <div class="alert alert-danger small rounded-pill text-center" role="alert">
+                              <div class="alert alert-danger small rounded-pill mx-auto d-flex justify-content-center align-items-center p-0" role="alert">
                                 <?= session()->getFlashdata('login_error') ?>
                             </div>
                         <?php endif; ?>

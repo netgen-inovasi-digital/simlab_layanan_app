@@ -40,14 +40,15 @@ Reset Password
       <input type="hidden" name="token" value="<?= esc($token) ?>">
       <div class="mb-3">
         <input type="password" class="form-control rounded-pill mx-auto bg-light-gray" name="pass"
-          placeholder="password baru" required>
+          placeholder="Password baru" minlength="6" required>
+        <small class="text-muted d-block mt-1 text-center">Minimal 6 karakter</small>
       </div>
       <div class="mb-3">
         <input type="password" class="form-control rounded-pill mx-auto bg-light-gray" name="reppass"
-          placeholder="ulangi password baru" required>
+          placeholder="Ulangi password baru" minlength="6" required>
       </div>
       <div class="d-grid">
-        <button type="submit" class="btn btn-primary rounded-pill mx-auto">SUBMIT</button>
+        <button type="submit" class="btn btn-primary rounded-pill mx-auto">RESET PASSWORD</button>
       </div>
       </form>
     </div>
