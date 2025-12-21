@@ -42,6 +42,15 @@ class PembayaranAdmin extends BaseController
 
       $list = $this->pembayaranModel->getAdminPaymentList($tanggalAwal, $tanggalAkhir);
 
+      // Total modal detail layanan harus mengikuti item yang sudah diterima (status_layanan=1)
+      $lnKodeList = [];
+      foreach ($list as $item) {
+        if (!empty($item->lnKode)) {
+          $lnKodeList[] = $item->lnKode;
+        }
+      }
+      $acceptedTotalMap = $this->pembayaranModel->getAcceptedDetailTotalMap($lnKodeList);
+
       foreach ($list as $row) {
         $encrypted_id = bin2hex(service('encrypter')->encrypt($row->bayarKode));
 
@@ -139,7 +148,7 @@ class PembayaranAdmin extends BaseController
                         <span class="text-muted" style="font-size:0.85rem;">' . esc($tanggal) . '</span>
                     </div>';
 
-        $detailTotal = (float) ($row->bayarTotalBiaya ?? 0);
+        $detailTotal = (float) ($acceptedTotalMap[(string) $row->lnKode] ?? 0);
         $encodedLn = bin2hex(service('encrypter')->encrypt($row->lnKode));
         $detailButton = '<button type="button" class="btn btn-sm btn-outline-primary btn-detail-layanan"' .
           ' data-detail-id="' . esc($encodedLn, 'attr') . '"' .

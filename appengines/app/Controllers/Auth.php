@@ -79,7 +79,7 @@ class Auth extends Controller
 
           return redirect()->route('home');
         } else {
-          $session->setFlashdata('login_error', '* Akun anda belum aktif!');
+          $session->setFlashdata('login_error', '* Akun anda dinonaktifkan!');
           $session->setFlashdata('login_email', $email);
           return redirect()->back();
         }
@@ -141,7 +141,7 @@ class Auth extends Controller
 
           return redirect()->to('/dashboard');
         } else {
-          $session->setFlashdata('login_error', '* Akun anda belum aktif!');
+          $session->setFlashdata('login_error', '* Akun anda dinonaktifkan!');
           $session->setFlashdata('login_username', $username);
         }
       } else {
