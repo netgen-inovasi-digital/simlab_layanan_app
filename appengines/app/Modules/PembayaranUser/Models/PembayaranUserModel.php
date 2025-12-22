@@ -88,4 +88,35 @@ class PembayaranUserModel extends MyModel
   {
     return (bool) $this->updateData($data, 'bayarKode', $bayarId);
   }
+
+  /**
+   * Map total biaya detail layanan yang sudah diterima (status_layanan=1).
+   *
+   * @return array<string,float>
+   */
+  public function getAcceptedDetailTotalMap(array $lnKodes): array
+  {
+    $lnKodes = array_values(array_unique(array_filter($lnKodes, static fn($v) => $v !== null && $v !== '')));
+    if (empty($lnKodes)) {
+      return [];
+    }
+
+    $rows = $this->db->table('t_layanan_detil')
+      ->select('kode_layanan, SUM(biaya) AS total_biaya')
+      ->whereIn('kode_layanan', $lnKodes)
+      ->where('status_layanan', 1)
+      ->groupBy('kode_layanan')
+      ->get()->getResult();
+
+    $map = [];
+    foreach ($rows as $row) {
+      $key = (string) ($row->kode_layanan ?? '');
+      if ($key === '') {
+        continue;
+      }
+      $map[$key] = (float) ($row->total_biaya ?? 0);
+    }
+
+    return $map;
+  }
 }

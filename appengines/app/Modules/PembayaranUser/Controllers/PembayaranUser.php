@@ -59,6 +59,15 @@ class PembayaranUser extends BaseController
 
       $list = $this->pembayaranModel->getPaymentListByEmail($user->user_email);
 
+      // Total biaya pada tabel harus hanya menjumlah item layanan yang diterima (status_layanan=1)
+      $lnKodeList = [];
+      foreach ($list as $r) {
+        if (!empty($r->lnKode)) {
+          $lnKodeList[] = $r->lnKode;
+        }
+      }
+      $acceptedTotalMap = $this->pembayaranModel->getAcceptedDetailTotalMap($lnKodeList);
+
       foreach ($list as $row) {
         $encrypted_id = bin2hex(service('encrypter')->encrypt($row->bayarKode));
 
@@ -124,10 +133,11 @@ class PembayaranUser extends BaseController
         }
 
         // Response array
+        $totalBiaya = (float) ($acceptedTotalMap[(string) $row->lnKode] ?? 0);
         $data[] = [
           !empty($row->bayarInvoiceNo) ? esc($row->bayarInvoiceNo) : '<span class="text-muted">-</span>', // No. Invoice
           $combined, // Pemesan (Nama + Tanggal + Tipe)
-          'Rp ' . number_format($row->bayarTotalBiaya, 0, ',', '.'), // Total Biaya
+          'Rp' . number_format($totalBiaya, 0, ',', '.'), // Total Biaya
           !empty($row->bayarInvoiceFile)
           ? '<a href="' . base_url('uploads/invoice/' . $row->bayarInvoiceFile) . '" target="_blank" class="btn btn-sm btn-info"><i class="bi bi-file-pdf"></i> Lihat</a>'
           : '<span class="text-muted">-</span>', // File Invoice
