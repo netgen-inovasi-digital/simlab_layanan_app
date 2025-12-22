@@ -10,118 +10,118 @@ use CodeIgniter\Model;
  */
 class FormulirAdminModel extends Model
 {
-    protected $db;
+  protected $db;
 
-    public function __construct()
-    {
-        parent::__construct();
-        $this->db = \Config\Database::connect();
+  public function __construct()
+  {
+    parent::__construct();
+    $this->db = \Config\Database::connect();
+  }
+
+  /**
+   * Ambil daftar kategori dari r_layanan_pengujian dengan join ke simlab_r_jenis
+   * @return array
+   */
+  public function getKategoriLayanan(): array
+  {
+    $builder = $this->db->table('r_layanan_pengujian as lp');
+    $builder->select('DISTINCT TRIM(LEFT(lp.kode_jenis, 2)) as jenKode, j.jenNama');
+    $builder->join('simlab_r_jenis j', 'j.jenKode = TRIM(LEFT(lp.kode_jenis, 2))', 'left');
+    $builder->where('lp.kode_jenis IS NOT NULL');
+    $builder->where('lp.kode_jenis !=', '');
+    $builder->orderBy('j.jenNama', 'ASC');
+
+    return $builder->get()->getResult();
+  }
+
+  /**
+   * Ambil pembayaran terakhir per lnKode
+   * @param array $lnKodes Array of lnKode
+   * @return array Map [lnKode => ['status' => int, 'inv' => string, 'invoiceFile' => string]]
+   */
+  public function getPembayaranMapByLnKodes(array $lnKodes): array
+  {
+    if (empty($lnKodes)) {
+      return [];
     }
 
-    /**
-     * Ambil daftar kategori dari r_layanan_pengujian dengan join ke simlab_r_jenis
-     * @return array
-     */
-    public function getKategoriLayanan(): array
-    {
-        $builder = $this->db->table('r_layanan_pengujian as lp');
-        $builder->select('DISTINCT TRIM(LEFT(lp.kode_jenis, 2)) as jenKode, j.jenNama');
-        $builder->join('simlab_r_jenis j', 'j.jenKode = TRIM(LEFT(lp.kode_jenis, 2))', 'left');
-        $builder->where('lp.kode_jenis IS NOT NULL');
-        $builder->where('lp.kode_jenis !=', '');
-        $builder->orderBy('j.jenNama', 'ASC');
+    $payRows = $this->db->table('t_pembayaran')
+      ->select('bayarLnKode, bayarStatus, bayarInvoiceNo, bayarInvoiceFile, MAX(bayarKode) AS lastKode')
+      ->whereIn('bayarLnKode', $lnKodes)
+      ->groupBy('bayarLnKode, bayarStatus, bayarInvoiceNo, bayarInvoiceFile')
+      ->orderBy('lastKode', 'DESC')
+      ->get()->getResult();
 
-        return $builder->get()->getResult();
+    $payMap = [];
+    foreach ($payRows as $p) {
+      $ln = (int) $p->bayarLnKode;
+      if (!isset($payMap[$ln])) {
+        $payMap[$ln] = [
+          'status' => (int) $p->bayarStatus,
+          'inv' => $p->bayarInvoiceNo ?? null,
+          'invoiceFile' => $p->bayarInvoiceFile ?? null,
+        ];
+      }
     }
 
-    /**
-     * Ambil pembayaran terakhir per lnKode
-     * @param array $lnKodes Array of lnKode
-     * @return array Map [lnKode => ['status' => int, 'inv' => string, 'invoiceFile' => string]]
-     */
-    public function getPembayaranMapByLnKodes(array $lnKodes): array
-    {
-        if (empty($lnKodes)) {
-            return [];
-        }
+    return $payMap;
+  }
 
-        $payRows = $this->db->table('t_pembayaran')
-            ->select('bayarLnKode, bayarStatus, bayarInvoiceNo, bayarInvoiceFile, MAX(bayarKode) AS lastKode')
-            ->whereIn('bayarLnKode', $lnKodes)
-            ->groupBy('bayarLnKode, bayarStatus, bayarInvoiceNo, bayarInvoiceFile')
-            ->orderBy('lastKode', 'DESC')
-            ->get()->getResult();
-
-        $payMap = [];
-        foreach ($payRows as $p) {
-            $ln = (int) $p->bayarLnKode;
-            if (!isset($payMap[$ln])) {
-                $payMap[$ln] = [
-                    'status' => (int) $p->bayarStatus,
-                    'inv' => $p->bayarInvoiceNo ?? null,
-                    'invoiceFile' => $p->bayarInvoiceFile ?? null,
-                ];
-            }
-        }
-
-        return $payMap;
+  /**
+   * Ambil log sampel per kode_layanan
+   * @param array $lnKodes Array of lnKode
+   * @return array Map [kode_layanan => pengecekan]
+   */
+  public function getLogSampelMapByLnKodes(array $lnKodes): array
+  {
+    if (empty($lnKodes)) {
+      return [];
     }
 
-    /**
-     * Ambil log sampel per kode_layanan
-     * @param array $lnKodes Array of lnKode
-     * @return array Map [kode_layanan => pengecekan]
-     */
-    public function getLogSampelMapByLnKodes(array $lnKodes): array
-    {
-        if (empty($lnKodes)) {
-            return [];
-        }
+    $logRows = $this->db->table('t_log_sampel')
+      ->select('kode_layanan, pengecekan')
+      ->whereIn('kode_layanan', $lnKodes)
+      ->get()->getResult();
 
-        $logRows = $this->db->table('t_log_sampel')
-            ->select('kode_layanan, pengecekan')
-            ->whereIn('kode_layanan', $lnKodes)
-            ->get()->getResult();
-
-        $logMap = [];
-        foreach ($logRows as $log) {
-            $logMap[(int) $log->kode_layanan] = $log->pengecekan;
-        }
-
-        return $logMap;
+    $logMap = [];
+    foreach ($logRows as $log) {
+      $logMap[(int) $log->kode_layanan] = $log->pengecekan;
     }
 
-    /**
-     * Cari user_id dari layanan berdasarkan lnNoTransaksi
-     * @param string $table Nama tabel layanan
-     * @param string $lnNoTransaksi Nomor transaksi
-     * @return int|null
-     */
-    public function findUserIdByNoTransaksi(string $table, string $lnNoTransaksi): ?int
-    {
-        $result = $this->db->table($table)
-            ->select('user_id')
-            ->where('lnNoTransaksi', $lnNoTransaksi)
-            ->where('user_id IS NOT NULL', null, false)
-            ->get()->getResult();
+    return $logMap;
+  }
 
-        if (!empty($result)) {
-            return (int) $result[0]->user_id;
-        }
+  /**
+   * Cari user_id dari layanan berdasarkan lnNoTransaksi
+   * @param string $table Nama tabel layanan
+   * @param string $lnNoTransaksi Nomor transaksi
+   * @return int|null
+   */
+  public function findUserIdByNoTransaksi(string $table, string $lnNoTransaksi): ?int
+  {
+    $result = $this->db->table($table)
+      ->select('user_id')
+      ->where('lnNoTransaksi', $lnNoTransaksi)
+      ->where('user_id IS NOT NULL', null, false)
+      ->get()->getResult();
 
-        return null;
+    if (!empty($result)) {
+      return (int) $result[0]->user_id;
     }
 
-    /**
-     * Ambil detail layanan dengan group untuk detail list
-     * @param int $kode kode_layanan
-     * @return array
-     */
-    public function getDetailLayananGrouped(int $kode): array
-    {
-        $builder = $this->db->table('t_layanan_detil as d');
+    return null;
+  }
 
-        $builder->select("
+  /**
+   * Ambil detail layanan dengan group untuk detail list
+   * @param int $kode kode_layanan
+   * @return array
+   */
+  public function getDetailLayananGrouped(int $kode): array
+  {
+    $builder = $this->db->table('t_layanan_detil as d');
+
+    $builder->select("
             d.uji_kode,
             d.kode_layanan,
             d.nama_layanan,
@@ -132,45 +132,45 @@ class FormulirAdminModel extends Model
             SUM(d.jumlah) AS jumlah,
             SUM(d.biaya) AS detBiaya,
             MAX(d.status_layanan) AS detStatusGroup,
-            GROUP_CONCAT(DISTINCT acc.username SEPARATOR ' | ') AS accUsernames
+            GROUP_CONCAT(DISTINCT acc.nama SEPARATOR ' | ') AS accUsernames
         ");
 
-        $builder->join('simlab_account acc', 'acc.user_id = d.terima_layanan_by', 'left');
-        $builder->join('r_metode m', 'm.metode_kode = d.metode_pengujian', 'left');
-        $builder->where('d.kode_layanan', $kode);
-        $builder->groupBy('d.uji_kode, d.kode_layanan, d.nama_layanan, d.kode_jenis, d.metode_pengujian, m.nama');
+    $builder->join('simlab_account acc', 'acc.user_id = d.terima_layanan_by', 'left');
+    $builder->join('r_metode m', 'm.metode_kode = d.metode_pengujian', 'left');
+    $builder->where('d.kode_layanan', $kode);
+    $builder->groupBy('d.uji_kode, d.kode_layanan, d.nama_layanan, d.kode_jenis, d.metode_pengujian, m.nama');
 
-        return $builder->get()->getResult();
-    }
+    return $builder->get()->getResult();
+  }
 
-    /**
-     * Ambil data layanan header berdasarkan lnKode untuk WhatsApp button
-     * @param string $table Nama tabel
-     * @param string $idField Nama field ID
-     * @param int $lnKode
-     * @return object|null
-     */
-    public function getLayananHeaderById(string $table, string $idField, int $lnKode): ?object
-    {
-        return $this->db->table($table)
-            ->select('user_id, lnAccEmail')
-            ->where($idField, $lnKode)
-            ->get()
-            ->getRow();
-    }
+  /**
+   * Ambil data layanan header berdasarkan lnKode untuk WhatsApp button
+   * @param string $table Nama tabel
+   * @param string $idField Nama field ID
+   * @param int $lnKode
+   * @return object|null
+   */
+  public function getLayananHeaderById(string $table, string $idField, int $lnKode): ?object
+  {
+    return $this->db->table($table)
+      ->select('user_id, lnAccEmail')
+      ->where($idField, $lnKode)
+      ->get()
+      ->getRow();
+  }
 
-    /**
-     * Cek status pembayaran terakhir
-     * @param int $lnKode
-     * @return object|null
-     */
-    public function getLastPaymentStatus(int $lnKode): ?object
-    {
-        return $this->db->table('t_pembayaran')
-            ->select('bayarStatus')
-            ->where('bayarLnKode', $lnKode)
-            ->orderBy('bayarKode', 'DESC')
-            ->limit(1)
-            ->get()->getRow();
-    }
+  /**
+   * Cek status pembayaran terakhir
+   * @param int $lnKode
+   * @return object|null
+   */
+  public function getLastPaymentStatus(int $lnKode): ?object
+  {
+    return $this->db->table('t_pembayaran')
+      ->select('bayarStatus')
+      ->where('bayarLnKode', $lnKode)
+      ->orderBy('bayarKode', 'DESC')
+      ->limit(1)
+      ->get()->getRow();
+  }
 }

@@ -59,7 +59,7 @@
                     <th width="5%" >Status File</th>
                     <th width="5%" >LHUS</th>
                     <th width="20%">Keterangan Manajer</th>
-                    <th width="5%" >Acc Manajer</th>
+                    <th width="5%" >Disetujui oleh</th>
                 </tr>
             </thead>
             <tbody></tbody>
