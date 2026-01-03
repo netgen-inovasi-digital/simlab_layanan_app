@@ -7,8 +7,8 @@ use App\Models\MyModel;
 
 class Persentase extends BaseController
 {
-    private $table = 'simlab_r_kolom_keuangan_detail';
-    private $id = 'kdKode';
+    private $table = 'r_kolom_keuangan_detail';
+    private $id = 'kode';
 
     public function index()
     {
@@ -36,9 +36,9 @@ class Persentase extends BaseController
 
         $data[csrf_token()] = csrf_hash();
         $data['id'] = $idenc;
-        $data['kdJenKode'] = $get->kdJenKode;
-        $data['kdKolomLabel'] = $get->kdKolomLabel;
-        $data['kdPersenNONULM'] = $get->kdPersenNONULM;
+        $data['jenis_kode'] = $get->jenis_kode;
+        $data['label'] = $get->label;
+        $data['non_ulm'] = $get->non_ulm;
 
         return $this->response->setJSON($data);
     }
@@ -59,9 +59,9 @@ class Persentase extends BaseController
     {
         $idenc = $this->request->getPost('id');
         $data = array(
-            'kdJenKode' => $this->request->getPost('kdJenKode'),
-            'kdKolomLabel' => $this->request->getPost('kdKolomLabel'),
-            'kdPersenNONULM' => $this->request->getPost('kdPersenNONULM'),
+            'jenis_kode' => $this->request->getPost('jenis_kode'),
+            'label' => $this->request->getPost('label'),
+            'non_ulm' => $this->request->getPost('non_ulm'),
         );
 
         $model = new MyModel($this->table);
@@ -84,30 +84,30 @@ class Persentase extends BaseController
     {
         $model = new MyModel($this->table . ' d');
 
-        $kode = $this->request->getGet('kdJenKode');
+        $kode = $this->request->getGet('jenis_kode');
         $page    = $this->request->getGet('page');
         $limit   = $this->request->getGet('limit');
 
-        $joins = ['r_jenis j' => 'j.kode = d.kdJenKode'];
+        $joins = ['r_jenis j' => 'j.kode = d.jenis_kode'];
         $where = [];
         if (!empty($kode)) {
-            $where['d.kdJenKode'] = $kode;
+            $where['d.jenis_kode'] = $kode;
         }
 
         $list = $model->getAllDataWithJoinWhereOrder(
             $joins,
             $where,
-            ['d.kdJenKode' => 'ASC'],
-            'd.kdKode, d.kdJenKode, d.kdKolomLabel, d.kdPersenNONULM, j.nama'
+            ['d.jenis_kode' => 'ASC'],
+            'd.kode, d.jenis_kode, d.label, d.non_ulm, j.nama'
         );
 
         $data = [];
         foreach ($list as $row) {
-            $id = bin2hex($this->encrypter->encrypt($row->kdKode));
+            $id = bin2hex($this->encrypter->encrypt($row->kode));
             $response = [
-                'kodeLayanan' => '<span class="badge bg-info">' . esc($row->kdJenKode) . ' - ' . esc($row->nama) . '</span>',
-                'jenisBiaya'  => $row->kdKolomLabel,
-                'persentase'  => $row->kdPersenNONULM . ' %',
+                'kodeLayanan' => '<span class="badge bg-info">' . esc($row->jenis_kode) . ' - ' . esc($row->nama) . '</span>',
+                'jenisBiaya'  => $row->label,
+                'persentase'  => $row->non_ulm . ' %',
                 'aksi'        => $this->aksi($id),
             ];
 

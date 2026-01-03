@@ -25,7 +25,7 @@ class layananLab extends BaseController
 		$user_id = $session->get('id_user');
 
 		$modelUser = new MyModel('users');
-		$modelDiskon  = new MyModel('simlab_t_diskon');
+		$modelDiskon  = new MyModel('t_diskon');
 
 		$data = [
 			'title' => 'Data Layanan Lab',
@@ -406,7 +406,7 @@ class layananLab extends BaseController
 		$res = false;
 
 		if ($diskon !== null) {
-			$model = new MyModel('simlab_t_diskon');
+			$model = new MyModel('t_diskon');
 			$res = $model->updateData(['diskon' => $diskon], 'kolom', 'ulm');
 		}
 

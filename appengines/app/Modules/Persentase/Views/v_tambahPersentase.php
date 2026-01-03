@@ -12,7 +12,7 @@
 
                 <div class="mb-3">
                     <label class="form-label fw-bold">Jenis Layanan</label>
-                    <select name="kdJenKode" class="form-select" required>
+                    <select name="jenis_kode" class="form-select" required>
                         <option value="">-- Pilih Jenis Layanan --</option>
                         <?php if (isset($jenis) && !empty($jenis)) : ?>
                             <?php foreach ($jenis as $j) : ?>
@@ -27,14 +27,14 @@
 
                 <div class="mb-3">
                     <label class="form-label fw-bold">Nama Jenis Biaya</label>
-                    <input name="kdKolomLabel" type="text" class="form-control" required placeholder="Contoh: Jasa Sarana atau Operasional">
+                    <input name="label" type="text" class="form-control" required placeholder="Contoh: Jasa Sarana atau Operasional">
                     <div class="form-text">Masukkan nama komponen biaya yang akan dihitung.</div>
                 </div>
 
                 <div class="mb-3">
                     <label class="form-label fw-bold">Persentase</label>
                     <div class="input-group">
-                        <input name="kdPersenNONULM" type="number" class="form-control" required placeholder="Contoh : 40">
+                        <input name="non_ulm" type="number" class="form-control" required placeholder="Contoh : 40">
                         <span class="input-group-text">%</span>
                     </div>
                     <div class="form-text">Masukkan angkanya saja, tanpa simbol persen (%).</div>

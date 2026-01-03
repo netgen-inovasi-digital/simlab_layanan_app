@@ -215,7 +215,7 @@
             let headerHTML = '';
             if (kolom_header && kolom_header.length > 0) {
                 kolom_header.forEach(kolom => {
-                    headerHTML += `<th class="text-nowrap">${kolom.kdKolomLabel} (${kolom.kdPersenNONULM}%)</th>`;
+                    headerHTML += `<th class="text-nowrap">${kolom.label} (${kolom.non_ulm}%)</th>`;
                 });
             }
 

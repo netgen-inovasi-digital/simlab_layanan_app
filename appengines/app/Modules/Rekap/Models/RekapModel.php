@@ -12,7 +12,7 @@ class RekapModel extends Model
   protected $tableDetil = 't_layanan_detil';
   protected $tableJenis = 'r_jenis';
   protected $tableRLayanan = 'r_layanan_pengujian';
-  protected $tableKolomKeuangan = 'simlab_r_kolom_keuangan_detail';
+  protected $tableKolomKeuangan = 'r_kolom_keuangan_detail';
 
   public function __construct()
   {
@@ -70,17 +70,17 @@ class RekapModel extends Model
   public function getKolomKeuanganLookup(): array
   {
     $builder = $this->db->table($this->tableKolomKeuangan)
-      ->orderBy('kdJenKode', 'ASC')
-      ->orderBy('kdKode', 'ASC');
+      ->orderBy('jenis_kode', 'ASC')
+      ->orderBy('kode', 'ASC');
 
     $allKolom = $builder->get()->getResult();
 
     $lookup = [];
     foreach ($allKolom as $kolom) {
-      if (!isset($lookup[$kolom->kdJenKode])) {
-        $lookup[$kolom->kdJenKode] = [];
+      if (!isset($lookup[$kolom->jenis_kode])) {
+        $lookup[$kolom->jenis_kode] = [];
       }
-      $lookup[$kolom->kdJenKode][] = $kolom;
+      $lookup[$kolom->jenis_kode][] = $kolom;
     }
 
     return $lookup;

@@ -74,7 +74,7 @@
         let kode = this.value;
         let newUrl = apiUrl + "?page=" + currentPage + "&limit=" + currentLimit;
         if (kode !== "") {
-            newUrl = apiUrl + "?kdJenKode=" + encodeURIComponent(kode) + "&page=" + currentPage + "&limit=" + currentLimit;
+            newUrl = apiUrl + "?jenis_kode=" + encodeURIComponent(kode) + "&page=" + currentPage + "&limit=" + currentLimit;
         }
         table = loadTable(newUrl);
         addAction();

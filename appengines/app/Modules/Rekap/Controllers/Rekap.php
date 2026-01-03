@@ -47,7 +47,7 @@ class Rekap extends BaseController
     // 2. Ambil semua total, digabungkan berdasarkan kode_jenis
     $totals_lookup = $this->rekapModel->getTotalsLookup($tanggal_awal, $tanggal_akhir);
 
-    // 3. Ambil semua template kolom keuangan, digabungkan berdasarkan kdJenKode
+    // 3. Ambil semua template kolom keuangan, digabungkan berdasarkan jenis_kode
     $kolom_lookup = $this->rekapModel->getKolomKeuanganLookup();
 
     // 4. Bangun Array Respon
@@ -98,10 +98,10 @@ class Rekap extends BaseController
     }
 
     foreach ($kolom_template as $kolom) {
-      $percentage = (float) $kolom->kdPersenNONULM / 100;
+      $percentage = (float) $kolom->non_ulm / 100;
       $pembagian[] = [
-        'label' => $kolom->kdKolomLabel,
-        'percent' => $kolom->kdPersenNONULM,
+        'label' => $kolom->label,
+        'percent' => $kolom->non_ulm,
         'value' => $total * $percentage
       ];
     }
