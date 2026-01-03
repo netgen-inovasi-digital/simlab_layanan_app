@@ -25,7 +25,7 @@ class TinjauLHUS extends BaseController
     $session = session();
     $user_id = $session->get('id_user');
 
-    $modelUser = new MyModel('simlab_account_users');
+    $modelUser = new MyModel('account_users');
 
     $data = [
       'title' => 'Tinjau LHUS',

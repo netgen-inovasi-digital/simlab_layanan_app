@@ -19,17 +19,17 @@ class FormulirAdminModel extends Model
   }
 
   /**
-   * Ambil daftar kategori dari r_layanan_pengujian dengan join ke simlab_r_jenis
+   * Ambil daftar kategori dari r_layanan_pengujian dengan join ke r_jenis
    * @return array
    */
   public function getKategoriLayanan(): array
   {
     $builder = $this->db->table('r_layanan_pengujian as lp');
-    $builder->select('DISTINCT TRIM(LEFT(lp.kode_jenis, 2)) as jenKode, j.jenNama');
-    $builder->join('simlab_r_jenis j', 'j.jenKode = TRIM(LEFT(lp.kode_jenis, 2))', 'left');
+    $builder->select('DISTINCT TRIM(LEFT(lp.kode_jenis, 2)) as kode, j.nama');
+    $builder->join('r_jenis j', 'j.kode = TRIM(LEFT(lp.kode_jenis, 2))', 'left');
     $builder->where('lp.kode_jenis IS NOT NULL');
     $builder->where('lp.kode_jenis !=', '');
-    $builder->orderBy('j.jenNama', 'ASC');
+    $builder->orderBy('j.nama', 'ASC');
 
     return $builder->get()->getResult();
   }
@@ -135,7 +135,7 @@ class FormulirAdminModel extends Model
             GROUP_CONCAT(DISTINCT acc.nama SEPARATOR ' | ') AS accUsernames
         ");
 
-    $builder->join('simlab_account acc', 'acc.user_id = d.terima_layanan_by', 'left');
+    $builder->join('account acc', 'acc.user_id = d.terima_layanan_by', 'left');
     $builder->join('r_metode m', 'm.metode_kode = d.metode_pengujian', 'left');
     $builder->where('d.kode_layanan', $kode);
     $builder->groupBy('d.uji_kode, d.kode_layanan, d.nama_layanan, d.kode_jenis, d.metode_pengujian, m.nama');

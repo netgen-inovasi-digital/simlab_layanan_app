@@ -238,7 +238,7 @@ class PembayaranAdmin extends BaseController
       $items[] = [
         $idx + 1,
         esc($det->nama_layanan ?? $det->ref_nama ?? '-', 'html'),
-        esc($det->alatNama ?? $det->kode_alat ?? '-', 'html'),
+        esc($det->nama ?? $det->kode_alat ?? '-', 'html'),
         esc($det->metode_nama ?? '-', 'html'),
         $this->formatDiskonValue($det->ref_diskon ?? 0),
         $this->formatCurrencyIDR($unit),

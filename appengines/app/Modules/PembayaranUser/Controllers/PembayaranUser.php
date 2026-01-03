@@ -43,7 +43,7 @@ class PembayaranUser extends BaseController
         ]);
       }
 
-      // Ambil user dari tabel simlab_account_users (sama seperti Pelayanan.php)
+      // Ambil user dari tabel account_users (sama seperti Pelayanan.php)
       $user = $this->pembayaranModel->getUserById((int) $user_id);
 
       // Jika user tidak ditemukan, kembalikan data kosong

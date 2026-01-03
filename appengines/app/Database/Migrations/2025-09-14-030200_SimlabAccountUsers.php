@@ -67,11 +67,11 @@ class CreateSimlabAccountUsers extends Migration
         $this->forge->addKey('user_id', true);
         $this->forge->addKey('user_email', false, true); // unique
 
-        $this->forge->createTable('simlab_account_users', true);
+        $this->forge->createTable('account_users', true);
     }
 
     public function down()
     {
-        $this->forge->dropTable('simlab_account_users', true);
+        $this->forge->dropTable('account_users', true);
     }
 }

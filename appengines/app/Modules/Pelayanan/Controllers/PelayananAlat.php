@@ -48,16 +48,16 @@ class PelayananAlat extends BaseController
     $session = session();
     $user_id = $session->get('id_user');
 
-    $modelUser = new MyModel('simlab_account_users');
+    $modelUser = new MyModel('account_users');
 
     // Ambil daftar kategori untuk alat (kode_jenis = 'B') dari r_layanan_pengujian
     $db = \Config\Database::connect();
     $builder = $db->table('r_layanan_pengujian as lp');
-    $builder->select('lp.kode_jenis as jenKode, j.jenNama');
-    $builder->join('simlab_r_jenis j', 'j.jenKode = lp.kode_jenis', 'left');
+    $builder->select('lp.kode_jenis as kode, j.nama');
+    $builder->join('r_jenis j', 'j.kode = lp.kode_jenis', 'left');
     $builder->where('lp.kode_jenis', 'B');  // Filter untuk alat
-    $builder->groupBy('lp.kode_jenis, j.jenNama');  // Group by untuk DISTINCT
-    $builder->orderBy('j.jenNama', 'ASC');
+    $builder->groupBy('lp.kode_jenis, j.nama');  // Group by untuk DISTINCT
+    $builder->orderBy('j.nama', 'ASC');
     $categories = $builder->get()->getResult();
 
     $data = [
@@ -74,7 +74,7 @@ class PelayananAlat extends BaseController
     $session = session();
     $user_id = (int) $session->get('id_user');
 
-    $modelUser = new MyModel('simlab_account_users');
+    $modelUser = new MyModel('account_users');
     $user = $modelUser->getDataById('user_id', $user_id);
 
     if (!$user || !$user_id) {
@@ -310,7 +310,7 @@ class PelayananAlat extends BaseController
     $session = session();
     $user_id = $session->get('id_user');
 
-    $modelUser = new MyModel('simlab_account_users');
+    $modelUser = new MyModel('account_users');
     $user = $modelUser->getDataById('user_id', $user_id);
 
     if (!$user) {

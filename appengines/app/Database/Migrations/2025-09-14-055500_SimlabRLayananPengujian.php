@@ -56,9 +56,9 @@ class CreateRLayananPengujian extends Migration
         $this->forge->createTable('r_layanan_pengujian', true);
 
         // Tambah FK dengan mekanisme forge (lebih aman & portable)
-        $this->forge->addForeignKey('kode_parameter', 'simlab_r_parameter', 'paraKode', 'CASCADE', 'CASCADE');
-        $this->forge->addForeignKey('kode_alat', 'simlab_r_alat', 'alatKode', 'CASCADE', 'CASCADE');
-        $this->forge->addForeignKey('kode_jenis', 'simlab_r_jenis', 'jenKode', 'CASCADE', 'CASCADE');
+        $this->forge->addForeignKey('kode_parameter', 'r_parameter', 'kode', 'CASCADE', 'CASCADE');
+        $this->forge->addForeignKey('kode_alat', 'r_alat', 'kode', 'CASCADE', 'CASCADE');
+        $this->forge->addForeignKey('kode_jenis', 'r_jenis', 'kode', 'CASCADE', 'CASCADE');
 
         // Apply alter table for foreign keys
         $this->forge->processIndexes('r_layanan_pengujian');

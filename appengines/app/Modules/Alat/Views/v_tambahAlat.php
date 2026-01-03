@@ -13,14 +13,14 @@
 
                 <div class="mb-3">
                     <label for="alatKodeInput" class="form-label fw-bold">Kode Alat</label>
-                    <input name="alatKode" type="text" class="form-control" id="alatKodeInput" required
+                    <input name="kode" type="text" class="form-control" id="alatKodeInput" required
                         placeholder="Contoh : DISTILASI">
                     <div class="form-text"></div>
                 </div>
 
                 <div class="mb-3">
                     <label for="alatNamaInput" class="form-label fw-bold">Nama Alat</label>
-                    <input name="alatNama" type="text" class="form-control" id="alatNamaInput" required
+                    <input name="nama" type="text" class="form-control" id="alatNamaInput" required
                         placeholder="Contoh : Parameter Distalasi">
                     <div class="form-text"></div>
                 </div>

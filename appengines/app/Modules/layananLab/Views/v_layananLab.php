@@ -63,7 +63,7 @@
         .then(data => {
             var filterSelect = document.getElementById('filter_jenKode');
             data.jenis.forEach(j => {
-                filterSelect.innerHTML += `<option value="${j.jenKode}">${j.jenKode} - ${j.jenNama}</option>`;
+                filterSelect.innerHTML += `<option value="${j.kode}">${j.kode} - ${j.nama}</option>`;
             });
         });
 
@@ -271,21 +271,21 @@
                 if (jenis) {
                     jenis.innerHTML = '<option value="">-- Pilih Jenis --</option>';
                     data.jenis.forEach(j => {
-                        jenis.innerHTML += `<option value="${j.jenKode}" ${selected.jenis==j.jenKode?"selected":""}>${j.jenNama}</option>`;
+                        jenis.innerHTML += `<option value="${j.kode}" ${selected.jenis==j.kode?"selected":""}>${j.nama}</option>`;
                     });
                 }
                 
                 if (alat) {
                     alat.innerHTML  = '<option value="">-- Pilih Alat --</option>';
                     data.alat.forEach(a => {
-                        alat.innerHTML += `<option value="${a.alatKode}" ${selected.alat==a.alatKode?"selected":""}>${a.alatNama}</option>`;
+                        alat.innerHTML += `<option value="${a.kode}" ${selected.alat==a.kode?"selected":""}>${a.nama}</option>`;
                     });
                 }
                 
                 if (para) {
                     para.innerHTML  = '<option value="">-- Pilih Parameter --</option>';
                     data.parameter.forEach(p => {
-                        para.innerHTML += `<option value="${p.paraKode}" ${selected.para==p.paraKode?"selected":""}>${p.paraNama}</option>`;
+                        para.innerHTML += `<option value="${p.kode}" ${selected.para==p.kode?"selected":""}>${p.nama}</option>`;
                     });
                 }
                 

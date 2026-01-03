@@ -9,13 +9,13 @@ class JenisSeeder extends Seeder
     public function run()
     {
         $data = [
-            ['jenKode' => 'A', 'jenNama' => 'Layanan Pengujian Sampel '],
-            ['jenKode' => 'B', 'jenNama' => 'Layanan Sewa Alat Laboratorium'],
-            ['jenKode' => 'C', 'jenNama' => 'Layanan Sewa Ruangan Lab'],
-            ['jenKode' => 'D', 'jenNama' => 'Layanan Sewa Ruangan Rapat dan Jas'],
-            ['jenKode' => 'E', 'jenNama' => 'Layanan Aquades'],
+            ['kode' => 'A', 'nama' => 'Layanan Pengujian Sampel '],
+            ['kode' => 'B', 'nama' => 'Layanan Sewa Alat Laboratorium'],
+            ['kode' => 'C', 'nama' => 'Layanan Sewa Ruangan Lab'],
+            ['kode' => 'D', 'nama' => 'Layanan Sewa Ruangan Rapat dan Jas'],
+            ['kode' => 'E', 'nama' => 'Layanan Aquades'],
         ];
 
-        $this->db->table('simlab_r_jenis')->insertBatch($data);
+        $this->db->table('r_jenis')->insertBatch($data);
     }
 }

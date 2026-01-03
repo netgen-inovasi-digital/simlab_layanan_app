@@ -32,7 +32,7 @@ class CreateRTim extends Migration
 
         // Tambahkan foreign key langsung
         $this->forge->addForeignKey('uji_kode', 'r_layanan_pengujian', 'kode', 'CASCADE', 'CASCADE');
-        $this->forge->addForeignKey('user_id', 'simlab_account', 'user_id', 'CASCADE', 'CASCADE');
+        $this->forge->addForeignKey('user_id', 'account', 'user_id', 'CASCADE', 'CASCADE');
 
         $this->forge->createTable('r_tim');
     }

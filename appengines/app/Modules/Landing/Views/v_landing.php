@@ -74,8 +74,8 @@
                 <select class="form-select" id="filterJenis">
                     <option value="">Semua Jenis Layanan</option>
                     <?php foreach ($getJenisLayanan as $jenis): ?>
-                        <option value="<?= esc($jenis->jenKode) ?>">
-                            <?= esc($jenis->jenNama) ?>
+                        <option value="<?= esc($jenis->kode) ?>">
+                            <?= esc($jenis->nama) ?>
                         </option>
                     <?php endforeach; ?>
                 </select>

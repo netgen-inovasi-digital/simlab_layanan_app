@@ -58,7 +58,7 @@ class KeranjangModel
     }
 
     return $this->db
-      ->table('simlab_account_users')
+      ->table('account_users')
       ->where('user_id', $userId)
       ->get()
       ->getRow();
@@ -72,25 +72,25 @@ class KeranjangModel
     $jenisCol = $this->columns['jenis'] ?? 'kode_jenis';
 
     $builder = $this->db->table($this->tablePengujian . ' as lp');
-    $builder->select('DISTINCT TRIM(LEFT(lp.' . $jenisCol . ', 2)) as jenKode, j.jenNama');
-    $builder->join('simlab_r_jenis j', 'j.jenKode = TRIM(LEFT(lp.' . $jenisCol . ', 2))', 'left');
+    $builder->select('DISTINCT TRIM(LEFT(lp.' . $jenisCol . ', 2)) as kode, j.nama');
+    $builder->join('r_jenis j', 'j.kode = TRIM(LEFT(lp.' . $jenisCol . ', 2))', 'left');
     $builder->where('lp.' . $jenisCol . ' IS NOT NULL');
     $builder->where('lp.' . $jenisCol . ' !=', '');
-    $builder->orderBy('j.jenNama', 'ASC');
+    $builder->orderBy('j.nama', 'ASC');
 
     $result = $builder->get()->getResult();
     $normalized = [];
 
     foreach ($result as $row) {
-      $kode = isset($row->jenKode) ? trim((string) $row->jenKode) : '';
+      $kode = isset($row->kode) ? trim((string) $row->kode) : '';
       if ($kode === '') {
         continue;
       }
 
       $normalized[] = (object) [
-        'jenKode' => $kode,
-        'jenNama' => (isset($row->jenNama) && trim((string) $row->jenNama) !== '')
-          ? trim((string) $row->jenNama)
+        'kode' => $kode,
+        'nama' => (isset($row->nama) && trim((string) $row->nama) !== '')
+          ? trim((string) $row->nama)
           : $kode
       ];
     }
@@ -200,14 +200,14 @@ class KeranjangModel
       ' lp.' . ($cols['nama'] ?? 'nama_layanan') . ' as nama_layanan,' .
       ' lp.' . ($cols['jenis'] ?? 'kode_jenis') . ' as kode_jenis,' .
       ' lp.' . ($cols['satuan'] ?? 'satuan') . ' as satuan,' .
-      ' p.paraNama,' .
-      ' a.alatNama,' .
-      ' j.jenNama'
+      ' p.nama,' .
+      ' a.nama,' .
+      ' j.nama'
     );
 
-    $builder->join('simlab_r_parameter p', 'p.paraKode = lp.' . ($cols['parameter'] ?? 'kode_parameter'), 'left');
-    $builder->join('simlab_r_alat a', 'a.alatKode = lp.' . ($cols['alat'] ?? 'kode_alat'), 'left');
-    $builder->join('simlab_r_jenis j', 'j.jenKode = lp.' . ($cols['jenis'] ?? 'kode_jenis'), 'left');
+    $builder->join('r_parameter p', 'p.kode = lp.' . ($cols['parameter'] ?? 'kode_parameter'), 'left');
+    $builder->join('r_alat a', 'a.kode = lp.' . ($cols['alat'] ?? 'kode_alat'), 'left');
+    $builder->join('r_jenis j', 'j.kode = lp.' . ($cols['jenis'] ?? 'kode_jenis'), 'left');
 
     if ($jenKodeFilter !== null && $jenKodeFilter !== '') {
       $builder->where('TRIM(LEFT(lp.' . ($cols['jenis'] ?? 'kode_jenis') . ', 2))', $jenKodeFilter);
@@ -232,10 +232,10 @@ class KeranjangModel
 
     foreach ($rows as $row) {
       $fields = [
-        isset($row->paraNama) ? mb_strtolower($row->paraNama, 'UTF-8') : '',
-        isset($row->alatNama) ? mb_strtolower($row->alatNama, 'UTF-8') : '',
+        isset($row->nama) ? mb_strtolower($row->nama, 'UTF-8') : '',
+        isset($row->nama) ? mb_strtolower($row->nama, 'UTF-8') : '',
         isset($row->nama_layanan) ? mb_strtolower($row->nama_layanan, 'UTF-8') : '',
-        isset($row->jenNama) ? mb_strtolower($row->jenNama, 'UTF-8') : '',
+        isset($row->nama) ? mb_strtolower($row->nama, 'UTF-8') : '',
         isset($row->kode) ? mb_strtolower((string) $row->kode, 'UTF-8') : ''
       ];
 

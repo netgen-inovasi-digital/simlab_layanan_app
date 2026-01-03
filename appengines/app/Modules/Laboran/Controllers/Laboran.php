@@ -7,7 +7,7 @@ use App\Models\MyModel;
 
 class Laboran extends BaseController
 {
-    private $table = 'simlab_account';
+    private $table = 'account';
     private $id = 'username'; // Primary key adalah username
 
     public function index()

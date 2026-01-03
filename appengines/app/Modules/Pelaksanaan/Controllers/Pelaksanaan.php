@@ -214,7 +214,7 @@ class Pelaksanaan extends BaseController
         ? '<button class="btn btn-sm btn-outline-primary" onclick="window.open(\'' . esc($fileUrl) . '\', \'_blank\')"><i class="bi bi-eye"></i></button>'
         : '<button class="btn btn-sm btn-secondary" disabled><i class="bi bi-file-earmark-text"></i> Lihat</button>';
 
-      // Username dari simlab_account (LHUS uploader/approver)
+      // Username dari account (LHUS uploader/approver)
       $uploadLhusBy = !empty($row->upload_lhus_by) ? esc($row->upload_lhus_by) : '-';
       $accLhusBy = !empty($row->acc_lhus_by) ? esc($row->acc_lhus_by) : '-';
 

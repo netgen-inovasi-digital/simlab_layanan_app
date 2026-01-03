@@ -126,30 +126,30 @@ class PelayananRapatJas extends BaseController
     $session = session();
     $user_id = $session->get('id_user');
 
-    $modelUser = new MyModel('simlab_account_users');
+    $modelUser = new MyModel('account_users');
 
     // Ambil kategori dengan filter kode_jenis = 'D' (Rapat JAS)
     $db = \Config\Database::connect();
     $builder = $db->table('r_layanan_pengujian as lp');
     $builder->select('
-            DISTINCT TRIM(LEFT(lp.kode_jenis, 2)) as jenKode,
-            j.jenNama
+            DISTINCT TRIM(LEFT(lp.kode_jenis, 2)) as kode,
+            j.nama
         ');
-    $builder->join('simlab_r_jenis j', 'j.jenKode = TRIM(LEFT(lp.kode_jenis, 2))', 'left');
+    $builder->join('r_jenis j', 'j.kode = TRIM(LEFT(lp.kode_jenis, 2))', 'left');
     $builder->where('lp.kode_jenis', $this->kodeJenisFilter); // Filter Rapat JAS
-    $builder->orderBy('j.jenNama', 'ASC');
+    $builder->orderBy('j.nama', 'ASC');
     $categories = $builder->get()->getResult();
 
     // Normalisasi categories
     $normalized = [];
     if (!empty($categories)) {
       foreach ($categories as $c) {
-        $kode = isset($c->jenKode) ? trim((string) $c->jenKode) : '';
-        $nama = (isset($c->jenNama) && trim((string) $c->jenNama) !== '') ? trim((string) $c->jenNama) : $kode;
+        $kode = isset($c->kode) ? trim((string) $c->kode) : '';
+        $nama = (isset($c->nama) && trim((string) $c->nama) !== '') ? trim((string) $c->nama) : $kode;
         if ($kode !== '') {
           $normalized[] = (object) [
-            'jenKode' => $kode,
-            'jenNama' => $nama
+            'kode' => $kode,
+            'nama' => $nama
           ];
         }
       }
@@ -169,7 +169,7 @@ class PelayananRapatJas extends BaseController
     $session = session();
     $user_id = (int) $session->get('id_user');
 
-    $modelUser = new MyModel('simlab_account_users');
+    $modelUser = new MyModel('account_users');
     $user = $modelUser->getDataById('user_id', $user_id);
 
     if (!$user || !$user_id) {
@@ -357,7 +357,7 @@ class PelayananRapatJas extends BaseController
     $session = session();
     $user_id = $session->get('id_user');
 
-    $modelUser = new MyModel('simlab_account_users');
+    $modelUser = new MyModel('account_users');
     $user = $modelUser->getDataById('user_id', $user_id);
 
     if (!$user) {
@@ -385,7 +385,7 @@ class PelayananRapatJas extends BaseController
       throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
     }
 
-    $modelPertanyaan = new MyModel('simlab_t_kuesioner');
+    $modelPertanyaan = new MyModel('t_kuisioner');
     $pertanyaan = $modelPertanyaan->getAllDataWithJoinWhereOrder([], [], ['kuesioner_id' => 'ASC']);
 
     $data = [
@@ -413,7 +413,7 @@ class PelayananRapatJas extends BaseController
       return $this->response->setJSON(['res' => false, 'msg' => 'Tidak ada jawaban yang dikirim.', 'xname' => csrf_token(), 'xhash' => csrf_hash()]);
     }
 
-    $modelJawaban = new MyModel('simlab_t_kuesioner_jawaban');
+    $modelJawaban = new MyModel('t_kuisioner_jawaban');
     $modelLayanan = new MyModel($this->table);
     $db = \Config\Database::connect();
 

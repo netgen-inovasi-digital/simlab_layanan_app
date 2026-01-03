@@ -26,7 +26,7 @@ class CreateTFilesLhu extends Migration
       ],
       'upload_by' => [
         'type' => 'INT',
-        'unsigned' => true, // <-- SAMAKAN dengan simlab_account_users.user_id
+        'unsigned' => true, // <-- SAMAKAN dengan account_users.user_id
         'null' => true,
       ],
       'tanggal_terbit' => [
@@ -41,7 +41,7 @@ class CreateTFilesLhu extends Migration
 
     // FK via Forge (lebih aman)
     $this->forge->addForeignKey('kode', 't_layanan', 'kode_layanan', 'CASCADE', 'CASCADE');
-    $this->forge->addForeignKey('upload_by', 'simlab_account_users', 'user_id', 'RESTRICT', 'RESTRICT');
+    $this->forge->addForeignKey('upload_by', 'account_users', 'user_id', 'RESTRICT', 'RESTRICT');
 
     $this->forge->createTable('t_files_lhu', true);
   }

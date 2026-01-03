@@ -6,7 +6,7 @@ use CodeIgniter\Model;
 
 class AuthModelAdmin extends Model
 {
-    protected $table = 'simlab_account';
+    protected $table = 'account';
     protected $primaryKey = 'user_id';
 
     protected $allowedFields = [

@@ -16,8 +16,8 @@
                         <option value="">-- Semua Layanan --</option>
                         <?php if (isset($jenis) && !empty($jenis)) : ?>
                             <?php foreach ($jenis as $j) : ?>
-                                <option value="<?php echo $j->jenKode; ?>">
-                                    <?php echo $j->jenKode . ' - ' . $j->jenNama; ?>
+                                <option value="<?php echo $j->kode; ?>">
+                                    <?php echo $j->kode . ' - ' . $j->nama; ?>
                                 </option>
                             <?php endforeach; ?>
                         <?php endif; ?>

@@ -38,13 +38,13 @@ class KeranjangAdminModel extends Model
         $builder = $this->db->table($tablePengujian . ' as lp');
 
         $builder->select("
-            DISTINCT TRIM(LEFT(lp.{$jenisCol}, 2)) as jenKode,
-            j.jenNama
+            DISTINCT TRIM(LEFT(lp.{$jenisCol}, 2)) as kode,
+            j.nama
         ");
-        $builder->join('simlab_r_jenis j', "j.jenKode = TRIM(LEFT(lp.{$jenisCol}, 2))", 'left');
+        $builder->join('r_jenis j', "j.kode = TRIM(LEFT(lp.{$jenisCol}, 2))", 'left');
         $builder->where("lp.{$jenisCol} IS NOT NULL");
         $builder->where("lp.{$jenisCol} !=", '');
-        $builder->orderBy('j.jenNama', 'ASC');
+        $builder->orderBy('j.nama', 'ASC');
 
         return $builder->get()->getResult();
     }
@@ -64,8 +64,8 @@ class KeranjangAdminModel extends Model
             ->getRow();
 
         if ($result && $result->kode_jenis !== null) {
-            $jenKode = trim((string) $result->kode_jenis);
-            return $jenKode !== '' ? $jenKode : null;
+            $kode = trim((string) $result->kode_jenis);
+            return $kode !== '' ? $kode : null;
         }
 
         return null;
@@ -105,15 +105,15 @@ class KeranjangAdminModel extends Model
             lp.{$cols['nama']} as nama_layanan,
             lp.{$cols['jenis']} as kode_jenis,
             lp.{$cols['satuan']} as satuan,
-            p.paraNama,
-            a.alatNama,
-            j.jenNama
+            p.nama,
+            a.nama,
+            j.nama
         ");
 
         // Joins
-        $builder->join('simlab_r_parameter p', 'p.paraKode = lp.' . $cols['parameter'], 'left');
-        $builder->join('simlab_r_alat a', 'a.alatKode = lp.' . $cols['alat'], 'left');
-        $builder->join('simlab_r_jenis j', 'j.jenKode = lp.' . $cols['jenis'], 'left');
+        $builder->join('r_parameter p', 'p.kode = lp.' . $cols['parameter'], 'left');
+        $builder->join('r_alat a', 'a.kode = lp.' . $cols['alat'], 'left');
+        $builder->join('r_jenis j', 'j.kode = lp.' . $cols['jenis'], 'left');
 
         // Filter kategori
         if ($jenKodeFilter !== '') {

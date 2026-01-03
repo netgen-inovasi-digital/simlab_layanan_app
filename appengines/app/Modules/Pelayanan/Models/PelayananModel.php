@@ -34,9 +34,9 @@ class PelayananModel extends MyModel
   {
     parent::__construct($this->layananTable);
     $this->db = \Config\Database::connect();
-    $this->userModel = new MyModel('simlab_account_users');
-    $this->kuesionerModel = new MyModel('simlab_t_kuesioner');
-    $this->jawabanModel = new MyModel('simlab_t_kuesioner_jawaban');
+    $this->userModel = new MyModel('account_users');
+    $this->kuesionerModel = new MyModel('t_kuisioner');
+    $this->jawabanModel = new MyModel('t_kuisioner_jawaban');
     $this->sampleModel = new MyModel('t_identitas_sampel');
   }
 
@@ -48,11 +48,11 @@ class PelayananModel extends MyModel
   public function getCategories(): array
   {
     return $this->db->table('r_layanan_pengujian as lp')
-      ->select('DISTINCT TRIM(LEFT(lp.kode_jenis, 2)) as jenKode, j.jenNama')
-      ->join('simlab_r_jenis j', 'j.jenKode = TRIM(LEFT(lp.kode_jenis, 2))', 'left')
+      ->select('DISTINCT TRIM(LEFT(lp.kode_jenis, 2)) as kode, j.nama')
+      ->join('r_jenis j', 'j.kode = TRIM(LEFT(lp.kode_jenis, 2))', 'left')
       ->where('lp.kode_jenis IS NOT NULL')
       ->where('lp.kode_jenis !=', '')
-      ->orderBy('j.jenNama', 'ASC')
+      ->orderBy('j.nama', 'ASC')
       ->get()->getResult();
   }
 
@@ -130,8 +130,8 @@ class PelayananModel extends MyModel
       ->select('lhu.file_id, lhu.file, lhu.tanggal_terbit, lhu.upload_by, '
         . 'acc.Telepon AS admin_phone, acc.nama AS admin_full_name, acc.username AS admin_username, '
         . 'au.user_telpon AS admin_phone_alt, au.user_name AS admin_name_alt')
-      ->join('simlab_account acc', 'acc.user_id = lhu.upload_by', 'left')
-      ->join('simlab_account_users au', 'au.user_id = lhu.upload_by', 'left')
+      ->join('account acc', 'acc.user_id = lhu.upload_by', 'left')
+      ->join('account_users au', 'au.user_id = lhu.upload_by', 'left')
       ->where('lhu.kode', $kode_layanan)
       ->orderBy('CASE WHEN lhu.tanggal_terbit IS NULL THEN 1 ELSE 0 END', 'ASC', false)
       ->orderBy('lhu.tanggal_terbit', 'ASC')
@@ -143,7 +143,7 @@ class PelayananModel extends MyModel
   {
     return $this->db->table('t_files_lhu as lhu')
       ->select('lhu.file_id, lhu.kode, lhu.file, lhu.upload_by, acc.user_name as uploader_name')
-      ->join('simlab_account_users as acc', 'acc.user_id = lhu.upload_by', 'left')
+      ->join('account_users as acc', 'acc.user_id = lhu.upload_by', 'left')
       ->where('lhu.kode', $kode_layanan)
       ->orderBy('lhu.file_id', 'DESC')
       ->limit(1)

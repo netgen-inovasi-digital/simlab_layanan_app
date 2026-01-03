@@ -22,14 +22,14 @@ class FormulirAdmin extends BaseController
 
   /**
    * Index - kirim juga daftar user untuk pemilih pelanggan
-   * dan daftar kategori (jenKode/jenNama) agar view bisa render opsi kategori awal
+   * dan daftar kategori (kode/nama) agar view bisa render opsi kategori awal
    */
   public function index()
   {
     $session = session();
     $user_id = $session->get('id_user');
 
-    $modelUser = new MyModel('simlab_account_users');
+    $modelUser = new MyModel('account_users');
 
     // Ambil user list untuk dropdown pemilih pelanggan
     $users = $modelUser->getAllDataWithOrder(['user_name' => 'ASC']);
@@ -41,17 +41,17 @@ class FormulirAdmin extends BaseController
     $categories = [];
     if (!empty($categoriesRaw)) {
       foreach ($categoriesRaw as $c) {
-        $kode = isset($c->jenKode) ? trim((string) $c->jenKode) : '';
-        $nama = (isset($c->jenNama) && trim((string) $c->jenNama) !== '') ? trim((string) $c->jenNama) : $kode;
+        $kode = isset($c->kode) ? trim((string) $c->kode) : '';
+        $nama = (isset($c->nama) && trim((string) $c->nama) !== '') ? trim((string) $c->nama) : $kode;
         if ($kode !== '') {
-          $categories[] = (object) ['jenKode' => $kode, 'jenNama' => $nama];
+          $categories[] = (object) ['kode' => $kode, 'nama' => $nama];
         }
       }
     }
 
     $data = [
       'title' => 'Data Formulir Admin',
-      'user' => (new MyModel('simlab_account_users'))->getDataById('user_id', $user_id),
+      'user' => (new MyModel('account_users'))->getDataById('user_id', $user_id),
       'users' => $users,
       'categories' => $categories
     ];
@@ -98,8 +98,8 @@ class FormulirAdmin extends BaseController
 
   /**
    * datalist
-   * - menerima parameter kategoriLayanan (status-array) & jenKode (kategori layanan)
-   * - jika jenKode diberikan, hanya sertakan baris layanan yang memiliki detil dengan jenKode yang cocok
+   * - menerima parameter kategoriLayanan (status-array) & kode (kategori layanan)
+   * - jika kode diberikan, hanya sertakan baris layanan yang memiliki detil dengan kode yang cocok
    */
   public function datalist()
   {
@@ -114,8 +114,8 @@ class FormulirAdmin extends BaseController
       $filterStatuses = array_map('intval', $parts);
     }
 
-    // Ambil parameter jenKode (kategori layanan yang ingin difilter)
-    $jenKodeParam = trim((string) ($this->request->getGet('jenKode') ?? ''));
+    // Ambil parameter kode (kategori layanan yang ingin difilter)
+    $jenKodeParam = trim((string) ($this->request->getGet('kode') ?? ''));
 
     // Ambil semua data, urutkan tanggal DESC (terbaru di atas)
     // Tetap gunakan getAllDataWithOrder jika model mendukungnya
@@ -125,7 +125,7 @@ class FormulirAdmin extends BaseController
       $list = $model->getAllDataByWhere([], ['tanggal_checkout' => 'DESC']);
     }
 
-    $userModel = new MyModel('simlab_account_users');
+    $userModel = new MyModel('account_users');
     $layananDet = new MyModel('t_layanan_detil');
 
     // Siapkan map pembayaran terakhir per kode_layanan menggunakan model
@@ -160,7 +160,7 @@ class FormulirAdmin extends BaseController
             }
           }
           if (!$hasMatch) {
-            // skip this row if none of its detil match jenKode filter
+            // skip this row if none of its detil match kode filter
             continue;
           }
         } catch (\Throwable $ex) {
@@ -404,7 +404,7 @@ class FormulirAdmin extends BaseController
         $userObj = null;
 
         if ($row) {
-          $modelUser = new MyModel('simlab_account_users');
+          $modelUser = new MyModel('account_users');
 
           // 1) coba dari user_id FK
           if (!empty($row->user_id)) {

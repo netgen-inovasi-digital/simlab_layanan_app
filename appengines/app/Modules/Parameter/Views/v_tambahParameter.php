@@ -12,13 +12,13 @@
 
                 <div class="mb-3">
                     <label for="paraKodeInput" class="form-label fw-bold">Kode Parameter</label>
-                    <input name="paraKode" type="text" class="form-control" id="paraKodeInput" required placeholder="Contoh : AS">
+                    <input name="kode" type="text" class="form-control" id="paraKodeInput" required placeholder="Contoh : AS">
                     <div class="form-text"></div>
                 </div>
 
                 <div class="mb-3">
                     <label for="paraNamaInput" class="form-label fw-bold">Nama Parameter</label>
-                    <input name="paraNama" type="text" class="form-control" id="paraNamaInput" required placeholder="Contoh : As (Arsen)">
+                    <input name="nama" type="text" class="form-control" id="paraNamaInput" required placeholder="Contoh : As (Arsen)">
                     <div class="form-text"></div>
                 </div>
             </div>

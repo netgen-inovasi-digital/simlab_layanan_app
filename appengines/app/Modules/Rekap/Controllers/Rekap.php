@@ -58,18 +58,18 @@ class Rekap extends BaseController
     }
 
     foreach ($daftar_jenis as $jenis) {
-      $jenKode = $jenis->jenKode;
+      $kode = $jenis->kode;
 
       // Ambil total untuk jenis ini (atau 0 jika tidak ada)
-      $total_ulm = $totals_lookup[$jenKode]['total_ulm'] ?? 0;
-      $total_non_ulm = $totals_lookup[$jenKode]['total_non_ulm'] ?? 0;
+      $total_ulm = $totals_lookup[$kode]['total_ulm'] ?? 0;
+      $total_non_ulm = $totals_lookup[$kode]['total_non_ulm'] ?? 0;
 
       // Ambil template kolom untuk jenis ini (atau [] jika tidak ada)
-      $kolom_template = $kolom_lookup[$jenKode] ?? [];
+      $kolom_template = $kolom_lookup[$kode] ?? [];
 
       // Buat objek data untuk tabel ini
       $rekap_data[] = [
-        'title' => $jenis->jenKode . '. ' . $jenis->jenNama,
+        'title' => $jenis->kode . '. ' . $jenis->nama,
         'kolom_header' => $kolom_template,
         'total_ulm' => (float) $total_ulm,
         'total_non_ulm' => (float) $total_non_ulm,
@@ -156,7 +156,7 @@ class Rekap extends BaseController
       $excelData = [];
 
       // Baris Judul
-      $jenisInfo = ($jenis_layanan !== 'semua' && !empty($daftar_jenis)) ? $daftar_jenis[0]->jenNama : 'Semua Jenis Layanan';
+      $jenisInfo = ($jenis_layanan !== 'semua' && !empty($daftar_jenis)) ? $daftar_jenis[0]->nama : 'Semua Jenis Layanan';
       $titleText = "REKAP PENDAPATAN PER LAYANAN - " . strtoupper($jenisInfo);
       $periodText = "PERIODE: " . date('d M Y', strtotime($tanggal_awal)) . " s/d " . date('d M Y', strtotime($tanggal_akhir));
 
@@ -181,7 +181,7 @@ class Rekap extends BaseController
 
         // Baris Kategori (Kuning)
         $excelData[] = [
-          str_replace('_TEXT_', $jenis->jenNama, $categoryStyle),
+          str_replace('_TEXT_', $jenis->nama, $categoryStyle),
           $categoryStyleEmpty,
           $categoryStyleEmpty,
           $categoryStyleEmpty
@@ -191,7 +191,7 @@ class Rekap extends BaseController
         $sub_total_non_ulm = 0;
 
         // Ambil data PENDAPATAN yang sudah dikelompokkan
-        $layanan_di_kategori = $layanan_grouped[$jenis->jenKode] ?? [];
+        $layanan_di_kategori = $layanan_grouped[$jenis->kode] ?? [];
 
         $no = 1;
         if (!empty($layanan_di_kategori)) {
@@ -263,8 +263,8 @@ class Rekap extends BaseController
         $rowIndex++;
 
         $layanan_count = 0;
-        if (isset($layanan_grouped[$jenis->jenKode]) && !empty($layanan_grouped[$jenis->jenKode])) {
-          $layanan_count = count($layanan_grouped[$jenis->jenKode]);
+        if (isset($layanan_grouped[$jenis->kode]) && !empty($layanan_grouped[$jenis->kode])) {
+          $layanan_count = count($layanan_grouped[$jenis->kode]);
         } else {
           $layanan_count = 1;
         }

@@ -7,7 +7,7 @@ use App\Models\MyModel;
 
 class pengelolaPenyelia extends BaseController
 {
-    private $table = 'simlab_account';
+    private $table = 'account';
     private $id = 'username';
     protected $encrypter;
 
@@ -70,7 +70,7 @@ class pengelolaPenyelia extends BaseController
         $timModel = new MyModel('r_tim');
         $timModel->deleteData('user_id', $id);
 
-        // Hapus akun penyelia dari simlab_account
+        // Hapus akun penyelia dari account
         $model = new MyModel($this->table);
         $res = $model->deleteData('user_id', $id); 
 
@@ -201,7 +201,7 @@ class pengelolaPenyelia extends BaseController
         }
 
         // Cek apakah penyelia ada
-        $accountModel = new MyModel('simlab_account');
+        $accountModel = new MyModel('account');
         $account = $accountModel->getDataById('user_id', $user_id);
         if (!$account) {
             return $this->response->setJSON([

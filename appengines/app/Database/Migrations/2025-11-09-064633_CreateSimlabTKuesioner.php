@@ -34,11 +34,11 @@ class CreateSimlabTKuesioner extends Migration
             ],
         ]);
         $this->forge->addKey('kuesioner_id', true);
-        $this->forge->createTable('simlab_t_kuesioner');
+        $this->forge->createTable('t_kuisioner');
     }
 
     public function down()
     {
-        $this->forge->dropTable('simlab_t_kuesioner');
+        $this->forge->dropTable('t_kuisioner');
     }
 }

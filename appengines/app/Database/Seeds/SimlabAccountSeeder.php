@@ -30,6 +30,6 @@ class SimlabAccountSeeder extends Seeder
             ['user_id' => 42, 'username' => 'manajerD',  'nama' => null,           'role_id' => 4, 'password' => '$2y$10$Yr6Oq/xf2Zs4o9Smo11hau4UkHv7iZDHN64BSHjYT/vvhxJ1hl5vO', 'status_user' => 1, 'Telepon' => null],
         ];
 
-        $this->db->table('simlab_account')->insertBatch($data);
+        $this->db->table('account')->insertBatch($data);
     }
 }

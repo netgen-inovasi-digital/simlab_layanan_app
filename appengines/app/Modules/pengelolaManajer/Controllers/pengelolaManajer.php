@@ -7,7 +7,7 @@ use App\Models\MyModel;
 
 class pengelolaManajer extends BaseController
 {
-    private $table = 'simlab_account';
+    private $table = 'account';
     private $id = 'username';
     protected $encrypter;
 
@@ -70,7 +70,7 @@ class pengelolaManajer extends BaseController
         $timModel = new MyModel('r_tim');
         $timModel->deleteData('user_id', $id);
 
-        // Hapus akun Manajer Teknis dari simlab_account
+        // Hapus akun Manajer Teknis dari account
         $model = new MyModel($this->table);
         $res = $model->deleteData('user_id', $id); 
 
@@ -200,7 +200,7 @@ class pengelolaManajer extends BaseController
         }
 
         // Cek apakah manajer teknis ada
-        $accountModel = new MyModel('simlab_account');
+        $accountModel = new MyModel('account');
         $account = $accountModel->getDataById('user_id', $user_id);
         if (!$account) {
             return $this->response->setJSON([

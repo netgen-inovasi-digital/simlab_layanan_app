@@ -7,8 +7,8 @@ use App\Models\MyModel;
 
 class kategoriLayanan extends BaseController
 {
-    private $table = 'simlab_r_jenis';
-    private $id    = 'jenKode';
+    private $table = 'r_jenis';
+    private $id    = 'kode';
     protected $encrypter;
 
     public function initController(\CodeIgniter\HTTP\RequestInterface $request, \CodeIgniter\HTTP\ResponseInterface $response, \Psr\Log\LoggerInterface $logger)
@@ -40,8 +40,8 @@ class kategoriLayanan extends BaseController
 
         $data[csrf_token()] = csrf_hash();
         $data['id']      = $idenc;
-        $data['jenKode'] = $get->jenKode;
-        $data['jenNama'] = $get->jenNama;
+        $data['kode'] = $get->kode;
+        $data['nama'] = $get->nama;
 
         return $this->response->setJSON($data);
     }
@@ -61,24 +61,24 @@ class kategoriLayanan extends BaseController
     public function submit()
     {
         $idenc = $this->request->getPost('id');
-        $jenKode = $this->request->getPost('jenKode');
-        $jenNama = $this->request->getPost('jenNama');
+        $kode = $this->request->getPost('kode');
+        $nama = $this->request->getPost('nama');
 
         $model = new MyModel($this->table);
 
         if ($idenc == "") {
             // Mode Insert
             $data = [
-                'jenKode' => $jenKode,
-                'jenNama' => $jenNama,
+                'kode' => $kode,
+                'nama' => $nama,
             ];
             
             // Cek apakah kode kategori sudah ada untuk insert
-            $cekKode = $model->getDataById($this->id, $jenKode);
+            $cekKode = $model->getDataById($this->id, $kode);
             if ($cekKode) {
                 return $this->response->setJSON([
                     'res'   => 'check',
-                    'msg'   => "Kode kategori layanan <strong>{$jenKode}</strong> sudah ada. Silakan gunakan kode yang berbeda.",
+                    'msg'   => "Kode kategori layanan <strong>{$kode}</strong> sudah ada. Silakan gunakan kode yang berbeda.",
                     'xname' => csrf_token(),
                     'xhash' => csrf_hash()
                 ]);
@@ -90,13 +90,13 @@ class kategoriLayanan extends BaseController
             $idLama  = $this->encrypter->decrypt(hex2bin($idenc));
             
             // Cek apakah kode diubah
-            if ($idLama != $jenKode) {
+            if ($idLama != $kode) {
                 // Kode diubah - cek duplikat dan update termasuk kode
-                $cekKode = $model->getDataById($this->id, $jenKode);
+                $cekKode = $model->getDataById($this->id, $kode);
                 if ($cekKode) {
                     return $this->response->setJSON([
                         'res'   => 'check',
-                        'msg'   => "Kode kategori layanan <strong>{$jenKode}</strong> sudah digunakan oleh data lain. Silakan gunakan kode yang berbeda.",
+                        'msg'   => "Kode kategori layanan <strong>{$kode}</strong> sudah digunakan oleh data lain. Silakan gunakan kode yang berbeda.",
                         'xname' => csrf_token(),
                         'xhash' => csrf_hash()
                     ]);
@@ -104,13 +104,13 @@ class kategoriLayanan extends BaseController
                 
                 // Update dengan kode baru (CASCADE akan handle relasi)
                 $data = [
-                    'jenKode' => $jenKode,
-                    'jenNama' => $jenNama,
+                    'kode' => $kode,
+                    'nama' => $nama,
                 ];
             } else {
                 // Kode tidak diubah - hanya update nama
                 $data = [
-                    'jenNama' => $jenNama,
+                    'nama' => $nama,
                 ];
             }
             
@@ -132,15 +132,15 @@ class kategoriLayanan extends BaseController
 
         $list = $model->getAllData();
         foreach ($list as $row) {
-            $id = bin2hex($this->encrypter->encrypt($row->jenKode));
+            $id = bin2hex($this->encrypter->encrypt($row->kode));
             
             // Cek jumlah relasi di layanan pengujian
-            $jumlahRelasi = $modelLayanan->where('kode_jenis', $row->jenKode)->countAllResults();
+            $jumlahRelasi = $modelLayanan->where('kode_jenis', $row->kode)->countAllResults();
             $msgRelasi = $jumlahRelasi > 0 ? "Terdapat {$jumlahRelasi} layanan pengujian yang terhubung dan akan ikut terhapus." : "";
             
             $response = [];
-            $response[] = '<span class="badge bg-info">' . esc($row->jenKode) . '</span>';
-            $response[] = esc($row->jenNama);
+            $response[] = '<span class="badge bg-info">' . esc($row->kode) . '</span>';
+            $response[] = esc($row->nama);
             $response[] = $this->aksi($id, $msgRelasi);
             $data[]     = $response;
         }

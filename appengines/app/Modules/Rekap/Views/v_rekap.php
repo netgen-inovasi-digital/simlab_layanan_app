@@ -26,8 +26,8 @@
                                         <select id="jenis_layanan" class="form-select">
                                             <option value="semua">Semua</option>
                                             <?php foreach ($jenis_layanan_options as $option): ?>
-                                            <option value="<?php echo esc($option->jenKode); ?>">
-                                                <?php echo esc($option->jenKode . ' - ' . $option->jenNama); ?>
+                                            <option value="<?php echo esc($option->kode); ?>">
+                                                <?php echo esc($option->kode . ' - ' . $option->nama); ?>
                                             </option>
                                             <?php endforeach; ?>
                                         </select>
@@ -108,8 +108,8 @@
                         <select id="downloadJenisLayanan" class="form-select">
                             <option value="semua">Semua</option>
                             <?php foreach ($jenis_layanan_options as $option): ?>
-                            <option value="<?php echo esc($option->jenKode); ?>">
-                                <?php echo esc($option->jenKode . ' - ' . $option->jenNama); ?>
+                            <option value="<?php echo esc($option->kode); ?>">
+                                <?php echo esc($option->kode . ' - ' . $option->nama); ?>
                             </option>
                             <?php endforeach; ?>
                         </select>

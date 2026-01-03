@@ -7,8 +7,8 @@ use App\Models\MyModel;
 
 class Parameter extends BaseController
 {
-	private $table = 'simlab_r_parameter';
-	private $id = 'paraKode';
+	private $table = 'r_parameter';
+	private $id = 'kode';
 
 	public function index()
 	{
@@ -34,8 +34,8 @@ class Parameter extends BaseController
 
 		$data[csrf_token()] = csrf_hash();
 		$data['id'] = $idenc;
-		$data['paraKode'] = $get->paraKode;
-		$data['paraNama'] = $get->paraNama;
+		$data['kode'] = $get->kode;
+		$data['nama'] = $get->nama;
 
 		return $this->response->setJSON($data);
 	}
@@ -51,22 +51,22 @@ class Parameter extends BaseController
 	public function submit()
 	{
 		$idenc = $this->request->getPost('id');
-		$paraKode = $this->request->getPost('paraKode');
+		$kode = $this->request->getPost('kode');
 		
 		$data = array(
-			'paraKode' => $paraKode,
-			'paraNama' => $this->request->getPost('paraNama'),
+			'kode' => $kode,
+			'nama' => $this->request->getPost('nama'),
 		);
 
 		$model = new MyModel($this->table);
 		
 		if ($idenc == "") {
 			// Cek apakah kode parameter sudah ada untuk insert
-			$cekKode = $model->getDataById($this->id, $paraKode);
+			$cekKode = $model->getDataById($this->id, $kode);
 			if ($cekKode) {
 				return $this->response->setJSON([
 					'res'   => 'check',
-					'msg'   => "Kode parameter <strong>{$paraKode}</strong> sudah ada. Silakan gunakan kode yang berbeda.",
+					'msg'   => "Kode parameter <strong>{$kode}</strong> sudah ada. Silakan gunakan kode yang berbeda.",
 					'xname' => csrf_token(),
 					'xhash' => csrf_hash()
 				]);
@@ -77,13 +77,13 @@ class Parameter extends BaseController
 			$idLama = $this->encrypter->decrypt(hex2bin($idenc));
 			
 			// Hanya cek duplikat jika kode diubah
-			if ($idLama != $paraKode) {
+			if ($idLama != $kode) {
 				// Cek apakah kode parameter baru sudah digunakan oleh data lain
-				$cekKode = $model->getDataById($this->id, $paraKode);
+				$cekKode = $model->getDataById($this->id, $kode);
 				if ($cekKode) {
 					return $this->response->setJSON([
 						'res'   => 'check',
-						'msg'   => "Kode parameter <strong>{$paraKode}</strong> sudah digunakan oleh data lain. Silakan gunakan kode yang berbeda.",
+						'msg'   => "Kode parameter <strong>{$kode}</strong> sudah digunakan oleh data lain. Silakan gunakan kode yang berbeda.",
 						'xname' => csrf_token(),
 						'xhash' => csrf_hash()
 					]);
@@ -114,15 +114,15 @@ class Parameter extends BaseController
 
 		$list = $model->getAllData();
 		foreach ($list as $row) {
-			$id = bin2hex($this->encrypter->encrypt($row->paraKode));
+			$id = bin2hex($this->encrypter->encrypt($row->kode));
 			
 			// Cek jumlah relasi di layanan pengujian
-			$jumlahRelasi = $modelLayanan->where('kode_parameter', $row->paraKode)->countAllResults();
+			$jumlahRelasi = $modelLayanan->where('kode_parameter', $row->kode)->countAllResults();
 			$msgRelasi = $jumlahRelasi > 0 ? "Anda akan menghapus {$jumlahRelasi} layanan lab jika menghapus parameter ini" : "";
 			
 			$response = array();
-			$response[] = '<span class="badge bg-info">' . esc($row->paraKode) . '</span>';
-			$response[] = esc($row->paraNama);
+			$response[] = '<span class="badge bg-info">' . esc($row->kode) . '</span>';
+			$response[] = esc($row->nama);
 			$response[] = $this->aksi($id, $msgRelasi);
 			$data[] = $response;
 		}

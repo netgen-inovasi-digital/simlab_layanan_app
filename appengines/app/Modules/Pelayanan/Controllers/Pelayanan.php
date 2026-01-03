@@ -132,12 +132,12 @@ class Pelayanan extends BaseController
     $normalized = [];
     if (!empty($categories)) {
       foreach ($categories as $c) {
-        $kode = isset($c->jenKode) ? trim((string) $c->jenKode) : '';
-        $nama = (isset($c->jenNama) && trim((string) $c->jenNama) !== '') ? trim((string) $c->jenNama) : $kode;
+        $kode = isset($c->kode) ? trim((string) $c->kode) : '';
+        $nama = (isset($c->nama) && trim((string) $c->nama) !== '') ? trim((string) $c->nama) : $kode;
         if ($kode !== '') {
           $normalized[] = (object) [
-            'jenKode' => $kode,
-            'jenNama' => $nama
+            'kode' => $kode,
+            'nama' => $nama
           ];
         }
       }

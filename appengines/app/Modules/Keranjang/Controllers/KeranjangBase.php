@@ -95,21 +95,21 @@ abstract class KeranjangBase extends BaseController
         // Joins untuk query
         'joins' => [
           [
-            'table' => 'simlab_r_parameter',
+            'table' => 'r_parameter',
             'alias' => 'p',
-            'on' => 'p.paraKode = lp.kode_parameter',
+            'on' => 'p.kode = lp.kode_parameter',
             'type' => 'left'
           ],
           [
-            'table' => 'simlab_r_alat',
+            'table' => 'r_alat',
             'alias' => 'a',
-            'on' => 'a.alatKode = lp.kode_alat',
+            'on' => 'a.kode = lp.kode_alat',
             'type' => 'left'
           ],
           [
-            'table' => 'simlab_r_jenis',
+            'table' => 'r_jenis',
             'alias' => 'j',
-            'on' => 'j.jenKode = lp.kode_jenis',
+            'on' => 'j.kode = lp.kode_jenis',
             'type' => 'left'
           ],
         ],
@@ -159,21 +159,21 @@ abstract class KeranjangBase extends BaseController
         // Joins untuk query - filter untuk kode_jenis = 'B' (alat)
         'joins' => [
           [
-            'table' => 'simlab_r_parameter',
+            'table' => 'r_parameter',
             'alias' => 'p',
-            'on' => 'p.paraKode = lp.kode_parameter',
+            'on' => 'p.kode = lp.kode_parameter',
             'type' => 'left'
           ],
           [
-            'table' => 'simlab_r_alat',
+            'table' => 'r_alat',
             'alias' => 'a',
-            'on' => 'a.alatKode = lp.kode_alat',
+            'on' => 'a.kode = lp.kode_alat',
             'type' => 'left'
           ],
           [
-            'table' => 'simlab_r_jenis',
+            'table' => 'r_jenis',
             'alias' => 'j',
-            'on' => 'j.jenKode = lp.kode_jenis',
+            'on' => 'j.kode = lp.kode_jenis',
             'type' => 'left'
           ],
         ],
@@ -223,21 +223,21 @@ abstract class KeranjangBase extends BaseController
         // Joins untuk query
         'joins' => [
           [
-            'table' => 'simlab_r_parameter',
+            'table' => 'r_parameter',
             'alias' => 'p',
-            'on' => 'p.paraKode = lp.kode_parameter',
+            'on' => 'p.kode = lp.kode_parameter',
             'type' => 'left'
           ],
           [
-            'table' => 'simlab_r_alat',
+            'table' => 'r_alat',
             'alias' => 'a',
-            'on' => 'a.alatKode = lp.kode_alat',
+            'on' => 'a.kode = lp.kode_alat',
             'type' => 'left'
           ],
           [
-            'table' => 'simlab_r_jenis',
+            'table' => 'r_jenis',
             'alias' => 'j',
-            'on' => 'j.jenKode = lp.kode_jenis',
+            'on' => 'j.kode = lp.kode_jenis',
             'type' => 'left'
           ],
         ],
@@ -292,9 +292,9 @@ abstract class KeranjangBase extends BaseController
         // Joins untuk query - filter untuk kode_jenis = 'C' (ruangan lab)
         'joins' => [
           [
-            'table' => 'simlab_r_parameter',
+            'table' => 'r_parameter',
             'alias' => 'p',
-            'on' => 'p.paraKode = lp.kode_parameter',
+            'on' => 'p.kode = lp.kode_parameter',
             'type' => 'left'
           ],
           [
@@ -304,9 +304,9 @@ abstract class KeranjangBase extends BaseController
             'type' => 'left'
           ],
           [
-            'table' => 'simlab_r_jenis',
+            'table' => 'r_jenis',
             'alias' => 'j',
-            'on' => 'j.jenKode = lp.kode_jenis',
+            'on' => 'j.kode = lp.kode_jenis',
             'type' => 'left'
           ],
         ],

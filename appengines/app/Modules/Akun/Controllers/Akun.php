@@ -7,7 +7,7 @@ use App\Models\MyModel;
 
 class Akun extends BaseController
 {
-    private $table = 'simlab_account_users'; 
+    private $table = 'account_users'; 
     private $id    = 'user_id';
 
     public function index()

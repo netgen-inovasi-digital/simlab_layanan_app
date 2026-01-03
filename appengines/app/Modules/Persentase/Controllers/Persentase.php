@@ -16,7 +16,7 @@ class Persentase extends BaseController
         $user_id = $session->get('id_user');
 
         $modelUser = new MyModel('users');
-        $modelJenis = new MyModel('simlab_r_jenis');
+        $modelJenis = new MyModel('r_jenis');
 
         $data = [
             'title' => 'Data Persentase',
@@ -84,28 +84,28 @@ class Persentase extends BaseController
     {
         $model = new MyModel($this->table . ' d');
 
-        $jenKode = $this->request->getGet('kdJenKode');
+        $kode = $this->request->getGet('kdJenKode');
         $page    = $this->request->getGet('page');
         $limit   = $this->request->getGet('limit');
 
-        $joins = ['simlab_r_jenis j' => 'j.jenKode = d.kdJenKode'];
+        $joins = ['r_jenis j' => 'j.kode = d.kdJenKode'];
         $where = [];
-        if (!empty($jenKode)) {
-            $where['d.kdJenKode'] = $jenKode;
+        if (!empty($kode)) {
+            $where['d.kdJenKode'] = $kode;
         }
 
         $list = $model->getAllDataWithJoinWhereOrder(
             $joins,
             $where,
             ['d.kdJenKode' => 'ASC'],
-            'd.kdKode, d.kdJenKode, d.kdKolomLabel, d.kdPersenNONULM, j.jenNama'
+            'd.kdKode, d.kdJenKode, d.kdKolomLabel, d.kdPersenNONULM, j.nama'
         );
 
         $data = [];
         foreach ($list as $row) {
             $id = bin2hex($this->encrypter->encrypt($row->kdKode));
             $response = [
-                'kodeLayanan' => '<span class="badge bg-info">' . esc($row->kdJenKode) . ' - ' . esc($row->jenNama) . '</span>',
+                'kodeLayanan' => '<span class="badge bg-info">' . esc($row->kdJenKode) . ' - ' . esc($row->nama) . '</span>',
                 'jenisBiaya'  => $row->kdKolomLabel,
                 'persentase'  => $row->kdPersenNONULM . ' %',
                 'aksi'        => $this->aksi($id),

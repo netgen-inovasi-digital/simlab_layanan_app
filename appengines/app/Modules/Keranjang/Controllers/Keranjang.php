@@ -166,8 +166,8 @@ class Keranjang extends KeranjangBase
     foreach ($keranjang as $item) {
       $jenKodeValue = null;
 
-      if (isset($item['jenKode'])) {
-        $jenKodeValue = trim((string) $item['jenKode']);
+      if (isset($item['kode'])) {
+        $jenKodeValue = trim((string) $item['kode']);
         if ($jenKodeValue === '') {
           $jenKodeValue = null;
         }
@@ -212,10 +212,10 @@ class Keranjang extends KeranjangBase
     $qRaw = trim((string) ($this->request->getGet('q') ?? $this->request->getGet('search') ?? ''));
     $q = $qRaw !== '' ? mb_strtolower($qRaw, 'UTF-8') : '';
 
-    // Baca jenKode sebagai filter kategori
-    $jenKodeFilter = trim((string) ($this->request->getGet('jenKode') ?? ''));
+    // Baca kode sebagai filter kategori
+    $jenKodeFilter = trim((string) ($this->request->getGet('kode') ?? ''));
 
-    // SANITASI: bersihkan jenKode dari query parameters yang salah
+    // SANITASI: bersihkan kode dari query parameters yang salah
     if ($jenKodeFilter !== '') {
       $jenKodeFilter = rawurldecode($jenKodeFilter);
       $jenKodeFilter = preg_replace('/[?&].*$/', '', $jenKodeFilter);
@@ -241,8 +241,8 @@ class Keranjang extends KeranjangBase
       foreach ($listUji as $row) {
         $response = [];
 
-        $response[] = esc($row->paraNama ?? '-');
-        $response[] = esc($row->alatNama ?? '-');
+        $response[] = esc($row->nama ?? '-');
+        $response[] = esc($row->nama ?? '-');
 
         $allowedDiskon = 0;
         if (!empty($row->diskon) && $row->diskon > 0 && $userIdentity === 'ULM') {
@@ -270,13 +270,13 @@ class Keranjang extends KeranjangBase
 
         $btnMasukkan = '<button type="button" class="btn btn-success btn-sm btnMasukkan" '
           . 'data-kode="' . esc($row->kode) . '" '
-          . 'data-alat="' . esc($row->alatNama ?? '') . '" '
+          . 'data-alat="' . esc($row->nama ?? '') . '" '
           . 'data-biaya="' . $row->biaya . '" '
-          . 'data-parameter="' . esc($row->paraNama ?? '') . '" '
+          . 'data-parameter="' . esc($row->nama ?? '') . '" '
           . 'data-nama-layanan="' . esc($row->nama_layanan ?? '') . '" '
           . 'data-diskon="' . $allowedDiskon . '" '
-          . 'data-jenKode="' . esc($jenKodeClean) . '" '
-          . 'data-jenNama="' . esc($row->jenNama ?? '') . '" '
+          . 'data-kode="' . esc($jenKodeClean) . '" '
+          . 'data-nama="' . esc($row->nama ?? '') . '" '
           . 'title="Masukkan ke keranjang">'
           . '<i class="bi bi-cart-plus"></i>'
           . '</button>';

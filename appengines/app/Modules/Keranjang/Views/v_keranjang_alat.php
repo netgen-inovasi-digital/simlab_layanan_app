@@ -147,10 +147,10 @@
     const jenFilterAlat = document.getElementById('jenFilterAlat');
 
     /* Helper build URL layanan alat (untuk modal)
-    - memastikan jika jen diberikan -> url ...?jenKode=B*/
+    - memastikan jika jen diberikan -> url ...?kode=B*/
     function buildLayananAlatUrl(jen = '') {
         const base = '<?= site_url("keranjang_alat/dataListLayanan") ?>';
-        return buildApiUrlWithOptionalParam(base, (jen && jen !== '') ? 'jenKode' : '', jen || '');
+        return buildApiUrlWithOptionalParam(base, (jen && jen !== '') ? 'kode' : '', jen || '');
     }
 
     //   createOrRefreshLayananAlatTable(jen)

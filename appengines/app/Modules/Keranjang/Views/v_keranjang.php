@@ -223,15 +223,15 @@
   var jenFilter = document.getElementById('jenFilter');
 
   /* Helper build URL layanan (untuk modal)
-  - memastikan jika jen diberikan -> url ...?jenKode=A*/
+  - memastikan jika jen diberikan -> url ...?kode=A*/
   function buildLayananUrl(jen = '') {
     const base = '<?= site_url("keranjang/dataListLayanan") ?>';
-    return buildApiUrlWithOptionalParam(base, (jen && jen !== '') ? 'jenKode' : '', jen || '');
+    return buildApiUrlWithOptionalParam(base, (jen && jen !== '') ? 'kode' : '', jen || '');
   }
 
 
   //   createOrRefreshLayananTable(jen)
-  //   - memastikan apiUrl yang dipakai sudah memuat jenKode (jika ada)
+  //   - memastikan apiUrl yang dipakai sudah memuat kode (jika ada)
   //   - kalau instance ada, coba update & fetchData, jika gagal recreate
 
   function createOrRefreshLayananTable(jen) {
@@ -809,8 +809,8 @@
           if (!resp || !resp.categories) return;
           while (select.options.length > 1) select.remove(1);
           resp.categories.forEach(c => {
-            const kode = (c.jenKode ?? '').toString().trim();
-            const nama = (c.jenNama && c.jenNama.toString().trim() !== '') ? c.jenNama : kode;
+            const kode = (c.kode ?? '').toString().trim();
+            const nama = (c.nama && c.nama.toString().trim() !== '') ? c.nama : kode;
             if (!kode) return;
             const opt = document.createElement('option');
             opt.value = kode;

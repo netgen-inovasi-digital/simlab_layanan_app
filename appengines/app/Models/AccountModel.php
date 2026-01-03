@@ -9,7 +9,7 @@ namespace App\Models;
  */
 class AccountModel extends MyModel
 {
-    protected $table = 'simlab_account';
+    protected $table = 'account';
 
     // Role ID Constants
     const ROLE_MANAJER_TEKNIS = 4;

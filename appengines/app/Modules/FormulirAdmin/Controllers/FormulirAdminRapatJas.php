@@ -19,7 +19,7 @@ class FormulirAdminRapatJas extends BaseController
 
   /**
    * Index - kirim juga daftar user untuk pemilih pelanggan
-   * dan daftar kategori (jenKode/jenNama) agar view bisa render opsi kategori awal
+   * dan daftar kategori (kode/nama) agar view bisa render opsi kategori awal
    * KHUSUS RAPAT JAS: Filter hanya kode_jenis = 'D'
    */
   public function index()
@@ -27,7 +27,7 @@ class FormulirAdminRapatJas extends BaseController
     $session = session();
     $user_id = $session->get('id_user');
 
-    $modelUser = new MyModel('simlab_account_users');
+    $modelUser = new MyModel('account_users');
 
     // Ambil user list untuk dropdown pemilih pelanggan
     $users = [];
@@ -38,7 +38,7 @@ class FormulirAdminRapatJas extends BaseController
     } else {
       // fallback ke query builder jika MyModel tidak punya helper
       $db = \Config\Database::connect();
-      $users = $db->table('simlab_account_users')->select('user_id, user_name, user_email, user_identity, user_instansi')->orderBy('user_name', 'ASC')->get()->getResult();
+      $users = $db->table('account_users')->select('user_id, user_name, user_email, user_identity, user_instansi')->orderBy('user_name', 'ASC')->get()->getResult();
     }
 
     // Ambil daftar kategori yang benar-benar ada di data pengujian
@@ -46,13 +46,13 @@ class FormulirAdminRapatJas extends BaseController
     $db = \Config\Database::connect();
     $builder = $db->table('r_layanan_pengujian as lp');
 
-    $builder->select(' DISTINCT TRIM(LEFT(lp.kode_jenis, 2)) as jenKode, j.jenNama ');
-    $builder->join('simlab_r_jenis j', 'j.jenKode = TRIM(LEFT(lp.kode_jenis, 2))', 'left');
+    $builder->select(' DISTINCT TRIM(LEFT(lp.kode_jenis, 2)) as kode, j.nama ');
+    $builder->join('r_jenis j', 'j.kode = TRIM(LEFT(lp.kode_jenis, 2))', 'left');
     $builder->where('lp.kode_jenis IS NOT NULL');
     $builder->where('lp.kode_jenis !=', '');
     // FILTER KHUSUS: Hanya kode_jenis yang dimulai dengan 'D'
     $builder->like('lp.kode_jenis', 'D', 'after');
-    $builder->orderBy('j.jenNama', 'ASC');
+    $builder->orderBy('j.nama', 'ASC');
 
     $categoriesRaw = $builder->get()->getResult();
 
@@ -60,17 +60,17 @@ class FormulirAdminRapatJas extends BaseController
     $categories = [];
     if (!empty($categoriesRaw)) {
       foreach ($categoriesRaw as $c) {
-        $kode = isset($c->jenKode) ? trim((string) $c->jenKode) : '';
-        $nama = (isset($c->jenNama) && trim((string) $c->jenNama) !== '') ? trim((string) $c->jenNama) : $kode;
+        $kode = isset($c->kode) ? trim((string) $c->kode) : '';
+        $nama = (isset($c->nama) && trim((string) $c->nama) !== '') ? trim((string) $c->nama) : $kode;
         if ($kode !== '') {
-          $categories[] = (object) ['jenKode' => $kode, 'jenNama' => $nama];
+          $categories[] = (object) ['kode' => $kode, 'nama' => $nama];
         }
       }
     }
 
     $data = [
       'title' => 'Data Formulir Admin - Rapat JAS',
-      'user' => (new MyModel('simlab_account_users'))->getDataById('user_id', $user_id),
+      'user' => (new MyModel('account_users'))->getDataById('user_id', $user_id),
       'users' => $users,
       'categories' => $categories
     ];
@@ -132,8 +132,8 @@ class FormulirAdminRapatJas extends BaseController
       $filterStatuses = array_map('intval', $parts);
     }
 
-    // Ambil parameter jenKode (kategori layanan yang ingin difilter)
-    $jenKodeParam = trim((string) ($this->request->getGet('jenKode') ?? ''));
+    // Ambil parameter kode (kategori layanan yang ingin difilter)
+    $jenKodeParam = trim((string) ($this->request->getGet('kode') ?? ''));
 
     // Ambil semua data, urutkan tanggal DESC (terbaru di atas)
     if (method_exists($model, 'getAllDataWithOrder')) {
@@ -142,7 +142,7 @@ class FormulirAdminRapatJas extends BaseController
       $list = $model->getAllDataByWhere([], ['tanggal_checkout' => 'DESC']);
     }
 
-    $userModel = new MyModel('simlab_account_users');
+    $userModel = new MyModel('account_users');
     $layananDet = new MyModel('t_layanan_detil');
     $db = \Config\Database::connect();
 
@@ -314,7 +314,7 @@ class FormulirAdminRapatJas extends BaseController
             GROUP_CONCAT(DISTINCT acc.nama SEPARATOR ' | ') AS accUsernames
         ");
 
-    $builder->join('simlab_account acc', 'acc.user_id = d.terima_layanan_by', 'left');
+    $builder->join('account acc', 'acc.user_id = d.terima_layanan_by', 'left');
     $builder->where('d.kode_layanan', $kode);
     // FILTER KHUSUS: Hanya detil dengan kode_jenis dimulai 'D'
     $builder->like('d.kode_jenis', 'D', 'after');
@@ -402,7 +402,7 @@ class FormulirAdminRapatJas extends BaseController
         $userObj = null;
 
         if ($row) {
-          $modelUser = new MyModel('simlab_account_users');
+          $modelUser = new MyModel('account_users');
 
           if (!empty($row->user_id)) {
             $userObj = $modelUser->getDataById('user_id', $row->user_id);

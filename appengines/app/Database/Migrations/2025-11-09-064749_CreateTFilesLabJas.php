@@ -35,7 +35,7 @@ class CreateTFilesLabJas extends Migration
       ],
       'kirim_by' => [
         'type' => 'INT',
-        'unsigned' => true, // <-- samakan dengan simlab_account_users.user_id
+        'unsigned' => true, // <-- samakan dengan account_users.user_id
         'null' => true,
       ],
     ]);
@@ -48,7 +48,7 @@ class CreateTFilesLabJas extends Migration
     // foreign keys using Forge
     $this->forge->addForeignKey('kode_detail_layanan', 't_layanan_detil', 'kode', 'CASCADE', 'CASCADE');
     $this->forge->addForeignKey('kode_layanan', 't_layanan', 'kode_layanan', 'CASCADE', 'CASCADE');
-    $this->forge->addForeignKey('kirim_by', 'simlab_account_users', 'user_id', 'RESTRICT', 'RESTRICT');
+    $this->forge->addForeignKey('kirim_by', 'account_users', 'user_id', 'RESTRICT', 'RESTRICT');
 
     $this->forge->createTable('t_files_lab_jas', true);
   }

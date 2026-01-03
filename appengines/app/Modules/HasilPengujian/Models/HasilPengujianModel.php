@@ -114,7 +114,7 @@ class HasilPengujianModel extends Model
 
     // Info pemesan
     $builder->select('u.user_name as pemesan_name, u.user_email as pemesan_email, u.user_identity as pemesan_identity');
-    $builder->join('simlab_account_users as u', 'u.user_id = l.user_id', 'left');
+    $builder->join('account_users as u', 'u.user_id = l.user_id', 'left');
 
     $builder->whereIn('l.kode_layanan', $lnKodeList);
     $builder->where('l.status_layanan !=', 2); // exclude Ditolak awal
@@ -254,7 +254,7 @@ class HasilPengujianModel extends Model
       'left'
     );
 
-    $builder->join('simlab_account acc', 'acc.user_id = lhus.validasi_by', 'left');
+    $builder->join('account acc', 'acc.user_id = lhus.validasi_by', 'left');
 
     $builder->where('d.kode_layanan', $kode);
     $builder->where('rt.user_id', $userId);

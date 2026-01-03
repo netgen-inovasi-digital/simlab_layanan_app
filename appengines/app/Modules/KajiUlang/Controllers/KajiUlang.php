@@ -25,7 +25,7 @@ class KajiUlang extends BaseController
     $session = session();
     $user_id = $session->get('id_user');
 
-    $modelUser = new MyModel('simlab_account_users');
+    $modelUser = new MyModel('account_users');
     $data = [
       'title' => 'Data Kaji Ulang',
       'user' => $modelUser->getDataById('user_id', $user_id),
@@ -279,7 +279,7 @@ class KajiUlang extends BaseController
       return $this->response->setJSON([
         'res' => false,
         'affected' => 0,
-        'msg' => 'User login tidak valid di simlab_account.',
+        'msg' => 'User login tidak valid di account.',
         'xname' => csrf_token(),
         'xhash' => csrf_hash()
       ]);
@@ -413,7 +413,7 @@ class KajiUlang extends BaseController
       return $this->response->setJSON([
         'res' => false,
         'affected' => 0,
-        'msg' => 'User login tidak valid di simlab_account.',
+        'msg' => 'User login tidak valid di account.',
         'xname' => csrf_token(),
         'xhash' => csrf_hash()
       ]);

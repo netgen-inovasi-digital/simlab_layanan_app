@@ -20,7 +20,7 @@ class TimModel extends MyModel
     public function getTimWithUserDetails($ujiKode)
     {
         $join = [
-            'simlab_account a' => 'a.user_id = ' . $this->table . '.user_id'
+            'account a' => 'a.user_id = ' . $this->table . '.user_id'
         ];
 
         $select = $this->table . '.*, a.username, a.nama, a.role_id';

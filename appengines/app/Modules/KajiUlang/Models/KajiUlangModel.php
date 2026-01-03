@@ -70,8 +70,8 @@ class KajiUlangModel extends Model
   public function getLayananListForManager(array $lnKodeList, int $userId, array $statusArr = []): array
   {
     $builder = $this->db->table('t_layanan as l');
-    $builder->join('simlab_account_users as au', 'au.user_id = l.user_id', 'left');
-    $builder->join('simlab_account as a', 'a.user_id = l.user_id', 'left');
+    $builder->join('account_users as au', 'au.user_id = l.user_id', 'left');
+    $builder->join('account as a', 'a.user_id = l.user_id', 'left');
 
     $builder->select("
             l.*,
@@ -204,14 +204,14 @@ class KajiUlangModel extends Model
   }
 
   /**
-   * Check if user exists in simlab_account
+   * Check if user exists in account
    * 
    * @param int $userId User ID
    * @return bool
    */
   public function isValidUser(int $userId): bool
   {
-    $acc = $this->db->table('simlab_account')
+    $acc = $this->db->table('account')
       ->select('user_id')
       ->where('user_id', $userId)
       ->get()

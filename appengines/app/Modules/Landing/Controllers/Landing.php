@@ -11,7 +11,7 @@ class Landing extends BaseController
     public function index()
     {
         $modelPengumuman = new MyModel('pengumuman');
-        $modelJenisLayanan = new MyModel('simlab_r_jenis');
+        $modelJenisLayanan = new MyModel('r_jenis');
         $modelLayanan = new MyModel('r_layanan_pengujian');
 
         // Get Pengumuman

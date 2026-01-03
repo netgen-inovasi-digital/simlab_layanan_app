@@ -32,12 +32,12 @@ class CreateTFilesLhus extends Migration
       ],
       'validasi_by' => [
         'type' => 'INT',
-        'unsigned' => true, // refer ke simlab_account_users.user_id
+        'unsigned' => true, // refer ke account_users.user_id
         'null' => true,
       ],
       'upload_by' => [
         'type' => 'INT',
-        'unsigned' => true, // refer ke simlab_account_users.user_id
+        'unsigned' => true, // refer ke account_users.user_id
         'null' => true,
       ],
       'catatan' => [
@@ -61,8 +61,8 @@ class CreateTFilesLhus extends Migration
     // FK via Forge
     $this->forge->addForeignKey('kode', 't_layanan_detil', 'kode', 'CASCADE', 'CASCADE');
     $this->forge->addForeignKey('kode_layanan', 't_layanan', 'kode_layanan', 'CASCADE', 'CASCADE');
-    $this->forge->addForeignKey('upload_by', 'simlab_account', 'user_id', 'RESTRICT', 'RESTRICT');
-    $this->forge->addForeignKey('validasi_by', 'simlab_account', 'user_id', 'RESTRICT', 'RESTRICT');
+    $this->forge->addForeignKey('upload_by', 'account', 'user_id', 'RESTRICT', 'RESTRICT');
+    $this->forge->addForeignKey('validasi_by', 'account', 'user_id', 'RESTRICT', 'RESTRICT');
 
     $this->forge->createTable('t_files_lhus', true);
   }

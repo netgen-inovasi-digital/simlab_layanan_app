@@ -92,21 +92,21 @@ abstract class KeranjangBase extends BaseController
         // Joins untuk query
         'joins' => [
           [
-            'table' => 'simlab_r_parameter',
+            'table' => 'r_parameter',
             'alias' => 'p',
-            'on' => 'p.paraKode = lp.kode_parameter',
+            'on' => 'p.kode = lp.kode_parameter',
             'type' => 'left'
           ],
           [
-            'table' => 'simlab_r_alat',
+            'table' => 'r_alat',
             'alias' => 'a',
-            'on' => 'a.alatKode = lp.kode_alat',
+            'on' => 'a.kode = lp.kode_alat',
             'type' => 'left'
           ],
           [
-            'table' => 'simlab_r_jenis',
+            'table' => 'r_jenis',
             'alias' => 'j',
-            'on' => 'j.jenKode = lp.kode_jenis',
+            'on' => 'j.kode = lp.kode_jenis',
             'type' => 'left'
           ],
         ],
@@ -157,9 +157,9 @@ abstract class KeranjangBase extends BaseController
         // Joins untuk query
         'joins' => [
           [
-            'table' => 'simlab_r_alat',
+            'table' => 'r_alat',
             'alias' => 'a',
-            'on' => 'a.alatKode = ls.kode',
+            'on' => 'a.kode = ls.kode',
             'type' => 'left'
           ],
           [
@@ -229,7 +229,7 @@ abstract class KeranjangBase extends BaseController
     $session = session();
     $user_id = $session->get('id_user');
 
-    $modelUser = new MyModel('simlab_account_users');
+    $modelUser = new MyModel('account_users');
 
     // Get categories menggunakan config dinamis
     $categories = $this->getCategories();
@@ -257,13 +257,13 @@ abstract class KeranjangBase extends BaseController
     $normalized = [];
     if (!empty($categories)) {
       foreach ($categories as $c) {
-        $kode = isset($c->jenKode) ? trim((string) $c->jenKode) : '';
-        $nama = (isset($c->jenNama) && trim((string) $c->jenNama) !== '') ? trim((string) $c->jenNama) : $kode;
+        $kode = isset($c->kode) ? trim((string) $c->kode) : '';
+        $nama = (isset($c->nama) && trim((string) $c->nama) !== '') ? trim((string) $c->nama) : $kode;
 
         if ($kode !== '') {
           $normalized[] = (object) [
-            'jenKode' => $kode,
-            'jenNama' => $nama
+            'kode' => $kode,
+            'nama' => $nama
           ];
         }
       }
@@ -280,7 +280,7 @@ abstract class KeranjangBase extends BaseController
     $session = session();
     $user_id = $session->get('id_user');
 
-    $modelUser = new MyModel('simlab_account_users');
+    $modelUser = new MyModel('account_users');
     $user = $modelUser->getDataById('user_id', $user_id);
 
     if (!$user) {
@@ -469,7 +469,7 @@ abstract class KeranjangBase extends BaseController
 
     $user_id = $session->get('id_user');
 
-    $modelUser = new MyModel('simlab_account_users');
+    $modelUser = new MyModel('account_users');
     $userRow = $modelUser->getDataById('user_id', $user_id);
 
     $keranjang = $session->get($this->sessionKey) ?? [];
@@ -854,7 +854,7 @@ abstract class KeranjangBase extends BaseController
     } else {
       // fallback: cek di DB user_identity bila perlu
       try {
-        $modelUser = new MyModel('simlab_account_users');
+        $modelUser = new MyModel('account_users');
         $u = $modelUser->getDataById('user_id', (int) $selectedUserId);
         if ($u && isset($u->user_identity) && strtoupper(trim((string) $u->user_identity)) === 'ULM') {
           $isUlm = true;

@@ -12,13 +12,13 @@
 
                 <div class="mb-3">
                     <label for="jenKodeInput" class="form-label fw-bold">Kode Kategori</label>
-                    <input name="jenKode" type="text" class="form-control" id="jenKodeInput" required placeholder="Contoh : MKB">
+                    <input name="kode" type="text" class="form-control" id="jenKodeInput" required placeholder="Contoh : MKB">
                     <div class="form-text"></div>
                 </div>
 
                 <div class="mb-3">
                     <label for="jenNamaInput" class="form-label fw-bold">Nama Kategori</label>
-                    <input name="jenNama" type="text" class="form-control" id="jenNamaInput" required placeholder="Contoh : Mikrobiologi">
+                    <input name="nama" type="text" class="form-control" id="jenNamaInput" required placeholder="Contoh : Mikrobiologi">
                     <div class="form-text"></div>
                 </div>
             </div>

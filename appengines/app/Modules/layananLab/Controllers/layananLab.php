@@ -58,9 +58,9 @@ class layananLab extends BaseController
         $tim = $timModel->getTimWithUserDetails($id);
 
         // Ambil options untuk dropdown
-        $jenisModel = new MyModel('simlab_r_jenis');
-        $alatModel  = new MyModel('simlab_r_alat');
-        $paraModel  = new MyModel('simlab_r_parameter');
+        $jenisModel = new MyModel('r_jenis');
+        $alatModel  = new MyModel('r_alat');
+        $paraModel  = new MyModel('r_parameter');
         $accountModel = new AccountModel();
 
         $data = [
@@ -253,9 +253,9 @@ class layananLab extends BaseController
     // Ambil dropdown options
     public function getoptions()
     {
-        $jenisModel = new MyModel('simlab_r_jenis');
-        $alatModel  = new MyModel('simlab_r_alat');
-        $paraModel  = new MyModel('simlab_r_parameter');
+        $jenisModel = new MyModel('r_jenis');
+        $alatModel  = new MyModel('r_alat');
+        $paraModel  = new MyModel('r_parameter');
         $accountModel = new AccountModel();
 
         $options = [
@@ -355,12 +355,12 @@ class layananLab extends BaseController
 			$response = [];
 
 			// kolom kategori
-			$response[] = '<span class="badge bg-info">' . esc($row->jenKode) . '</span>';
+			$response[] = '<span class="badge bg-info">' . esc($row->kode) . '</span>';
 
 			// kolom nama layanan
 			$response[] = $row->nama_layanan . '<br>'
-				. '<strong>Alat : </strong>' . $row->alatNama . '<br>'
-				. '<strong>Parameter : </strong>' . $row->paraNama;
+				. '<strong>Alat : </strong>' . $row->nama . '<br>'
+				. '<strong>Parameter : </strong>' . $row->nama;
 
 			// kolom penanggung jawab
 			$timCount = $timCounts[$row->kode] ?? 0;

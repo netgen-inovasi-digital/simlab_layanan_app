@@ -22,7 +22,7 @@ class PelaksanaanModel extends MyModel
   {
     parent::__construct($this->layananTable);
     $this->db = \Config\Database::connect();
-    $this->userModel = new MyModel('simlab_account_users');
+    $this->userModel = new MyModel('account_users');
     $this->logSampelModel = new MyModel('t_log_sampel');
   }
 
@@ -85,10 +85,10 @@ class PelaksanaanModel extends MyModel
                                 GROUP BY kode
                             ) lhus2 ON lhus1.kode = lhus2.kode AND lhus1.file_id = lhus2.max_file_id
                         ) lhus' => 'lhus.kode = d.kode',
-      'simlab_account up_lhus' => 'up_lhus.user_id = lhus.upload_by',
-      'simlab_account acc_lhus' => 'acc_lhus.user_id = lhus.validasi_by',
+      'account up_lhus' => 'up_lhus.user_id = lhus.upload_by',
+      'account acc_lhus' => 'acc_lhus.user_id = lhus.validasi_by',
       't_files_lhu lhu' => 'lhu.kode = d.kode_layanan',
-      'simlab_account_users up_lhu' => 'up_lhu.user_id = lhu.upload_by',
+      'account_users up_lhu' => 'up_lhu.user_id = lhu.upload_by',
     ];
 
     return $detailModel->getAllDataWithJoinWhereOrder(
@@ -104,7 +104,7 @@ class PelaksanaanModel extends MyModel
   {
     return $this->db->table('t_files_lhu AS lhu')
       ->select('lhu.file_id, lhu.file, lhu.tanggal_terbit, lhu.upload_by, users.user_name AS uploader_name')
-      ->join('simlab_account_users AS users', 'users.user_id = lhu.upload_by', 'left')
+      ->join('account_users AS users', 'users.user_id = lhu.upload_by', 'left')
       ->where('lhu.kode', $kode_layanan)
       ->orderBy('CASE WHEN lhu.tanggal_terbit IS NULL THEN 1 ELSE 0 END', 'ASC', false)
       ->orderBy('lhu.tanggal_terbit', 'ASC')

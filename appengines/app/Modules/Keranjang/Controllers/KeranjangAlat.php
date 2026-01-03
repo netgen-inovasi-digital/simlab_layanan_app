@@ -152,11 +152,11 @@ class KeranjangAlat extends KeranjangBase
     $db = \Config\Database::connect();
 
     foreach ($keranjang as $i => $item) {
-      // Ambil jenKode dari keranjang atau fallback ke tabel pengujian supaya sesuai FK
+      // Ambil kode dari keranjang atau fallback ke tabel pengujian supaya sesuai FK
       $jenKodeValue = null;
 
-      if (isset($item['jenKode'])) {
-        $jenKodeValue = trim((string) $item['jenKode']);
+      if (isset($item['kode'])) {
+        $jenKodeValue = trim((string) $item['kode']);
         if ($jenKodeValue === '') {
           $jenKodeValue = null;
         }
@@ -258,7 +258,7 @@ class KeranjangAlat extends KeranjangBase
     $user_id = $session->get('id_user');
 
     // Ambil info user untuk cek user_identity
-    $modelUser = new MyModel('simlab_account_users');
+    $modelUser = new MyModel('account_users');
     $user = $modelUser->getDataById('user_id', $user_id);
     $userIdentity = '';
     if ($user && isset($user->user_identity)) {
@@ -269,10 +269,10 @@ class KeranjangAlat extends KeranjangBase
     $qRaw = trim((string) ($this->request->getGet('q') ?? $this->request->getGet('search') ?? ''));
     $q = $qRaw !== '' ? mb_strtolower($qRaw, 'UTF-8') : '';
 
-    // Baca jenKode sebagai filter kategori
-    $jenKodeFilter = trim((string) ($this->request->getGet('jenKode') ?? ''));
+    // Baca kode sebagai filter kategori
+    $jenKodeFilter = trim((string) ($this->request->getGet('kode') ?? ''));
 
-    // SANITASI: bersihkan jenKode dari query parameters yang salah
+    // SANITASI: bersihkan kode dari query parameters yang salah
     if ($jenKodeFilter !== '') {
       $jenKodeFilter = rawurldecode($jenKodeFilter);
       $jenKodeFilter = preg_replace('/[?&].*$/', '', $jenKodeFilter);
@@ -304,15 +304,15 @@ class KeranjangAlat extends KeranjangBase
                 lp.{$cols['nama']} as nama_layanan,
                 lp.{$cols['jenis']} as kode_jenis,
                 lp.{$cols['satuan']} as satuan,
-                p.paraNama,
-                a.alatNama,
-                j.jenNama
+                p.nama,
+                a.nama,
+                j.nama
             ");
 
       // Joins dari config
-      $builder->join('simlab_r_parameter p', 'p.paraKode = lp.' . $cols['parameter'], 'left');
-      $builder->join('simlab_r_alat a', 'a.alatKode = lp.' . $cols['alat'], 'left');
-      $builder->join('simlab_r_jenis j', 'j.jenKode = lp.' . $cols['jenis'], 'left');
+      $builder->join('r_parameter p', 'p.kode = lp.' . $cols['parameter'], 'left');
+      $builder->join('r_alat a', 'a.kode = lp.' . $cols['alat'], 'left');
+      $builder->join('r_jenis j', 'j.kode = lp.' . $cols['jenis'], 'left');
 
       // ⚠️ FILTER PENTING: Hanya tampilkan alat (kode_jenis = 'B')
       $builder->where('lp.' . $cols['jenis'], 'B');
@@ -331,10 +331,10 @@ class KeranjangAlat extends KeranjangBase
         $filtered = [];
         foreach ($listUji as $row) {
           $fields = [
-            isset($row->paraNama) ? mb_strtolower($row->paraNama, 'UTF-8') : '',
-            isset($row->alatNama) ? mb_strtolower($row->alatNama, 'UTF-8') : '',
+            isset($row->nama) ? mb_strtolower($row->nama, 'UTF-8') : '',
+            isset($row->nama) ? mb_strtolower($row->nama, 'UTF-8') : '',
             isset($row->nama_layanan) ? mb_strtolower($row->nama_layanan, 'UTF-8') : '',
-            isset($row->jenNama) ? mb_strtolower($row->jenNama, 'UTF-8') : '',
+            isset($row->nama) ? mb_strtolower($row->nama, 'UTF-8') : '',
             isset($row->kode) ? (string) $row->kode : ''
           ];
 
@@ -360,10 +360,10 @@ class KeranjangAlat extends KeranjangBase
         $response = [];
 
         // Parameter
-        $response[] = esc($row->paraNama ?? '-');
+        $response[] = esc($row->nama ?? '-');
 
         // Instrumen/Alat
-        $response[] = esc($row->alatNama ?? '-');
+        $response[] = esc($row->nama ?? '-');
 
         // Tentukan diskon yang diperbolehkan
         $allowedDiskon = 0;
@@ -392,13 +392,13 @@ class KeranjangAlat extends KeranjangBase
                 <button type="button" 
                         class="btn btn-success btn-sm btnMasukkanAlat" 
                         data-kode="' . esc($row->kode) . '" 
-                        data-alat="' . esc($row->alatNama ?? '') . '" 
+                        data-alat="' . esc($row->nama ?? '') . '" 
                         data-biaya="' . $row->biaya . '" 
-                        data-parameter="' . esc($row->paraNama ?? '') . '"
+                        data-parameter="' . esc($row->nama ?? '') . '"
                         data-nama-layanan="' . esc($row->nama_layanan ?? '') . '"
                         data-diskon="' . $allowedDiskon . '" 
-                        data-jenKode="' . esc($jenKodeClean) . '"
-                        data-jenNama="' . esc($row->jenNama ?? '') . '"
+                        data-kode="' . esc($jenKodeClean) . '"
+                        data-nama="' . esc($row->nama ?? '') . '"
                         title="Masukkan ke keranjang sewa alat">
                     <i class="bi bi-cart-plus"></i>
                 </button>
@@ -436,11 +436,11 @@ class KeranjangAlat extends KeranjangBase
       $db = \Config\Database::connect();
       $builder = $db->table($this->tablePengujian . ' as lp');
 
-      $builder->select('lp.kode_jenis as jenKode, j.jenNama');
-      $builder->join('simlab_r_jenis j', 'j.jenKode = lp.kode_jenis', 'left');
+      $builder->select('lp.kode_jenis as kode, j.nama');
+      $builder->join('r_jenis j', 'j.kode = lp.kode_jenis', 'left');
       $builder->where('lp.kode_jenis', 'B');  // Filter untuk alat
-      $builder->groupBy('lp.kode_jenis, j.jenNama');
-      $builder->orderBy('j.jenNama', 'ASC');
+      $builder->groupBy('lp.kode_jenis, j.nama');
+      $builder->orderBy('j.nama', 'ASC');
 
       $categories = $builder->get()->getResult();
 

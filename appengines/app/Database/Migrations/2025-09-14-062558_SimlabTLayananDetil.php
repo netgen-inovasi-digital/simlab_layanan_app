@@ -73,8 +73,8 @@ class CreateTLayananDetil extends Migration
     $this->forge->addKey('terima_layanan_by');
 
     // FK via Forge
-    $this->forge->addForeignKey('terima_layanan_by', 'simlab_account', 'user_id', 'RESTRICT', 'RESTRICT');
-    $this->forge->addForeignKey('kode_jenis', 'simlab_r_jenis', 'jenKode', 'RESTRICT', 'RESTRICT');
+    $this->forge->addForeignKey('terima_layanan_by', 'account', 'user_id', 'RESTRICT', 'RESTRICT');
+    $this->forge->addForeignKey('kode_jenis', 'r_jenis', 'kode', 'RESTRICT', 'RESTRICT');
     $this->forge->addForeignKey('kode_layanan', 't_layanan', 'kode_layanan', 'RESTRICT', 'RESTRICT');
     $this->forge->addForeignKey('uji_kode', 'r_layanan_pengujian', 'kode', 'SET NULL', 'SET NULL');
     $this->forge->addForeignKey('metode_pengujian', 'r_metode', 'metode_kode', 'SET NULL', 'SET NULL');

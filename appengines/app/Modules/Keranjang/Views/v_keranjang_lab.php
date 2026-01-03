@@ -443,7 +443,7 @@
                 detDiskon: diskon,
                 detJumlah: jumlah,
                 detKeterangan: tr.querySelector('.keterangan') ? tr.querySelector('.keterangan').value : '',
-                jenKode: 'C', // Kode jenis untuk ruangan lab
+                kode: 'C', // Kode jenis untuk ruangan lab
                 detTotal: total
             };
 

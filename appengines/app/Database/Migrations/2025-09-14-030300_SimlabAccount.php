@@ -67,12 +67,14 @@ class CreateSimlabAccount extends Migration
             'CHARSET' => 'utf8mb4',
             'COLLATE' => 'utf8mb4_unicode_ci',
         ];
-        $this->forge->createTable('simlab_account', true, $attributes);
+        $this->forge->createTable('account', true, $attributes);
 
         // set AUTO_INCREMENT starting value to 43 (as in dump)
         try {
             $db = \Config\Database::connect();
-            $db->query("ALTER TABLE `simlab_account` AUTO_INCREMENT = 43");
+            $db->query("ALTER TABLE `
+            
+            account` AUTO_INCREMENT = 43");
         } catch (\Throwable $e) {
             // ignore if not permitted
         }
@@ -81,7 +83,7 @@ class CreateSimlabAccount extends Migration
         try {
             $db = \Config\Database::connect();
             if ($db->tableExists('roles')) {
-                $db->query("ALTER TABLE `simlab_account`
+                $db->query("ALTER TABLE `account`
                     ADD CONSTRAINT `fk_account_role` FOREIGN KEY (`role_id`) REFERENCES `roles`(`id_role`)
                     ON DELETE NO ACTION ON UPDATE NO ACTION");
             }
@@ -93,6 +95,6 @@ class CreateSimlabAccount extends Migration
     public function down()
     {
         // drop table (FK will be removed automatically)
-        $this->forge->dropTable('simlab_account', true);
+        $this->forge->dropTable('account', true);
     }
 }

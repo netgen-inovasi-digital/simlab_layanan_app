@@ -10,7 +10,7 @@ class AddKodeLayananToSimlabTKuesionerJawaban extends Migration
   {
     $fieldExists = false;
     try {
-      $fieldExists = $this->db->query("SHOW COLUMNS FROM `simlab_t_kuesioner_jawaban` LIKE 'kode_layanan'")->getNumRows() > 0;
+      $fieldExists = $this->db->query("SHOW COLUMNS FROM `t_kuisioner_jawaban` LIKE 'kode_layanan'")->getNumRows() > 0;
     } catch (\Throwable $e) {
       $fieldExists = false;
     }
@@ -23,13 +23,13 @@ class AddKodeLayananToSimlabTKuesionerJawaban extends Migration
           'after' => 'user_id',
         ],
       ];
-      $this->forge->addColumn('simlab_t_kuesioner_jawaban', $fields);
+      $this->forge->addColumn('t_kuisioner_jawaban', $fields);
 
       // Tambahkan index agar pencarian lebih cepat
-      $this->db->query('ALTER TABLE `simlab_t_kuesioner_jawaban` ADD INDEX `idx_kode_layanan` (`kode_layanan`)');
+      $this->db->query('ALTER TABLE `t_kuisioner_jawaban` ADD INDEX `idx_kode_layanan` (`kode_layanan`)');
 
       // Tambahkan foreign key ke t_layanan.kode_layanan
-      $this->db->query('ALTER TABLE `simlab_t_kuesioner_jawaban`
+      $this->db->query('ALTER TABLE `t_kuisioner_jawaban`
                 ADD CONSTRAINT `fk_kuesioner_jawaban_layanan`
                 FOREIGN KEY (`kode_layanan`) REFERENCES `t_layanan` (`kode_layanan`)
                 ON DELETE CASCADE ON UPDATE CASCADE');
@@ -40,25 +40,25 @@ class AddKodeLayananToSimlabTKuesionerJawaban extends Migration
   {
     $fieldExists = false;
     try {
-      $fieldExists = $this->db->query("SHOW COLUMNS FROM `simlab_t_kuesioner_jawaban` LIKE 'kode_layanan'")->getNumRows() > 0;
+      $fieldExists = $this->db->query("SHOW COLUMNS FROM `t_kuisioner_jawaban` LIKE 'kode_layanan'")->getNumRows() > 0;
     } catch (\Throwable $e) {
       $fieldExists = false;
     }
 
     if ($fieldExists) {
       try {
-        $this->db->query('ALTER TABLE `simlab_t_kuesioner_jawaban` DROP FOREIGN KEY `fk_kuesioner_jawaban_layanan`');
+        $this->db->query('ALTER TABLE `t_kuisioner_jawaban` DROP FOREIGN KEY `fk_kuesioner_jawaban_layanan`');
       } catch (\Throwable $e) {
         // ignore if FK already removed
       }
 
       try {
-        $this->db->query('ALTER TABLE `simlab_t_kuesioner_jawaban` DROP INDEX `idx_kode_layanan`');
+        $this->db->query('ALTER TABLE `t_kuisioner_jawaban` DROP INDEX `idx_kode_layanan`');
       } catch (\Throwable $e) {
         // ignore if index already removed
       }
 
-      $this->forge->dropColumn('simlab_t_kuesioner_jawaban', 'kode_layanan');
+      $this->forge->dropColumn('t_kuisioner_jawaban', 'kode_layanan');
     }
   }
 }

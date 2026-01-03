@@ -4,7 +4,7 @@ use CodeIgniter\Model;
 
 class AuthModel extends Model
 {
-	protected $table = 'simlab_account_users';
+	protected $table = 'account_users';
     protected $primaryKey = 'user_id';
      protected $allowedFields = [
         'user_name',
@@ -18,7 +18,7 @@ class AuthModel extends Model
 	public function checkUsername($username)
 	{
 		$db = \Config\Database::connect();
-        $builder = $db->table('simlab_account_users');
+        $builder = $db->table('account_users');
         $builder->where('user_name', $username);
 		return $builder->get()->getNumRows();
 	}
@@ -26,7 +26,7 @@ class AuthModel extends Model
     public function checkEmail($email)
 	{
 		$db = \Config\Database::connect();
-        $builder = $db->table('simlab_account_users');
+        $builder = $db->table('account_users');
         $builder->where('user_email', $email);
 		return $builder->get()->getNumRows();
 	}

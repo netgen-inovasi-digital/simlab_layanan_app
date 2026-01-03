@@ -56,7 +56,7 @@ class TinjauLhusModel extends Model
 
     return $db->table('t_layanan as l')
       ->select('l.*, u.user_name as pemesan_name, u.user_email as pemesan_email, u.user_identity as pemesan_identity')
-      ->join('simlab_account_users as u', 'u.user_id = l.user_id', 'left')
+      ->join('account_users as u', 'u.user_id = l.user_id', 'left')
       ->whereIn('l.kode_layanan', $lnKodeList)
       ->where('l.status_layanan >=', 5)
       ->orderBy('l.tanggal_checkout', 'DESC')

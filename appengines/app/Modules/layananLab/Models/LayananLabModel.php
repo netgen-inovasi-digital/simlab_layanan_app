@@ -23,15 +23,15 @@ class LayananLabModel extends MyModel
     public function getLayananWithDetails($where = [])
     {
         $join = [
-            'simlab_r_jenis j'     => 'j.jenKode = ' . $this->table . '.kode_jenis',
-            'simlab_r_alat a'      => 'a.alatKode = ' . $this->table . '.kode_alat',
-            'simlab_r_parameter p' => 'p.paraKode = ' . $this->table . '.kode_parameter',
+            'r_jenis j'     => 'j.kode = ' . $this->table . '.kode_jenis',
+            'r_alat a'      => 'a.kode = ' . $this->table . '.kode_alat',
+            'r_parameter p' => 'p.kode = ' . $this->table . '.kode_parameter',
         ];
 
         $select = $this->table . '.*, 
-            j.jenKode, j.jenNama, 
-            a.alatNama, 
-            p.paraNama';
+            j.kode, j.nama, 
+            a.nama, 
+            p.nama';
 
         return $this->getAllDataWithJoinWhereOrder($join, $where, [], $select, 'left');
     }

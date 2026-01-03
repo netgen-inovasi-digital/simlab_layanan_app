@@ -242,7 +242,7 @@ class KeranjangSewa extends KeranjangBase
     $user_id = $session->get('id_user');
 
     // Ambil info user untuk cek user_identity
-    $modelUser = new MyModel('simlab_account_users');
+    $modelUser = new MyModel('account_users');
     $user = $modelUser->getDataById('user_id', $user_id);
     $userIdentity = '';
     if ($user && isset($user->user_identity)) {

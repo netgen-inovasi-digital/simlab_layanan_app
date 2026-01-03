@@ -87,7 +87,7 @@ class KeranjangLab extends KeranjangBase
     $detDiskon = isset($post['detDiskon']) ? (float) $post['detDiskon'] : 0;
     $detJumlah = isset($post['detJumlah']) ? (int) $post['detJumlah'] : 1;
     $detKeterangan = trim($post['detKeterangan'] ?? '');
-    $jenKode = $post['jenKode'] ?? 'C'; // Default kode jenis untuk ruangan lab
+    $kode = $post['kode'] ?? 'C'; // Default kode jenis untuk ruangan lab
     $detNamaLayanan = $post['detNamaLayanan'] ?? null; // nama_layanan dari r_layanan_pengujian
 
     // Dapatkan diskon yang sebenarnya diterapkan
@@ -108,7 +108,7 @@ class KeranjangLab extends KeranjangBase
       'jumlah' => $jumlah,
       'keterangan' => $detKeterangan,
       'biaya' => $biayaTotalBaru,
-      'jenKode' => $jenKode, // Simpan jenKode untuk digunakan saat save
+      'kode' => $kode, // Simpan kode untuk digunakan saat save
       'nama_layanan' => $detNamaLayanan, // nama_layanan dari r_layanan_pengujian
     ];
   }
@@ -157,11 +157,11 @@ class KeranjangLab extends KeranjangBase
     $db = \Config\Database::connect();
 
     foreach ($keranjang as $i => $item) {
-      // Ambil jenKode dari keranjang atau fallback ke tabel pengujian supaya sesuai FK
+      // Ambil kode dari keranjang atau fallback ke tabel pengujian supaya sesuai FK
       $jenKodeValue = null;
 
-      if (isset($item['jenKode'])) {
-        $jenKodeValue = trim((string) $item['jenKode']);
+      if (isset($item['kode'])) {
+        $jenKodeValue = trim((string) $item['kode']);
         if ($jenKodeValue === '') {
           $jenKodeValue = null;
         }
@@ -213,7 +213,7 @@ class KeranjangLab extends KeranjangBase
     $session = session();
     $user_id = $session->get('id_user');
 
-    $modelUser = new MyModel('simlab_account_users');
+    $modelUser = new MyModel('account_users');
     $userRow = $modelUser->getDataById('user_id', $user_id);
 
     $keranjang = $session->get($this->sessionKey) ?? [];
@@ -396,7 +396,7 @@ class KeranjangLab extends KeranjangBase
     $user_id = $session->get('id_user');
 
     // Ambil info user untuk cek user_identity
-    $modelUser = new MyModel('simlab_account_users');
+    $modelUser = new MyModel('account_users');
     $user = $modelUser->getDataById('user_id', $user_id);
     $userIdentity = '';
     if ($user && isset($user->user_identity)) {
@@ -407,17 +407,17 @@ class KeranjangLab extends KeranjangBase
     $qRaw = trim((string) ($this->request->getGet('q') ?? $this->request->getGet('search') ?? ''));
     $q = $qRaw !== '' ? mb_strtolower($qRaw, 'UTF-8') : '';
 
-    // Baca jenKode sebagai filter kategori
-    $jenKodeFilter = trim((string) ($this->request->getGet('jenKode') ?? ''));
+    // Baca kode sebagai filter kategori
+    $jenKodeFilter = trim((string) ($this->request->getGet('kode') ?? ''));
 
-    // SANITASI: bersihkan jenKode dari query parameters yang salah
+    // SANITASI: bersihkan kode dari query parameters yang salah
     if ($jenKodeFilter !== '') {
       $jenKodeFilter = rawurldecode($jenKodeFilter);
       $jenKodeFilter = preg_replace('/[?&].*$/', '', $jenKodeFilter);
       if (strpos($jenKodeFilter, '=') !== false) {
         $parts = explode('=', $jenKodeFilter);
         $jenKodeFilter = trim($parts[0]);
-        if (in_array(strtolower($jenKodeFilter), ['jenkode', 'jenis', 'kode'])) {
+        if (in_array(strtolower($jenKodeFilter), ['kode', 'jenis', 'kode'])) {
           $jenKodeFilter = isset($parts[1]) ? trim($parts[1]) : '';
         }
       }
@@ -442,14 +442,14 @@ class KeranjangLab extends KeranjangBase
                 lp.{$cols['jenis']} as kode_jenis,
                 lp.{$cols['satuan']} as satuan,
                 lp.{$cols['alat']} as kode_ruangan,
-                p.paraNama,
-                j.jenNama
+                p.nama,
+                j.nama
             ");
 
       // Joins dari config - TIDAK perlu JOIN ke simlab_r_ruangan (tabel tidak ada)
       // Nama ruangan sudah ada di kolom nama_layanan
-      $builder->join('simlab_r_parameter p', 'p.paraKode = lp.' . $cols['parameter'], 'left');
-      $builder->join('simlab_r_jenis j', 'j.jenKode = lp.' . $cols['jenis'], 'left');
+      $builder->join('r_parameter p', 'p.kode = lp.' . $cols['parameter'], 'left');
+      $builder->join('r_jenis j', 'j.kode = lp.' . $cols['jenis'], 'left');
 
       // ⚠️ FILTER PENTING: Hanya tampilkan ruangan lab (kode_jenis = 'C')
       $builder->where('lp.' . $cols['jenis'], 'C');
@@ -472,9 +472,9 @@ class KeranjangLab extends KeranjangBase
         $filtered = [];
         foreach ($listUji as $row) {
           $fields = [
-            isset($row->paraNama) ? mb_strtolower($row->paraNama, 'UTF-8') : '',
+            isset($row->nama) ? mb_strtolower($row->nama, 'UTF-8') : '',
             isset($row->nama_layanan) ? mb_strtolower($row->nama_layanan, 'UTF-8') : '',
-            isset($row->jenNama) ? mb_strtolower($row->jenNama, 'UTF-8') : '',
+            isset($row->nama) ? mb_strtolower($row->nama, 'UTF-8') : '',
             isset($row->kode) ? (string) $row->kode : ''
           ];
 
@@ -499,7 +499,7 @@ class KeranjangLab extends KeranjangBase
           $response = [];
 
           // Parameter
-          $response[] = esc($row->paraNama ?? '-');
+          $response[] = esc($row->nama ?? '-');
 
           // Nama Ruangan (dari kolom nama_layanan)
           $response[] = esc($row->nama_layanan ?? '-');
@@ -526,13 +526,13 @@ class KeranjangLab extends KeranjangBase
 
           $response[] = '<button type="button" class="btn btn-sm btn-primary btnMasukkanLab" '
             . 'data-kode="' . esc($row->kode ?? '', 'attr') . '" '
-            . 'data-parameter="' . esc($row->paraNama ?? '', 'attr') . '" '
+            . 'data-parameter="' . esc($row->nama ?? '', 'attr') . '" '
             . 'data-ruangan="' . esc($row->nama_layanan ?? '', 'attr') . '" '
             . 'data-nama-layanan="' . esc($row->nama_layanan ?? '', 'attr') . '" '
             . 'data-biaya="' . $biaya . '" '
             . 'data-diskon="' . $diskonDb . '" '
-            . 'data-jenKode="' . esc($jenKodeClean, 'attr') . '" '
-            . 'data-jenNama="' . esc($row->jenNama ?? '', 'attr') . '" '
+            . 'data-kode="' . esc($jenKodeClean, 'attr') . '" '
+            . 'data-nama="' . esc($row->nama ?? '', 'attr') . '" '
             . 'title="Masukkan ke keranjang sewa ruangan lab">'
             . '<i class="bi bi-plus-circle"></i> Masukkan'
             . '</button>';

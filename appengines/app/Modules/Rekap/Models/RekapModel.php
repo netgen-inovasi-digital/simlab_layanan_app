@@ -10,7 +10,7 @@ class RekapModel extends Model
   protected $tablePembayaran = 't_pembayaran';
   protected $tableLayanan = 't_layanan';
   protected $tableDetil = 't_layanan_detil';
-  protected $tableJenis = 'simlab_r_jenis';
+  protected $tableJenis = 'r_jenis';
   protected $tableRLayanan = 'r_layanan_pengujian';
   protected $tableKolomKeuangan = 'simlab_r_kolom_keuangan_detail';
 
@@ -22,10 +22,10 @@ class RekapModel extends Model
 
   public function getJenisLayanan(?string $kode = null): array
   {
-    $builder = $this->db->table($this->tableJenis)->orderBy('jenKode', 'ASC');
+    $builder = $this->db->table($this->tableJenis)->orderBy('kode', 'ASC');
 
     if (!empty($kode) && $kode !== 'semua') {
-      $builder->where('jenKode', $kode);
+      $builder->where('kode', $kode);
     }
 
     return $builder->get()->getResult();
@@ -45,7 +45,7 @@ class RekapModel extends Model
             SUM(CASE WHEN u.user_identity != 'ULM' THEN (d.biaya * d.jumlah) ELSE 0 END) AS total_non_ulm
         ");
     $builder->join($this->tableLayanan . ' l', 'd.kode_layanan = l.kode_layanan', 'inner');
-    $builder->join('simlab_account_users u', 'l.user_id = u.user_id', 'inner');
+    $builder->join('account_users u', 'l.user_id = u.user_id', 'inner');
     $builder->join($this->tablePembayaran . ' p', 'l.kode_layanan = p.kode_layanan', 'inner');
 
     if (!empty($tanggalAwal) && !empty($tanggalAkhir)) {
@@ -104,7 +104,7 @@ class RekapModel extends Model
         ");
     $builder->join($this->tableDetil . ' d', 'r.kode = d.uji_kode', 'left');
     $builder->join($this->tableLayanan . ' l', 'd.kode_layanan = l.kode_layanan', 'left');
-    $builder->join('simlab_account_users u', 'l.user_id = u.user_id', 'left');
+    $builder->join('account_users u', 'l.user_id = u.user_id', 'left');
     $builder->join($this->tablePembayaran . ' p', $dateCondition, 'left');
 
     if (!empty($jenisLayanan) && $jenisLayanan !== 'semua') {

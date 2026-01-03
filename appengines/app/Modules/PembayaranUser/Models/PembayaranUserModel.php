@@ -25,7 +25,7 @@ class PembayaranUserModel extends MyModel
   {
     parent::__construct('t_pembayaran');
     $this->db = \Config\Database::connect();
-    $this->userModel = new MyModel('simlab_account_users');
+    $this->userModel = new MyModel('account_users');
   }
 
   /**

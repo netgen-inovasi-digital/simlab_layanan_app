@@ -115,20 +115,20 @@
   //    Ambil kategori dari query string (jika ada)
   var urlParams = new URLSearchParams(window.location.search);
   var kategoriLayananFromUrl = urlParams.get('kategoriLayanan');
-  var jenKodeFromUrl = urlParams.get('jenKode');
+  var jenKodeFromUrl = urlParams.get('kode');
 
   // Inisialisasi tabel utama menggunakan createTable
 
   var baseMainPath = '<?= site_url("pelayanan/datalist") ?>';
 
-  // Prioritas: kategoriLayanan > jenKode
+  // Prioritas: kategoriLayanan > kode
   var initialParamKey = null;
   var initialParamValue = null;
   if (kategoriLayananFromUrl && kategoriLayananFromUrl !== '') {
     initialParamKey = 'kategoriLayanan';
     initialParamValue = kategoriLayananFromUrl;
   } else if (jenKodeFromUrl && jenKodeFromUrl !== '') {
-    initialParamKey = 'jenKode';
+    initialParamKey = 'kode';
     initialParamValue = jenKodeFromUrl;
   }
 

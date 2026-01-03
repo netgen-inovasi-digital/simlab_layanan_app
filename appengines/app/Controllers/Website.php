@@ -58,11 +58,11 @@ class Website extends BaseController
         ->getResult();
 
     // --- Ini memuat data untuk DROPDOWN ---
-    $modelJenisLayanan = new MyModel('simlab_r_jenis');
+    $modelJenisLayanan = new MyModel('r_jenis');
     
     // Get Jenis Layanan (untuk dropdown)
     $dataJenisLayanan = $modelJenisLayanan->builder()
-        ->orderBy('jenKode', 'ASC')
+        ->orderBy('kode', 'ASC')
         ->get()
         ->getResult();
 

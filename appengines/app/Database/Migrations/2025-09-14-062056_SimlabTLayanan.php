@@ -16,7 +16,7 @@ class CreateSimlabTLayanan extends Migration
       ],
       'user_id' => [
         'type' => 'INT',
-        'unsigned' => true, // samakan dengan simlab_account_users.user_id
+        'unsigned' => true, // samakan dengan account_users.user_id
         'null' => true,
       ],
       'lnAccEmail' => [
@@ -67,8 +67,8 @@ class CreateSimlabTLayanan extends Migration
     $this->forge->createTable('t_layanan', true);
 
     // add FK via Forge (could also be done before createTable; doing before sometimes fails if ref table not exists)
-    // but since simlab_account_users should exist earlier, we add via DB query or Forge:
-    $this->forge->addForeignKey('user_id', 'simlab_account_users', 'user_id', 'SET NULL', 'CASCADE');
+    // but since account_users should exist earlier, we add via DB query or Forge:
+    $this->forge->addForeignKey('user_id', 'account_users', 'user_id', 'SET NULL', 'CASCADE');
   }
 
   public function down()

@@ -407,7 +407,7 @@ class Auth extends Controller
     $data = [
       'user_password' => password_hash($password, PASSWORD_DEFAULT),
     ];
-    $modelUser = new MyModel('simlab_account_users');
+    $modelUser = new MyModel('account_users');
     $modelUser->updateData($data, 'user_id', $reset->user_id);
 
     // Tandai token sebagai sudah digunakan

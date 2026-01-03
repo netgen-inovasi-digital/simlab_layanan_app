@@ -25,7 +25,7 @@ class PembayaranAdminModel extends MyModel
   {
     parent::__construct('t_pembayaran');
     $this->db = \Config\Database::connect();
-    $this->userModel = new MyModel('simlab_account_users');
+    $this->userModel = new MyModel('account_users');
     $this->layananModel = new MyModel('t_layanan');
   }
 
@@ -80,9 +80,9 @@ class PembayaranAdminModel extends MyModel
   public function getDetailLayananItems($kode_layanan): array
   {
     return $this->db->table('t_layanan_detil d')
-      ->select('d.nama_layanan, d.jumlah, d.biaya, rl.nama_layanan AS ref_nama, rl.kode_alat, rl.diskon AS ref_diskon, alat.alatNama, metode.nama AS metode_nama')
+      ->select('d.nama_layanan, d.jumlah, d.biaya, rl.nama_layanan AS ref_nama, rl.kode_alat, rl.diskon AS ref_diskon, alat.nama, metode.nama AS metode_nama')
       ->join('r_layanan_pengujian rl', 'rl.kode = d.uji_kode', 'left')
-      ->join('simlab_r_alat alat', 'alat.alatKode = rl.kode_alat', 'left')
+      ->join('r_alat alat', 'alat.kode = rl.kode_alat', 'left')
       ->join('r_metode metode', 'metode.metode_kode = d.metode_pengujian', 'left')
       ->where('d.kode_layanan', $kode_layanan)
       ->where('d.status_layanan', 1)

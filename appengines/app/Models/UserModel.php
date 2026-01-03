@@ -9,7 +9,7 @@ namespace App\Models;
  */
 class UserModel extends MyModel
 {
-    protected $table = 'simlab_account_users';
+    protected $table = 'account_users';
     protected $primaryKey = 'user_id';
 
     public function __construct()

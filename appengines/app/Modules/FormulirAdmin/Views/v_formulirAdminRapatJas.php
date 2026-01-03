@@ -77,8 +77,8 @@
                                 <?php if (!empty($categories) && (is_array($categories) || is_object($categories))): ?>
                                     <?php foreach ($categories as $c): ?>
                                         <?php
-                                        $kode = isset($c->jenKode) ? $c->jenKode : (isset($c['jenKode']) ? $c['jenKode'] : '');
-                                        $nama = isset($c->jenNama) && trim((string) $c->jenNama) !== '' ? $c->jenNama : $kode;
+                                        $kode = isset($c->kode) ? $c->kode : (isset($c['kode']) ? $c['kode'] : '');
+                                        $nama = isset($c->nama) && trim((string) $c->nama) !== '' ? $c->nama : $kode;
                                         ?>
                                         <option value="<?= esc($kode) ?>"><?= esc($nama) ?></option>
                                     <?php endforeach; ?>
@@ -269,7 +269,7 @@
 
     function buildKerLayananUrl(jen) {
         var base = '<?= site_url("keranjangadmin/dataListLayanan") ?>';
-        return buildApiUrlWithOptionalParam(base, (jen && jen !== '') ? 'jenKode' : '', jen || '');
+        return buildApiUrlWithOptionalParam(base, (jen && jen !== '') ? 'kode' : '', jen || '');
     }
 
     function createOrRefreshKerLayananTable(jen) {
@@ -330,7 +330,7 @@
             // try {
             //     if (typeof table !== 'undefined' && table && typeof table.getConfig === 'function') {
             //         const cfg = table.getConfig();
-            //         cfg.apiUrl = buildApiUrlWithOptionalParam('<?php echo site_url("formuliradminrapatjas/datalist") ?>', (jen !== '') ? 'jenKode' : '', jen);
+            //         cfg.apiUrl = buildApiUrlWithOptionalParam('<?php echo site_url("formuliradminrapatjas/datalist") ?>', (jen !== '') ? 'kode' : '', jen);
             //         cfg.apiUrl = normalizeDoubleQuestion(cfg.apiUrl);
             //         if (typeof table.fetchData === 'function') table.fetchData({ reload: true });
             //     }
@@ -1365,8 +1365,8 @@
                     if (!resp || !resp.categories) return;
                     while (select.options.length > 1) select.remove(1);
                     resp.categories.forEach(c => {
-                        const kode = (c.jenKode ?? '').toString().trim();
-                        const nama = (c.jenNama && c.jenNama.toString().trim() !== '') ? c.jenNama : kode;
+                        const kode = (c.kode ?? '').toString().trim();
+                        const nama = (c.nama && c.nama.toString().trim() !== '') ? c.nama : kode;
                         if (!kode) return;
                         const opt = document.createElement('option');
                         opt.value = kode;

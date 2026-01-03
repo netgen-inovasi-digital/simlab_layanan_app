@@ -7,7 +7,7 @@ use App\Models\MyModel;
 
 class Admin extends BaseController
 {
-    private $table = 'simlab_account';
+    private $table = 'account';
     private $id = 'username';
 
     public function index()
@@ -103,7 +103,7 @@ class Admin extends BaseController
 		$data = [];
 
 		$join = [
-			'roles' => 'roles.id_role = simlab_account.role_id'
+			'roles' => 'roles.id_role = account.role_id'
 			];	
 
 		$list = $model->getAllDataByJoin($join);
