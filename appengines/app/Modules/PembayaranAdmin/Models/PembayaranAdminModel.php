@@ -26,7 +26,7 @@ class PembayaranAdminModel extends MyModel
     parent::__construct('t_pembayaran');
     $this->db = \Config\Database::connect();
     $this->userModel = new MyModel('simlab_account_users');
-    $this->layananModel = new MyModel('simlab_t_layanan');
+    $this->layananModel = new MyModel('t_layanan');
   }
 
   /**
@@ -35,20 +35,20 @@ class PembayaranAdminModel extends MyModel
   public function getAdminPaymentList(?string $tanggalAwal = null, ?string $tanggalAkhir = null): array
   {
     $builder = $this->db->table('t_pembayaran as p');
-    $builder->select('p.*, l.lnKode, l.lnAccEmail, l.lnNoTransaksi, l.lnTgl, l.lnStatus, l.user_id, l.jumlah_kaji_ulang');
-    $builder->join('simlab_t_layanan as l', 'p.bayarLnKode = l.lnKode', 'inner');
-    $builder->where('l.lnStatus >', 2);
+    $builder->select('p.*, l.kode_layanan, l.lnAccEmail, l.lnNoTransaksi, l.tanggal_checkout, l.status_layanan, l.user_id, l.jumlah_kaji_ulang');
+    $builder->join('t_layanan as l', 'p.kode_layanan = l.kode_layanan', 'inner');
+    $builder->where('l.status_layanan >', 2);
 
     if (!empty($tanggalAwal) && !empty($tanggalAkhir)) {
-      $builder->where('DATE(l.lnTgl) >=', $tanggalAwal);
-      $builder->where('DATE(l.lnTgl) <=', $tanggalAkhir);
+      $builder->where('DATE(l.tanggal_checkout) >=', $tanggalAwal);
+      $builder->where('DATE(l.tanggal_checkout) <=', $tanggalAkhir);
     } elseif (!empty($tanggalAwal)) {
-      $builder->where('DATE(l.lnTgl) >=', $tanggalAwal);
+      $builder->where('DATE(l.tanggal_checkout) >=', $tanggalAwal);
     } elseif (!empty($tanggalAkhir)) {
-      $builder->where('DATE(l.lnTgl) <=', $tanggalAkhir);
+      $builder->where('DATE(l.tanggal_checkout) <=', $tanggalAkhir);
     }
 
-    $builder->orderBy('p.bayarKode', 'DESC');
+    $builder->orderBy('p.kode_bayar', 'DESC');
     return $builder->get()->getResult();
   }
 
@@ -77,14 +77,14 @@ class PembayaranAdminModel extends MyModel
   /**
    * Ambil detail layanan untuk modal detail.
    */
-  public function getDetailLayananItems($lnKode): array
+  public function getDetailLayananItems($kode_layanan): array
   {
     return $this->db->table('t_layanan_detil d')
       ->select('d.nama_layanan, d.jumlah, d.biaya, rl.nama_layanan AS ref_nama, rl.kode_alat, rl.diskon AS ref_diskon, alat.alatNama, metode.nama AS metode_nama')
       ->join('r_layanan_pengujian rl', 'rl.kode = d.uji_kode', 'left')
       ->join('simlab_r_alat alat', 'alat.alatKode = rl.kode_alat', 'left')
       ->join('r_metode metode', 'metode.metode_kode = d.metode_pengujian', 'left')
-      ->where('d.kode_layanan', $lnKode)
+      ->where('d.kode_layanan', $kode_layanan)
       ->where('d.status_layanan', 1)
       ->get()->getResult();
   }
@@ -131,11 +131,11 @@ class PembayaranAdminModel extends MyModel
     }
 
     $builder = $this->db->table('t_pembayaran');
-    $builder->select('bayarKode');
-    $builder->where('bayarInvoiceNo', $invoiceNo);
+    $builder->select('kode_bayar');
+    $builder->where('no_invoice', $invoiceNo);
 
     if ($excludeId !== null && $excludeId !== '') {
-      $builder->where('bayarKode !=', $excludeId);
+      $builder->where('kode_bayar !=', $excludeId);
     }
 
     return (bool) $builder->get()->getFirstRow();
@@ -144,22 +144,22 @@ class PembayaranAdminModel extends MyModel
   /**
    * Update nomor transaksi di tabel layanan.
    */
-  public function updateLayananNoTransaksi($lnKode, string $noInvoice): bool
+  public function updateLayananNoTransaksi($kode_layanan, string $noInvoice): bool
   {
-    if (empty($lnKode)) {
+    if (empty($kode_layanan)) {
       return false;
     }
 
-    return $this->db->table('simlab_t_layanan')
-      ->where('lnKode', $lnKode)
+    return $this->db->table('t_layanan')
+      ->where('kode_layanan', $kode_layanan)
       ->update(['lnNoTransaksi' => $noInvoice]);
   }
 
   /**
    * Ambil data layanan berdasarkan kode.
    */
-  public function getLayananByKode($lnKode)
+  public function getLayananByKode($kode_layanan)
   {
-    return $this->layananModel->getDataById('lnKode', $lnKode);
+    return $this->layananModel->getDataById('kode_layanan', $kode_layanan);
   }
 }

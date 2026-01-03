@@ -8,7 +8,7 @@ use Modules\PembayaranAdmin\Models\PembayaranAdminModel;
 class PembayaranAdmin extends BaseController
 {
   private $table = 't_pembayaran';
-  private $id = 'bayarKode';
+  private $id = 'kode_bayar';
   protected $pembayaranModel;
 
   public function __construct()
@@ -45,33 +45,33 @@ class PembayaranAdmin extends BaseController
       // Total modal detail layanan harus mengikuti item yang sudah diterima (status_layanan=1)
       $lnKodeList = [];
       foreach ($list as $item) {
-        if (!empty($item->lnKode)) {
-          $lnKodeList[] = $item->lnKode;
+        if (!empty($item->kode_layanan)) {
+          $lnKodeList[] = $item->kode_layanan;
         }
       }
       $acceptedTotalMap = $this->pembayaranModel->getAcceptedDetailTotalMap($lnKodeList);
 
       foreach ($list as $row) {
-        $encrypted_id = bin2hex(service('encrypter')->encrypt($row->bayarKode));
+        $encrypted_id = bin2hex(service('encrypter')->encrypt($row->kode_bayar));
 
         // Cek file invoice dari session (file baru yang belum dikirim)
-        $sessionKey = 'temp_invoice_' . $row->bayarKode;
+        $sessionKey = 'temp_invoice_' . $row->kode_bayar;
         $tempInvoiceFile = session()->get($sessionKey);
 
-        // Status berdasarkan lnNoTransaksi dan bayarBuktiFile
-        // 0 = Menunggu Proses (lnNoTransaksi kosong)
-        // 1 = Terkirim (lnNoTransaksi terisi, bukti bayar belum ada)
-        // 2 = Belum Diverifikasi (lnNoTransaksi terisi, bukti bayar ada, bayarStatus = 0)
-        // 3 = Terverifikasi (bayarStatus = 1)
-        // 4 = Ditolak (bayarStatus = 2)
+        // Status berdasarkan no_invoicedan bukti_bayar
+        // 0 = Menunggu Proses (no_invoicekosong)
+        // 1 = Terkirim (no_invoiceterisi, bukti bayar belum ada)
+        // 2 = Belum Diverifikasi (no_invoiceterisi, bukti bayar ada, status_bayar = 0)
+        // 3 = Terverifikasi (status_bayar = 1)
+        // 4 = Ditolak (status_bayar = 2)
         $invoiceStatus = 0;
         if (!empty($row->lnNoTransaksi)) {
           // Invoice sudah terkirim
-          if (!empty($row->bayarBuktiFile)) {
+          if (!empty($row->bukti_bayar)) {
             // Bukti bayar sudah ada, cek status verifikasi
-            if ($row->bayarStatus == 1) {
+            if ($row->status_bayar == 1) {
               $invoiceStatus = 3; // Terverifikasi
-            } elseif ($row->bayarStatus == 2) {
+            } elseif ($row->status_bayar == 2) {
               $invoiceStatus = 4; // Ditolak
             } else {
               $invoiceStatus = 2; // Belum Diverifikasi
@@ -98,8 +98,8 @@ class PembayaranAdmin extends BaseController
 
         $status = $this->formatInvoiceStatus($invoiceStatus);
 
-        // Status pembayaran untuk logic button (tetap gunakan bayarStatus)
-        $paymentStatus = $this->getPaymentStatus($row->bayarBuktiFile, $row->bayarStatus);
+        // Status pembayaran untuk logic button (tetap gunakan status_bayar)
+        $paymentStatus = $this->getPaymentStatus($row->bukti_bayar, $row->status_bayar);
 
         // Ambil data user (sama seperti di Tagihan)
         $personName = null;
@@ -107,7 +107,7 @@ class PembayaranAdmin extends BaseController
         $instansi = '-';
         $u = null;
 
-        $u = $this->pembayaranModel->findPemesanUser($row->user_id ?? null, $row->lnAccEmail ?? null);
+        $u = $this->pembayaranModel->findPemesanUser($row->user_id ?? null, $row->user_email ?? null);
 
         // Jika user ditemukan, ambil info
         if ($u) {
@@ -115,15 +115,15 @@ class PembayaranAdmin extends BaseController
           $instansi = $u->user_instansi ?? '-';
           $userIdentity = $u->user_identity ?? '-';
         } else {
-          $personName = $row->lnAccEmail ?? '-';
+          $personName = $row->user_email ?? '-';
         }
 
         // Tombol aksi
-        $aksi = $this->aksiButton($encrypted_id, $paymentStatus, $row->bayarBuktiFile, $row->bayarInvoiceFile, $row->lnNoTransaksi, $tempInvoiceFile, $u);
+        $aksi = $this->aksiButton($encrypted_id, $paymentStatus, $row->bukti_bayar, $row->invoice_file, $row->lnNoTransaksi, $tempInvoiceFile, $u);
 
         $pemesanNama = !empty($personName) ? $personName : '-';
         $tipe = !empty($userIdentity) ? strtoupper($userIdentity) : '-';
-        $tanggal = !empty($row->lnTgl) ? date('d-m-Y H:i', strtotime($row->lnTgl)) : '-';
+        $tanggal = !empty($row->tanggal_checkout) ? date('d-m-Y H:i', strtotime($row->tanggal_checkout)) : '-';
 
         $badge = '';
         if ((int) ($row->jumlah_kaji_ulang ?? 0) > 0) {
@@ -138,8 +138,8 @@ class PembayaranAdmin extends BaseController
                         </div>
                     </div>';
 
-        $invoiceNumber = !empty($row->bayarInvoiceNo)
-          ? esc($row->bayarInvoiceNo)
+        $invoiceNumber = !empty($row->no_invoice)
+          ? esc($row->no_invoice)
           : '<span class="text-muted">-</span>';
 
         $invoiceDisplay = '
@@ -148,18 +148,18 @@ class PembayaranAdmin extends BaseController
                         <span class="text-muted" style="font-size:0.85rem;">' . esc($tanggal) . '</span>
                     </div>';
 
-        $detailTotal = (float) ($acceptedTotalMap[(string) $row->lnKode] ?? 0);
-        $encodedLn = bin2hex(service('encrypter')->encrypt($row->lnKode));
+        $detailTotal = (float) ($acceptedTotalMap[(string) $row->kode_layanan] ?? 0);
+        $encodedLn = bin2hex(service('encrypter')->encrypt($row->kode_layanan));
         $detailButton = '<button type="button" class="btn btn-sm btn-outline-primary btn-detail-layanan"' .
           ' data-detail-id="' . esc($encodedLn, 'attr') . '"' .
           ' data-pemesan="' . esc($pemesanNama, 'attr') . '"' .
-          ' data-invoice="' . esc($row->bayarInvoiceNo ?? '-', 'attr') . '"' .
+          ' data-invoice="' . esc($row->no_invoice ?? '-', 'attr') . '"' .
           ' data-total="' . $detailTotal . '">' .
           '<i class="bi bi-card-list"></i> Detail</button>';
 
         // Kolom File Invoice - dengan logic seperti di Tagihan
         $fileInvoiceDisplay = '';
-        $currentFile = !empty($tempInvoiceFile) ? $tempInvoiceFile : ($row->bayarInvoiceFile ?? '');
+        $currentFile = !empty($tempInvoiceFile) ? $tempInvoiceFile : ($row->invoice_file ?? '');
 
         if (!empty($currentFile)) {
           if (!empty($tempInvoiceFile)) {
@@ -183,8 +183,8 @@ class PembayaranAdmin extends BaseController
           $buktiBayar = '<span class="text-muted">-</span>';
         } else {
           // Status Terkirim/Belum Diverifikasi/Terverifikasi/Ditolak - tampilkan bukti bayar jika ada
-          if (!empty($row->bayarBuktiFile)) {
-            $buktiBayar = '<a href="' . base_url('uploads/bukti/' . $row->bayarBuktiFile) . '" target="_blank" class="btn btn-sm btn-success"><i class="bi bi-file-earmark-check"></i> Lihat</a>';
+          if (!empty($row->bukti_bayar)) {
+            $buktiBayar = '<a href="' . base_url('uploads/bukti/' . $row->bukti_bayar) . '" target="_blank" class="btn btn-sm btn-success"><i class="bi bi-file-earmark-check"></i> Lihat</a>';
           } else {
             $buktiBayar = '<span class="text-muted">-</span>';
           }
@@ -222,12 +222,12 @@ class PembayaranAdmin extends BaseController
     }
 
     try {
-      $lnKode = service('encrypter')->decrypt(hex2bin($encLnKode));
+      $kode_layanan = service('encrypter')->decrypt(hex2bin($encLnKode));
     } catch (\Throwable $e) {
       return $this->response->setJSON(['items' => [], 'total' => 0]);
     }
 
-    $rows = $this->pembayaranModel->getDetailLayananItems($lnKode);
+    $rows = $this->pembayaranModel->getDetailLayananItems($kode_layanan);
 
     $items = [];
     foreach ($rows as $idx => $det) {
@@ -257,25 +257,25 @@ class PembayaranAdmin extends BaseController
    * Tentukan status pembayaran untuk ADMIN VIEW
    * @return int 0 = Belum Diunggah, 1 = Belum Diverifikasi, 2 = Terverifikasi, 3 = Tidak Terverifikasi
    */
-  private function getPaymentStatus($buktiBayar, $bayarStatus)
+  private function getPaymentStatus($buktiBayar, $status_bayar)
   {
-    // Jika bayarBuktiFile == null → Belum Diunggah
+    // Jika bukti_bayar == null → Belum Diunggah
     if (empty($buktiBayar)) {
       return 0;
     }
 
-    // Jika bayarBuktiFile != null & bayarStatus == 1 → Terverifikasi
-    if (!empty($buktiBayar) && $bayarStatus == 1) {
+    // Jika bukti_bayar != null & status_bayar == 1 → Terverifikasi
+    if (!empty($buktiBayar) && $status_bayar == 1) {
       return 2;
     }
 
-    // Jika bayarBuktiFile != null & bayarStatus == 2 → Tidak Terverifikasi (Ditolak)
-    if (!empty($buktiBayar) && $bayarStatus == 2) {
+    // Jika bukti_bayar != null & status_bayar == 2 → Tidak Terverifikasi (Ditolak)
+    if (!empty($buktiBayar) && $status_bayar == 2) {
       return 3;
     }
 
-    // Jika bayarBuktiFile != null & bayarStatus == 0 → Belum Diverifikasi (Menunggu)
-    if (!empty($buktiBayar) && $bayarStatus == 0) {
+    // Jika bukti_bayar != null & status_bayar == 0 → Belum Diverifikasi (Menunggu)
+    if (!empty($buktiBayar) && $status_bayar == 0) {
       return 1;
     }
 
@@ -284,12 +284,12 @@ class PembayaranAdmin extends BaseController
 
   /**
    * Format status badge untuk INVOICE STATUS (dengan status verifikasi)
-   * Berdasarkan lnNoTransaksi dan bayarStatus
-   * 0 = Menunggu Proses (lnNoTransaksi kosong)
-   * 1 = Terkirim (lnNoTransaksi terisi, belum ada bukti bayar)
-   * 2 = Belum Diverifikasi (ada bukti bayar, bayarStatus = 0)
-   * 3 = Terverifikasi (bayarStatus = 1)
-   * 4 = Ditolak (bayarStatus = 2)
+   * Berdasarkan no_invoicedan status_bayar
+   * 0 = Menunggu Proses (no_invoicekosong)
+   * 1 = Terkirim (no_invoiceterisi, belum ada bukti bayar)
+   * 2 = Belum Diverifikasi (ada bukti bayar, status_bayar = 0)
+   * 3 = Terverifikasi (status_bayar = 1)
+   * 4 = Ditolak (status_bayar = 2)
    */
   private function formatInvoiceStatus($status)
   {
@@ -527,16 +527,16 @@ class PembayaranAdmin extends BaseController
       $currentData = $model->getDataById($this->id, $id);
 
       // Hapus file lama jika ada
-      if (!empty($currentData->bayarBuktiFile)) {
-        $oldFile = FCPATH . 'uploads/bukti/' . $currentData->bayarBuktiFile;
+      if (!empty($currentData->bukti_bayar)) {
+        $oldFile = FCPATH . 'uploads/bukti/' . $currentData->bukti_bayar;
         if (file_exists($oldFile)) {
           @unlink($oldFile);
         }
       }
 
       $dataPembayaran = [
-        'bayarBuktiFile' => $filename,
-        'bayarStatus' => 0  // Set status Belum Diverifikasi
+        'bukti_bayar' => $filename,
+        'status_bayar' => 0  // Set status Belum Diverifikasi
       ];
 
       $update = $model->updateData($dataPembayaran, $this->id, $id);
@@ -611,7 +611,7 @@ class PembayaranAdmin extends BaseController
       }
 
       // Cek apakah invoice sudah terkirim
-      if (!empty($currentData->bayarInvoiceNo)) {
+      if (!empty($currentData->no_invoice)) {
         return $this->response->setJSON([
           'res' => false,
           'msg' => 'Invoice sudah terkirim sebelumnya',
@@ -665,8 +665,8 @@ class PembayaranAdmin extends BaseController
       $filename = $uploadResult['filename'];
 
       // Hapus file invoice lama jika ada
-      if (!empty($currentData->bayarInvoiceFile)) {
-        $oldFile = FCPATH . 'uploads/invoice/' . $currentData->bayarInvoiceFile;
+      if (!empty($currentData->invoice_file)) {
+        $oldFile = FCPATH . 'uploads/invoice/' . $currentData->invoice_file;
         if (file_exists($oldFile)) {
           @unlink($oldFile);
         }
@@ -674,9 +674,9 @@ class PembayaranAdmin extends BaseController
 
       // Update data pembayaran: simpan file invoice + nomor invoice + tanggal invoice
       $dataPembayaran = [
-        'bayarInvoiceFile' => $filename,
-        'bayarInvoiceNo' => $invoiceNo,
-        'bayarInvoiceTgl' => date('Y-m-d H:i:s')
+        'invoice_file' => $filename,
+        'no_invoice' => $invoiceNo,
+        'tanggal_invoice' => date('Y-m-d H:i:s')
       ];
 
       $update = $model->updateData($dataPembayaran, $this->id, $id);
@@ -697,7 +697,7 @@ class PembayaranAdmin extends BaseController
       }
 
       // Update nomor transaksi di tabel layanan (sync dengan invoice)
-      $this->pembayaranModel->updateLayananNoTransaksi($currentData->bayarLnKode, $invoiceNo);
+      $this->pembayaranModel->updateLayananNoTransaksi($currentData->kode_layanan, $invoiceNo);
 
       return $this->response->setJSON([
         'res' => 'success',
@@ -817,10 +817,10 @@ class PembayaranAdmin extends BaseController
 
       $model = $this->pembayaranModel;
 
-      // Update bayarStatus menjadi 1 (Terverifikasi) dan kosongkan bayarCatatan
+      // Update status_bayar menjadi 1 (Terverifikasi) dan kosongkan catatan_pembayaran
       $data = [
-        'bayarStatus' => 1,
-        'bayarCatatan' => null  // Hapus catatan penolakan lama
+        'status_bayar' => 1,
+        'catatan_pembayaran' => null  // Hapus catatan penolakan lama
       ];
       $update = $model->updateData($data, $this->id, $id);
 
@@ -881,12 +881,12 @@ class PembayaranAdmin extends BaseController
 
       $model = $this->pembayaranModel;
 
-      // Update bayarStatus menjadi 2 (Tidak Terverifikasi)
-      $data = ['bayarStatus' => 2];
+      // Update status_bayar menjadi 2 (Tidak Terverifikasi)
+      $data = ['status_bayar' => 2];
 
-      // Jika ada alasan, simpan (perlu kolom bayarCatatan di database)
+      // Jika ada alasan, simpan (perlu kolom catatan_pembayaran di database)
       if (!empty($alasan)) {
-        $data['bayarCatatan'] = $alasan;
+        $data['catatan_pembayaran'] = $alasan;
       }
 
       $update = $model->updateData($data, $this->id, $id);
@@ -974,8 +974,8 @@ class PembayaranAdmin extends BaseController
       $currentData = $model->getDataById($this->id, $id);
 
       // Hapus file lama jika ada
-      if (!empty($currentData->bayarInvoiceFile)) {
-        $oldFile = FCPATH . 'uploads/invoice/' . $currentData->bayarInvoiceFile;
+      if (!empty($currentData->invoice_file)) {
+        $oldFile = FCPATH . 'uploads/invoice/' . $currentData->invoice_file;
         if (file_exists($oldFile)) {
           @unlink($oldFile);
         }
@@ -983,7 +983,7 @@ class PembayaranAdmin extends BaseController
 
       // Update file invoice di database
       $dataPembayaran = [
-        'bayarInvoiceFile' => $filename
+        'invoice_file' => $filename
       ];
 
       $update = $model->updateData($dataPembayaran, $this->id, $id);
@@ -1054,7 +1054,7 @@ class PembayaranAdmin extends BaseController
       $tempFilename = session()->get($sessionKey);
 
       // Jika tidak ada file di session, cek di database (file lama)
-      if (empty($tempFilename) && (empty($currentData) || empty($currentData->bayarInvoiceFile))) {
+      if (empty($tempFilename) && (empty($currentData) || empty($currentData->invoice_file))) {
         return $this->response->setJSON([
           'res' => false,
           'msg' => 'Upload file invoice terlebih dahulu',
@@ -1064,7 +1064,7 @@ class PembayaranAdmin extends BaseController
       }
 
       // Gunakan file dari session jika ada, jika tidak gunakan file lama
-      $filename = !empty($tempFilename) ? $tempFilename : $currentData->bayarInvoiceFile;
+      $filename = !empty($tempFilename) ? $tempFilename : $currentData->invoice_file;
 
       // Validasi nomor invoice
       if (empty($noInvoice)) {
@@ -1086,9 +1086,9 @@ class PembayaranAdmin extends BaseController
         ]);
       }
 
-      // Ambil lnKode dari pembayaran
-      $lnKode = $currentData->bayarLnKode;
-      if (empty($lnKode)) {
+      // Ambil kode_layanan dari pembayaran
+      $kode_layanan = $currentData->kode_layanan;
+      if (empty($kode_layanan)) {
         return $this->response->setJSON([
           'res' => false,
           'msg' => 'Data layanan tidak ditemukan',
@@ -1098,8 +1098,8 @@ class PembayaranAdmin extends BaseController
       }
 
       // Hapus file lama jika ada dan berbeda dengan file baru
-      if (!empty($currentData->bayarInvoiceFile) && !empty($tempFilename) && $currentData->bayarInvoiceFile !== $tempFilename) {
-        $oldFilePath = FCPATH . 'uploads/invoice/' . $currentData->bayarInvoiceFile;
+      if (!empty($currentData->invoice_file) && !empty($tempFilename) && $currentData->invoice_file !== $tempFilename) {
+        $oldFilePath = FCPATH . 'uploads/invoice/' . $currentData->invoice_file;
         if (file_exists($oldFilePath)) {
           @unlink($oldFilePath);
         }
@@ -1107,8 +1107,8 @@ class PembayaranAdmin extends BaseController
 
       // Update nomor invoice dan filename di tabel pembayaran
       $dataPembayaran = [
-        'bayarInvoiceNo' => $noInvoice,
-        'bayarInvoiceFile' => $filename
+        'no_invoice' => $noInvoice,
+        'invoice_file' => $filename
       ];
 
       $updatePembayaran = $model->updateData($dataPembayaran, $this->id, $id);
@@ -1127,7 +1127,7 @@ class PembayaranAdmin extends BaseController
         session()->remove($sessionKey);
       }
 
-      $this->pembayaranModel->updateLayananNoTransaksi($lnKode, $noInvoice);
+      $this->pembayaranModel->updateLayananNoTransaksi($kode_layanan, $noInvoice);
 
       return $this->response->setJSON([
         'res' => true,

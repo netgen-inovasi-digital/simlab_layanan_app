@@ -465,8 +465,8 @@
   }
 
   // Fungsi untuk pembayaran (sama seperti di Pelayanan)
-  function lokasiPembayaran(lnKode) {
-    window.location.href = '<?= site_url('pembayaran?kode=') ?>' + lnKode;
+  function lokasiPembayaran(kode_layanan) {
+    window.location.href = '<?= site_url('pembayaran?kode=') ?>' + kode_layanan;
   }
 
   // ======= Pastiin #add membuka modalForm (dari KeranjangAdmin) =======

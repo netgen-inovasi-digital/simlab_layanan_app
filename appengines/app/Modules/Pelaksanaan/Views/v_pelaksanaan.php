@@ -309,7 +309,7 @@
       if (table?.getConfig) {
         const cfg = table.getConfig();
         cfg.apiUrl = normalizeDoubleQuestion(
-          buildApiUrlWithOptionalParam('<?php echo site_url("pelaksanaan/datalist") ?>', 'lnStatus', (val === '' ? null : val))
+          buildApiUrlWithOptionalParam('<?php echo site_url("pelaksanaan/datalist") ?>', 'status_layanan', (val === '' ? null : val))
         );
         table.fetchData({ reload: true, page: 1 });
       }

@@ -42,11 +42,11 @@ class PembayaranUserModel extends MyModel
   public function getPaymentListByEmail(string $email): array
   {
     $builder = $this->db->table('t_pembayaran as p');
-    $builder->select('p.*, l.lnKode, l.lnAccEmail, l.lnNoTransaksi, l.lnTgl, l.user_id');
-    $builder->join('simlab_t_layanan as l', 'p.bayarLnKode = l.lnKode', 'inner');
-    $builder->where('p.bayarInvoiceNo IS NOT NULL');
+    $builder->select('p.*, l.kode_layanan, l.lnAccEmail, l.lnNoTransaksi, l.tanggal_checkout, l.user_id');
+    $builder->join('t_layanan as l', 'p.kode_layanan = l.kode_layanan', 'inner');
+    $builder->where('p.no_invoice IS NOT NULL');
     $builder->where('l.lnAccEmail', $email);
-    $builder->orderBy('p.bayarKode', 'DESC');
+    $builder->orderBy('p.kode_bayar', 'DESC');
 
     return $builder->get()->getResult();
   }
@@ -78,7 +78,7 @@ class PembayaranUserModel extends MyModel
    */
   public function getPembayaranById($bayarId)
   {
-    return $this->getDataById('bayarKode', $bayarId);
+    return $this->getDataById('kode_bayar', $bayarId);
   }
 
   /**
@@ -86,7 +86,7 @@ class PembayaranUserModel extends MyModel
    */
   public function updatePembayaran($bayarId, array $data): bool
   {
-    return (bool) $this->updateData($data, 'bayarKode', $bayarId);
+    return (bool) $this->updateData($data, 'kode_bayar', $bayarId);
   }
 
   /**

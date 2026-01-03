@@ -225,9 +225,9 @@
   }
 
   // Fungsi untuk menampilkan tracking modal
-  function showTrackingModal(id, lnKode, lnStatus) {
+  function showTrackingModal(id, kode_layanan, status_layanan) {
     // Panggil fungsi dari v_track_modal.php
-    showFullTrackingModal(id, lnKode, lnStatus);
+    showFullTrackingModal(id, kode_layanan, status_layanan);
   }
 
   function loadDetail(id) {

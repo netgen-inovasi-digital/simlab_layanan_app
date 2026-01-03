@@ -161,7 +161,7 @@ class Keranjang extends KeranjangBase
    * Save detail layanan ke database
    * Override dari KeranjangBase
    */
-  protected function saveDetailLayanan(int $lnKode, array $keranjang): void
+  protected function saveDetailLayanan(int $kode_layanan, array $keranjang): void
   {
     foreach ($keranjang as $item) {
       $jenKodeValue = null;
@@ -178,7 +178,7 @@ class Keranjang extends KeranjangBase
       }
 
       $detil = [
-        'kode_layanan' => $lnKode,
+        'kode_layanan' => $kode_layanan,
         'uji_kode' => $item['kode'] ?? null,
         'biaya' => $item['biaya'] ?? 0,
         'jumlah' => $item['jumlah'] ?? 1,
@@ -379,21 +379,21 @@ class Keranjang extends KeranjangBase
 
     try {
       // Simpan data utama layanan
-      $lnKode = $this->saveMainLayanan($userRow, $totalBiaya);
+      $kode_layanan = $this->saveMainLayanan($userRow, $totalBiaya);
 
-      if (!$lnKode) {
+      if (!$kode_layanan) {
         throw new \RuntimeException('Gagal menyimpan data layanan utama');
       }
 
       // Simpan data pembayaran
-      $this->savePembayaran($lnKode, $totalBiaya);
+      $this->savePembayaran($kode_layanan, $totalBiaya);
 
       // Simpan detail layanan
-      $this->saveDetailLayanan($lnKode, $keranjang);
+      $this->saveDetailLayanan($kode_layanan, $keranjang);
 
       // Simpan identitas sampel
       $identitasSampelData = [
-        'kode_layanan' => $lnKode,
+        'kode_layanan' => $kode_layanan,
         'jenis' => trim($jenisSampel),
         'kemasan' => trim($kemasanSampel),
         'sifat' => $sifatSampel,
@@ -407,7 +407,7 @@ class Keranjang extends KeranjangBase
       }
 
       // Seed log sampel agar tahapan lain bisa langsung melakukan update timestamp
-      if (!$this->keranjangModel->seedLogSampel($lnKode)) {
+      if (!$this->keranjangModel->seedLogSampel($kode_layanan)) {
         throw new \RuntimeException('Gagal menyimpan log sampel');
       }
 

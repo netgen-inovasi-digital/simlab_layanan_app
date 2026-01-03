@@ -75,7 +75,7 @@ abstract class KeranjangBase extends BaseController
         'session_key' => 'keranjang_pengujian',
 
         // Table names
-        'table_layanan' => 'simlab_t_layanan',
+        'table_layanan' => 't_layanan',
         'table_detail' => 't_layanan_detil',
         'table_pengujian' => 'r_layanan_pengujian',
         'table_pembayaran' => 't_pembayaran',
@@ -139,7 +139,7 @@ abstract class KeranjangBase extends BaseController
         'session_key' => 'keranjang_alat',
 
         // Table names - MENGGUNAKAN TABEL YANG SAMA DENGAN PENGUJIAN
-        'table_layanan' => 'simlab_t_layanan',
+        'table_layanan' => 't_layanan',
         'table_detail' => 't_layanan_detil',
         'table_pengujian' => 'r_layanan_pengujian',
         'table_pembayaran' => 't_pembayaran',
@@ -203,7 +203,7 @@ abstract class KeranjangBase extends BaseController
         'session_key' => 'keranjang_rapat_jas',
 
         // Table names
-        'table_layanan' => 'simlab_t_layanan',
+        'table_layanan' => 't_layanan',
         'table_detail' => 't_layanan_detil',
         'table_pengujian' => 'r_layanan_pengujian',
         'table_pembayaran' => 't_pembayaran',
@@ -272,7 +272,7 @@ abstract class KeranjangBase extends BaseController
         'session_key' => 'keranjang_lab',
 
         // Table names - MENGGUNAKAN TABEL YANG SAMA
-        'table_layanan' => 'simlab_t_layanan',
+        'table_layanan' => 't_layanan',
         'table_detail' => 't_layanan_detil',
         'table_pengujian' => 'r_layanan_pengujian',
         'table_pembayaran' => 't_pembayaran',
@@ -576,17 +576,17 @@ abstract class KeranjangBase extends BaseController
 
     try {
       // Simpan data utama layanan
-      $lnKode = $this->saveMainLayanan($userRow, $totalBiaya);
+      $kode_layanan = $this->saveMainLayanan($userRow, $totalBiaya);
 
-      if (!$lnKode) {
+      if (!$kode_layanan) {
         throw new \RuntimeException('Gagal menyimpan data layanan utama');
       }
 
       // Simpan data pembayaran
-      $this->savePembayaran($lnKode, $totalBiaya);
+      $this->savePembayaran($kode_layanan, $totalBiaya);
 
       // Simpan detail layanan
-      $this->saveDetailLayanan($lnKode, $keranjang);
+      $this->saveDetailLayanan($kode_layanan, $keranjang);
 
       // Commit dan bersihkan keranjang
       $db->transComplete();
@@ -620,8 +620,8 @@ abstract class KeranjangBase extends BaseController
     $insertId = $this->keranjangModel->insertLayanan([
       'user_id' => session()->get('id_user'),
       'lnAccEmail' => $userRow->user_email ?? '',
-      'lnTgl' => date('Y-m-d H:i:s'),
-      'lnStatus' => 1,
+      'tanggal_checkout' => date('Y-m-d H:i:s'),
+      'status_layanan' => 1,
       'kuisioner' => 0
     ]);
 
@@ -631,26 +631,26 @@ abstract class KeranjangBase extends BaseController
   /**
    * Save pembayaran data
    */
-  protected function savePembayaran(int $lnKode, float $totalBiaya): void
+  protected function savePembayaran(int $kode_layanan, float $totalBiaya): void
   {
     $today = date('Y-m-d');
 
     $this->keranjangModel->insertPembayaran([
-      'bayarLnKode' => $lnKode,
-      'bayarTotalBiaya' => $totalBiaya,
-      'bayarStatus' => 0,
-      'bayarInvoiceTgl' => $today,
-      'bayarInvoiceFile' => null,
-      'bayarBuktiFile' => null,
-      'bayarCatatan' => null,
-      'bayarInvoiceNo' => null,
+      'kode_layanan' => $kode_layanan,
+      'total_biaya' => $totalBiaya,
+      'status_bayar' => 0,
+      'tanggal_invoice' => $today,
+      'invoice_file' => null,
+      'bukti_bayar' => null,
+      'catatan_pembayaran' => null,
+      'no_invoice' => null,
     ]);
   }
 
   /**
    * Save detail layanan - WAJIB di-override oleh child class
    */
-  abstract protected function saveDetailLayanan(int $lnKode, array $keranjang): void;
+  abstract protected function saveDetailLayanan(int $kode_layanan, array $keranjang): void;
 
   /**
    * Delete item dari keranjang

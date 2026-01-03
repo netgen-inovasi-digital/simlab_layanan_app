@@ -8,7 +8,7 @@ use Modules\PembayaranUser\Models\PembayaranUserModel;
 class PembayaranUser extends BaseController
 {
   private $table = 't_pembayaran';
-  private $id = 'bayarKode';
+  private $id = 'kode_bayar';
 
   /** @var PembayaranUserModel */
   protected $pembayaranModel;
@@ -62,23 +62,23 @@ class PembayaranUser extends BaseController
       // Total biaya pada tabel harus hanya menjumlah item layanan yang diterima (status_layanan=1)
       $lnKodeList = [];
       foreach ($list as $r) {
-        if (!empty($r->lnKode)) {
-          $lnKodeList[] = $r->lnKode;
+        if (!empty($r->kode_layanan)) {
+          $lnKodeList[] = $r->kode_layanan;
         }
       }
       $acceptedTotalMap = $this->pembayaranModel->getAcceptedDetailTotalMap($lnKodeList);
 
       foreach ($list as $row) {
-        $encrypted_id = bin2hex(service('encrypter')->encrypt($row->bayarKode));
+        $encrypted_id = bin2hex(service('encrypter')->encrypt($row->kode_bayar));
 
-        // Status pembayaran berdasarkan bayarBuktiFile dan bayarStatus
-        $paymentStatus = $this->getPaymentStatus($row->bayarBuktiFile, $row->bayarStatus);
+        // Status pembayaran berdasarkan bukti_bayar dan status_bayar
+        $paymentStatus = $this->getPaymentStatus($row->bukti_bayar, $row->status_bayar);
         $status = $this->formatStatus($paymentStatus);
 
         // Cek apakah ada file bukti di session (file temporary yang belum disave)
-        $sessionKey = 'temp_bukti_' . $row->bayarKode;
+        $sessionKey = 'temp_bukti_' . $row->kode_bayar;
         $tempBukti = session()->get($sessionKey);
-        $currentFile = !empty($tempBukti) ? $tempBukti : ($row->bayarBuktiFile ?? '');
+        $currentFile = !empty($tempBukti) ? $tempBukti : ($row->bukti_bayar ?? '');
 
         // Tombol aksi
         $aksi = $this->aksiButton($encrypted_id, $paymentStatus, $currentFile);
@@ -87,7 +87,7 @@ class PembayaranUser extends BaseController
         $personName = null;
         $userIdentity = '-';
         $instansi = '-';
-        $userData = $this->pembayaranModel->findPemesanUser($row->user_id ?? null, $row->lnAccEmail ?? null);
+        $userData = $this->pembayaranModel->findPemesanUser($row->user_id ?? null, $row->user_email ?? null);
 
         // Jika user ditemukan, ambil info
         if ($userData) {
@@ -95,12 +95,12 @@ class PembayaranUser extends BaseController
           $instansi = $userData->user_instansi ?? '-';
           $userIdentity = $userData->user_identity ?? '-';
         } else {
-          $personName = $row->lnAccEmail ?? '-';
+          $personName = $row->user_email ?? '-';
         }
 
         $pemesanNama = !empty($personName) ? $personName : '-';
         $tipe = !empty($userIdentity) ? $userIdentity : '-';
-        $tanggal = !empty($row->lnTgl) ? date('d-m-Y H:i', strtotime($row->lnTgl)) : '-';
+        $tanggal = !empty($row->tanggal_checkout) ? date('d-m-Y H:i', strtotime($row->tanggal_checkout)) : '-';
 
         // Format gabungan seperti di Tagihan (Nama + Tanggal + Tipe)
         $combined = '
@@ -122,9 +122,9 @@ class PembayaranUser extends BaseController
         }
 
         // FIX: Status badge - jika ditolak, tampilkan sebagai BADGE yang bisa diklik (seperti badge lainnya)
-        if ($paymentStatus == 3 && !empty($row->bayarCatatan)) {
+        if ($paymentStatus == 3 && !empty($row->catatan_pembayaran)) {
           // Status DITOLAK - tampilkan sebagai badge danger yang bisa diklik (cursor pointer)
-          $status = '<span class="badge bg-danger" style="cursor: pointer;" onclick="lihatCatatan(\'' . $encrypted_id . '\', \'' . esc($row->bayarCatatan, 'js') . '\')">
+          $status = '<span class="badge bg-danger" style="cursor: pointer;" onclick="lihatCatatan(\'' . $encrypted_id . '\', \'' . esc($row->catatan_pembayaran, 'js') . '\')">
                         Ditolak - Lihat Catatan
                     </span>';
         } else {
@@ -133,13 +133,13 @@ class PembayaranUser extends BaseController
         }
 
         // Response array
-        $totalBiaya = (float) ($acceptedTotalMap[(string) $row->lnKode] ?? 0);
+        $totalBiaya = (float) ($acceptedTotalMap[(string) $row->kode_layanan] ?? 0);
         $data[] = [
-          !empty($row->bayarInvoiceNo) ? esc($row->bayarInvoiceNo) : '<span class="text-muted">-</span>', // No. Invoice
+          !empty($row->no_invoice) ? esc($row->no_invoice) : '<span class="text-muted">-</span>', // No. Invoice
           $combined, // Pemesan (Nama + Tanggal + Tipe)
           'Rp' . number_format($totalBiaya, 0, ',', '.'), // Total Biaya
-          !empty($row->bayarInvoiceFile)
-          ? '<a href="' . base_url('uploads/invoice/' . $row->bayarInvoiceFile) . '" target="_blank" class="btn btn-sm btn-info"><i class="bi bi-file-pdf"></i> Lihat</a>'
+          !empty($row->invoice_file)
+          ? '<a href="' . base_url('uploads/invoice/' . $row->invoice_file) . '" target="_blank" class="btn btn-sm btn-info"><i class="bi bi-file-pdf"></i> Lihat</a>'
           : '<span class="text-muted">-</span>', // File Invoice
           $buktiBayar, // Bukti Bayar
           $status, // Status (badge biasa atau button jika ditolak)
@@ -160,25 +160,25 @@ class PembayaranUser extends BaseController
    * Tentukan status pembayaran
    * @return int 0 = Belum Diunggah, 1 = Menunggu Verifikasi, 2 = Terverifikasi
    */
-  private function getPaymentStatus($buktiBayar, $bayarStatus)
+  private function getPaymentStatus($buktiBayar, $status_bayar)
   {
-    // Jika bayarBuktiFile == null & bayarStatus == 0 → Belum Diunggah
-    if (empty($buktiBayar) && $bayarStatus == 0) {
+    // Jika bukti_bayar == null & status_bayar == 0 → Belum Diunggah
+    if (empty($buktiBayar) && $status_bayar == 0) {
       return 0;
     }
 
-    // Jika bayarBuktiFile != null & bayarStatus == 1 → Terverifikasi
-    if (!empty($buktiBayar) && $bayarStatus == 1) {
+    // Jika bukti_bayar != null & status_bayar == 1 → Terverifikasi
+    if (!empty($buktiBayar) && $status_bayar == 1) {
       return 2;
     }
 
-    // Jika bayarBuktiFile != null & bayarStatus == 2 → Verifikasi Gagal
-    if (!empty($buktiBayar) && $bayarStatus == 2) {
+    // Jika bukti_bayar != null & status_bayar == 2 → Verifikasi Gagal
+    if (!empty($buktiBayar) && $status_bayar == 2) {
       return 3;
     }
 
-    // Jika bayarBuktiFile != null & bayarStatus == 0 → Menunggu Verifikasi
-    if (!empty($buktiBayar) && $bayarStatus == 0) {
+    // Jika bukti_bayar != null & status_bayar == 0 → Menunggu Verifikasi
+    if (!empty($buktiBayar) && $status_bayar == 0) {
       return 1;
     }
 
@@ -284,17 +284,17 @@ class PembayaranUser extends BaseController
       $currentData = $this->pembayaranModel->getPembayaranById($id);
 
       // Hapus file lama jika ada
-      if (!empty($currentData->bayarBuktiFile)) {
-        $oldFile = FCPATH . 'uploads/bukti/' . $currentData->bayarBuktiFile;
+      if (!empty($currentData->bukti_bayar)) {
+        $oldFile = FCPATH . 'uploads/bukti/' . $currentData->bukti_bayar;
         if (file_exists($oldFile)) {
           @unlink($oldFile);
         }
       }
 
-      // Update bukti bayar dan set bayarStatus = 0 (menunggu verifikasi)
+      // Update bukti bayar dan set status_bayar = 0 (menunggu verifikasi)
       $dataPembayaran = [
-        'bayarBuktiFile' => $filename,
-        'bayarStatus' => 0  // Menunggu verifikasi admin
+        'bukti_bayar' => $filename,
+        'status_bayar' => 0  // Menunggu verifikasi admin
       ];
 
       $updatePembayaran = $this->pembayaranModel->updatePembayaran($id, $dataPembayaran);
@@ -503,7 +503,7 @@ class PembayaranUser extends BaseController
     $tempFilename = session()->get($sessionKey);
 
     // Jika tidak ada file di session, cek di database (file lama)
-    if (empty($tempFilename) && (empty($currentData) || empty($currentData->bayarBuktiFile))) {
+    if (empty($tempFilename) && (empty($currentData) || empty($currentData->bukti_bayar))) {
       return $this->response->setJSON([
         'res' => false,
         'msg' => 'Bukti bayar belum diupload. Upload terlebih dahulu sebelum mengirim.',
@@ -513,21 +513,21 @@ class PembayaranUser extends BaseController
     }
 
     // Gunakan file dari session jika ada, jika tidak gunakan file lama dari database
-    $filename = !empty($tempFilename) ? $tempFilename : $currentData->bayarBuktiFile;
+    $filename = !empty($tempFilename) ? $tempFilename : $currentData->bukti_bayar;
 
 
     // Hapus file lama jika ada dan berbeda dengan file baru
-    if (!empty($currentData->bayarBuktiFile) && !empty($tempFilename) && $currentData->bayarBuktiFile !== $tempFilename) {
-      $oldFilePath = FCPATH . 'uploads/bukti/' . $currentData->bayarBuktiFile;
+    if (!empty($currentData->bukti_bayar) && !empty($tempFilename) && $currentData->bukti_bayar !== $tempFilename) {
+      $oldFilePath = FCPATH . 'uploads/bukti/' . $currentData->bukti_bayar;
       if (file_exists($oldFilePath)) {
         @unlink($oldFilePath);
       }
     }
 
-    // Update bukti bayar dan set bayarStatus = 0 (menunggu verifikasi)
+    // Update bukti bayar dan set status_bayar = 0 (menunggu verifikasi)
     $dataPembayaran = [
-      'bayarBuktiFile' => $filename,
-      'bayarStatus' => 0  // Menunggu verifikasi admin
+      'bukti_bayar' => $filename,
+      'status_bayar' => 0  // Menunggu verifikasi admin
     ];
 
     $updatePembayaran = $this->pembayaranModel->updatePembayaran($id, $dataPembayaran);

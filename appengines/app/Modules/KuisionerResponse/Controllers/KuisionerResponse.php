@@ -35,10 +35,10 @@ class KuisionerResponse extends BaseController
 
     $data = [];
     foreach ($rows as $row) {
-      $encId = bin2hex($this->encrypter->encrypt($row->lnKode));
+      $encId = bin2hex($this->encrypter->encrypt($row->kode_layanan));
 
       $namaLayanan = $row->layanan_nama ?: '-';
-      $noTransaksi = $row->lnNoTransaksi ?: '-';
+      $noTransaksi = $row->no_invoice ?: '-';
       $colLayanan = '<div class="fw-semibold">' . esc($namaLayanan) . '</div>' .
         '<small class="text-muted">No. Invoice: ' . esc($noTransaksi) . '</small>';
 
@@ -59,22 +59,22 @@ class KuisionerResponse extends BaseController
     }
 
     try {
-      $lnKode = $this->encrypter->decrypt(hex2bin($id));
+      $kode_layanan = $this->encrypter->decrypt(hex2bin($id));
     } catch (\Throwable $e) {
       try {
-        $lnKode = $this->encrypter->decrypt($id);
+        $kode_layanan = $this->encrypter->decrypt($id);
       } catch (\Throwable $e2) {
         return $this->response->setJSON(['success' => false, 'msg' => 'ID tidak valid']);
       }
     }
 
-    $header = $this->responseModel->getResponseHeader($lnKode);
+    $header = $this->responseModel->getResponseHeader($kode_layanan);
 
     if (!$header) {
       return $this->response->setJSON(['success' => false, 'msg' => 'Data layanan tidak ditemukan']);
     }
 
-    $rows = $this->responseModel->getQuestionResponses($lnKode);
+    $rows = $this->responseModel->getQuestionResponses($kode_layanan);
 
     $items = [];
     foreach ($rows as $index => $row) {
@@ -90,7 +90,7 @@ class KuisionerResponse extends BaseController
     return $this->response->setJSON([
       'success' => true,
       'meta' => [
-        'no_transaksi' => $header->lnNoTransaksi ?? '-',
+        'no_transaksi' => $header->no_invoice ?? '-',
         'pemesan' => $header->user_name ?? '-'
       ],
       'items' => $items
@@ -99,8 +99,8 @@ class KuisionerResponse extends BaseController
 
   private function buildPemesanColumn($row): string
   {
-    $pemesanNama = $row->user_name ?: ($row->user_email ?? $row->lnAccEmail ?? '-');
-    $tanggal = !empty($row->lnTgl) ? date('d-m-Y H:i', strtotime($row->lnTgl)) : '-';
+    $pemesanNama = $row->user_name ?: ($row->user_email ?? $row->user_email ?? '-');
+    $tanggal = !empty($row->tanggal_checkout) ? date('d-m-Y H:i', strtotime($row->tanggal_checkout)) : '-';
     $identity = strtoupper($row->user_identity ?? 'NON ULM');
 
     return '<div style="line-height:1.3;">'

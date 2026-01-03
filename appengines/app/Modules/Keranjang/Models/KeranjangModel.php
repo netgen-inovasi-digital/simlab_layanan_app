@@ -41,7 +41,7 @@ class KeranjangModel
   {
     $this->db = \Config\Database::connect();
     $this->config = $config;
-    $this->tableLayanan = $config['table_layanan'] ?? 'simlab_t_layanan';
+    $this->tableLayanan = $config['table_layanan'] ?? 't_layanan';
     $this->tableDetail = $config['table_detail'] ?? 't_layanan_detil';
     $this->tablePengujian = $config['table_pengujian'] ?? 'r_layanan_pengujian';
     $this->tablePembayaran = $config['table_pembayaran'] ?? 't_pembayaran';
@@ -261,10 +261,10 @@ class KeranjangModel
   /**
    * Seed log sampel awal.
    */
-  public function seedLogSampel(int $lnKode, ?string $timestamp = null): bool
+  public function seedLogSampel(int $kode_layanan, ?string $timestamp = null): bool
   {
     $payload = [
-      'kode_layanan' => $lnKode,
+      'kode_layanan' => $kode_layanan,
       'pengecekan' => $timestamp ?? date('Y-m-d H:i:s'),
     ];
 

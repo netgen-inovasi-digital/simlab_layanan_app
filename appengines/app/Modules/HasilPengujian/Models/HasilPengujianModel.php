@@ -108,17 +108,17 @@ class HasilPengujianModel extends Model
   ): array {
     $aggSql = $this->getUserStatusAggregationSubquery($userId);
 
-    $builder = $this->db->table('simlab_t_layanan as l');
+    $builder = $this->db->table('t_layanan as l');
     $builder->select('l.*');
-    $builder->join("({$aggSql}) agg", 'agg.kode_layanan = l.lnKode', 'left');
+    $builder->join("({$aggSql}) agg", 'agg.kode_layanan = l.kode_layanan', 'left');
 
     // Info pemesan
     $builder->select('u.user_name as pemesan_name, u.user_email as pemesan_email, u.user_identity as pemesan_identity');
     $builder->join('simlab_account_users as u', 'u.user_id = l.user_id', 'left');
 
-    $builder->whereIn('l.lnKode', $lnKodeList);
-    $builder->where('l.lnStatus !=', 2); // exclude Ditolak awal
-    $builder->orderBy('l.lnTgl', 'DESC');
+    $builder->whereIn('l.kode_layanan', $lnKodeList);
+    $builder->where('l.status_layanan !=', 2); // exclude Ditolak awal
+    $builder->orderBy('l.tanggal_checkout', 'DESC');
 
     // Apply filters if any
     if ($wantReject || $wantUploaded || !empty($lnStatusFilter)) {
@@ -143,7 +143,7 @@ class HasilPengujianModel extends Model
             $builder->orGroupStart()
               ->where('COALESCE(agg.has_reject_for_user,0) =', 0)
               ->where('COALESCE(agg.pending_for_user,0) >', 0)
-              ->where('l.lnStatus', 4)
+              ->where('l.status_layanan', 4)
               ->groupEnd();
             break;
 
@@ -169,7 +169,7 @@ class HasilPengujianModel extends Model
 
           default:
             $builder->orGroupStart()
-              ->where('l.lnStatus', (int) $s)
+              ->where('l.status_layanan', (int) $s)
               ->where('COALESCE(agg.has_reject_for_user,0) =', 0)
               ->groupStart()
               ->where('COALESCE(agg.pending_for_user,0) >', 0)
@@ -189,15 +189,15 @@ class HasilPengujianModel extends Model
   /**
    * Check if user is authorized for layanan via r_tim
    * 
-   * @param int|string $lnKode Layanan code
+   * @param int|string $kode_layanan Layanan code
    * @param int $userId User ID
    * @return bool
    */
-  public function isUserAuthorizedForLayanan($lnKode, int $userId): bool
+  public function isUserAuthorizedForLayanan($kode_layanan, int $userId): bool
   {
     $count = (int) $this->db->table('t_layanan_detil as d')
       ->join('r_tim as rt', 'rt.uji_kode = d.uji_kode', 'inner')
-      ->where('d.kode_layanan', $lnKode)
+      ->where('d.kode_layanan', $kode_layanan)
       ->where('rt.user_id', $userId)
       ->where('d.status_layanan', 1)
       ->limit(1)
@@ -280,16 +280,16 @@ class HasilPengujianModel extends Model
   }
 
   /**
-   * Get layanan status by lnKode
+   * Get layanan status by kode_layanan
    * 
-   * @param int|string $lnKode Layanan code
+   * @param int|string $kode_layanan Layanan code
    * @return object|null
    */
-  public function getLayananStatus($lnKode): ?object
+  public function getLayananStatus($kode_layanan): ?object
   {
-    return $this->db->table('simlab_t_layanan')
-      ->select('lnStatus')
-      ->where('lnKode', $lnKode)
+    return $this->db->table('t_layanan')
+      ->select('status_layanan')
+      ->where('kode_layanan', $kode_layanan)
       ->get()
       ->getRow();
   }
@@ -297,16 +297,16 @@ class HasilPengujianModel extends Model
   /**
    * Check if user has missing files (files that need to be uploaded before sending)
    * 
-   * @param int|string $lnKode Layanan code
+   * @param int|string $kode_layanan Layanan code
    * @param int $userId User ID
    * @return array ['missingCount' => int, 'missingItems' => array]
    */
-  public function checkMissingFilesForUser($lnKode, int $userId): array
+  public function checkMissingFilesForUser($kode_layanan, int $userId): array
   {
     $builder = $this->db->table('t_layanan_detil as d');
     $builder->select("d.kode, d.files");
     $builder->join('r_tim as t', 't.uji_kode = d.uji_kode', 'inner');
-    $builder->where('d.kode_layanan', $lnKode);
+    $builder->where('d.kode_layanan', $kode_layanan);
     $builder->where('t.user_id', $userId);
     $builder->where('d.status_layanan', 1);
     $userDetRows = $builder->get()->getResult();
@@ -340,13 +340,13 @@ class HasilPengujianModel extends Model
   /**
    * Update files status for user's layanan detail items
    * 
-   * @param int|string $lnKode Layanan code
+   * @param int|string $kode_layanan Layanan code
    * @param int $userId User ID
    * @param int|null $fromStatus From status (null = update all regardless of current status)
    * @param int $toStatus To status
    * @return bool
    */
-  public function updateFilesStatusForUser($lnKode, int $userId, ?int $fromStatus, int $toStatus): bool
+  public function updateFilesStatusForUser($kode_layanan, int $userId, ?int $fromStatus, int $toStatus): bool
   {
     if ($fromStatus !== null) {
       $sql = "
@@ -358,7 +358,7 @@ class HasilPengujianModel extends Model
                   AND d.status_layanan = 1
                   AND d.files = ?
             ";
-      return $this->db->query($sql, [$toStatus, $lnKode, $userId, $fromStatus]);
+      return $this->db->query($sql, [$toStatus, $kode_layanan, $userId, $fromStatus]);
     } else {
       $sql = "
                 UPDATE t_layanan_detil d
@@ -368,20 +368,20 @@ class HasilPengujianModel extends Model
                   AND rt.user_id = ?
                   AND d.status_layanan = 1
             ";
-      return $this->db->query($sql, [$toStatus, $lnKode, $userId]);
+      return $this->db->query($sql, [$toStatus, $kode_layanan, $userId]);
     }
   }
 
   /**
    * Update files status in t_files_lhus table
    * 
-   * @param int|string $lnKode Layanan code
+   * @param int|string $kode_layanan Layanan code
    * @param int $userId User ID
    * @param int $fromStatus From status
    * @param int $toStatus To status
    * @return bool
    */
-  public function updateFilesLhusStatusForUser($lnKode, int $userId, int $fromStatus, int $toStatus): bool
+  public function updateFilesLhusStatusForUser($kode_layanan, int $userId, int $fromStatus, int $toStatus): bool
   {
     $sql = "
             UPDATE t_files_lhus lhus
@@ -394,18 +394,18 @@ class HasilPengujianModel extends Model
               AND lhus.status = ?
         ";
 
-    return $this->db->query($sql, [$toStatus, $lnKode, $userId, $fromStatus]);
+    return $this->db->query($sql, [$toStatus, $kode_layanan, $userId, $fromStatus]);
   }
 
   /**
    * Update terima_layanan_by for user's items
    * 
-   * @param int|string $lnKode Layanan code
+   * @param int|string $kode_layanan Layanan code
    * @param int $userId User ID
    * @param int $acceptedBy User who accepted
    * @return bool
    */
-  public function updateTerimaLayananBy($lnKode, int $userId, int $acceptedBy): bool
+  public function updateTerimaLayananBy($kode_layanan, int $userId, int $acceptedBy): bool
   {
     $sql = "
             UPDATE t_layanan_detil d
@@ -417,16 +417,16 @@ class HasilPengujianModel extends Model
               AND d.files = 0
         ";
 
-    return $this->db->query($sql, [$acceptedBy, $lnKode, $userId]);
+    return $this->db->query($sql, [$acceptedBy, $kode_layanan, $userId]);
   }
 
   /**
    * Check if all files are uploaded for layanan (across all users)
    * 
-   * @param int|string $lnKode Layanan code
+   * @param int|string $kode_layanan Layanan code
    * @return int Count of items without files
    */
-  public function countMissingFilesForLayanan($lnKode): int
+  public function countMissingFilesForLayanan($kode_layanan): int
   {
     // Status files:
     // NULL = belum upload sama sekali
@@ -444,31 +444,31 @@ class HasilPengujianModel extends Model
               AND (d.files IS NULL OR d.files = 2)
         ";
 
-    $result = $this->db->query($sql, [$lnKode])->getRow();
+    $result = $this->db->query($sql, [$kode_layanan])->getRow();
     return $result ? (int) $result->total_belum_upload : 0;
   }
 
   /**
    * Update layanan status
    * 
-   * @param int|string $lnKode Layanan code
+   * @param int|string $kode_layanan Layanan code
    * @param int $status New status
    * @return bool
    */
-  public function updateLayananStatus($lnKode, int $status): bool
+  public function updateLayananStatus($kode_layanan, int $status): bool
   {
-    return $this->db->table('simlab_t_layanan')
-      ->where('lnKode', $lnKode)
-      ->update(['lnStatus' => $status]);
+    return $this->db->table('t_layanan')
+      ->where('kode_layanan', $kode_layanan)
+      ->update(['status_layanan' => $status]);
   }
 
   /**
    * Update log sampel verifikasi_hasil_uji timestamp
    * 
-   * @param int|string $lnKode Layanan code
+   * @param int|string $kode_layanan Layanan code
    * @return bool
    */
-  public function updateLogSampelVerifikasiHasilUji($lnKode): bool
+  public function updateLogSampelVerifikasiHasilUji($kode_layanan): bool
   {
     try {
       $logUpdate = [
@@ -476,7 +476,7 @@ class HasilPengujianModel extends Model
       ];
 
       return $this->db->table('t_log_sampel')
-        ->where('kode_layanan', $lnKode)
+        ->where('kode_layanan', $kode_layanan)
         ->update($logUpdate);
     } catch (\Exception $e) {
       log_message('error', 'Error update log sampel verifikasi_hasil_uji: ' . $e->getMessage());
@@ -502,13 +502,13 @@ class HasilPengujianModel extends Model
    * Insert or update file in t_files_lhus
    * 
    * @param int $detailKode Detail code
-   * @param int|string $lnKode Layanan code
+   * @param int|string $kode_layanan Layanan code
    * @param string $filename Filename
    * @param int $userId User ID who uploaded
    * @param int $status File status
    * @return bool
    */
-  public function saveFileLhus(int $detailKode, $lnKode, string $filename, int $userId, int $status = 3): bool
+  public function saveFileLhus(int $detailKode, $kode_layanan, string $filename, int $userId, int $status = 3): bool
   {
     $existingFile = $this->getFileLhus($detailKode);
 
@@ -520,7 +520,7 @@ class HasilPengujianModel extends Model
           'file_lhus' => $filename,
           'upload_by' => $userId,
           'status' => $status,
-          'kode_layanan' => $lnKode
+          'kode_layanan' => $kode_layanan
         ]);
 
       // Delete old file
@@ -536,7 +536,7 @@ class HasilPengujianModel extends Model
       // Insert new record
       return $this->db->table('t_files_lhus')->insert([
         'kode' => $detailKode,
-        'kode_layanan' => $lnKode,
+        'kode_layanan' => $kode_layanan,
         'file_lhus' => $filename,
         'upload_by' => $userId,
         'status' => $status
@@ -547,15 +547,15 @@ class HasilPengujianModel extends Model
   /**
    * Get detail rows for bulk file upload
    * 
-   * @param int|string $lnKode Layanan code
+   * @param int|string $kode_layanan Layanan code
    * @param int $userId User ID
    * @return array
    */
-  public function getDetailRowsForBulkUpload($lnKode, int $userId): array
+  public function getDetailRowsForBulkUpload($kode_layanan, int $userId): array
   {
     return $this->db->table('t_layanan_detil as d2')
       ->join('r_tim as t2', 't2.uji_kode = d2.uji_kode', 'inner')
-      ->where('d2.kode_layanan', $lnKode)
+      ->where('d2.kode_layanan', $kode_layanan)
       ->where('t2.user_id', $userId)
       ->where('d2.status_layanan', 1)
       ->get()->getResult();
@@ -564,16 +564,16 @@ class HasilPengujianModel extends Model
   /**
    * Check if user has rejected LHUS
    * 
-   * @param int|string $lnKode Layanan code
+   * @param int|string $kode_layanan Layanan code
    * @param int $userId User ID
    * @return bool
    */
-  public function hasRejectedLhus($lnKode, int $userId): bool
+  public function hasRejectedLhus($kode_layanan, int $userId): bool
   {
     $count = (int) $this->db->table('t_layanan_detil')
       ->select('1')
       ->join('r_tim rt', 'rt.uji_kode = t_layanan_detil.uji_kode', 'inner')
-      ->where('t_layanan_detil.kode_layanan', $lnKode)
+      ->where('t_layanan_detil.kode_layanan', $kode_layanan)
       ->where('t_layanan_detil.status_layanan', 1)
       ->where('rt.user_id', $userId)
       ->where('t_layanan_detil.files', 2)
@@ -586,16 +586,16 @@ class HasilPengujianModel extends Model
   /**
    * Check if user has uploaded LHUS (not sent yet)
    * 
-   * @param int|string $lnKode Layanan code
+   * @param int|string $kode_layanan Layanan code
    * @param int $userId User ID
    * @return bool
    */
-  public function hasUploadedLhus($lnKode, int $userId): bool
+  public function hasUploadedLhus($kode_layanan, int $userId): bool
   {
     $count = (int) $this->db->table('t_layanan_detil as d')
       ->select('1')
       ->join('r_tim rt', 'rt.uji_kode = d.uji_kode', 'inner')
-      ->where('d.kode_layanan', $lnKode)
+      ->where('d.kode_layanan', $kode_layanan)
       ->where('d.status_layanan', 1)
       ->where('rt.user_id', $userId)
       ->where('d.files', 3)
@@ -608,15 +608,15 @@ class HasilPengujianModel extends Model
   /**
    * Check if all user's LHUS are accepted
    * 
-   * @param int|string $lnKode Layanan code
+   * @param int|string $kode_layanan Layanan code
    * @param int $userId User ID
    * @return bool
    */
-  public function allUserLhusAccepted($lnKode, int $userId): bool
+  public function allUserLhusAccepted($kode_layanan, int $userId): bool
   {
     $totalUserActive = (int) $this->db->table('t_layanan_detil as d')
       ->join('r_tim rt', 'rt.uji_kode = d.uji_kode', 'inner')
-      ->where('d.kode_layanan', $lnKode)
+      ->where('d.kode_layanan', $kode_layanan)
       ->where('d.status_layanan', 1)
       ->where('rt.user_id', $userId)
       ->countAllResults(false);
@@ -627,7 +627,7 @@ class HasilPengujianModel extends Model
 
     $acceptedCount = (int) $this->db->table('t_layanan_detil as d')
       ->join('r_tim rt', 'rt.uji_kode = d.uji_kode', 'inner')
-      ->where('d.kode_layanan', $lnKode)
+      ->where('d.kode_layanan', $kode_layanan)
       ->where('d.status_layanan', 1)
       ->where('rt.user_id', $userId)
       ->where('d.files', 1)
@@ -639,16 +639,16 @@ class HasilPengujianModel extends Model
   /**
    * Check if user has sent LHUS to manager
    * 
-   * @param int|string $lnKode Layanan code
+   * @param int|string $kode_layanan Layanan code
    * @param int $userId User ID
    * @return bool
    */
-  public function hasSentLhus($lnKode, int $userId): bool
+  public function hasSentLhus($kode_layanan, int $userId): bool
   {
     $count = (int) $this->db->table('t_layanan_detil as d')
       ->select('1')
       ->join('r_tim rt', 'rt.uji_kode = d.uji_kode', 'inner')
-      ->where('d.kode_layanan', $lnKode)
+      ->where('d.kode_layanan', $kode_layanan)
       ->where('d.status_layanan', 1)
       ->where('rt.user_id', $userId)
       ->where('d.files', 0)

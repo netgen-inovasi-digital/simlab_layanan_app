@@ -351,13 +351,13 @@
   var trackingDetailTable;
 
   // Fungsi ini akan dipanggil dari v_pelayanan.php
-  function showFullTrackingModal(id, lnKode, lnStatus) {
+  function showFullTrackingModal(id, kode_layanan, status_layanan) {
     // Reset semua step
     document.querySelectorAll('.track .step').forEach(step => {
       step.classList.remove('active', 'reject');
     });
 
-    // mapping lnStatus -> step index
+    // mapping status_layanan -> step index
     const statusToStep = {
       1: 1,
       2: 1,
@@ -375,12 +375,12 @@
       2: 1
     };
 
-    // tentukan target step berdasarkan mapping (fallback ke lnStatus jika tidak ada)
-    const targetStep = (statusToStep.hasOwnProperty(lnStatus) ? statusToStep[lnStatus] : lnStatus);
+    // tentukan target step berdasarkan mapping (fallback ke status_layanan jika tidak ada)
+    const targetStep = (statusToStep.hasOwnProperty(status_layanan) ? statusToStep[status_layanan] : status_layanan);
 
     // jika status termasuk reject, tandai step yang sesuai dengan kelas 'reject'
-    if (rejectMap.hasOwnProperty(lnStatus)) {
-      const r = document.querySelector(`.step[data-step="${rejectMap[lnStatus]}"]`);
+    if (rejectMap.hasOwnProperty(status_layanan)) {
+      const r = document.querySelector(`.step[data-step="${rejectMap[status_layanan]}"]`);
       if (r) {
         r.classList.remove('active');
         r.classList.add('reject');
@@ -409,8 +409,8 @@
     };
 
     const statusBadge = document.getElementById('trackStatus');
-    statusBadge.textContent = statusText[lnStatus] || 'Status Tidak Diketahui';
-    statusBadge.className = 'badge p-2 ' + (lnStatus === 2 ? 'bg-danger' : 'bg-success');
+    statusBadge.textContent = statusText[status_layanan] || 'Status Tidak Diketahui';
+    statusBadge.className = 'badge p-2 ' + (status_layanan === 2 ? 'bg-danger' : 'bg-success');
 
     if (!trackingDetailTable) {
       trackingDetailTable = createModal({
@@ -428,7 +428,7 @@
     }
 
     // Fetch sample identity data
-    fetch(`<?= site_url('pelayanan/getSampleIdentity/') ?>${lnKode}`)
+    fetch(`<?= site_url('pelayanan/getSampleIdentity/') ?>${kode_layanan}`)
       .then(response => response.json())
       .then(data => {
         const sampleSection = document.getElementById('sampleIdentitySection');

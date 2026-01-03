@@ -7,7 +7,7 @@ use App\Models\MyModel;
 class PelaksanaanModel extends MyModel
 {
   /** @var string */
-  protected $layananTable = 'simlab_t_layanan';
+  protected $layananTable = 't_layanan';
 
   /** @var \CodeIgniter\Database\BaseConnection */
   protected $db;
@@ -33,7 +33,7 @@ class PelaksanaanModel extends MyModel
 
   public function getAllLayananOrdered(): array
   {
-    return $this->getAllDataWithOrder(['lnTgl' => 'DESC']);
+    return $this->getAllDataWithOrder(['tanggal_checkout' => 'DESC']);
   }
 
   /**
@@ -62,7 +62,7 @@ class PelaksanaanModel extends MyModel
     return $map;
   }
 
-  public function getAcceptedDetailRowsForLayanan($lnKode): array
+  public function getAcceptedDetailRowsForLayanan($kode_layanan): array
   {
     $detailModel = new MyModel('t_layanan_detil as d');
 
@@ -93,34 +93,34 @@ class PelaksanaanModel extends MyModel
 
     return $detailModel->getAllDataWithJoinWhereOrder(
       $joins,
-      ['d.kode_layanan' => $lnKode, 'd.status_layanan' => 1],
+      ['d.kode_layanan' => $kode_layanan, 'd.status_layanan' => 1],
       ['d.kode' => 'ASC'],
       $select,
       'left'
     );
   }
 
-  public function getLhuHistoryRows($lnKode): array
+  public function getLhuHistoryRows($kode_layanan): array
   {
     return $this->db->table('t_files_lhu AS lhu')
       ->select('lhu.file_id, lhu.file, lhu.tanggal_terbit, lhu.upload_by, users.user_name AS uploader_name')
       ->join('simlab_account_users AS users', 'users.user_id = lhu.upload_by', 'left')
-      ->where('lhu.kode', $lnKode)
+      ->where('lhu.kode', $kode_layanan)
       ->orderBy('CASE WHEN lhu.tanggal_terbit IS NULL THEN 1 ELSE 0 END', 'ASC', false)
       ->orderBy('lhu.tanggal_terbit', 'ASC')
       ->orderBy('lhu.file_id', 'ASC')
       ->get()->getResult();
   }
 
-  public function getLayananByKode($lnKode)
+  public function getLayananByKode($kode_layanan)
   {
-    return $this->getDataById('lnKode', $lnKode);
+    return $this->getDataById('kode_layanan', $kode_layanan);
   }
 
   /**
    * @return array{msg:string,oldFile:?string}
    */
-  public function saveUploadedLhuFile(string $lnKode, string $filename, int $userId, string $tanggalTerbitFormatted, bool $isUjiUlang): array
+  public function saveUploadedLhuFile(string $kode_layanan, string $filename, int $userId, string $tanggalTerbitFormatted, bool $isUjiUlang): array
   {
     $msg = 'File LHU berhasil diunggah.';
     $oldFile = null;
@@ -129,7 +129,7 @@ class PelaksanaanModel extends MyModel
 
     if ($isUjiUlang) {
       $fileModel->insertData([
-        'kode' => $lnKode,
+        'kode' => $kode_layanan,
         'file' => $filename,
         'upload_by' => $userId,
         'tanggal_terbit' => $tanggalTerbitFormatted,
@@ -138,7 +138,7 @@ class PelaksanaanModel extends MyModel
     }
 
     $existingFile = $this->db->table('t_files_lhu')
-      ->where('kode', $lnKode)
+      ->where('kode', $kode_layanan)
       ->orderBy('file_id', 'DESC')
       ->limit(1)
       ->get()->getRow();
@@ -159,7 +159,7 @@ class PelaksanaanModel extends MyModel
       $msg = 'File LHU berhasil diperbarui.';
     } else {
       $fileModel->insertData([
-        'kode' => $lnKode,
+        'kode' => $kode_layanan,
         'file' => $filename,
         'upload_by' => $userId,
         'tanggal_terbit' => $tanggalTerbitFormatted,
@@ -169,39 +169,39 @@ class PelaksanaanModel extends MyModel
     return ['msg' => $msg, 'oldFile' => $oldFile];
   }
 
-  public function upsertLogPenerbitanLhu(string $lnKode, string $tanggalTerbitFormatted): void
+  public function upsertLogPenerbitanLhu(string $kode_layanan, string $tanggalTerbitFormatted): void
   {
-    $logSampel = $this->logSampelModel->getDataById('kode_layanan', $lnKode);
+    $logSampel = $this->logSampelModel->getDataById('kode_layanan', $kode_layanan);
     if ($logSampel) {
-      $this->logSampelModel->updateData(['penerbitan_lhu' => $tanggalTerbitFormatted], 'kode_layanan', $lnKode);
+      $this->logSampelModel->updateData(['penerbitan_lhu' => $tanggalTerbitFormatted], 'kode_layanan', $kode_layanan);
       return;
     }
 
     $this->logSampelModel->insertData([
-      'kode_layanan' => $lnKode,
+      'kode_layanan' => $kode_layanan,
       'penerbitan_lhu' => $tanggalTerbitFormatted,
     ]);
   }
 
-  public function setLayananStatus(string $lnKode, int $status): bool
+  public function setLayananStatus(string $kode_layanan, int $status): bool
   {
-    return (bool) $this->updateData(['lnStatus' => $status], 'lnKode', $lnKode);
+    return (bool) $this->updateData(['status_layanan' => $status], 'kode_layanan', $kode_layanan);
   }
 
-  public function createPengujianUlang(string $lnKode, string $catatan): bool
+  public function createPengujianUlang(string $kode_layanan, string $catatan): bool
   {
     $this->db->transStart();
 
-    $this->db->table('simlab_t_layanan')
-      ->where('lnKode', $lnKode)
-      ->set('lnStatus', 1)
+    $this->db->table('t_layanan')
+      ->where('kode_layanan', $kode_layanan)
+      ->set('status_layanan', 1)
       ->set('jumlah_kaji_ulang', 'COALESCE(jumlah_kaji_ulang,0)+1', false)
       ->set('catatan_kaji_ulang', $catatan)
       ->set('kuisioner', 0)
       ->update();
 
     $this->db->table('t_layanan_detil')
-      ->where('kode_layanan', $lnKode)
+      ->where('kode_layanan', $kode_layanan)
       ->set([
         'status_layanan' => 0,
         'terima_layanan_by' => null,
@@ -211,7 +211,7 @@ class PelaksanaanModel extends MyModel
       ->update();
 
     $this->db->table('t_files_lhus')
-      ->where('kode_layanan', $lnKode)
+      ->where('kode_layanan', $kode_layanan)
       ->set([
         'file_lhus' => null,
         'validasi_by' => null,
@@ -231,15 +231,15 @@ class PelaksanaanModel extends MyModel
     ];
 
     $logBuilder = $this->db->table('t_log_sampel');
-    $logExists = $logBuilder->where('kode_layanan', $lnKode)->get()->getRow();
+    $logExists = $logBuilder->where('kode_layanan', $kode_layanan)->get()->getRow();
 
     if ($logExists) {
       $logBuilder
-        ->where('kode_layanan', $lnKode)
+        ->where('kode_layanan', $kode_layanan)
         ->set($logData)
         ->update();
     } else {
-      $logBuilder->insert(array_merge(['kode_layanan' => $lnKode], $logData));
+      $logBuilder->insert(array_merge(['kode_layanan' => $kode_layanan], $logData));
     }
 
     $this->db->transComplete();
@@ -247,8 +247,8 @@ class PelaksanaanModel extends MyModel
     return $this->db->transStatus() !== false;
   }
 
-  public function deleteLayanan(string $lnKode): bool
+  public function deleteLayanan(string $kode_layanan): bool
   {
-    return (bool) $this->deleteData('lnKode', $lnKode);
+    return (bool) $this->deleteData('kode_layanan', $kode_layanan);
   }
 }

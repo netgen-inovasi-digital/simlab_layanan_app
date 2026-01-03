@@ -6,8 +6,8 @@ use Modules\Pelaksanaan\Models\PelaksanaanModel;
 
 class Pelaksanaan extends BaseController
 {
-  private $table = 'simlab_t_layanan';
-  private $id = 'lnKode';
+  private $table = 't_layanan';
+  private $id = 'kode_layanan';
 
   /** @var PelaksanaanModel */
   protected $pelaksanaanModel;
@@ -41,8 +41,8 @@ class Pelaksanaan extends BaseController
       return $this->response->setJSON(["items" => []]);
     }
 
-    // [FILTER] ?lnStatus=7,6,uploaded,pending
-    $lnStatusParam = (string) ($this->request->getGet('lnStatus') ?? '');
+    // [FILTER] ?status_layanan=7,6,uploaded,pending
+    $lnStatusParam = (string) ($this->request->getGet('status_layanan') ?? '');
     $wantUploaded = false;   // status 6 + sudah upload
     $wantPending = false;   // status 6 + belum upload
     $statusNums = [];
@@ -77,11 +77,11 @@ class Pelaksanaan extends BaseController
     foreach ($list as $row) {
       $isKajiUlang = (int) ($row->jumlah_kaji_ulang ?? 0) > 0;
 
-      if ((int) $row->lnStatus < 6 && !$isKajiUlang)
+      if ((int) $row->status_layanan < 6 && !$isKajiUlang)
         continue;
 
-      $id = bin2hex(service('encrypter')->encrypt($row->lnKode));
-      // $encrypted_id = bin2hex(service('encrypter')->encrypt($row->bayarKode));
+      $id = bin2hex(service('encrypter')->encrypt($row->kode_layanan));
+      // $encrypted_id = bin2hex(service('encrypter')->encrypt($row->kode_bayar));
       $response = [];
 
       // kolom pemesan
@@ -96,8 +96,8 @@ class Pelaksanaan extends BaseController
         $pemesanNama = !empty($row->lnOrangNama) ? $row->lnOrangNama : ($row->lnPemesanNama ?? '-');
         $tipe = !empty($row->lnPemesanIdentity) ? $row->lnPemesanIdentity : ($row->lnJenisPemesan ?? '-');
       }
-      if (!empty($row->lnTgl))
-        $tanggal = date('d-m-Y H:i', strtotime($row->lnTgl));
+      if (!empty($row->tanggal_checkout))
+        $tanggal = date('d-m-Y H:i', strtotime($row->tanggal_checkout));
 
       $response[] =
         '<div style="line-height:1.3;">
@@ -119,20 +119,20 @@ class Pelaksanaan extends BaseController
       $lhuInfo = $this->detectLhuFile($row);
 
       // kolom status (single badge)
-      $response[] = '<div id="status-cell-' . $id . '">' . $this->formatStatus($row->lnStatus, $lhuInfo['has'], $isKajiUlang) . '</div>';
+      $response[] = '<div id="status-cell-' . $id . '">' . $this->formatStatus($row->status_layanan, $lhuInfo['has'], $isKajiUlang) . '</div>';
 
       // ❗️RULE BARU: boleh accept jika status=6 DAN file LHU sudah ada
-      $allowAccept = ((int) $row->lnStatus === 6 && $lhuInfo['has'] === true);
+      $allowAccept = ((int) $row->status_layanan === 6 && $lhuInfo['has'] === true);
 
       // kolom aksi
-      $response[] = $this->aksiButton($id, $row->lnStatus, $allowAccept, $lhuInfo);
+      $response[] = $this->aksiButton($id, $row->status_layanan, $allowAccept, $lhuInfo);
 
       // terapkan filter
       if ($wantUploaded || $wantPending || !empty($statusNums)) {
         $match = false;
-        if (!empty($statusNums) && in_array((int) $row->lnStatus, $statusNums, true))
+        if (!empty($statusNums) && in_array((int) $row->status_layanan, $statusNums, true))
           $match = true;
-        if ((int) $row->lnStatus === 6) {
+        if ((int) $row->status_layanan === 6) {
           if ($wantUploaded && $lhuInfo['has'])
             $match = true;
           if ($wantPending && !$lhuInfo['has'])
@@ -156,16 +156,16 @@ class Pelaksanaan extends BaseController
 
     // decrypt tolerant (hex → raw)
     try {
-      $lnKode = service('encrypter')->decrypt(hex2bin($id));
+      $kode_layanan = service('encrypter')->decrypt(hex2bin($id));
     } catch (\Throwable $e) {
       try {
-        $lnKode = service('encrypter')->decrypt($id);
+        $kode_layanan = service('encrypter')->decrypt($id);
       } catch (\Throwable $e2) {
         return $this->response->setJSON(['items' => []]);
       }
     }
 
-    $rows = $this->pelaksanaanModel->getAcceptedDetailRowsForLayanan($lnKode);
+    $rows = $this->pelaksanaanModel->getAcceptedDetailRowsForLayanan($kode_layanan);
 
     if (empty($rows))
       return $this->response->setJSON(['items' => []]);
@@ -239,17 +239,17 @@ class Pelaksanaan extends BaseController
     }
 
     try {
-      $lnKode = service('encrypter')->decrypt(hex2bin($id));
+      $kode_layanan = service('encrypter')->decrypt(hex2bin($id));
     } catch (\Throwable $e) {
       try {
-        $lnKode = service('encrypter')->decrypt($id);
+        $kode_layanan = service('encrypter')->decrypt($id);
       } catch (\Throwable $e2) {
         return $this->response->setJSON(['items' => []]);
       }
     }
 
     try {
-      $rows = $this->pelaksanaanModel->getLhuHistoryRows($lnKode);
+      $rows = $this->pelaksanaanModel->getLhuHistoryRows($kode_layanan);
     } catch (\Throwable $e) {
       log_message('error', 'Pelaksanaan::lhuList error: ' . $e->getMessage());
       return $this->response->setJSON(['items' => []]);
@@ -311,10 +311,10 @@ class Pelaksanaan extends BaseController
     }
 
     try {
-      $lnKode = service('encrypter')->decrypt(hex2bin($encId));
+      $kode_layanan = service('encrypter')->decrypt(hex2bin($encId));
     } catch (\Throwable $e) {
       try {
-        $lnKode = service('encrypter')->decrypt($encId);
+        $kode_layanan = service('encrypter')->decrypt($encId);
       } catch (\Throwable $e2) {
         return $this->response->setJSON([
           'res' => 'error',
@@ -325,7 +325,7 @@ class Pelaksanaan extends BaseController
       }
     }
 
-    $layananRow = $this->pelaksanaanModel->getLayananByKode($lnKode);
+    $layananRow = $this->pelaksanaanModel->getLayananByKode($kode_layanan);
 
     if (!$layananRow) {
       return $this->response->setJSON([
@@ -385,7 +385,7 @@ class Pelaksanaan extends BaseController
 
     try {
       $saveResult = $this->pelaksanaanModel->saveUploadedLhuFile(
-        (string) $lnKode,
+        (string) $kode_layanan,
         (string) $filename,
         (int) $user_id,
         (string) $tanggalTerbitFormatted,
@@ -404,10 +404,10 @@ class Pelaksanaan extends BaseController
       }
 
       // Update/Insert tanggal terbit LHU ke t_log_sampel
-      $this->pelaksanaanModel->upsertLogPenerbitanLhu((string) $lnKode, (string) $tanggalTerbitFormatted);
+      $this->pelaksanaanModel->upsertLogPenerbitanLhu((string) $kode_layanan, (string) $tanggalTerbitFormatted);
 
       // Update status menjadi 9 (LHU Disetujui) setelah upload berhasil
-      $this->pelaksanaanModel->setLayananStatus((string) $lnKode, 9);
+      $this->pelaksanaanModel->setLayananStatus((string) $kode_layanan, 9);
 
       return $this->response->setJSON([
         'res' => true,
@@ -457,29 +457,29 @@ class Pelaksanaan extends BaseController
     }
 
     try {
-      $lnKode = service('encrypter')->decrypt(hex2bin($encId));
+      $kode_layanan = service('encrypter')->decrypt(hex2bin($encId));
     } catch (\Throwable $e) {
       try {
-        $lnKode = service('encrypter')->decrypt($encId);
+        $kode_layanan = service('encrypter')->decrypt($encId);
       } catch (\Throwable $e2) {
         $response['msg'] = 'ID tidak valid.';
         return $this->response->setJSON($response);
       }
     }
 
-    $row = $this->pelaksanaanModel->getLayananByKode($lnKode);
+    $row = $this->pelaksanaanModel->getLayananByKode($kode_layanan);
 
     if (!$row) {
       $response['msg'] = 'Data layanan tidak ditemukan.';
       return $this->response->setJSON($response);
     }
 
-    if ((int) $row->lnStatus !== 9) {
+    if ((int) $row->status_layanan !== 9) {
       $response['msg'] = 'Pengujian ulang hanya bisa dilakukan pada layanan dengan status selesai.';
       return $this->response->setJSON($response);
     }
 
-    $ok = $this->pelaksanaanModel->createPengujianUlang((string) $lnKode, (string) $catatan);
+    $ok = $this->pelaksanaanModel->createPengujianUlang((string) $kode_layanan, (string) $catatan);
     if ($ok === false) {
       $response['msg'] = 'Terjadi kesalahan saat menyimpan data.';
       return $this->response->setJSON($response);
@@ -558,15 +558,15 @@ class Pelaksanaan extends BaseController
   // detect LHUS - UPDATED: gunakan t_files_lhus dengan kode_layanan
   private function detectLhusFile($row)
   {
-    // Cek langsung ke t_files_lhus berdasarkan kode_layanan (lnKode)
-    if (!empty($row->lnKode)) {
+    // Cek langsung ke t_files_lhus berdasarkan kode_layanan (kode_layanan)
+    if (!empty($row->kode_layanan)) {
       try {
         $db = \Config\Database::connect();
 
         // Cek apakah ada file LHUS yang sudah dikirim (status=0) atau diterima (status=1)
         $lhusFile = $db->table('t_files_lhus')
           ->select('file_lhus')
-          ->where('kode_layanan', $row->lnKode)
+          ->where('kode_layanan', $row->kode_layanan)
           ->whereIn('status', [0, 1]) // 0=terkirim, 1=diterima
           ->orderBy('file_id', 'DESC')
           ->limit(1)
@@ -593,14 +593,14 @@ class Pelaksanaan extends BaseController
   // detect LHU - UPDATED: gunakan t_files_lhu (database baru)
   private function detectLhuFile($row)
   {
-    // Cek langsung ke t_files_lhu berdasarkan kode (lnKode)
-    if (!empty($row->lnKode)) {
+    // Cek langsung ke t_files_lhu berdasarkan kode (kode_layanan)
+    if (!empty($row->kode_layanan)) {
       try {
         $db = \Config\Database::connect();
 
         $lhuFile = $db->table('t_files_lhu')
           ->select('file')
-          ->where('kode', $row->lnKode)
+          ->where('kode', $row->kode_layanan)
           ->orderBy('file_id', 'DESC')
           ->limit(1)
           ->get()->getRow();
@@ -713,7 +713,7 @@ class Pelaksanaan extends BaseController
     }
 
     // (opsional) pastikan status minimal 6
-    if ((int) $row->lnStatus < 6) {
+    if ((int) $row->status_layanan < 6) {
       return $this->response->setJSON([
         'res' => false,
         'msg' => 'Status belum pada tahap Memproses LHU.',

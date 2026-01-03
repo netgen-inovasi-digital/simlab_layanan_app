@@ -7,8 +7,8 @@ use Modules\Pelayanan\Models\PelayananModel;
 
 class Pelayanan extends BaseController
 {
-  private $table = 'simlab_t_layanan';
-  private $id = 'lnKode';
+  private $table = 't_layanan';
+  private $id = 'kode_layanan';
   protected $encrypter;
   private $sessionKey = 'keranjang';
   /** @var PelayananModel */
@@ -87,10 +87,10 @@ class Pelayanan extends BaseController
       return $this->response->setJSON([
         'success' => true,
         'data' => [
-          'kode' => $data->lnKode,
-          'statusText' => $this->getStatusText((int) $data->lnStatus),
-          'tanggal' => date('d-m-Y', strtotime($data->lnTgl)),
-          'noTransaksi' => $data->lnNoTransaksi ?? 'Belum tersedia',
+          'kode' => $data->kode_layanan,
+          'statusText' => $this->getStatusText((int) $data->status_layanan),
+          'tanggal' => date('d-m-Y', strtotime($data->tanggal_checkout)),
+          'noTransaksi' => $data->no_invoice ?? 'Belum tersedia',
           'details' => array_map(function ($detail) {
             $statusGroup = isset($detail->status_layanan) ? (int) $detail->status_layanan : null;
 
@@ -171,13 +171,13 @@ class Pelayanan extends BaseController
       return $this->response->setJSON(["items" => []]);
     }
 
-    // --- Siapkan map pembayaran terakhir per lnKode (satu query) ---
-    $lnKodes = array_map(fn($r) => (int) $r->lnKode, $list);
+    // --- Siapkan map pembayaran terakhir per kode_layanan (satu query) ---
+    $lnKodes = array_map(fn($r) => (int) $r->kode_layanan, $list);
 
     $payMap = $this->pelayananModel->getLatestPaymentMap($lnKodes);
 
     foreach ($list as $row) {
-      $id = bin2hex($this->encrypter->encrypt($row->lnKode));
+      $id = bin2hex($this->encrypter->encrypt($row->kode_layanan));
       $response = [];
 
       // No Transaksi + Tanggal
@@ -185,13 +185,13 @@ class Pelayanan extends BaseController
         ? $row->lnNoTransaksi
         : 'Belum tersedia';
 
-      $tanggal = !empty($row->lnTgl) ? date('d-m-Y', strtotime($row->lnTgl)) : '-';
+      $tanggal = !empty($row->tanggal_checkout) ? date('d-m-Y', strtotime($row->tanggal_checkout)) : '-';
       $response[] = '<div>' . esc($noTransaksi) . '<br><small>' . esc($tanggal) . '</small></div>';
 
       // Status layanan dengan tracking
-      $statusText = $this->getStatusText((int) ($row->lnStatus ?? 0));
+      $statusText = $this->getStatusText((int) ($row->status_layanan ?? 0));
       $response[] = '<div class="d-flex gap-2 align-items-center">' .
-        '<button class="btn btn-sm btn-outline-primary" onclick="showTrackingModal(\'' . $id . '\', \'' . $row->lnKode . '\', ' . (int) ($row->lnStatus ?? 0) . ')">' .
+        '<button class="btn btn-sm btn-outline-primary" onclick="showTrackingModal(\'' . $id . '\', \'' . $row->kode_layanan . '\', ' . (int) ($row->status_layanan ?? 0) . ')">' .
         '<i class="bi bi-activity"></i> ' . $statusText . '</button>' .
         '</div>';
 
@@ -209,10 +209,10 @@ class Pelayanan extends BaseController
         }
       }
 
-      // Pembayaran terakhir untuk lnKode ini (pakai map hasil query)
-      $lnKodeInt = (int) $row->lnKode;
+      // Pembayaran terakhir untuk kode_layanan ini (pakai map hasil query)
+      $lnKodeInt = (int) $row->kode_layanan;
       $bayarStatusVal = isset($payMap[$lnKodeInt]) ? $payMap[$lnKodeInt]['status'] : 0;
-      $bayarInvoiceNo = isset($payMap[$lnKodeInt]) ? $payMap[$lnKodeInt]['inv'] : null;
+      $no_invoice = isset($payMap[$lnKodeInt]) ? $payMap[$lnKodeInt]['inv'] : null;
 
       // statusBayar: 1 = sudah bayar, 0 = belum
       if ($bayarStatusVal === 1) {
@@ -222,7 +222,7 @@ class Pelayanan extends BaseController
       }
 
       // Akses LHU & kuisioner
-      $lnStatusVal = (int) ($row->lnStatus ?? 0);
+      $lnStatusVal = (int) ($row->status_layanan ?? 0);
       $canFillKuesioner = ($kuisionerVal !== 1 && $lnStatusVal === 9);
       $canViewLhu = ($kuisionerVal === 1 && $bayarStatusVal === 1 && $lnStatusVal === 9);
       $lhuInfo = $this->detectLhuFile($row);
@@ -258,7 +258,7 @@ class Pelayanan extends BaseController
 
       $response[] = '<div class="d-flex flex-column gap-2 align-items-start">' . $buttonHtml . '</div>';
 
-      // Aksi detail (masking lnKode via enkripsi)
+      // Aksi detail (masking kode_layanan via enkripsi)
       // $response[] = '<a href="javascript:void(0)" onclick="loadDetail(\'' . $id . '\')" class="btn btn-sm btn-info">Lihat pesanan</a>';
 
       $data[] = $response;
@@ -350,9 +350,9 @@ class Pelayanan extends BaseController
     }
   }
 
-  public function getSampleIdentity($lnKode = null)
+  public function getSampleIdentity($kode_layanan = null)
   {
-    if (!$lnKode) {
+    if (!$kode_layanan) {
       return $this->response->setJSON([
         'success' => false,
         'message' => 'Kode layanan tidak ditemukan'
@@ -360,7 +360,7 @@ class Pelayanan extends BaseController
     }
 
     try {
-      $sampleData = $this->pelayananModel->getSampleIdentityRow($lnKode);
+      $sampleData = $this->pelayananModel->getSampleIdentityRow($kode_layanan);
 
       if (!$sampleData) {
         return $this->response->setJSON([
@@ -402,23 +402,23 @@ class Pelayanan extends BaseController
     }
 
     try {
-      $lnKode = $this->encrypter->decrypt(hex2bin($id));
+      $kode_layanan = $this->encrypter->decrypt(hex2bin($id));
     } catch (\Throwable $e) {
       try {
-        $lnKode = $this->encrypter->decrypt($id);
+        $kode_layanan = $this->encrypter->decrypt($id);
       } catch (\Throwable $e2) {
         return $this->response->setJSON(['items' => []]);
       }
     }
 
-    $layanan = $this->pelayananModel->getLayananByKode($lnKode);
+    $layanan = $this->pelayananModel->getLayananByKode($kode_layanan);
 
     if (!$layanan || (int) ($layanan->user_id ?? 0) !== $userId) {
       return $this->response->setJSON(['items' => []]);
     }
 
     try {
-      $rows = $this->pelayananModel->getLhuFiles($lnKode);
+      $rows = $this->pelayananModel->getLhuFiles($kode_layanan);
     } catch (\Throwable $e) {
       log_message('error', 'Pelayanan::lhuList error: ' . $e->getMessage());
       return $this->response->setJSON(['items' => []]);
@@ -431,7 +431,7 @@ class Pelayanan extends BaseController
     $items = [];
     $transLabel = !empty($layanan->lnNoTransaksi)
       ? 'No. Transaksi ' . $layanan->lnNoTransaksi
-      : 'kode layanan ' . $lnKode;
+      : 'kode layanan ' . $kode_layanan;
     foreach ($rows as $index => $row) {
       $tanggal = '-';
       if (!empty($row->tanggal_terbit)) {
@@ -480,13 +480,13 @@ class Pelayanan extends BaseController
 
   private function detectLhuFile($row)
   {
-    $lnKode = $row->lnKode ?? null;
-    if (!$lnKode) {
+    $kode_layanan = $row->kode_layanan ?? null;
+    if (!$kode_layanan) {
       return ['has' => false, 'url' => '#'];
     }
 
     try {
-      $lhuFile = $this->pelayananModel->getLatestLhuFile($lnKode);
+      $lhuFile = $this->pelayananModel->getLatestLhuFile($kode_layanan);
 
       if (!$lhuFile) {
         return ['has' => false, 'url' => '#'];
@@ -520,7 +520,7 @@ class Pelayanan extends BaseController
       }
 
       // File tercatat di database tapi tidak ditemukan di storage
-      log_message('warning', "LHU file not found in storage: {$filePath} for lnKode: {$lnKode}");
+      log_message('warning', "LHU file not found in storage: {$filePath} for kode_layanan: {$kode_layanan}");
       return ['has' => false, 'url' => '#'];
     } catch (\Throwable $e) {
       log_message('error', 'Error detecting LHU file: ' . $e->getMessage());
@@ -552,7 +552,7 @@ class Pelayanan extends BaseController
   {
     $idenc = $id;
     try {
-      $lnKode = $this->encrypter->decrypt(hex2bin($idenc));
+      $kode_layanan = $this->encrypter->decrypt(hex2bin($idenc));
     } catch (\Exception $e) {
       throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
     }
@@ -574,7 +574,7 @@ class Pelayanan extends BaseController
     $idenc = $this->request->getPost('idenc');
 
     try {
-      $lnKode = $this->encrypter->decrypt(hex2bin($idenc));
+      $kode_layanan = $this->encrypter->decrypt(hex2bin($idenc));
     } catch (\Exception $e) {
       return $this->response->setJSON(['res' => false, 'msg' => 'ID Layanan tidak valid.', 'xname' => csrf_token(), 'xhash' => csrf_hash()]);
     }
@@ -591,12 +591,12 @@ class Pelayanan extends BaseController
     foreach ($jawaban_array as $id_pertanyaan => $jawaban) {
       $jawabanText = is_array($jawaban) ? json_encode($jawaban) : (string) $jawaban;
 
-      $existingAnswer = $this->pelayananModel->getExistingJawaban($id_pertanyaan, $user_id, $lnKode);
+      $existingAnswer = $this->pelayananModel->getExistingJawaban($id_pertanyaan, $user_id, $kode_layanan);
 
       $dataJawaban = [
         'id_pertanyaan' => $id_pertanyaan,
         'user_id' => $user_id,
-        'kode_layanan' => $lnKode,
+        'kode_layanan' => $kode_layanan,
         'jawaban' => $jawabanText,
         'created_at' => date('Y-m-d H:i:s')
       ];
@@ -608,7 +608,7 @@ class Pelayanan extends BaseController
       }
     }
 
-    $this->pelayananModel->updateKuisionerFlag($lnKode);
+    $this->pelayananModel->updateKuisionerFlag($kode_layanan);
 
     $db->transComplete();
 

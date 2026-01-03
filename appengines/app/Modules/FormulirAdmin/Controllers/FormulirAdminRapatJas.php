@@ -7,8 +7,8 @@ use App\Models\MyModel;
 
 class FormulirAdminRapatJas extends BaseController
 {
-  private $table = 'simlab_t_layanan';
-  private $id = 'lnKode';
+  private $table = 't_layanan';
+  private $id = 'kode_layanan';
   protected $encrypter;
   private $sessionKey = 'keranjang_formadmin_rapatjas';
 
@@ -137,9 +137,9 @@ class FormulirAdminRapatJas extends BaseController
 
     // Ambil semua data, urutkan tanggal DESC (terbaru di atas)
     if (method_exists($model, 'getAllDataWithOrder')) {
-      $list = $model->getAllDataWithOrder(['lnTgl' => 'DESC']);
+      $list = $model->getAllDataWithOrder(['tanggal_checkout' => 'DESC']);
     } else {
-      $list = $model->getAllDataByWhere([], ['lnTgl' => 'DESC']);
+      $list = $model->getAllDataByWhere([], ['tanggal_checkout' => 'DESC']);
     }
 
     $userModel = new MyModel('simlab_account_users');
@@ -147,7 +147,7 @@ class FormulirAdminRapatJas extends BaseController
     $db = \Config\Database::connect();
 
     foreach ($list as $row) {
-      $lnStatusInt = (int) $row->lnStatus;
+      $lnStatusInt = (int) $row->status_layanan;
 
       // Filter by status
       if (is_array($filterStatuses)) {
@@ -161,7 +161,7 @@ class FormulirAdminRapatJas extends BaseController
 
       // FILTER KHUSUS RAPAT JAS: Hanya tampilkan jika ada detil dengan kode_jenis dimulai 'D'
       try {
-        $dets = $layananDet->getAllDataById(['kode_layanan' => $row->lnKode]);
+        $dets = $layananDet->getAllDataById(['kode_layanan' => $row->kode_layanan]);
         $hasRapatJas = false;
         foreach ($dets as $dd) {
           $kodeJenis = isset($dd->kode_jenis) ? trim($dd->kode_jenis) : '';
@@ -183,7 +183,7 @@ class FormulirAdminRapatJas extends BaseController
       // jika ada jenKodeParam, kita cek di detil apakah baris ini memiliki layanan yang termasuk jenKodeParam
       if ($jenKodeParam !== '') {
         try {
-          $dets = $layananDet->getAllDataById(['kode_layanan' => $row->lnKode]);
+          $dets = $layananDet->getAllDataById(['kode_layanan' => $row->kode_layanan]);
           $hasMatch = false;
           foreach ($dets as $dd) {
             $detJen = isset($dd->kode_jenis) ? trim(substr($dd->kode_jenis, 0, 2)) : '';
@@ -200,12 +200,12 @@ class FormulirAdminRapatJas extends BaseController
         }
       }
 
-      // pakai lnKode (yang sudah ada di $row) sebagai sumber id
-      $id = bin2hex($this->encrypter->encrypt($row->lnKode));
+      // pakai kode_layanan (yang sudah ada di $row) sebagai sumber id
+      $id = bin2hex($this->encrypter->encrypt($row->kode_layanan));
       $response = [];
 
       // Ambil detail item layanan
-      $detil = $layananDet->getAllDataById(['kode_layanan' => $row->lnKode]);
+      $detil = $layananDet->getAllDataById(['kode_layanan' => $row->kode_layanan]);
       $items = [];
       foreach ($detil as $d) {
         $items[] = $d->nama_layanan ?? $d->kode_jenis;
@@ -248,15 +248,15 @@ class FormulirAdminRapatJas extends BaseController
         $instansi = $u->user_instansi ?? '-';
         $userIdentity = $u->user_identity ?? '-';
       } else {
-        $personName = $row->lnAccEmail ?? '-';
+        $personName = $row->user_email ?? '-';
       }
 
-      // Gunakan lnNoTransaksi hanya untuk ditampilkan
-      $invoiceNo = !empty($row->lnNoTransaksi) ? $row->lnNoTransaksi : 'Belum tersedia';
+      // Gunakan no_invoicehanya untuk ditampilkan
+      $invoiceNo = !empty($row->lnNoTransaksi) ? $row->no_invoice : 'Belum tersedia';
 
       $pemesanNama = !empty($personName) ? $personName : '-';
       $tipe = !empty($userIdentity) ? $userIdentity : '-';
-      $tanggal = !empty($row->lnTgl) ? date('d-m-Y H:i', strtotime($row->lnTgl)) : '-';
+      $tanggal = !empty($row->tanggal_checkout) ? date('d-m-Y H:i', strtotime($row->tanggal_checkout)) : '-';
 
       $combined = '
                 <div style="line-height:1.3;">
@@ -266,7 +266,7 @@ class FormulirAdminRapatJas extends BaseController
 
       $response[] = $combined;
       $response[] = esc($invoiceNo);
-      $response[] = $this->formatStatus($row->lnStatus);
+      $response[] = $this->formatStatus($row->status_layanan);
 
       $lihatDetailBtn = '<button type="button" class="btn btn-sm btn-info" 
                                 title="Lihat Detail Item Layanan" 
@@ -274,7 +274,7 @@ class FormulirAdminRapatJas extends BaseController
                                 <i class="bi bi-eye"></i> Lihat Layanan</button>';
       $response[] = $lihatDetailBtn;
 
-      $response[] = $this->aksi($id, $row->lnStatus);
+      $response[] = $this->aksi($id, $row->status_layanan);
 
       $data[] = $response;
     }
@@ -383,18 +383,18 @@ class FormulirAdminRapatJas extends BaseController
 
     // tombol WhatsApp
     try {
-      $lnKode = null;
+      $kode_layanan = null;
       try {
-        $lnKode = $this->encrypter->decrypt(hex2bin($id));
+        $kode_layanan = $this->encrypter->decrypt(hex2bin($id));
       } catch (\Exception $e) {
-        $lnKode = null;
+        $kode_layanan = null;
       }
 
-      if ($lnKode !== null) {
+      if ($kode_layanan !== null) {
         $db = \Config\Database::connect();
         $row = $db->table($this->table)
           ->select('user_id, lnAccEmail')
-          ->where($this->id, $lnKode)
+          ->where($this->id, $kode_layanan)
           ->get()
           ->getRow();
 
@@ -497,9 +497,9 @@ class FormulirAdminRapatJas extends BaseController
     }
 
     try {
-      $lnKode = $this->encrypter->decrypt(hex2bin($encId));
+      $kode_layanan = $this->encrypter->decrypt(hex2bin($encId));
 
-      if (empty($lnKode)) {
+      if (empty($kode_layanan)) {
         $response['msg'] = 'ID tidak valid.';
         return $this->response->setJSON($response);
       }
@@ -507,15 +507,15 @@ class FormulirAdminRapatJas extends BaseController
       $model = new MyModel($this->table);
 
       $update = [
-        'lnStatus' => 4,
+        'status_layanan' => 4,
       ];
 
-      $res = $model->updateData($update, $this->id, $lnKode);
+      $res = $model->updateData($update, $this->id, $kode_layanan);
 
       if ($res) {
         $response['res'] = true;
         $response['msg'] = 'Data berhasil diapprove.';
-        $response['newStatus'] = $update['lnStatus'];
+        $response['newStatus'] = $update['status_layanan'];
       } else {
         $response['msg'] = 'Gagal update database (tidak ada perubahan atau error).';
         try {

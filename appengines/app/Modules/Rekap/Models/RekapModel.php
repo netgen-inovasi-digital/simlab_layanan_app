@@ -8,7 +8,7 @@ class RekapModel extends Model
 {
   protected $db;
   protected $tablePembayaran = 't_pembayaran';
-  protected $tableLayanan = 'simlab_t_layanan';
+  protected $tableLayanan = 't_layanan';
   protected $tableDetil = 't_layanan_detil';
   protected $tableJenis = 'simlab_r_jenis';
   protected $tableRLayanan = 'r_layanan_pengujian';
@@ -44,13 +44,13 @@ class RekapModel extends Model
             SUM(CASE WHEN u.user_identity = 'ULM' THEN (d.biaya * d.jumlah) ELSE 0 END) AS total_ulm,
             SUM(CASE WHEN u.user_identity != 'ULM' THEN (d.biaya * d.jumlah) ELSE 0 END) AS total_non_ulm
         ");
-    $builder->join($this->tableLayanan . ' l', 'd.kode_layanan = l.lnKode', 'inner');
+    $builder->join($this->tableLayanan . ' l', 'd.kode_layanan = l.kode_layanan', 'inner');
     $builder->join('simlab_account_users u', 'l.user_id = u.user_id', 'inner');
-    $builder->join($this->tablePembayaran . ' p', 'l.lnKode = p.bayarLnKode', 'inner');
+    $builder->join($this->tablePembayaran . ' p', 'l.kode_layanan = p.kode_layanan', 'inner');
 
     if (!empty($tanggalAwal) && !empty($tanggalAkhir)) {
-      $builder->where('p.bayarInvoiceTgl >=', $tanggalAwal);
-      $builder->where('p.bayarInvoiceTgl <=', $tanggalAkhir);
+      $builder->where('p.tanggal_invoice >=', $tanggalAwal);
+      $builder->where('p.tanggal_invoice <=', $tanggalAkhir);
     }
 
     $builder->groupBy('d.kode_jenis');
@@ -88,10 +88,10 @@ class RekapModel extends Model
 
   public function getRevenueData(?string $jenisLayanan, string $tanggalAwal, string $tanggalAkhir): array
   {
-    $dateCondition = 'l.lnKode = p.bayarLnKode';
+    $dateCondition = 'l.kode_layanan = p.kode_layanan';
     if (!empty($tanggalAwal) && !empty($tanggalAkhir)) {
-      $dateCondition .= ' AND p.bayarInvoiceTgl >= ' . $this->db->escape($tanggalAwal);
-      $dateCondition .= ' AND p.bayarInvoiceTgl <= ' . $this->db->escape($tanggalAkhir);
+      $dateCondition .= ' AND p.tanggal_invoice >= ' . $this->db->escape($tanggalAwal);
+      $dateCondition .= ' AND p.tanggal_invoice <= ' . $this->db->escape($tanggalAkhir);
     }
 
     $builder = $this->db->table($this->tableRLayanan . ' r');
@@ -99,11 +99,11 @@ class RekapModel extends Model
             r.nama_layanan,
             r.kode_jenis,
             r.kode,
-            COALESCE(SUM(CASE WHEN p.bayarKode IS NOT NULL AND u.user_identity = 'ULM' THEN (d.biaya * d.jumlah) ELSE 0 END), 0) AS total_ulm,
-            COALESCE(SUM(CASE WHEN p.bayarKode IS NOT NULL AND u.user_identity != 'ULM' THEN (d.biaya * d.jumlah) ELSE 0 END), 0) AS total_non_ulm
+            COALESCE(SUM(CASE WHEN p.kode_bayar IS NOT NULL AND u.user_identity = 'ULM' THEN (d.biaya * d.jumlah) ELSE 0 END), 0) AS total_ulm,
+            COALESCE(SUM(CASE WHEN p.kode_bayar IS NOT NULL AND u.user_identity != 'ULM' THEN (d.biaya * d.jumlah) ELSE 0 END), 0) AS total_non_ulm
         ");
     $builder->join($this->tableDetil . ' d', 'r.kode = d.uji_kode', 'left');
-    $builder->join($this->tableLayanan . ' l', 'd.kode_layanan = l.lnKode', 'left');
+    $builder->join($this->tableLayanan . ' l', 'd.kode_layanan = l.kode_layanan', 'left');
     $builder->join('simlab_account_users u', 'l.user_id = u.user_id', 'left');
     $builder->join($this->tablePembayaran . ' p', $dateCondition, 'left');
 

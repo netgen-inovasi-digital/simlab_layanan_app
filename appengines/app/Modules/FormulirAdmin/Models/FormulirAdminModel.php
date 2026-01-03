@@ -35,9 +35,9 @@ class FormulirAdminModel extends Model
   }
 
   /**
-   * Ambil pembayaran terakhir per lnKode
-   * @param array $lnKodes Array of lnKode
-   * @return array Map [lnKode => ['status' => int, 'inv' => string, 'invoiceFile' => string]]
+   * Ambil pembayaran terakhir per kode_layanan
+   * @param array $lnKodes Array of kode_layanan
+   * @return array Map [kode_layanan => ['status' => int, 'inv' => string, 'invoiceFile' => string]]
    */
   public function getPembayaranMapByLnKodes(array $lnKodes): array
   {
@@ -46,20 +46,20 @@ class FormulirAdminModel extends Model
     }
 
     $payRows = $this->db->table('t_pembayaran')
-      ->select('bayarLnKode, bayarStatus, bayarInvoiceNo, bayarInvoiceFile, MAX(bayarKode) AS lastKode')
-      ->whereIn('bayarLnKode', $lnKodes)
-      ->groupBy('bayarLnKode, bayarStatus, bayarInvoiceNo, bayarInvoiceFile')
+      ->select('kode_layanan, status_bayar, no_invoice, invoice_file, MAX(kode_bayar) AS lastKode')
+      ->whereIn('kode_layanan', $lnKodes)
+      ->groupBy('kode_layanan, status_bayar, no_invoice, invoice_file')
       ->orderBy('lastKode', 'DESC')
       ->get()->getResult();
 
     $payMap = [];
     foreach ($payRows as $p) {
-      $ln = (int) $p->bayarLnKode;
+      $ln = (int) $p->kode_layanan;
       if (!isset($payMap[$ln])) {
         $payMap[$ln] = [
-          'status' => (int) $p->bayarStatus,
-          'inv' => $p->bayarInvoiceNo ?? null,
-          'invoiceFile' => $p->bayarInvoiceFile ?? null,
+          'status' => (int) $p->status_bayar,
+          'inv' => $p->no_invoice ?? null,
+          'invoiceFile' => $p->invoice_file ?? null,
         ];
       }
     }
@@ -69,7 +69,7 @@ class FormulirAdminModel extends Model
 
   /**
    * Ambil log sampel per kode_layanan
-   * @param array $lnKodes Array of lnKode
+   * @param array $lnKodes Array of kode_layanan
    * @return array Map [kode_layanan => pengecekan]
    */
   public function getLogSampelMapByLnKodes(array $lnKodes): array
@@ -94,7 +94,7 @@ class FormulirAdminModel extends Model
   /**
    * Cari user_id dari layanan berdasarkan lnNoTransaksi
    * @param string $table Nama tabel layanan
-   * @param string $lnNoTransaksi Nomor transaksi
+   * @param string $no_invoiceNomor transaksi
    * @return int|null
    */
   public function findUserIdByNoTransaksi(string $table, string $lnNoTransaksi): ?int
@@ -144,32 +144,32 @@ class FormulirAdminModel extends Model
   }
 
   /**
-   * Ambil data layanan header berdasarkan lnKode untuk WhatsApp button
+   * Ambil data layanan header berdasarkan kode_layanan untuk WhatsApp button
    * @param string $table Nama tabel
    * @param string $idField Nama field ID
-   * @param int $lnKode
+   * @param int $kode_layanan
    * @return object|null
    */
-  public function getLayananHeaderById(string $table, string $idField, int $lnKode): ?object
+  public function getLayananHeaderById(string $table, string $idField, int $kode_layanan): ?object
   {
     return $this->db->table($table)
       ->select('user_id, lnAccEmail')
-      ->where($idField, $lnKode)
+      ->where($idField, $kode_layanan)
       ->get()
       ->getRow();
   }
 
   /**
    * Cek status pembayaran terakhir
-   * @param int $lnKode
+   * @param int $kode_layanan
    * @return object|null
    */
-  public function getLastPaymentStatus(int $lnKode): ?object
+  public function getLastPaymentStatus(int $kode_layanan): ?object
   {
     return $this->db->table('t_pembayaran')
-      ->select('bayarStatus')
-      ->where('bayarLnKode', $lnKode)
-      ->orderBy('bayarKode', 'DESC')
+      ->select('status_bayar')
+      ->where('kode_layanan', $kode_layanan)
+      ->orderBy('kode_bayar', 'DESC')
       ->limit(1)
       ->get()->getRow();
   }
