@@ -200,9 +200,9 @@ class KeranjangModel
       ' lp.' . ($cols['nama'] ?? 'nama_layanan') . ' as nama_layanan,' .
       ' lp.' . ($cols['jenis'] ?? 'kode_jenis') . ' as kode_jenis,' .
       ' lp.' . ($cols['satuan'] ?? 'satuan') . ' as satuan,' .
-      ' p.nama,' .
-      ' a.nama,' .
-      ' j.nama'
+      ' p.nama as parameter_nama,' .
+      ' a.nama as alat_nama,' .
+      ' j.nama as jenis_nama'
     );
 
     $builder->join('r_parameter p', 'p.kode = lp.' . ($cols['parameter'] ?? 'kode_parameter'), 'left');

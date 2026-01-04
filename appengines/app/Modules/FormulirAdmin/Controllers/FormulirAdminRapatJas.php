@@ -222,18 +222,18 @@ class FormulirAdminRapatJas extends BaseController
         $u = $userModel->getDataById('user_id', $row->user_id);
       }
 
-      // 2) Jika belum ada, cek berdasarkan email (lnAccEmail)
-      if (!$u && !empty($row->lnAccEmail)) {
-        $users = $userModel->getAllDataById(['user_email' => $row->lnAccEmail]);
+      // 2) Jika belum ada, cek berdasarkan email (user_email)
+      if (!$u && !empty($row->user_email)) {
+        $users = $userModel->getAllDataById(['user_email' => $row->user_email]);
         if (!empty($users))
           $u = is_array($users) ? $users[0] : $users;
       }
 
-      // 3) Jika masih belum ketemu, cari user_id dari invoice (lnNoTransaksi)
-      if (!$u && !empty($row->lnNoTransaksi)) {
+      // 3) Jika masih belum ketemu, cari user_id dari invoice (no_invoice)
+      if (!$u && !empty($row->no_invoice)) {
         $qb = $db->table($this->table);
         $qb->select('user_id')
-          ->where('lnNoTransaksi', $row->lnNoTransaksi)
+          ->where('no_invoice', $row->no_invoice)
           ->where('user_id IS NOT NULL', null, false);
         $res = $qb->get()->getResult();
         if (!empty($res)) {
@@ -252,7 +252,7 @@ class FormulirAdminRapatJas extends BaseController
       }
 
       // Gunakan no_invoicehanya untuk ditampilkan
-      $invoiceNo = !empty($row->lnNoTransaksi) ? $row->no_invoice : 'Belum tersedia';
+      $invoiceNo = !empty($row->no_invoice) ? $row->no_invoice : 'Belum tersedia';
 
       $pemesanNama = !empty($personName) ? $personName : '-';
       $tipe = !empty($userIdentity) ? $userIdentity : '-';
@@ -393,7 +393,7 @@ class FormulirAdminRapatJas extends BaseController
       if ($kode_layanan !== null) {
         $db = \Config\Database::connect();
         $row = $db->table($this->table)
-          ->select('user_id, lnAccEmail')
+          ->select('user_id, user_email')
           ->where($this->id, $kode_layanan)
           ->get()
           ->getRow();
@@ -408,8 +408,8 @@ class FormulirAdminRapatJas extends BaseController
             $userObj = $modelUser->getDataById('user_id', $row->user_id);
           }
 
-          if (!$userObj && !empty($row->lnAccEmail)) {
-            $users = $modelUser->getAllDataById(['user_email' => $row->lnAccEmail]);
+          if (!$userObj && !empty($row->user_email)) {
+            $users = $modelUser->getAllDataById(['user_email' => $row->user_email]);
             if (!empty($users))
               $userObj = is_array($users) ? $users[0] : $users;
           }

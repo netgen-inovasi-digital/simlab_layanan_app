@@ -86,11 +86,11 @@ class PelayananAlat extends BaseController
     // Query dengan JOIN ke t_layanan_detil untuk filter kode_jenis = 'B' (alat)
     // Gunakan GROUP BY untuk menghindari duplikasi row jika ada multiple detail items
     $builder = $db->table($this->table . ' as t');
-    $builder->select('t.kode_layanan, t.user_id, t.lnAccEmail, t.lnNoTransaksi, t.tanggal_checkout, t.status_layanan, t.kuisioner, t.tgl_pelaksanaan, t.lhu_id');
+    $builder->select('t.kode_layanan, t.user_id, t.user_email, t.no_invoice, t.tanggal_checkout, t.status_layanan, t.kuisioner, t.tgl_pelaksanaan, t.lhu_id');
     $builder->join('t_layanan_detil d', 'd.kode_layanan = t.kode_layanan', 'inner');
     $builder->where('t.user_id', $user_id);
     $builder->where('d.kode_jenis', 'B');  // Filter hanya alat (kode_jenis = 'B')
-    $builder->groupBy('t.kode_layanan, t.user_id, t.lnAccEmail, t.lnNoTransaksi, t.tanggal_checkout, t.status_layanan, t.kuisioner, t.tgl_pelaksanaan, t.lhu_id');
+    $builder->groupBy('t.kode_layanan, t.user_id, t.user_email, t.no_invoice, t.tanggal_checkout, t.status_layanan, t.kuisioner, t.tgl_pelaksanaan, t.lhu_id');
     $builder->orderBy('t.tanggal_checkout', 'DESC');
 
     $list = $builder->get()->getResult();
@@ -126,8 +126,8 @@ class PelayananAlat extends BaseController
       $response = [];
 
       // Kolom 1: No. Transaksi + Tanggal
-      $noTransaksi = (isset($row->lnNoTransaksi) && trim((string) $row->lnNoTransaksi) !== '')
-        ? $row->lnNoTransaksi
+      $noTransaksi = (isset($row->no_invoice) && trim((string) $row->no_invoice) !== '')
+        ? $row->no_invoice
         : 'Belum tersedia';
 
       $tanggal = !empty($row->tanggal_checkout) ? date('d-m-Y', strtotime($row->tanggal_checkout)) : '-';

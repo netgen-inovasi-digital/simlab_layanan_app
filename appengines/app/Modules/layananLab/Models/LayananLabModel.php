@@ -29,9 +29,9 @@ class LayananLabModel extends MyModel
         ];
 
         $select = $this->table . '.*, 
-            j.kode, j.nama, 
-            a.nama, 
-            p.nama';
+            j.kode as jenis_kode, j.nama as jenis_nama, 
+            a.nama as alat_nama, 
+            p.nama as parameter_nama';
 
         return $this->getAllDataWithJoinWhereOrder($join, $where, [], $select, 'left');
     }

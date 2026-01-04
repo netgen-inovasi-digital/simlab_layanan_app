@@ -42,10 +42,10 @@ class PembayaranUserModel extends MyModel
   public function getPaymentListByEmail(string $email): array
   {
     $builder = $this->db->table('t_pembayaran as p');
-    $builder->select('p.*, l.kode_layanan, l.lnAccEmail, l.lnNoTransaksi, l.tanggal_checkout, l.user_id');
+    $builder->select('p.*, l.kode_layanan, l.user_email, l.no_invoice, l.tanggal_checkout, l.user_id');
     $builder->join('t_layanan as l', 'p.kode_layanan = l.kode_layanan', 'inner');
     $builder->where('p.no_invoice IS NOT NULL');
-    $builder->where('l.lnAccEmail', $email);
+    $builder->where('l.user_email', $email);
     $builder->orderBy('p.kode_bayar', 'DESC');
 
     return $builder->get()->getResult();

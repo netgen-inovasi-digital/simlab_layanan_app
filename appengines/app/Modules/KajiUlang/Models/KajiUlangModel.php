@@ -75,8 +75,8 @@ class KajiUlangModel extends Model
 
     $builder->select("
             l.*,
-            COALESCE(au.user_name, a.nama, l.lnAccEmail, '-') AS pemesan_name,
-            COALESCE(au.user_email, l.lnAccEmail, '') AS pemesan_email,
+            COALESCE(au.user_name, a.nama, l.user_email, '-') AS pemesan_name,
+            COALESCE(au.user_email, l.user_email, '') AS pemesan_email,
             COALESCE(au.user_identity, '-') AS pemesan_identity,
             COALESCE(pm.pending_for_manager, 0) as pending_for_manager
         ", false);

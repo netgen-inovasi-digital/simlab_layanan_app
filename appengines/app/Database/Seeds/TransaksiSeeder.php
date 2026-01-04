@@ -15,8 +15,8 @@ class TransaksiSeeder extends Seeder
       [
         'kode_layanan' => 100,
         'user_id' => 1,
-        'lnAccEmail' => 'admin@example.com',
-        'lnNoTransaksi' => 'TRX-20251109-001',
+        'user_email' => 'admin@example.com',
+        'no_invoice' => 'TRX-20251109-001',
         'tanggal_checkout' => '2025-11-09 09:15:00',
         'status_layanan' => 3,
         'kuisioner' => 0,
@@ -27,8 +27,8 @@ class TransaksiSeeder extends Seeder
       [
         'kode_layanan' => 101,
         'user_id' => 1,
-        'lnAccEmail' => 'manajerA@example.com',
-        'lnNoTransaksi' => 'TRX-20251109-002',
+        'user_email' => 'manajerA@example.com',
+        'no_invoice' => 'TRX-20251109-002',
         'tanggal_checkout' => '2025-11-09 10:30:00',
         'status_layanan' => 3,
         'kuisioner' => 1,
@@ -39,8 +39,8 @@ class TransaksiSeeder extends Seeder
       [
         'kode_layanan' => 102,
         'user_id' => 1,
-        'lnAccEmail' => 'penyeliaB@example.com',
-        'lnNoTransaksi' => 'TRX-20251109-003',
+        'user_email' => 'penyeliaB@example.com',
+        'no_invoice' => 'TRX-20251109-003',
         'tanggal_checkout' => '2025-11-09 11:45:00',
         'status_layanan' => 3,
         'kuisioner' => 0,

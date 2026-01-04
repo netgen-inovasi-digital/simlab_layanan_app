@@ -181,8 +181,8 @@ class Pelayanan extends BaseController
       $response = [];
 
       // No Transaksi + Tanggal
-      $noTransaksi = (isset($row->lnNoTransaksi) && trim((string) $row->lnNoTransaksi) !== '')
-        ? $row->lnNoTransaksi
+      $noTransaksi = (isset($row->no_invoice) && trim((string) $row->no_invoice) !== '')
+        ? $row->no_invoice
         : 'Belum tersedia';
 
       $tanggal = !empty($row->tanggal_checkout) ? date('d-m-Y', strtotime($row->tanggal_checkout)) : '-';
@@ -429,8 +429,8 @@ class Pelayanan extends BaseController
     }
 
     $items = [];
-    $transLabel = !empty($layanan->lnNoTransaksi)
-      ? 'No. Transaksi ' . $layanan->lnNoTransaksi
+    $transLabel = !empty($layanan->no_invoice)
+      ? 'No. Transaksi ' . $layanan->no_invoice
       : 'kode layanan ' . $kode_layanan;
     foreach ($rows as $index => $row) {
       $tanggal = '-';

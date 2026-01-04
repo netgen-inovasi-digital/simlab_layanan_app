@@ -19,13 +19,13 @@ class CreateSimlabTLayanan extends Migration
         'unsigned' => true, // samakan dengan account_users.user_id
         'null' => true,
       ],
-      'lnAccEmail' => [
+      'user_email' => [
         'type' => 'VARCHAR',
         'constraint' => 100,
         'null' => true,
         'comment' => 'Email akun yang menginput layanan (bisa admin/user lain)',
       ],
-      'lnNoTransaksi' => [
+      'no_invoice' => [
         'type' => 'VARCHAR',
         'constraint' => 25,
         'null' => true,

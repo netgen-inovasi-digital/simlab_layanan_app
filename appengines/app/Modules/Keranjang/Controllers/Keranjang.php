@@ -205,7 +205,7 @@ class Keranjang extends KeranjangBase
   public function keranjangDataListLayanan()
   {
     $session = session();
-    $user_id = (int) $session->get('id_user');
+    $user_id = (int) $session->GET('id_user');
     $userIdentity = $this->keranjangModel->getUserIdentity($user_id);
 
     // Baca parameter filter dari GET request
@@ -241,8 +241,10 @@ class Keranjang extends KeranjangBase
       foreach ($listUji as $row) {
         $response = [];
 
-        $response[] = esc($row->nama ?? '-');
-        $response[] = esc($row->nama ?? '-');
+        // Parameter
+        $response[] = esc($row->parameter_nama ?? '-');
+        // Instrumen/Alat
+        $response[] = esc($row->alat_nama ?? '-');
 
         $allowedDiskon = 0;
         if (!empty($row->diskon) && $row->diskon > 0 && $userIdentity === 'ULM') {
@@ -313,7 +315,7 @@ class Keranjang extends KeranjangBase
   public function keranjangCheckout()
   {
     $session = session();
-    $user_id = (int) $session->get('id_user');
+    $user_id = (int) $session->GET('id_user');
     $userRow = $this->keranjangModel->getUserById($user_id);
 
     $keranjang = $session->get($this->sessionKey) ?? [];

@@ -65,7 +65,7 @@ class PembayaranAdmin extends BaseController
         // 3 = Terverifikasi (status_bayar = 1)
         // 4 = Ditolak (status_bayar = 2)
         $invoiceStatus = 0;
-        if (!empty($row->lnNoTransaksi)) {
+        if (!empty($row->no_invoice)) {
           // Invoice sudah terkirim
           if (!empty($row->bukti_bayar)) {
             // Bukti bayar sudah ada, cek status verifikasi
@@ -119,7 +119,7 @@ class PembayaranAdmin extends BaseController
         }
 
         // Tombol aksi
-        $aksi = $this->aksiButton($encrypted_id, $paymentStatus, $row->bukti_bayar, $row->invoice_file, $row->lnNoTransaksi, $tempInvoiceFile, $u);
+        $aksi = $this->aksiButton($encrypted_id, $paymentStatus, $row->bukti_bayar, $row->invoice_file, $row->no_invoice, $tempInvoiceFile, $u);
 
         $pemesanNama = !empty($personName) ? $personName : '-';
         $tipe = !empty($userIdentity) ? strtoupper($userIdentity) : '-';

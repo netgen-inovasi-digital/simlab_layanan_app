@@ -311,10 +311,10 @@ class Keranjang extends KeranjangBase
         $response = [];
 
         // Parameter
-        $response[] = esc($row->nama ?? '-');
+        $response[] = esc($row->parameter_nama ?? '-');
 
         // Instrumen/Alat
-        $response[] = esc($row->nama ?? '-');
+        $response[] = esc($row->alat_nama ?? '-');
 
         // Tentukan diskon yang diperbolehkan berdasarkan status PELANGGAN yang dipilih
         $allowedDiskon = 0;

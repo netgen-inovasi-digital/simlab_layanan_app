@@ -92,16 +92,16 @@ class FormulirAdminModel extends Model
   }
 
   /**
-   * Cari user_id dari layanan berdasarkan lnNoTransaksi
+   * Cari user_id dari layanan berdasarkan no_invoice
    * @param string $table Nama tabel layanan
    * @param string $no_invoiceNomor transaksi
    * @return int|null
    */
-  public function findUserIdByNoTransaksi(string $table, string $lnNoTransaksi): ?int
+  public function findUserIdByNoTransaksi(string $table, string $no_invoice): ?int
   {
     $result = $this->db->table($table)
       ->select('user_id')
-      ->where('lnNoTransaksi', $lnNoTransaksi)
+      ->where('no_invoice', $no_invoice)
       ->where('user_id IS NOT NULL', null, false)
       ->get()->getResult();
 
@@ -153,7 +153,7 @@ class FormulirAdminModel extends Model
   public function getLayananHeaderById(string $table, string $idField, int $kode_layanan): ?object
   {
     return $this->db->table($table)
-      ->select('user_id, lnAccEmail')
+      ->select('user_id, user_email')
       ->where($idField, $kode_layanan)
       ->get()
       ->getRow();
