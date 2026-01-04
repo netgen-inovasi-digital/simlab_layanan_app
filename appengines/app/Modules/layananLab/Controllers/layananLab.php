@@ -355,12 +355,12 @@ class layananLab extends BaseController
       $response = [];
 
       // kolom kategori
-      $response[] = '<span class="badge bg-info">' . esc($row->kode_jenis ?? ($row->jenis_kode ?? '')) . '</span>';
+      $response[] = '<span class="badge bg-info">' . esc($row->jenis_kode ?? $row->kode_jenis ?? '-') . '</span>';
 
       // kolom nama layanan
-      $response[] = esc($row->nama_layanan) . '<br>'
-        . '<strong>Alat : </strong>' . esc($row->alat_nama ?? '-') . '<br>'
-        . '<strong>Parameter : </strong>' . esc($row->parameter_nama ?? '-');
+      $response[] = '<strong>' . esc($row->nama_layanan) . '</strong><br>'
+        . '<small><strong>Alat:</strong> ' . esc($row->alat_nama ?? '-') . '</small><br>'
+        . '<small><strong>Parameter:</strong> ' . esc($row->parameter_nama ?? '-') . '</small>';
 
       // kolom penanggung jawab
       $timCount = $timCounts[$row->kode] ?? 0;
