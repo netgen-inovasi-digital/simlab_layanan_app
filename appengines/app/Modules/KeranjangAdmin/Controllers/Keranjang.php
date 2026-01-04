@@ -174,21 +174,15 @@ class Keranjang extends KeranjangBase
     $modelDetil = new MyModel($this->tableLayananDetail);
 
     foreach ($keranjang as $i => $item) {
-      // Ambil kode dari keranjang atau fallback ke tabel pengujian supaya sesuai FK
+      // Ambil kode_jenis dari tabel r_layanan_pengujian berdasarkan uji_kode (item['kode'])
       $jenKodeValue = null;
 
-      if (isset($item['kode'])) {
-        $jenKodeValue = trim((string) $item['kode']);
-        if ($jenKodeValue === '') {
-          $jenKodeValue = null;
-        }
-      }
-
-      if ($jenKodeValue === null && isset($item['kode']) && $item['kode'] !== '') {
+      if (isset($item['kode']) && $item['kode'] !== '') {
         try {
+          // Ambil kode_jenis dari tabel pengujian berdasarkan kode pengujian
           $jenKodeValue = $this->keranjangAdminModel->getKodeJenisByKode($this->tablePengujian, $item['kode']);
         } catch (\Throwable $e) {
-          log_message('warning', "Failed to fetch kode from pengujian for kode: {$item['kode']}");
+          log_message('warning', "Failed to fetch kode_jenis from pengujian for kode: {$item['kode']}");
         }
       }
 
