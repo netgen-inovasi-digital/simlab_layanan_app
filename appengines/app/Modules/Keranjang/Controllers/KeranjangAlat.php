@@ -226,7 +226,7 @@ class KeranjangAlat extends KeranjangBase
 
     $dataToInsert = [
       'user_id' => session()->get('id_user'),
-      'lnAccEmail' => $userRow->user_email ?? '',
+      'user_email' => $userRow->user_email ?? '',
       'tanggal_checkout' => date('Y-m-d H:i:s'),
       'status_layanan' => 1,
       'kuisioner' => 0,

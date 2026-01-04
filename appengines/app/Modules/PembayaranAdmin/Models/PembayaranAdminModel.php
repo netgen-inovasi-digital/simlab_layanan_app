@@ -35,7 +35,7 @@ class PembayaranAdminModel extends MyModel
   public function getAdminPaymentList(?string $tanggalAwal = null, ?string $tanggalAkhir = null): array
   {
     $builder = $this->db->table('t_pembayaran as p');
-    $builder->select('p.*, l.kode_layanan, l.lnAccEmail, l.lnNoTransaksi, l.tanggal_checkout, l.status_layanan, l.user_id, l.jumlah_kaji_ulang');
+    $builder->select('p.*, l.kode_layanan, l.user_email, l.no_invoice, l.tanggal_checkout, l.status_layanan, l.user_id, l.jumlah_kaji_ulang');
     $builder->join('t_layanan as l', 'p.kode_layanan = l.kode_layanan', 'inner');
     $builder->where('l.status_layanan >', 2);
 
@@ -53,7 +53,7 @@ class PembayaranAdminModel extends MyModel
   }
 
   /**
-   * Ambil user pemesan menggunakan user_id atau email lnAccEmail.
+   * Ambil user pemesan menggunakan user_id atau email user_email.
    */
   public function findPemesanUser(?int $userId, ?string $email)
   {
@@ -152,7 +152,7 @@ class PembayaranAdminModel extends MyModel
 
     return $this->db->table('t_layanan')
       ->where('kode_layanan', $kode_layanan)
-      ->update(['lnNoTransaksi' => $noInvoice]);
+      ->update(['no_invoice' => $noInvoice]);
   }
 
   /**

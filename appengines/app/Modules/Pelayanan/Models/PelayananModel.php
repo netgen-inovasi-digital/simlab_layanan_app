@@ -73,11 +73,11 @@ class PelayananModel extends MyModel
   public function getUserLayananList(int $userId): array
   {
     return $this->db->table($this->layananTable . ' as t')
-      ->select('t.kode_layanan, t.user_id, t.lnAccEmail, t.lnNoTransaksi, t.tanggal_checkout, t.status_layanan, t.kuisioner')
+      ->select('t.kode_layanan, t.user_id, t.user_email, t.no_invoice, t.tanggal_checkout, t.status_layanan, t.kuisioner')
       ->join('t_layanan_detil d', 'd.kode_layanan = t.kode_layanan', 'inner')
       ->where('t.user_id', $userId)
       ->where('d.kode_jenis', 'A')
-      ->groupBy('t.kode_layanan, t.user_id, t.lnAccEmail, t.lnNoTransaksi, t.tanggal_checkout, t.status_layanan, t.kuisioner')
+      ->groupBy('t.kode_layanan, t.user_id, t.user_email, t.no_invoice, t.tanggal_checkout, t.status_layanan, t.kuisioner')
       ->orderBy('t.tanggal_checkout', 'DESC')
       ->get()->getResult();
   }

@@ -191,16 +191,16 @@ class FormulirAdmin extends BaseController
         $u = $userModel->getDataById('user_id', $row->user_id);
       }
 
-      // 2) Jika belum ada, cek berdasarkan email (lnAccEmail)
-      if (!$u && !empty($row->lnAccEmail)) {
-        $users = $userModel->getAllDataById(['user_email' => $row->lnAccEmail]);
+      // 2) Jika belum ada, cek berdasarkan email (user_email)
+      if (!$u && !empty($row->user_email)) {
+        $users = $userModel->getAllDataById(['user_email' => $row->user_email]);
         if (!empty($users))
           $u = is_array($users) ? $users[0] : $users;
       }
 
-      // 3) Jika masih belum ketemu, cari user_id dari invoice (lnNoTransaksi)
-      if (!$u && !empty($row->lnNoTransaksi)) {
-        $foundUserId = $this->formulirAdminModel->findUserIdByNoTransaksi($this->table, $row->lnNoTransaksi);
+      // 3) Jika masih belum ketemu, cari user_id dari invoice (no_invoice)
+      if (!$u && !empty($row->no_invoice)) {
+        $foundUserId = $this->formulirAdminModel->findUserIdByNoTransaksi($this->table, $row->no_invoice);
         if ($foundUserId !== null) {
           $u = $userModel->getDataById('user_id', $foundUserId);
         }
@@ -411,9 +411,9 @@ class FormulirAdmin extends BaseController
             $userObj = $modelUser->getDataById('user_id', $row->user_id);
           }
 
-          // 2) jika belum ada, coba cari berdasarkan lnAccEmail
-          if (!$userObj && !empty($row->lnAccEmail)) {
-            $users = $modelUser->getAllDataById(['user_email' => $row->lnAccEmail]);
+          // 2) jika belum ada, coba cari berdasarkan user_email
+          if (!$userObj && !empty($row->user_email)) {
+            $users = $modelUser->getAllDataById(['user_email' => $row->user_email]);
             if (!empty($users))
               $userObj = is_array($users) ? $users[0] : $users;
           }

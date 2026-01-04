@@ -232,8 +232,8 @@ class PelayananRapatJas extends BaseController
       $id = bin2hex($this->encrypter->encrypt($row->kode_layanan));
       $response = [];
 
-      $noTransaksi = (isset($row->lnNoTransaksi) && trim((string) $row->lnNoTransaksi) !== '')
-        ? $row->lnNoTransaksi
+      $noTransaksi = (isset($row->no_invoice) && trim((string) $row->no_invoice) !== '')
+        ? $row->no_invoice
         : 'Belum tersedia';
 
       $tanggal = !empty($row->tanggal_checkout) ? date('d-m-Y', strtotime($row->tanggal_checkout)) : '-';

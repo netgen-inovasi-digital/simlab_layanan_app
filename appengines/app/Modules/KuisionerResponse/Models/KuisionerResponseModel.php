@@ -20,7 +20,7 @@ class KuisionerResponseModel extends Model
   public function getResponseList(): array
   {
     $builder = $this->db->table('t_layanan as l');
-    $builder->select('l.kode_layanan, l.lnNoTransaksi, l.tanggal_checkout, l.user_id, l.lnAccEmail, l.jumlah_kaji_ulang');
+    $builder->select('l.kode_layanan, l.no_invoice, l.tanggal_checkout, l.user_id, l.user_email, l.jumlah_kaji_ulang');
     $builder->select('GROUP_CONCAT(DISTINCT d.nama_layanan ORDER BY d.nama_layanan SEPARATOR ", ") as layanan_nama');
     $builder->select('u.user_name, u.user_email, u.user_identity, u.user_instansi');
     $builder->select('COUNT(DISTINCT jawab.id_jawaban) as total_jawaban');
@@ -28,7 +28,7 @@ class KuisionerResponseModel extends Model
     $builder->join('t_layanan_detil as d', 'd.kode_layanan = l.kode_layanan', 'left');
     $builder->join('account_users as u', 'u.user_id = l.user_id', 'left');
     $builder->where('l.kuisioner', 1);
-    $builder->groupBy('l.kode_layanan, l.lnNoTransaksi, l.tanggal_checkout, l.user_id, l.lnAccEmail, l.jumlah_kaji_ulang, u.user_name, u.user_email, u.user_identity, u.user_instansi');
+    $builder->groupBy('l.kode_layanan, l.no_invoice, l.tanggal_checkout, l.user_id, l.user_email, l.jumlah_kaji_ulang, u.user_name, u.user_email, u.user_identity, u.user_instansi');
     $builder->orderBy('l.tanggal_checkout', 'DESC');
 
     return $builder->get()->getResult();
@@ -40,7 +40,7 @@ class KuisionerResponseModel extends Model
   public function getResponseHeader($kode_layanan)
   {
     return $this->db->table('t_layanan as l')
-      ->select('l.kode_layanan, l.lnNoTransaksi, l.tanggal_checkout, u.user_name, u.user_identity, u.user_instansi')
+      ->select('l.kode_layanan, l.no_invoice, l.tanggal_checkout, u.user_name, u.user_identity, u.user_instansi')
       ->join('account_users as u', 'u.user_id = l.user_id', 'left')
       ->where('l.kode_layanan', $kode_layanan)
       ->get()

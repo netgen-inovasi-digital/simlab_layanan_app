@@ -280,6 +280,15 @@ abstract class KeranjangBase extends BaseController
     $session = session();
     $user_id = $session->get('id_user');
 
+    // Admin/staff login memakai simlab_account, bukan account_users.
+    // Verifikasi akun hanya relevan untuk pelanggan (account_users).
+    $roleId = (int) ($session->get('role_id') ?? 0);
+    // Di aplikasi ini pelanggan umumnya role_id = 2 (lihat registrasi user).
+    // Role lain dianggap staff/admin dan tidak perlu verifikasi pelanggan.
+    if ($roleId !== 2 && $roleId !== 0) {
+      return $this->response->setJSON(['verified' => true, 'msg' => 'Akun staff/admin tidak memerlukan verifikasi pelanggan.']);
+    }
+
     $modelUser = new MyModel('account_users');
     $user = $modelUser->getDataById('user_id', $user_id);
 
@@ -631,7 +640,7 @@ abstract class KeranjangBase extends BaseController
 
     $insertLayananId = $modelLayanan->insertData([
       'user_id' => $userIdToSave,
-      'lnAccEmail' => $emailToSave,
+      'user_email' => $emailToSave,
       'tanggal_checkout' => date('Y-m-d H:i:s'),
       'status_layanan' => 1,
       'kuisioner' => 0

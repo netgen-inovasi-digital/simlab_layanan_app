@@ -21,8 +21,8 @@
                             <label class="form-label">Status Identitas</label>
                             <select name="user_identity" class="form-select" id="identitySelect">
                                 <option value="">-- Pilih Identitas --</option>
-                                <option value="ULM" <?= $get->user_identity === 'ULM' ? 'selected' : '' ?>>ULM</option>
-                                <option value="NON ULM" <?= $get->user_identity === 'NON ULM' ? 'selected' : '' ?>>NON ULM</option>
+                                <option value="ULM" <?= ($get->user_identity ?? '') === 'ULM' ? 'selected' : '' ?>>ULM</option>
+                                <option value="NON ULM" <?= ($get->user_identity ?? '') === 'NON ULM' ? 'selected' : '' ?>>NON ULM</option>
                             </select>
                         </div>
 
