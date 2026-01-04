@@ -312,21 +312,93 @@ class Auth extends Controller
     $emailService = new EmailServices();
     $userName = !empty($user['user_name']) ? $user['user_name'] : 'Pengguna';
     $message = "
-        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
-            <h2 style='color: #333;'>Reset Password</h2>
-            <p>Halo <strong>{$userName}</strong>,</p>
-            <p>Kami menerima permintaan untuk mereset password akun Anda.</p>
-            <p>Klik tombol di bawah ini untuk mereset password Anda:</p>
-            <p style='text-align: center; margin: 30px 0;'>
-                <a href='{$resetLink}' style='background-color: #007bff; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;'>Reset Password</a>
-            </p>
-            <p>Atau salin dan tempel link berikut di browser Anda:</p>
-            <p style='background-color: #f5f5f5; padding: 10px; word-break: break-all;'>{$resetLink}</p>
-            <p style='color: #666; font-size: 14px;'><strong>Catatan:</strong> Link ini hanya berlaku selama 1 jam.</p>
-            <p style='color: #666; font-size: 14px;'>Jika Anda tidak meminta reset password, abaikan email ini dan password Anda akan tetap aman.</p>
-            <hr style='border: none; border-top: 1px solid #ddd; margin: 30px 0;'>
-            <p style='color: #999; font-size: 12px;'>Email ini dikirim otomatis, mohon tidak membalas email ini.</p>
-        </div>
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta name='color-scheme' content='light dark'>
+            <meta name='supported-color-schemes' content='light dark'>
+            <style>
+                @media (prefers-color-scheme: dark) {
+                    .content-wrapper { background-color: #1a1a1a !important; }
+                    .content-body { background-color: #2d2d2d !important; border-color: #444 !important; }
+                    .text-primary { color: #e0e0e0 !important; }
+                    .text-secondary { color: #b0b0b0 !important; }
+                    .link-box { background-color: #3a3a3a !important; }
+                    .link-text { background-color: #2d2d2d !important; border-color: #555 !important; }
+                    .warning-box { background-color: #3a3a1a !important; border-color: #ffc107 !important; }
+                    .warning-text { color: #ffc107 !important; }
+                    .danger-box { background-color: #3a1a1a !important; border-color: #dc3545 !important; }
+                    .danger-text { color: #ff6b6b !important; }
+                    .footer-text { color: #888 !important; }
+                    hr { border-color: #444 !important; }
+                }
+            </style>
+        </head>
+        <body style='margin: 0; padding: 0; background-color: #f5f5f5;'>
+            <div class='content-wrapper' style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;'>
+                <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;'>
+                    <h2 style='color: #ffffff; margin: 0; font-size: 24px;'>🔐 Permintaan Reset Password</h2>
+                </div>
+                
+                <div class='content-body' style='background-color: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 10px 10px;'>
+                    <p class='text-primary' style='font-size: 16px; color: #1a1a1a; margin-bottom: 20px;'>Halo, <strong>{$userName}</strong></p>
+                    
+                    <p class='text-secondary' style='font-size: 15px; color: #333333; line-height: 1.6;'>
+                        Kami menerima permintaan untuk mereset password akun Anda di sistem <strong>Simlab</strong>. 
+                        Untuk melanjutkan proses reset password, silakan klik tombol di bawah ini:
+                    </p>
+                    
+                    <div style='text-align: center; margin: 35px 0;'>
+                        <a href='{$resetLink}' 
+                           style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                                  color: #ffffff !important; 
+                                  padding: 14px 40px; 
+                                  text-decoration: none; 
+                                  border-radius: 25px; 
+                                  display: inline-block; 
+                                  font-weight: bold; 
+                                  font-size: 16px;
+                                  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);'>
+                            Reset Password Sekarang
+                        </a>
+                    </div>
+                    
+                    <div class='link-box' style='background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin: 25px 0;'>
+                        <p class='text-secondary' style='margin: 0 0 10px 0; color: #555555; font-size: 14px;'><strong>Atau salin link berikut:</strong></p>
+                        <p class='link-text' style='background-color: #ffffff; padding: 12px; border: 1px dashed #cccccc; border-radius: 5px; word-break: break-all; color: #007bff; margin: 0; font-size: 13px;'>
+                            {$resetLink}
+                        </p>
+                    </div>
+                    
+                    <div class='warning-box' style='background-color: #fff8e1; border-left: 4px solid #ffc107; padding: 15px; margin: 25px 0; border-radius: 5px;'>
+                        <p class='warning-text' style='margin: 0; color: #f57f17; font-size: 14px;'>
+                            <strong>Penting untuk Diketahui:</strong>
+                        </p>
+                        <ul class='warning-text' style='margin: 10px 0 0 0; padding-left: 20px; color: #f57f17; font-size: 14px;'>
+                            <li style='margin-bottom: 8px;'>Link ini hanya berlaku selama <strong>1 jam</strong> sejak email ini dikirim</li>
+                            <li style='margin-bottom: 8px;'>Link hanya dapat digunakan <strong>satu kali</strong></li>
+                            <li>Setelah password berhasil diubah, link ini otomatis tidak berlaku lagi</li>
+                        </ul>
+                    </div>
+                    
+                    <div class='danger-box' style='background-color: #ffebee; border-left: 4px solid #dc3545; padding: 15px; margin: 25px 0; border-radius: 5px;'>
+                        <p class='danger-text' style='margin: 0; color: #c62828; font-size: 14px;'>
+                            <strong>Keamanan Akun Anda:</strong><br>
+                            Jika Anda <strong>tidak meminta</strong> reset password, segera abaikan email ini dan pastikan akun Anda aman. 
+                            Password Anda tidak akan berubah kecuali Anda mengklik link di atas.
+                        </p>
+                    </div>
+                    
+                    <hr style='border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;'>
+                    
+                    <p class='footer-text' style='color: #999999; font-size: 12px; text-align: center; margin: 0;'>
+                        Email ini dikirim secara otomatis oleh sistem <strong>Simlab</strong>.<br>
+                        Mohon tidak membalas email ini. Jika ada pertanyaan, silakan hubungi administrator sistem.
+                    </p>
+                </div>
+            </div>
+        </body>
+        </html>
     ";
 
     // email user
