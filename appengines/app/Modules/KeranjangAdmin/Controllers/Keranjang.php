@@ -310,10 +310,10 @@ class Keranjang extends KeranjangBase
       foreach ($listUji as $row) {
         $response = [];
 
-        // Parameter
+        // Parameter - menggunakan parameter_nama dari join dengan r_parameter
         $response[] = esc($row->parameter_nama ?? '-');
 
-        // Instrumen/Alat
+        // Instrumen/Alat - menggunakan alat_nama dari join dengan r_alat
         $response[] = esc($row->alat_nama ?? '-');
 
         // Tentukan diskon yang diperbolehkan berdasarkan status PELANGGAN yang dipilih
@@ -349,13 +349,13 @@ class Keranjang extends KeranjangBase
                 <button type="button" 
                         class="btn btn-success btn-sm btnMasukkan" 
                         data-kode="' . esc($row->kode) . '" 
-                        data-alat="' . esc($row->nama ?? '') . '" 
+                        data-alat="' . esc($row->alat_nama ?? '') . '" 
                         data-biaya="' . $row->biaya . '" 
-                        data-parameter="' . esc($row->nama ?? '') . '"
+                        data-parameter="' . esc($row->parameter_nama ?? '') . '"
                         data-nama-layanan="' . esc($row->nama_layanan ?? '') . '"
                         data-diskon="' . $allowedDiskon . '" 
-                        data-kode="' . esc($jenKodeClean) . '"
-                        data-nama="' . esc($row->nama ?? '') . '"
+                        data-kode-jenis="' . esc($jenKodeClean) . '"
+                        data-nama="' . esc($row->nama_layanan ?? '') . '"
                         title="Masukkan ke keranjang">
                     <i class="bi bi-cart-plus"></i>
                 </button>
