@@ -38,14 +38,16 @@ Reset Password
     <div id="reset-form-wrapper">
       <?= form_open('reset/auth', ['id' => 'reset-form']) ?>
       <input type="hidden" name="token" value="<?= esc($token) ?>">
-      <div class="mb-3">
-        <input type="password" class="form-control rounded-pill mx-auto bg-light-gray" name="pass"
-          placeholder="Password baru" minlength="6" required>
-        <small class="text-muted d-block mt-1 text-center">Minimal 6 karakter</small>
+      <div class="mb-3 position-relative">
+        <input type="password" id="password-field" class="form-control rounded-pill mx-auto bg-light-gray pe-5"
+          name="pass" placeholder="Password baru" minlength="6" required style="padding-right: 45px;">
+        <i id="togglePassword" class="bi bi-eye position-absolute fs-5 toggle-eye"></i>
+        <!-- <small class="text-muted d-block mt-1 text-center">Minimal 6 karakter</small> -->
       </div>
-      <div class="mb-3">
-        <input type="password" class="form-control rounded-pill mx-auto bg-light-gray" name="reppass"
-          placeholder="Ulangi password baru" minlength="6" required>
+      <div class="mb-3 position-relative">
+        <input type="password" id="repassword-field" class="form-control rounded-pill mx-auto bg-light-gray pe-5"
+          name="reppass" placeholder="Ulangi password baru" minlength="6" required style="padding-right: 45px;">
+        <i id="toggleRePassword" class="bi bi-eye position-absolute fs-5 toggle-eye"></i>
       </div>
       <div class="d-grid">
         <button type="submit" class="btn btn-primary rounded-pill mx-auto">RESET PASSWORD</button>
@@ -57,11 +59,37 @@ Reset Password
 
   <!-- Logo Section -->
   <div class="col-md-6 bg-light-gray d-flex flex-column justify-content-center align-items-center p-5">
-    <img src="https://placehold.co/250x100?text=Logo+Template" alt="Logo Template" style="width: 250px;"
-      class="img-fluid" />
-
-
+    <img src="<?= base_url('assets/img/logosimlab_nobg.png') ?>" alt="Logo Template" style="width: 250px;"
+      class="img-fluid mb-4" />
+    <h3 class="fw-bold text-center mb-2">Selamat Datang</h3>
+    <p class="text-center text-muted" style="max-width: 300px;">
+      Akses sistem layanan lab terpadu untuk mengelola data dan layanan dengan lebih mudah.
+    </p>
   </div>
 
 </div>
+
+<script>
+  const togglePassword = document.getElementById('togglePassword');
+  const passwordField = document.getElementById('password-field');
+  const toggleRePassword = document.getElementById('toggleRePassword');
+  const repasswordField = document.getElementById('repassword-field');
+
+  togglePassword.addEventListener('click', () => {
+    const isPassword = passwordField.type === 'password';
+    passwordField.type = isPassword ? 'text' : 'password';
+    togglePassword.classList.toggle('bi-eye');
+    togglePassword.classList.toggle('bi-eye-slash');
+    togglePassword.style.opacity = isPassword ? '1' : '0.7';
+  });
+
+  toggleRePassword.addEventListener('click', () => {
+    const isPassword = repasswordField.type === 'password';
+    repasswordField.type = isPassword ? 'text' : 'password';
+    toggleRePassword.classList.toggle('bi-eye');
+    toggleRePassword.classList.toggle('bi-eye-slash');
+    toggleRePassword.style.opacity = isPassword ? '1' : '0.7';
+  });
+</script>
+
 <?= $this->endSection() ?>

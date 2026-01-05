@@ -59,25 +59,35 @@
   table = loadTable(apiUrl);
   addAction();
 
-  // Event delegation untuk button Edit dan Hapus (agar tetap bekerja setelah table refresh)
-  document.addEventListener('click', function (e) {
-    // Handle Edit button
-    const editBtn = e.target.closest('.btn-action[title="Ubah"]');
-    if (editBtn) {
-      e.preventDefault();
-      e.stopPropagation();
-      editItemLayananLab(e);
-      return;
-    }
-    // Handle Delete button
-    const deleteBtn = e.target.closest('.btn-action[title="Hapus"]');
-    if (deleteBtn) {
-      e.preventDefault();
-      e.stopPropagation();
-      deleteItem(e);
-      return;
-    }
-  });
+  // Event delegation khusus untuk table ini (jangan pakai document, agar tidak "menempel" ke halaman lain)
+  var layananLabTable = document.getElementById('data-table');
+  if (layananLabTable) {
+    layananLabTable.addEventListener('click', function (e) {
+      // Handle Edit button
+      const editBtn = e.target.closest('.btn-action[title="Ubah"]');
+      if (editBtn) {
+        e.preventDefault();
+        editItemLayananLab(e);
+        return;
+      }
+
+      // Handle Delete button
+      const deleteBtn = e.target.closest('.btn-action[title="Hapus"]');
+      if (deleteBtn) {
+        e.preventDefault();
+        deleteItem(e);
+        return;
+      }
+
+      // Handle Lihat Tim button
+      const lihatTimBtn = e.target.closest('.btn-lihat-tim');
+      if (lihatTimBtn) {
+        const id = lihatTimBtn.getAttribute('data-id');
+        lihatTim(id);
+        return;
+      }
+    });
+  }
 
   fetch('<?php echo site_url("layananLab/getoptions") ?>')
     .then(res => res.json())
@@ -96,15 +106,6 @@
     }
     table = loadTable(newUrl);
     addAction();
-  });
-
-  // Event listener untuk button lihat tim
-  document.addEventListener('click', function (e) {
-    if (e.target.closest('.btn-lihat-tim')) {
-      const btn = e.target.closest('.btn-lihat-tim');
-      const id = btn.getAttribute('data-id');
-      lihatTim(id);
-    }
   });
 
   document.querySelector('#formDiskonULM').addEventListener('submit', function (e) {
@@ -144,6 +145,10 @@
     const form = document.querySelector('#myform');
     const formData = new FormData(form);
 
+    function clearValidationErrors() {
+      document.querySelectorAll('#modalForm small.text-danger[id^="error-"]').forEach(el => el.textContent = '');
+    }
+
     // Hapus data tim lama jika ada
     formData.delete('tim[]');
     formData.delete('tim');
@@ -163,8 +168,8 @@
     const actionUrl = form.getAttribute('action');
     saveData({
       url: actionUrl, formData: formData, onSuccess: function (data) {
-        // Clear previous errors
-        document.querySelectorAll('.text-danger').forEach(el => el.textContent = '');
+        // Clear previous errors (only validation messages)
+        clearValidationErrors();
 
         if (data.res === true) {
           if (typeof table !== 'undefined') {
@@ -438,8 +443,8 @@
     const idInput = document.querySelector('[name="id"]');
     if (idInput) idInput.value = "";
 
-    // Clear previous errors
-    document.querySelectorAll('.text-danger').forEach(el => el.textContent = '');
+    // Clear previous errors (only validation messages)
+    document.querySelectorAll('#modalForm small.text-danger[id^="error-"]').forEach(el => el.textContent = '');
 
     // Reset tim lists
     timManager.reset();
@@ -452,8 +457,8 @@
     fetch('<?php echo site_url("layananLab/edit/") ?>' + id)
       .then(res => res.json())
       .then(data => {
-        // Clear previous errors
-        document.querySelectorAll('.text-danger').forEach(el => el.textContent = '');
+        // Clear previous errors (only validation messages)
+        document.querySelectorAll('#modalForm small.text-danger[id^="error-"]').forEach(el => el.textContent = '');
 
         const idInput = document.querySelector('[name="id"]');
         if (idInput) idInput.value = data.id;
@@ -465,7 +470,7 @@
         if (satuanInput) satuanInput.value = data.satuan;
 
         const biayaInput = document.querySelector('[name="biaya"]');
-        if (biayaInput) biayaInput.value = formatRupiah(data.biaya, false);
+        if (biayaInput) biayaInput.value = data.biaya ? formatRupiah(String(data.biaya), false) : '';
 
         const diskonInput = document.querySelector('[name="diskon"]');
         if (diskonInput) diskonInput.value = data.diskon;
@@ -631,8 +636,8 @@
       }
     });
 
-    // Clear previous errors
-    document.querySelectorAll('.text-danger').forEach(el => el.textContent = '');
+    // Clear previous errors (only validation messages)
+    document.querySelectorAll('#modalForm small.text-danger[id^="error-"]').forEach(el => el.textContent = '');
 
     // Reset tim lists
     timManager.reset();
