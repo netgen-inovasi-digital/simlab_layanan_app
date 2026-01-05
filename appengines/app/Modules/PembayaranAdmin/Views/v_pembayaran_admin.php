@@ -259,19 +259,18 @@
                         <thead>
                             <tr>
                                 <th width="5%">No</th>
-                                <th width="22%">Parameter</th>
-                                <th width="22%">Instrumen/Alat</th>
-                                <th width="12%">Metode</th>
-                                <th width="10%">Diskon</th>
-                                <th width="12%">Biaya Satuan</th>
-                                <th width="7%">Jumlah</th>
-                                <th width="10%">Sub Total</th>
+                                <th width="30%">Layanan</th>
+                                <th width="15%">Metode</th>
+                                <th width="12%">Diskon</th>
+                                <th width="15%">Biaya Satuan</th>
+                                <th width="8%">Jumlah</th>
+                                <th width="15%">Sub Total</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
                         <tfoot>
                             <tr class="table-active align-middle">
-                                <td colspan="8">
+                                <td colspan="7">
                                     <div class="d-flex justify-content-end">
                                         <div class="fw-bold fs-5">
                                             TOTAL KESELURUHAN:

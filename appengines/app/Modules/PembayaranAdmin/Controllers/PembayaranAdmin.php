@@ -235,10 +235,17 @@ class PembayaranAdmin extends BaseController
       $subtotal = (float) ($det->biaya ?? 0);
       $unit = $qty > 0 ? $subtotal / $qty : $subtotal;
 
+      // Gabungkan parameter dan instrumen/alat menjadi satu kolom "Layanan"
+      $parameter = esc($det->nama_layanan ?? $det->ref_nama ?? '-', 'html');
+      $instrumen = esc($det->nama ?? $det->kode_alat ?? '-', 'html');
+      $layanan = $parameter;
+      if (!empty($instrumen) && $instrumen !== '-') {
+        $layanan .= ' (' . $instrumen . ')';
+      }
+
       $items[] = [
         $idx + 1,
-        esc($det->nama_layanan ?? $det->ref_nama ?? '-', 'html'),
-        esc($det->nama ?? $det->kode_alat ?? '-', 'html'),
+        $layanan,
         esc($det->metode_nama ?? '-', 'html'),
         $this->formatDiskonValue($det->ref_diskon ?? 0),
         $this->formatCurrencyIDR($unit),
