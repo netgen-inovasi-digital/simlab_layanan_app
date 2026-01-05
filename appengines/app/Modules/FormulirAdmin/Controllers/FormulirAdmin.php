@@ -253,13 +253,20 @@ class FormulirAdmin extends BaseController
       // Status Pembayaran (sama seperti di Pelayanan)
       $bayarStatusVal = isset($payMap[$lnKodeInt]) ? $payMap[$lnKodeInt]['status'] : 0;
       $invoiceFile = isset($payMap[$lnKodeInt]) ? $payMap[$lnKodeInt]['invoiceFile'] : null;
+      $buktiBayar = isset($payMap[$lnKodeInt]) ? $payMap[$lnKodeInt]['buktiBayar'] : null;
 
       if ($bayarStatusVal === 0) {
-        // Cek apakah invoice sudah dikirim (ada file)
-        if (!empty($invoiceFile)) {
+        // Cek apakah ada bukti bayar (Belum Diverifikasi)
+        if (!empty($buktiBayar) && !empty($invoiceFile)) {
+          $response[] = '<span class="badge bg-warning">Belum Diverifikasi</span>';
+        }
+        // Cek apakah invoice sudah dikirim (Menunggu pembayaran)
+        elseif (!empty($invoiceFile)) {
           $response[] = '<span class="badge bg-info">Menunggu pembayaran</span>';
-        } else {
-          $response[] = '<span class="badge bg-warning">Belum diproses</span>';
+        }
+        // Belum ada invoice (Belum diproses)
+        else {
+          $response[] = '<span class="badge bg-secondary">Belum diproses</span>';
         }
       } elseif ($bayarStatusVal === 1) {
         $response[] = '<span class="badge bg-success">Lunas</span>';

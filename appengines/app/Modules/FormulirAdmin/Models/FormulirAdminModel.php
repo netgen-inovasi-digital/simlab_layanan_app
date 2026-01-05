@@ -46,9 +46,9 @@ class FormulirAdminModel extends Model
     }
 
     $payRows = $this->db->table('t_pembayaran')
-      ->select('kode_layanan, status_bayar, no_invoice, invoice_file, MAX(kode_bayar) AS lastKode')
+      ->select('kode_layanan, status_bayar, no_invoice, invoice_file, bukti_bayar, MAX(kode_bayar) AS lastKode')
       ->whereIn('kode_layanan', $lnKodes)
-      ->groupBy('kode_layanan, status_bayar, no_invoice, invoice_file')
+      ->groupBy('kode_layanan, status_bayar, no_invoice, invoice_file, bukti_bayar')
       ->orderBy('lastKode', 'DESC')
       ->get()->getResult();
 
@@ -60,6 +60,7 @@ class FormulirAdminModel extends Model
           'status' => (int) $p->status_bayar,
           'inv' => $p->no_invoice ?? null,
           'invoiceFile' => $p->invoice_file ?? null,
+          'buktiBayar' => $p->bukti_bayar ?? null,
         ];
       }
     }
