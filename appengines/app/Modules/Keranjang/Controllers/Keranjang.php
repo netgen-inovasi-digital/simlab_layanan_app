@@ -22,13 +22,6 @@ class Keranjang extends KeranjangBase
     // Call parent constructor untuk load config
     parent::__construct();
 
-    // 🔍 DEBUG: Log config yang ter-load
-    log_message('debug', 'Keranjang Config Loaded: ' . json_encode([
-      'jenis_layanan' => $this->jenisLayanan,
-      'table_pengujian' => $this->tablePengujian,
-      'table_detail' => $this->tableLayananDetail,
-      'columns' => $this->config['columns'] ?? null
-    ]));
   }
 
   /**
@@ -164,16 +157,9 @@ class Keranjang extends KeranjangBase
   protected function saveDetailLayanan(int $kode_layanan, array $keranjang): void
   {
     foreach ($keranjang as $item) {
+      // Resolve kode_jenis dari r_layanan_pengujian berdasarkan kode layanan
       $jenKodeValue = null;
-
-      if (isset($item['kode'])) {
-        $jenKodeValue = trim((string) $item['kode']);
-        if ($jenKodeValue === '') {
-          $jenKodeValue = null;
-        }
-      }
-
-      if ($jenKodeValue === null && !empty($item['kode'])) {
+      if (isset($item['kode']) && !empty($item['kode'])) {
         $jenKodeValue = $this->keranjangModel->resolveJenisKode((string) $item['kode']);
       }
 
@@ -190,8 +176,6 @@ class Keranjang extends KeranjangBase
         'terima_layanan_by' => null,
         'files' => null,
       ];
-
-      log_message('debug', 'Inserting detail layanan: ' . json_encode($detil));
 
       if (!$this->keranjangModel->insertDetailLayanan($detil)) {
         throw new \RuntimeException('Gagal simpan detail layanan.');
@@ -272,13 +256,13 @@ class Keranjang extends KeranjangBase
 
         $btnMasukkan = '<button type="button" class="btn btn-success btn-sm btnMasukkan" '
           . 'data-kode="' . esc($row->kode) . '" '
-          . 'data-alat="' . esc($row->nama ?? '') . '" '
+          . 'data-alat="' . esc($row->alat_nama ?? '') . '" '
           . 'data-biaya="' . $row->biaya . '" '
-          . 'data-parameter="' . esc($row->nama ?? '') . '" '
+          . 'data-parameter="' . esc($row->parameter_nama ?? '') . '" '
           . 'data-nama-layanan="' . esc($row->nama_layanan ?? '') . '" '
           . 'data-diskon="' . $allowedDiskon . '" '
-          . 'data-kode="' . esc($jenKodeClean) . '" '
-          . 'data-nama="' . esc($row->nama ?? '') . '" '
+          . 'data-jenis-kode="' . esc($jenKodeClean) . '" '
+          . 'data-jenis-nama="' . esc($row->jenis_nama ?? '') . '" '
           . 'title="Masukkan ke keranjang">'
           . '<i class="bi bi-cart-plus"></i>'
           . '</button>';
@@ -297,9 +281,6 @@ class Keranjang extends KeranjangBase
         ]
       ]);
     } catch (\Exception $e) {
-      log_message('error', 'Error in keranjangDataListLayanan: ' . $e->getMessage());
-      log_message('error', 'Stack trace: ' . $e->getTraceAsString());
-
       return $this->response->setStatusCode(500)->setJSON([
         'error' => true,
         'message' => 'Terjadi kesalahan saat memuat data layanan',
@@ -408,7 +389,6 @@ class Keranjang extends KeranjangBase
         throw new \RuntimeException('Gagal menyimpan identitas sampel');
       }
 
-      // Seed log sampel agar tahapan lain bisa langsung melakukan update timestamp
       if (!$this->keranjangModel->seedLogSampel($kode_layanan)) {
         throw new \RuntimeException('Gagal menyimpan log sampel');
       }
@@ -427,8 +407,6 @@ class Keranjang extends KeranjangBase
       if ($db->transStatus() === FALSE) {
         $db->transRollback();
       }
-
-      log_message('error', 'Error in keranjangCheckout: ' . $e->getMessage());
 
       return $this->response->setJSON([
         'res' => false,
