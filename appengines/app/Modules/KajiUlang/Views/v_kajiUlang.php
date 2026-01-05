@@ -312,13 +312,7 @@
       }
 
       if (data.res) {
-        // Reload tabel utama dengan delay kecil (dipanggil setelah modal ditutup)
-        setTimeout(function () {
-          // Hapus pagination sebelum reload untuk mencegah flicker
-          removePaginationBeforeReload('data-table');
-          // Reload data silent
-          if (typeof table !== 'undefined') table.fetchData({ reload: true });
-        }, 150);
+        // Jangan reload di sini, biarkan hidden.bs.modal yang menangani
         return { ok: true, data: data };
       } else {
         console.warn('Gagal menyimpan komentar:', data.msg || null);
@@ -331,40 +325,65 @@
   }
 
   // ============================================================
-  // AUTO-SAVE KOMENTAR SAAT MODAL DITUTUP
+  // AUTO-SAVE KOMENTAR SAAT MODAL DITUTUP (HANYA SEKALI)
   // ============================================================
-  document.addEventListener('click', function (e) {
-    // Auto-save saat klik tombol close (X) atau tombol "Tutup"
-    if (e.target.matches('[data-bs-dismiss="modal"]') || e.target.closest('[data-bs-dismiss="modal"]')) {
+  (function attachCloseButtonHandler() {
+    if (window._kajiUlangCloseHandlerBound) return;
+    window._kajiUlangCloseHandlerBound = true;
+
+    document.addEventListener('click', function (e) {
+      // Auto-save saat klik tombol close (X) atau tombol "Tutup" HANYA di modalDetail
+      const closeBtn = e.target.matches('[data-bs-dismiss="modal"]') ? e.target : e.target.closest('[data-bs-dismiss="modal"]');
+      if (!closeBtn) return;
+      
+      // Pastikan hanya untuk modalDetail
+      const modal = closeBtn.closest('#modalDetail');
+      if (!modal) return;
+
       e.preventDefault();
       // Simpan komentar terlebih dahulu sebelum tutup modal
       saveKomentarAsync().then(() => {
-        // Setelah simpan selesai, baru tutup modal
-        if (_modalDetailInstance) _modalDetailInstance.hide();
-        else if (typeof $ === 'function') $('#modalDetail').modal('hide');
+        // Setelah simpan selesai, baru tutup modal - gunakan pola sama seperti TinjauLHUS
+        try {
+          if (typeof bootstrap !== 'undefined') {
+            var modalInstance = bootstrap.Modal.getInstance(modal);
+            if (modalInstance) modalInstance.hide();
+          } else if (typeof $ === 'function') {
+            $('#modalDetail').modal('hide');
+          }
+        } catch (err) {
+          console.warn('Modal hide error', err);
+        }
       });
-      return;
-    }
-  });
+    });
+  })();
 
-  // Event listener untuk modal hide (backup untuk auto-save)
-  document.addEventListener('hide.bs.modal', function (e) {
-    if (e.target.id === 'modalDetail') {
-      // Pastikan komentar tersimpan saat modal ditutup
-      saveKomentarAsync().catch(err => console.warn('Auto-save komentar gagal:', err));
-    }
-  });
+  // ============================================================
+  // ATTACH MODAL CLOSE HANDLERS (HANYA SEKALI)
+  // Menggunakan IIFE untuk mencegah duplikasi event listener
+  // ============================================================
+  (function attachModalCloseHandlers() {
+    const modalEl = document.getElementById('modalDetail');
+    if (!modalEl || modalEl.dataset.closeHandlersBound === '1') return;
 
-  // Event listener untuk modal hidden (setelah modal benar-benar tertutup)
-  // Reset state tabel detail untuk mencegah pagination flicker dan data cache
-  document.addEventListener('hidden.bs.modal', function (e) {
-    if (e.target.id === 'modalDetail') {
+    // Tandai bahwa handlers sudah terpasang
+    modalEl.dataset.closeHandlersBound = '1';
+
+    // Event listener untuk modal hidden (setelah modal benar-benar tertutup)
+    // Reset state tabel detail untuk mencegah pagination flicker dan data cache
+    modalEl.addEventListener('hidden.bs.modal', function () {
       // Reset tabel detail setelah modal ditutup
       if (typeof resetDetailTable === 'function') {
         resetDetailTable();
       }
-    }
-  });
+      // Refresh tabel utama setelah modal ditutup
+      try {
+        if (typeof table !== 'undefined' && table.fetchData) {
+          table.fetchData({ reload: true });
+        }
+      } catch (e) { }
+    });
+  })();
 
   // ============================================================
   // LOAD DETAIL LAYANAN (MODAL)
@@ -400,42 +419,57 @@
     const tbody = document.querySelector('#tableDetail tbody');
     if (tbody) tbody.innerHTML = '';
 
+    // Hapus filter jika ada
+    const existingFilter = document.getElementById('filter-container-tableDetail');
+    if (existingFilter) existingFilter.remove();
+
+    // Hapus pagination jika ada
+    const existingPagination = document.getElementById('pagination-tableDetail');
+    if (existingPagination) existingPagination.remove();
+
     // Update ID yang sedang di-load
     lastLoadedDetailId = id;
 
-    // Simpan referensi config tabel utama sebelum operasi
-    // (untuk mencegah konflik dengan variabel global sayTable)
-
-    // Jika instance sudah ada, update config dan fetch ulang
-    if (trackingDetailTable && trackingDetailTable.getConfig && trackingDetailTable.fetchData) {
-      const cfg = trackingDetailTable.getConfig();
-      cfg.apiUrl = `<?php echo site_url("kajiulang/detailList/") ?>${id}`;
-      // Force reload dengan parameter reload: true
-      trackingDetailTable.fetchData({ reload: true, page: 1 });
-    } else {
-      // Buat instance baru jika belum ada - menggunakan createModal dari sayTable.js
-      trackingDetailTable = createModal({
-        tableId: 'tableDetail',
-        apiUrl: `<?php echo site_url("kajiulang/detailList/") ?>${id}`,
-        itemsPerPage: 10,
-        showFilter: false,
-        treeview: false,
-        numbering: false,
-        dataSrc: 'items'
-      });
-    }
-
-    // Simpan encLn dan kode_layanan ke modal dataset
+    // Simpan encLn dan kode_layanan ke modal dataset SEBELUM show
     const modalEl = document.getElementById('modalDetail');
     if (modalEl) {
       modalEl.dataset.encLn = id;
-      // Jika kode_layanan tidak diberikan, ambil dari dataset yang tersimpan
       if (kode_layanan) {
         modalEl.dataset.kode_layanan = kode_layanan;
       } else {
         kode_layanan = modalEl.dataset.kode_layanan || '';
       }
     }
+
+    // Show modal TERLEBIH DAHULU sebelum load data
+    try {
+      if (typeof bootstrap !== 'undefined') {
+        var modalInstance = bootstrap.Modal.getInstance(modalEl);
+        if (!modalInstance) modalInstance = new bootstrap.Modal(modalEl);
+        if (!modalEl.classList.contains('show')) modalInstance.show();
+      } else if (typeof $ === 'function') {
+        if (!$('#modalDetail').hasClass('show')) $('#modalDetail').modal('show');
+      }
+    } catch (err) {
+      console.warn('Modal show error', err);
+    }
+
+    // Clear global tables registry untuk tableDetail (mencegah state lama tersimpan)
+    if (typeof tables !== 'undefined' && tables['tableDetail']) {
+      delete tables['tableDetail'];
+    }
+
+    // PENTING: Selalu buat ulang instance tabel modal SETELAH modal ditampilkan
+    // untuk mencegah masalah dengan event binding dan data caching
+    trackingDetailTable = createModal({
+      tableId: 'tableDetail',
+      apiUrl: `<?php echo site_url("kajiulang/detailList/") ?>${id}`,
+      itemsPerPage: 10,
+      showFilter: false,
+      treeview: false,
+      numbering: false,
+      dataSrc: 'items'
+    });
 
     // Load atau tampilkan identitas sampel
     const sampleSection = document.getElementById('sampleIdentitySection');
@@ -487,14 +521,6 @@
       if (sampleSection.style.display !== 'block') {
         sampleSection.style.display = 'none';
       }
-    }
-
-    // Show modal
-    try {
-      if (_modalDetailInstance) _modalDetailInstance.show();
-      else if (typeof $ === 'function') $('#modalDetail').modal('show');
-    } catch (err) {
-      if (typeof $ === 'function' && $('#modalDetail').modal) $('#modalDetail').modal('show');
     }
   }
 
@@ -590,35 +616,43 @@
     }
   }
 
-  document.addEventListener('click', function (e) {
-    // ACCEPT BUTTON
-    const acceptEl = e.target.closest ? e.target.closest('.btn-accept-manager') : null;
-    if (acceptEl) {
-      e.preventDefault();
-      handleApproveReject(acceptEl, true);
-      return;
-    }
+  // ============================================================
+  // EVENT DELEGATION UNTUK APPROVE/REJECT/BADGE (HANYA SEKALI)
+  // ============================================================
+  (function attachActionButtonHandlers() {
+    if (window._kajiUlangActionHandlersBound) return;
+    window._kajiUlangActionHandlersBound = true;
 
-    // REJECT BUTTON
-    const rejectEl = e.target.closest ? e.target.closest('.btn-reject-manager') : null;
-    if (rejectEl) {
-      e.preventDefault();
-      handleApproveReject(rejectEl, false);
-      return;
-    }
-
-    // BADGE UJI ULANG - Klik untuk melihat catatan kaji ulang
-    const badgeUjiUlang = e.target.closest ? e.target.closest('.badge-uji-ulang') : null;
-    if (badgeUjiUlang) {
-      e.preventDefault();
-      e.stopPropagation();
-      const encId = badgeUjiUlang.dataset.id;
-      if (encId) {
-        showCatatanKajiUlang(encId);
+    document.addEventListener('click', function (e) {
+      // ACCEPT BUTTON
+      const acceptEl = e.target.closest ? e.target.closest('.btn-accept-manager') : null;
+      if (acceptEl) {
+        e.preventDefault();
+        handleApproveReject(acceptEl, true);
+        return;
       }
-      return;
-    }
-  });
+
+      // REJECT BUTTON
+      const rejectEl = e.target.closest ? e.target.closest('.btn-reject-manager') : null;
+      if (rejectEl) {
+        e.preventDefault();
+        handleApproveReject(rejectEl, false);
+        return;
+      }
+
+      // BADGE UJI ULANG - Klik untuk melihat catatan kaji ulang
+      const badgeUjiUlang = e.target.closest ? e.target.closest('.badge-uji-ulang') : null;
+      if (badgeUjiUlang) {
+        e.preventDefault();
+        e.stopPropagation();
+        const encId = badgeUjiUlang.dataset.id;
+        if (encId) {
+          showCatatanKajiUlang(encId);
+        }
+        return;
+      }
+    });
+  })();
 
   // ============================================================
   // FUNGSI UNTUK MENAMPILKAN MODAL CATATAN KAJI ULANG
