@@ -167,16 +167,19 @@ class TinjauLhusModel extends Model
             d.kode_layanan,
             d.nama_layanan,
             d.jumlah,
+            d.metode_pengujian,
             d.biaya,
             d.catatan_manajer,
             d.files,
             d.status_layanan,
+            m.nama AS metode_nama,
             lhus.file_lhus,
             lhus.catatan as ket_lhus,
             lhus.validasi_by
         ", false);
 
     $builder->join('r_tim rt', 'rt.uji_kode = d.uji_kode', 'inner');
+    $builder->join('r_metode m', 'm.metode_kode = d.metode_pengujian', 'left');
 
     // Subquery untuk ambil hanya 1 file terbaru per kode
     $builder->join(

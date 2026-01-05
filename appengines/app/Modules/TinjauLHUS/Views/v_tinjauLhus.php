@@ -55,6 +55,7 @@
               <tr>
                 <th style="min-width:40px; width:5%;">No</th>
                 <th style="min-width:300px; width:15%;">Layanan</th>
+                <th style="min-width:120px; width:10%;">Metode</th>
                 <th style="min-width:60px; width:5%;">Jumlah</th>
                 <th style="min-width:120px; width:10%;">Status LHUS</th>
                 <th style="min-width:120px; width:10%;">LHUS</th>

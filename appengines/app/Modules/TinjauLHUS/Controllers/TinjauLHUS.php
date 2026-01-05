@@ -191,6 +191,9 @@ class TinjauLHUS extends BaseController
       $layanan = $row->nama_layanan ?? '-';
       $jumlah = (int) ($row->jumlah ?? 0);
 
+      // Format metode
+      $metodeHtml = $this->formatKeteranganHtml($row->metode_nama ?? '');
+
       // Deteksi file LHUS dari t_files_lhus
       $hasFile = false;
       $fileUrl = null;
@@ -226,9 +229,9 @@ class TinjauLHUS extends BaseController
 
       // Status badge: 0/3=pending, 1=diterima, 2=ditolak
       if ($statusLhus === 1)
-        $statusBadge = '<span class="badge bg-success">LHUS Diterima</span>';
+        $statusBadge = '<span class="badge bg-success">Diterima</span>';
       elseif ($statusLhus === 2)
-        $statusBadge = '<span class="badge bg-danger">LHUS Ditolak</span>';
+        $statusBadge = '<span class="badge bg-danger">Ditolak</span>';
       elseif ($statusLhus === 3)
         $statusBadge = '<span class="badge bg-info">Terunggah (Belum Kirim)</span>';
       elseif ($statusLhus === 0)
@@ -248,6 +251,7 @@ class TinjauLHUS extends BaseController
       $data[] = [
         $no++,
         $layanan,
+        $metodeHtml,
         $jumlah,
         $statusBadge,
         $lhusHtml,
@@ -601,5 +605,18 @@ class TinjauLHUS extends BaseController
         'jumlah_kaji_ulang' => (int) ($row->jumlah_kaji_ulang ?? 0)
       ]
     ]);
+  }
+
+  /**
+   * Format metode HTML
+   */
+  private function formatKeteranganHtml(string $text): string
+  {
+    return '<div style="display:block; max-width:260px; min-width:160px; width:100%;'
+      . 'max-height:120px; min-height:48px; overflow-y:auto; overflow-x:hidden;'
+      . 'padding:4px 6px; border:1px solid #ddd; border-radius:4px; background:#f9f9f9;'
+      . 'white-space:pre-wrap; word-break:break-word; font-size:0.9rem;">'
+      . htmlspecialchars($text, ENT_QUOTES, 'UTF-8') .
+      '</div>';
   }
 }
