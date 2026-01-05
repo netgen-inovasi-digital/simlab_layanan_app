@@ -67,15 +67,15 @@
 <!-- Modal detail Pesanan -->
 <div class="modal fade" id="modalDetail" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
   aria-labelledby="staticBackdropLabel" aria-hidden="true">
-  <div class="modal-dialog modal-xl" role="document" style="margin: 2% auto">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable" role="document" style="margin: 2% auto">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Detail Layanan</h5>
+        <h5 class="modal-title"><i class="bi bi-card-list"></i> Detail Layanan</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
         </button>
       </div>
       <div class="modal-body">
-        <table class="table table-bordered">
+        <table id="detailLayananTable" class="saytable border-top-bottom">
           <thead>
             <tr>
               <th width="5%">No</th>
@@ -88,11 +88,7 @@
               <th width="10%">Disetujui oleh</th>
             </tr>
           </thead>
-          <tbody id="detail-body">
-            <tr>
-              <td colspan="8" class="text-center">Loading...</td>
-            </tr>
-          </tbody>
+          <tbody></tbody>
         </table>
 
         <!-- Sample Identity Details Section -->
@@ -414,13 +410,35 @@
     return null;
   }
 
-  /* loadDetail (sama seperti implementasi kamu) */
-  function loadDetail(id) {
-    const url = '<?php echo site_url("formuliradmin/detaillist/") ?>' + id;
-    const tbody = document.querySelector('#detail-body');
-    tbody.innerHTML = '<tr><td colspan="8" class="text-center">Loading...</td></tr>';
+  // ============================================================
+  // DETAIL LAYANAN MODAL - Menggunakan createModal dari sayTable.js
+  // ============================================================
+  var detailModalTable = null;
+  var cachedSampleData = {}; // Cache untuk identitas sampel
 
-    // Reset identitas sampel
+  // Helper: Reset tabel detail sepenuhnya
+  function resetDetailTable() {
+    const paging = document.getElementById('pagination-detailLayananTable');
+    if (paging) paging.remove();
+
+    const filter = document.getElementById('filter-container-detailLayananTable');
+    if (filter) filter.remove();
+
+    const tbody = document.querySelector('#detailLayananTable tbody');
+    if (tbody) tbody.innerHTML = '';
+
+    detailModalTable = null;
+  }
+
+  // Event listener untuk modal hidden (reset state)
+  document.addEventListener('hidden.bs.modal', function (e) {
+    if (e.target.id === 'modalDetail') {
+      resetDetailTable();
+    }
+  });
+
+  function loadDetail(id, kode_layanan) {
+    // Reset identitas sampel terlebih dahulu
     document.getElementById('sampleJenis').textContent = '-';
     document.getElementById('sampleKemasan').textContent = '-';
     document.getElementById('sampleSifat').textContent = '-';
@@ -428,25 +446,40 @@
     document.getElementById('sampleDeskripsi').textContent = '-';
     document.getElementById('sampleKeteranganKhusus').textContent = '-';
 
-    fetch(url)
+    // Hapus pagination sebelum load data baru
+    const paging = document.getElementById('pagination-detailLayananTable');
+    if (paging) paging.remove();
+
+    // Kosongkan tbody untuk mencegah data lama terlihat
+    const tbody = document.querySelector('#detailLayananTable tbody');
+    if (tbody) tbody.innerHTML = '';
+
+    const targetUrl = '<?php echo site_url("formuliradmin/detaillist/") ?>' + id;
+
+    // Gunakan createModal dari sayTable.js
+    if (!detailModalTable) {
+      detailModalTable = createModal({
+        tableId: 'detailLayananTable',
+        apiUrl: targetUrl,
+        showFilter: false,
+        numbering: false,
+        treeview: false,
+        itemsPerPage: 10,
+        dataSrc: 'items'
+      });
+    } else {
+      detailModalTable.refresh({
+        apiUrl: targetUrl,
+        currentPage: 1
+      });
+    }
+
+    // Fetch identitas sampel secara terpisah
+    fetch(targetUrl)
       .then(response => response.json())
       .then(data => {
-        tbody.innerHTML = '';
-        if (data.items && data.items.length > 0) {
-          data.items.forEach(function (row) {
-            let tr = '<tr>';
-            row.forEach(function (col) {
-              tr += '<td>' + col + '</td>';
-            });
-            tr += '</tr>';
-            tbody.innerHTML += tr;
-          });
-        } else {
-          tbody.innerHTML = '<tr><td colspan="8" class="text-center">Tidak ada data</td></tr>';
-        }
-
         // Populate identitas sampel
-        if (data.sampleData) {
+        if (data && data.sampleData) {
           document.getElementById('sampleJenis').textContent = data.sampleData.jenis || '-';
           document.getElementById('sampleKemasan').textContent = data.sampleData.kemasan || '-';
           document.getElementById('sampleSifat').textContent = data.sampleData.sifat || '-';
@@ -454,14 +487,17 @@
           document.getElementById('sampleDeskripsi').textContent = data.sampleData.deskripsi || '-';
           document.getElementById('sampleKeteranganKhusus').textContent = data.sampleData.keterangan_khusus || '-';
         }
-
-        $('#modalDetail').modal('show');
       })
-      .catch(error => {
-        console.error(error);
-        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error load data</td></tr>';
-        $('#modalDetail').modal('show');
+      .catch(err => {
+        console.warn('Gagal memuat identitas sampel:', err);
       });
+
+    // Tampilkan modal
+    const modalElement = document.getElementById('modalDetail');
+    if (modalElement) {
+      const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+      modal.show();
+    }
   }
 
   // Fungsi untuk pembayaran (sama seperti di Pelayanan)
