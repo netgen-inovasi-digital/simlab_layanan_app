@@ -11,53 +11,27 @@
         <!-- CSRF Token -->
         <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" />
 
-        <div class="mb-3">
+        <div class="mb-3 d-flex justify-content-between align-items-center">
           <h6 class="fw-bold text-primary mb-0">
             <i class="bi bi-list-check"></i> Daftar Layanan Tersedia
           </h6>
-        </div>
 
-        <hr class="my-3">
-
-        <!-- Pilih Kategori dan Pelanggan -->
-        <div class="row mb-4 align-items-end">
-          <!-- Kategori -->
-          <div class="col-md-8">
-            <!-- <label class="form-label mb-1 fw-semibold">Kategori</label>
-                        <div class="d-flex gap-2 align-items-center">
-                            <select id="jenFilter" class="form-select form-select-sm" style="max-width:60px;">
-                                <option value="">— Semua —</option>
-                                <?php if (!empty($categories) && (is_array($categories) || is_object($categories))): ?>
-                                    <?php foreach ($categories as $c): ?>
-                                        <?php
-                                        $kode = isset($c->kode) ? $c->kode : (isset($c['kode']) ? $c['kode'] : '');
-                                        $nama = isset($c->nama) && trim((string) $c->nama) !== '' ? $c->nama : $kode;
-                                        ?>
-                                        <option value="<?= esc($kode) ?>"><?= esc($nama) ?></option>
-                                    <?php endforeach; ?>
-                                <?php endif; ?>
-                            </select>
-                        </div> -->
-          </div>
-
-          <!-- Pelanggan -->
-          <div class="col-md-4 d-flex flex-column justify-content-end" style="padding-left: 20px;">
-            <label class="form-label mb-1 fw-semibold">Pelanggan</label>
-            <div class="d-flex justify-content-end align-items-center gap-2">
-              <select id="ker_pelanggan_select" class="form-select form-select-sm" style="max-width:400px;">
-                <option value="">-- pilih pelanggan --</option>
-                <?php if (!empty($users) && is_array($users)): ?>
-                  <?php foreach ($users as $u):
-                    $status = (isset($u->user_identity) && strtoupper($u->user_identity) === 'ULM') ? 'ULM' : 'NON ULM';
-                    ?>
-                    <option value="<?= esc($u->user_id) ?>" data-email="<?= esc($u->user_email) ?>"
-                      data-status="<?= esc($status) ?>" data-name="<?= esc($u->user_name) ?>">
-                      <?= esc($u->user_name) ?> — <?= esc($u->user_email) ?> — <?= esc($status) ?>
-                    </option>
-                  <?php endforeach; ?>
-                <?php endif; ?>
-              </select>
-            </div>
+          <!-- Dropdown Pelanggan sejajar dengan judul -->
+          <div class="d-flex align-items-center gap-2">
+            <label class="form-label mb-0 fw-semibold">Pelanggan:</label>
+            <select id="ker_pelanggan_select" class="form-select form-select-sm" style="min-width:300px;">
+              <option value="">-- pilih pelanggan --</option>
+              <?php if (!empty($users) && is_array($users)): ?>
+                <?php foreach ($users as $u):
+                  $status = (isset($u->user_identity) && strtoupper($u->user_identity) === 'ULM') ? 'ULM' : 'NON ULM';
+                  ?>
+                  <option value="<?= esc($u->user_id) ?>" data-email="<?= esc($u->user_email) ?>"
+                    data-status="<?= esc($status) ?>" data-name="<?= esc($u->user_name) ?>">
+                    <?= esc($u->user_name) ?> — <?= esc($u->user_email) ?> — <?= esc($status) ?>
+                  </option>
+                <?php endforeach; ?>
+              <?php endif; ?>
+            </select>
           </div>
         </div>
 
