@@ -341,11 +341,12 @@ class HasilPengujian extends BaseController
     $response = [];
     $response[] = $no;
     $response[] = $row->nama_layanan ?? '-';
-    $response[] = isset($row->jumlah) ? (int) $row->jumlah : 0;
 
     // Format metode
     $metodeHtml = $this->formatKeteranganHtml($row->metode_nama ?? '');
     $response[] = $metodeHtml;
+
+    $response[] = isset($row->jumlah) ? (int) $row->jumlah : 0;
 
     // Check file status
     $detFilesMax = isset($row->detFilesMax) ? (int) $row->detFilesMax : null;

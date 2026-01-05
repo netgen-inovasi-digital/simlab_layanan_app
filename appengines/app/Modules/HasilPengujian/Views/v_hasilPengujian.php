@@ -41,12 +41,12 @@
   <div class="modal-dialog modal-xl modal-dialog-centered" role="document" style="max-width:1200px; margin: 1.5% auto;">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Detail hasil pengujian</h5>
+        <h5 class="modal-title">Hasil pengujian</h5>
         <button id="btnSaveKomentar" type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <div class="d-flex justify-content-between align-items-center mb-3">
-          <h6 class="mb-0">Item Layanan</h6>
+          <h6 class="mb-0">Upload LHUS</h6>
         </div>
 
         <table id="tableDetail" class="saytable border-top-bottom">
@@ -54,8 +54,8 @@
             <tr>
               <th width="5%">No</th>
               <th width="15%">Layanan</th>
-              <th width="5%">Jumlah</th>
               <th width="25%">Metode</th>
+              <th width="5%">Jumlah</th>
               <th width="5%">Status File</th>
               <th width="5%">LHUS</th>
               <th width="20%">Keterangan Manajer</th>
