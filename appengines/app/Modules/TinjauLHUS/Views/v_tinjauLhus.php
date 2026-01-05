@@ -347,7 +347,8 @@
       showFilter: false,
       treeview: false,
       numbering: false,
-      dataSrc: 'items'
+      dataSrc: 'items',
+      sortable:false
     });
 
     // Load identitas sampel dan data tambahan setelah modal dibuat

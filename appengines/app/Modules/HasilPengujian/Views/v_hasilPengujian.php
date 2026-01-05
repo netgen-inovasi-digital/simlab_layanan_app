@@ -433,7 +433,8 @@
               showFilter: false,
               treeview: false,
               numbering: false,
-              dataSrc: 'items'
+              dataSrc: 'items',
+              sortable:false
             });
 
             console.log('trackingDetailTable created with createModal:', trackingDetailTable);

@@ -465,6 +465,7 @@
         numbering: false,
         treeview: false,
         itemsPerPage: 10,
+        sortable: false,
         dataSrc: 'items'
       });
     } else {

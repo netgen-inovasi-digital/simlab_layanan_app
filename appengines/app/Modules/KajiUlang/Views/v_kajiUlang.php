@@ -464,6 +464,7 @@
     trackingDetailTable = createModal({
       tableId: 'tableDetail',
       apiUrl: `<?php echo site_url("kajiulang/detailList/") ?>${id}`,
+      showFilter:false,
       treeview: false,
       numbering: false,
       dataSrc: 'items',
