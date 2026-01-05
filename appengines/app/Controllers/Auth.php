@@ -337,7 +337,7 @@ class Auth extends Controller
         <body style='margin: 0; padding: 0; background-color: #f5f5f5;'>
             <div class='content-wrapper' style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;'>
                 <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;'>
-                    <h2 style='color: #ffffff; margin: 0; font-size: 24px;'>🔐 Permintaan Reset Password</h2>
+                    <h2 style='color: #ffffff; margin: 0; font-size: 24px;'>Permintaan Reset Password</h2>
                 </div>
                 
                 <div class='content-body' style='background-color: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 10px 10px;'>
@@ -424,7 +424,7 @@ class Auth extends Controller
   public function resetPassword($token)
   {
     if (empty($token)) {
-      return redirect()->to('/login')->with('error', 'Token tidak valid.');
+      return redirect()->to('/')->with('error', 'Token tidak valid.');
     }
 
     $model = new MyModel('password_resets');
@@ -436,7 +436,7 @@ class Auth extends Controller
     $reset = $model->getDataByWhere($where);
 
     if (!$reset) {
-      return redirect()->to('/login')->with('error', 'Link reset password tidak valid atau telah kadaluarsa. Silakan ajukan reset password kembali.');
+      return redirect()->to('/')->with('error', 'Link reset password tidak valid atau telah kadaluarsa. Silakan ajukan reset password kembali.');
     }
     helper('form');
     return view('auth/v_reset_password', ['token' => $token]);
@@ -450,17 +450,17 @@ class Auth extends Controller
 
     // Validasi field tidak boleh kosong
     if (empty($password) || empty($repass)) {
-      return redirect()->back()->with('error', 'Password tidak boleh kosong.');
+      return redirect()->to('reset/' . $token)->with('error', 'Password tidak boleh kosong.');
     }
 
     // Validasi minimal 6 karakter
     if (strlen($password) < 6) {
-      return redirect()->back()->with('error', 'Password minimal 6 karakter.');
+      return redirect()->to('reset/' . $token)->with('error', 'Password minimal 6 karakter.');
     }
 
     // Validasi password sama
     if ($password !== $repass) {
-      return redirect()->back()->with('error', 'Password dan konfirmasi password tidak sama.');
+      return redirect()->to('reset/' . $token)->with('error', 'Password dan konfirmasi password tidak sama.');
     }
 
     $modelReset = new MyModel('password_resets');
@@ -472,7 +472,7 @@ class Auth extends Controller
     $reset = $modelReset->getDataByWhere($where);
 
     if (!$reset) {
-      return redirect()->to('/login')->with('error', 'Token tidak valid atau telah kadaluarsa. Silakan ajukan reset password kembali.');
+      return redirect()->to('/')->with('error', 'Token tidak valid atau telah kadaluarsa. Silakan ajukan reset password kembali.');
     }
 
     // Update password user
@@ -488,6 +488,6 @@ class Auth extends Controller
     ];
     $modelReset->updateData($dataToken, 'token', $token);
 
-    return redirect()->to('login')->with('success', 'Password berhasil diubah! Silakan login dengan password baru Anda.');
+    return redirect()->to('/')->with('success', 'Password berhasil diubah! Silakan login dengan password baru Anda.');
   }
 }
