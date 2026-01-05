@@ -190,7 +190,7 @@ class Keranjang extends KeranjangBase
       $detil = [
         'kode_layanan' => $kode_layanan,                           // FK ke t_layanan
         'uji_kode' => $item['kode'] ?? null,             // FK ke r_layanan_pengujian
-        'biaya' => $item['biaya'] ?? 0,               // Total biaya item ini
+        'biaya' => $item['biaya']   ?? 0,               // Total biaya item ini
         'jumlah' => $item['jumlah'] ?? 1,              // Jumlah item
         'nama_layanan' => $item['nama_layanan'] ?? null,     // Nama layanan dari r_layanan_pengujian
         'status_layanan' => 0,                                 // Status default: 0

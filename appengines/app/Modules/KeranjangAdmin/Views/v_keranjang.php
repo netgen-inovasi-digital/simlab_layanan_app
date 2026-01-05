@@ -854,7 +854,7 @@
         if (data.xname && data.xhash) {
           document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => input.value = data.xhash);
         }
-        if (data.res === true) {
+        if (data.success === true) {
           if (typeof table !== 'undefined' && typeof table.fetchData === 'function') table.fetchData({
             reload: true
           });
@@ -867,9 +867,9 @@
               calculateGrandTotal();
             }, 400);
           }
-          sayAlert('successModal', 'Sukses', data.msg, 'success');
+          sayAlert('successModal', 'Sukses', data.message ?? data.msg, 'success');
         } else {
-          sayAlert('errorModal', 'Gagal', data.msg ?? 'Hapus item gagal.', 'error');
+          sayAlert('errorModal', 'Gagal', data.message ?? data.msg ?? 'Hapus item gagal.', 'error');
         }
       })
       .catch(err => {
