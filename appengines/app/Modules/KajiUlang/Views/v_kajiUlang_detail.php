@@ -84,8 +84,8 @@
             <tr>
               <th show width="5%">No</th>
               <th show width="20%">Layanan</th>
-              <th show width="8%">Jumlah</th>
               <th show width="25%">Metode</th>
+              <th show width="8%">Jumlah</th>
               <th show width="10%">Status</th>
               <th show width="20%">Berikan keterangan</th>
               <th show width="12%" class="text-center">Aksi</th>

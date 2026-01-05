@@ -134,9 +134,8 @@ class KajiUlang extends BaseController
       $response = [];
       $response[] = (string) $no++;
       $response[] = $row->nama_layanan ?? '-';
-      $response[] = isset($row->jumlah) ? (string) $row->jumlah : '0';
-
       $response[] = isset($row->metode_nama) && !empty($row->metode_nama) ? esc($row->metode_nama) : '-';
+      $response[] = isset($row->jumlah) ? (string) $row->jumlah : '0';
 
       // Status per record
       $status = isset($row->status_layanan) ? (int) $row->status_layanan : null;
