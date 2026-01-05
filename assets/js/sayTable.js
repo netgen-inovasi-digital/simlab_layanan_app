@@ -652,6 +652,9 @@ function createModal(customConfig = {}) {
     }
 
     function attachModalSortListeners() {
+        // Skip jika sortable diset false
+        if (modalConfig.sortable === false) return;
+        
         const table = document.getElementById(modalConfig.tableId);
         const headers = table.querySelectorAll('th');
         headers.forEach((header, index) => {

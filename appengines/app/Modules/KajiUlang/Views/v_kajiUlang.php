@@ -464,11 +464,10 @@
     trackingDetailTable = createModal({
       tableId: 'tableDetail',
       apiUrl: `<?php echo site_url("kajiulang/detailList/") ?>${id}`,
-      itemsPerPage: 10,
-      showFilter: false,
       treeview: false,
       numbering: false,
-      dataSrc: 'items'
+      dataSrc: 'items',
+      sortable: false
     });
 
     // Load atau tampilkan identitas sampel
