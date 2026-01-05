@@ -823,6 +823,26 @@ class PembayaranAdmin extends BaseController
       }
 
       $model = $this->pembayaranModel;
+      
+      // Ambil data pembayaran untuk mendapatkan kode_layanan
+      $currentData = $model->getDataById($this->id, $id);
+      
+      if (!$currentData) {
+        return $this->response->setJSON([
+          'res' => false,
+          'msg' => 'Data pembayaran tidak ditemukan',
+          'xname' => csrf_token(),
+          'xhash' => csrf_hash()
+        ]);
+      }
+
+      // Hitung ulang total_biaya berdasarkan layanan yang sudah diterima
+      // Layanan yang ditolak (status_layanan=2) tidak masuk perhitungan
+      $updateTotalResult = $model->updateTotalBiayaByAccepted($currentData->kode_layanan);
+      
+      if (!$updateTotalResult) {
+        log_message('warning', 'Gagal update total_biaya untuk kode_layanan: ' . $currentData->kode_layanan);
+      }
 
       // Update status_bayar menjadi 1 (Terverifikasi) dan kosongkan catatan_pembayaran
       $data = [

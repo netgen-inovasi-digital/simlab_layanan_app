@@ -659,7 +659,7 @@ abstract class KeranjangBase extends BaseController
 
     $modelPembayaran->insertData([
       'kode_layanan' => $kode_layanan,
-      'total_biaya' => $totalBiaya,
+      'total_biaya' => 0,
       'status_bayar' => 0,
       'tanggal_invoice' => $today,
       'invoice_file' => null,

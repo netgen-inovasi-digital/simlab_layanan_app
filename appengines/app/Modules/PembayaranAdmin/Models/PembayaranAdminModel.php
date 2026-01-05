@@ -162,4 +162,38 @@ class PembayaranAdminModel extends MyModel
   {
     return $this->layananModel->getDataById('kode_layanan', $kode_layanan);
   }
+
+  /**
+   * Hitung total biaya dari detail layanan yang sudah diterima (status_layanan=1)
+   * Layanan yang ditolak (status_layanan=2) tidak dihitung
+   *
+   * @param int $kode_layanan
+   * @return float
+   */
+  public function calculateAcceptedTotal(int $kode_layanan): float
+  {
+    $result = $this->db->table('t_layanan_detil')
+      ->selectSum('biaya')
+      ->where('kode_layanan', $kode_layanan)
+      ->where('status_layanan', 1)
+      ->get()
+      ->getRow();
+
+    return (float) ($result->biaya ?? 0);
+  }
+
+  /**
+   * Update total_biaya di t_pembayaran berdasarkan detail yang diterima
+   *
+   * @param int $kode_layanan
+   * @return bool
+   */
+  public function updateTotalBiayaByAccepted(int $kode_layanan): bool
+  {
+    $totalBiaya = $this->calculateAcceptedTotal($kode_layanan);
+
+    return $this->db->table('t_pembayaran')
+      ->where('kode_layanan', $kode_layanan)
+      ->update(['total_biaya' => $totalBiaya]);
+  }
 }
