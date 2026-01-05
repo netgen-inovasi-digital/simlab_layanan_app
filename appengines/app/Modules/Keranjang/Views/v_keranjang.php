@@ -559,102 +559,107 @@
   /* =========================
      Event delegation: masukkan item / checkout / delete
      ========================= */
-  document.addEventListener('click', function (e) {
-    // Tombol masukkan
-    if (e.target.closest('.btnMasukkan')) {
-      let btn = e.target.closest('.btnMasukkan');
-      let tr = btn.closest('tr');
+  // Prevent duplicate event handlers
+  if (!window.keranjangClickHandlerAttached) {
+    window.keranjangClickHandlerAttached = true;
 
-      let biaya = parseFloat(btn.dataset.biaya) || 0;
-      let diskon = parseFloat(btn.dataset.diskon) || 0;
-      let jumlahInput = tr.querySelector('.jumlah');
-      let jumlah = parseInt(jumlahInput ? jumlahInput.value : 1) || 1;
-      if (jumlah < 1) jumlah = 1;
-      let total = (biaya * jumlah) * (1 - (diskon / 100));
+    document.addEventListener('click', function (e) {
+      // Tombol masukkan
+      if (e.target.closest('.btnMasukkan')) {
+        let btn = e.target.closest('.btnMasukkan');
+        let tr = btn.closest('tr');
 
-      let metodeSelect = tr.querySelector('.metode-select');
-      let metodeValue = metodeSelect ? metodeSelect.value : '';
+        let biaya = parseFloat(btn.dataset.biaya) || 0;
+        let diskon = parseFloat(btn.dataset.diskon) || 0;
+        let jumlahInput = tr.querySelector('.jumlah');
+        let jumlah = parseInt(jumlahInput ? jumlahInput.value : 1) || 1;
+        if (jumlah < 1) jumlah = 1;
+        let total = (biaya * jumlah) * (1 - (diskon / 100));
 
-      let data = {
-        detUjiKode: btn.dataset.kode,
-        detAlat: btn.dataset.alat,
-        detBiaya: biaya,
-        detParameter: btn.dataset.parameter,
-        detNamaLayanan: btn.dataset.namaLayanan || '',
-        detDiskon: diskon,
-        detJumlah: jumlah,
-        detMetode: metodeValue,
-        detTotal: total
-      };
+        let metodeSelect = tr.querySelector('.metode-select');
+        let metodeValue = metodeSelect ? metodeSelect.value : '';
+
+        let data = {
+          detUjiKode: btn.dataset.kode,
+          detAlat: btn.dataset.alat,
+          detBiaya: biaya,
+          detParameter: btn.dataset.parameter,
+          detNamaLayanan: btn.dataset.namaLayanan || '',
+          detDiskon: diskon,
+          detJumlah: jumlah,
+          detMetode: metodeValue,
+          detTotal: total
+        };
 
 
-      if (!data.detUjiKode) {
-        sayAlert('errorModal', 'Gagal', 'Kode Uji tidak ditemukan.', 'error');
-        return;
-      }
-      if (parseInt(data.detJumlah) < 1) {
-        sayAlert('errorModal', 'Gagal', 'Jumlah minimal 1.', 'error');
-        return;
-      }
-      if (!data.detMetode) {
-        sayAlert('errorModal', 'Gagal', 'Metode Uji harus dipilih.', 'warning');
-        return;
-      }
+        if (!data.detUjiKode) {
+          sayAlert('errorModal', 'Gagal', 'Kode Uji tidak ditemukan.', 'error');
+          return;
+        }
+        if (parseInt(data.detJumlah) < 1) {
+          sayAlert('errorModal', 'Gagal', 'Jumlah minimal 1.', 'error');
+          return;
+        }
+        if (!data.detMetode) {
+          sayAlert('errorModal', 'Gagal', 'Metode Uji harus dipilih.', 'warning');
+          return;
+        }
 
-      let formData = new FormData();
-      for (const key in data) formData.append(key, data[key]);
+        let formData = new FormData();
+        for (const key in data) formData.append(key, data[key]);
 
-      let csrfInput = document.querySelector('input[name="<?= csrf_token() ?>"]');
-      if (csrfInput) formData.append('<?= csrf_token() ?>', csrfInput.value);
+        let csrfInput = document.querySelector('input[name="<?= csrf_token() ?>"]');
+        if (csrfInput) formData.append('<?= csrf_token() ?>', csrfInput.value);
 
-      saveData({
-        url: "<?= site_url('keranjang/submit') ?>",
-        formData: formData,
-        onSuccess: function (res) {
-          if (res.xname && res.xhash) {
-            let csrfField = document.querySelector('input[name="' + res.xname + '"]');
-            if (csrfField) csrfField.value = res.xhash;
-          }
-          if (res.res === true) {
-            if (typeof table !== 'undefined' && typeof table.fetchData === 'function') table.fetchData({
-              reload: true
-            });
-            if (previewKeranjangTable && typeof previewKeranjangTable.fetchData === 'function') {
-              previewKeranjangTable.fetchData({
+        saveData({
+          url: "<?= site_url('keranjang/submit') ?>",
+          formData: formData,
+          onSuccess: function (res) {
+            if (res.xname && res.xhash) {
+              let csrfField = document.querySelector('input[name="' + res.xname + '"]');
+              if (csrfField) csrfField.value = res.xhash;
+            }
+            if (res.res === true) {
+              if (typeof table !== 'undefined' && typeof table.fetchData === 'function') table.fetchData({
                 reload: true
               });
-              setTimeout(function () {
-                updateKeranjangCounter();
-                calculateGrandTotal();
-              }, 400);
+              if (previewKeranjangTable && typeof previewKeranjangTable.fetchData === 'function') {
+                previewKeranjangTable.fetchData({
+                  reload: true
+                });
+                setTimeout(function () {
+                  updateKeranjangCounter();
+                  calculateGrandTotal();
+                }, 400);
+              }
+              if (jumlahInput) jumlahInput.value = 1;
+              if (metodeSelect) metodeSelect.value = '';
+              sayAlert('successModal', 'Berhasil', res.msg ?? 'Layanan berhasil ditambahkan ke keranjang.', 'success');
+            } else {
+              sayAlert('errorModal', 'Gagal', res.msg ?? 'Terjadi kesalahan saat menambahkan ke keranjang.', 'error');
             }
-            if (jumlahInput) jumlahInput.value = 1;
-            if (metodeSelect) metodeSelect.value = '';
-            sayAlert('successModal', 'Berhasil', res.msg ?? 'Layanan berhasil ditambahkan ke keranjang.', 'success');
-          } else {
-            sayAlert('errorModal', 'Gagal', res.msg ?? 'Terjadi kesalahan saat menambahkan ke keranjang.', 'error');
+          },
+          onError: function () {
+            sayAlert('errorModal', 'Gagal', 'Terjadi kesalahan koneksi ke server.', 'error');
           }
-        },
-        onError: function () {
-          sayAlert('errorModal', 'Gagal', 'Terjadi kesalahan koneksi ke server.', 'error');
-        }
-      });
-    }
+        });
+      }
 
-    if (e.target.closest('#btnCheckoutFromModal')) {
-      e.preventDefault();
-      const btn = e.target.closest('#btnCheckoutFromModal');
-      const customMsg = btn ? (btn.getAttribute('data-confirm') || '') : '';
-      const message = customMsg || 'Apakah Anda yakin ingin melakukan checkout?';
+      if (e.target.closest('#btnCheckoutFromModal')) {
+        e.preventDefault();
+        const btn = e.target.closest('#btnCheckoutFromModal');
+        const customMsg = btn ? (btn.getAttribute('data-confirm') || '') : '';
+        const message = customMsg || 'Apakah Anda yakin ingin melakukan checkout?';
 
-      // 'success' = hijau; label custom 'Ya, Checkout'
-      sayConfirm('Konfirmasi Checkout', message, () => {
-        doCheckout();
-      }, 'success', 'checkout');
-    }
+        // 'success' = hijau; label custom 'Ya, Checkout'
+        sayConfirm('Konfirmasi Checkout', message, () => {
+          doCheckout();
+        }, 'success', 'checkout');
+      }
 
 
-  });
+    });
+  }
 
   /* deleteItemFromPreview */
   function deleteItemFromPreview(eOrEl) {
