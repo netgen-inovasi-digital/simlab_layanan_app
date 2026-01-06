@@ -54,12 +54,12 @@
   <div class="modal-dialog modal-xl" role="document" style="margin: 2% auto">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Detail Item Layanan</h5>
+        <h5 class="modal-title">Daftar LHUS </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <div class="table-responsive">
-          <table class="table table-bordered">
+          <table id="tableDetail" class="table table-bordered">
             <thead>
               <tr>
                 <th width="5%">No</th>
@@ -229,6 +229,8 @@
     dataSrc: 'items'
   });
   addAction();
+
+  let trackingDetailTable;
 
   function openPengujianUlangModal(encId) {
     const idInput = document.getElementById('pengujianUlangId');
@@ -474,51 +476,46 @@
 
   // 🔹 Tombol Lihat Detail
   function loadDetail(id) {
-    const url = '<?php echo site_url("pelaksanaan/detaillist/") ?>' + id;
-    const tbody = document.querySelector('#detail-body');
+    const modalEl = document.getElementById('modalDetail');
+    if (!modalEl) return;
 
-    // tampilkan loading
-    tbody.innerHTML = '<tr><td colspan="6" class="text-center">Loading...</td></tr>';
+    // Clear existing table content
+    const tableDetail = document.getElementById('tableDetail');
+    if (tableDetail) {
+      const tbody = tableDetail.querySelector('tbody');
+      if (tbody) tbody.innerHTML = '';
+    }
 
-    fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-      .then(response => {
-        if (!response.ok) {
-          return response.text().then(t => { throw new Error('HTTP ' + response.status + ': ' + t); });
-        }
-        return response.json();
-      })
-      .then(data => {
-        tbody.innerHTML = '';
-        if (data.items && data.items.length > 0) {
-          data.items.forEach(function (row) {
-            let tr = '<tr>';
-            row.forEach(function (col) { tr += '<td>' + col + '</td>'; });
-            tr += '</tr>';
-            tbody.innerHTML += tr;
-          });
-        } else {
-          tbody.innerHTML = '<tr><td colspan="6" class="text-center">Tidak ada data</td></tr>';
-        }
-        // tampilkan modal
-        if (typeof bootstrap !== 'undefined') {
-          const modalEl = document.getElementById('modalDetail');
-          const modal = new bootstrap.Modal(modalEl);
-          modal.show();
-        } else {
-          $('#modalDetail').modal('show');
-        }
-      })
-      .catch(error => {
-        console.error('loadDetail error:', error);
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error load data</td></tr>';
-        if (typeof bootstrap !== 'undefined') {
-          const modalEl = document.getElementById('modalDetail');
-          const modal = new bootstrap.Modal(modalEl);
-          modal.show();
-        } else {
-          $('#modalDetail').modal('show');
-        }
-      });
+    // Remove existing filter and pagination for tableDetail
+    const existingFilter = document.getElementById('filter-container-tableDetail');
+    if (existingFilter) existingFilter.remove();
+    const existingPagination = document.getElementById('pagination-tableDetail');
+    if (existingPagination) existingPagination.remove();
+
+    // Selalu buat ulang modal table dengan URL baru (untuk handle reload)
+    trackingDetailTable = createModal({
+      tableId: 'tableDetail',
+      apiUrl: `<?php echo site_url("pelaksanaan/detaillist/") ?>${id}`,
+      itemsPerPage: 10,
+      showFilter: false,
+      treeview: false,
+      numbering: false,
+      dataSrc: 'items',
+      sortable: false
+    });
+
+    // Show modal
+    try {
+      if (typeof bootstrap !== 'undefined') {
+        var modalInstance = bootstrap.Modal.getInstance(modalEl);
+        if (!modalInstance) modalInstance = new bootstrap.Modal(modalEl);
+        if (!modalEl.classList.contains('show')) modalInstance.show();
+      } else if (typeof $ === 'function') {
+        if (!$('#modalDetail').hasClass('show')) $('#modalDetail').modal('show');
+      }
+    } catch (err) {
+      console.warn('Modal show error', err);
+    }
   }
 
   function showLhuHistory(encId) {
