@@ -291,6 +291,10 @@
     }
 
     // create/recreate layananTable
+    // 🔹 Bersihkan tbody sebelum create untuk hindari duplikat loading
+    const layananTbody = document.querySelector('#layanan-table-body');
+    if (layananTbody) layananTbody.innerHTML = '';
+    
     layananTable = createModal({
       apiUrl: api,
       tableId: 'layanan-table',
@@ -319,6 +323,9 @@
   /* applyJenFilter: dipanggil saat select berubah */
   function applyJenFilter() {
     const jen = (jenFilter && jenFilter.value) ? jenFilter.value.trim() : '';
+    // 🔹 Bersihkan tbody sebelum refresh untuk hindari duplikat loading
+    const layananBody = document.querySelector('#layanan-table-body');
+    if (layananBody) layananBody.innerHTML = '';
     // refresh layanan modal table
     createOrRefreshLayananTable(jen);
   }
@@ -427,6 +434,11 @@
 
   document.getElementById('modalForm').addEventListener('shown.bs.modal', function () {
     const currentJen = (jenFilter && jenFilter.value) ? jenFilter.value.trim() : '';
+    
+    // 🔹 Bersihkan isi tabel layanan — pastikan tidak ada sisa baris loading lama
+    const layananBody = document.querySelector('#layanan-table-body');
+    if (layananBody) layananBody.innerHTML = '';
+    
     createOrRefreshLayananTable(currentJen);
 
     // 🔹 Bersihkan isi tabel manual — pastikan tidak ada sisa baris lama
