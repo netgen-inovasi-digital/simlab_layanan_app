@@ -291,7 +291,7 @@
     // 🔹 Bersihkan tbody sebelum create untuk hindari duplikat loading
     const layananTbody = document.querySelector('#layanan-table-body');
     if (layananTbody) layananTbody.innerHTML = '';
-    
+
     layananTable = createModal({
       apiUrl: api,
       tableId: 'layanan-table',
@@ -431,11 +431,11 @@
 
   document.getElementById('modalForm').addEventListener('shown.bs.modal', function () {
     const currentJen = (jenFilter && jenFilter.value) ? jenFilter.value.trim() : '';
-    
+
     // 🔹 Bersihkan isi tabel layanan — pastikan tidak ada sisa baris loading lama
     const layananBody = document.querySelector('#layanan-table-body');
     if (layananBody) layananBody.innerHTML = '';
-    
+
     createOrRefreshLayananTable(currentJen);
 
     // 🔹 Bersihkan isi tabel manual — pastikan tidak ada sisa baris lama
@@ -702,114 +702,119 @@
   /* =========================
      Event delegation: masukkan item / checkout / delete
      ========================= */
-  document.addEventListener('click', function (e) {
-    // Tombol masukkan
-    if (e.target.closest('.btnMasukkan')) {
-      let btn = e.target.closest('.btnMasukkan');
-      let tr = btn.closest('tr');
+  // Prevent duplicate event handlers
+  if (!window.keranjangAdminClickHandlerAttached) {
+    window.keranjangAdminClickHandlerAttached = true;
 
-      // Validasi: pastikan pelanggan sudah dipilih
-      const selPel = document.getElementById('ker_pelanggan_select');
-      const selectedPel = selPel ? selPel.value : '';
-      if (!selectedPel) {
-        if (typeof sayAlert === 'function') {
-          sayAlert('errorModal', 'Pelanggan belum dipilih', 'Pilih pelanggan di bagian atas modal sebelum menambahkan layanan.', 'warning');
-        } else {
-          alert('Pilih pelanggan di bagian atas modal sebelum menambahkan layanan.');
-        }
-        return;
-      }
+    document.addEventListener('click', function (e) {
+      // Tombol masukkan
+      if (e.target.closest('.btnMasukkan')) {
+        let btn = e.target.closest('.btnMasukkan');
+        let tr = btn.closest('tr');
 
-      let biaya = parseFloat(btn.dataset.biaya) || 0;
-      let diskon = parseFloat(btn.dataset.diskon) || 0;
-      let jumlahInput = tr.querySelector('.jumlah');
-      let jumlah = parseInt(jumlahInput ? jumlahInput.value : 1) || 1;
-      if (jumlah < 1) jumlah = 1;
-      let total = (biaya * jumlah) * (1 - (diskon / 100));
-
-      let metodeSelect = tr.querySelector('.metode-select');
-      let metodeValue = metodeSelect ? metodeSelect.value : '';
-
-      let data = {
-        detUjiKode: btn.dataset.kode,
-        detAlat: btn.dataset.alat,
-        detBiaya: biaya,
-        detParameter: btn.dataset.parameter,
-        detNamaLayanan: btn.dataset.namaLayanan || '',
-        detDiskon: diskon,
-        detJumlah: jumlah,
-        detMetode: metodeValue,
-        detTotal: total
-      };
-
-
-      if (!data.detUjiKode) {
-        sayAlert('errorModal', 'Gagal', 'Kode Uji tidak ditemukan.', 'error');
-        return;
-      }
-      if (parseInt(data.detJumlah) < 1) {
-        sayAlert('errorModal', 'Gagal', 'Jumlah minimal 1.', 'error');
-        return;
-      }
-      if (!data.detMetode) {
-        sayAlert('errorModal', 'Gagal', 'Metode Uji harus dipilih.', 'warning');
-        return;
-      }
-
-      let formData = new FormData();
-      for (const key in data) formData.append(key, data[key]);
-
-      let csrfInput = document.querySelector('input[name="<?= csrf_token() ?>"]');
-      if (csrfInput) formData.append('<?= csrf_token() ?>', csrfInput.value);
-
-      saveData({
-        url: "<?= site_url('keranjangadmin/submit') ?>",
-        formData: formData,
-        onSuccess: function (res) {
-          if (res.xname && res.xhash) {
-            let csrfField = document.querySelector('input[name="' + res.xname + '"]');
-            if (csrfField) csrfField.value = res.xhash;
+        // Validasi: pastikan pelanggan sudah dipilih
+        const selPel = document.getElementById('ker_pelanggan_select');
+        const selectedPel = selPel ? selPel.value : '';
+        if (!selectedPel) {
+          if (typeof sayAlert === 'function') {
+            sayAlert('errorModal', 'Pelanggan belum dipilih', 'Pilih pelanggan di bagian atas modal sebelum menambahkan layanan.', 'warning');
+          } else {
+            alert('Pilih pelanggan di bagian atas modal sebelum menambahkan layanan.');
           }
-          if (res.res === true) {
-            if (typeof table !== 'undefined' && typeof table.fetchData === 'function') table.fetchData({
-              reload: true
-            });
-            if (previewKeranjangTable && typeof previewKeranjangTable.fetchData === 'function') {
-              previewKeranjangTable.fetchData({
+          return;
+        }
+
+        let biaya = parseFloat(btn.dataset.biaya) || 0;
+        let diskon = parseFloat(btn.dataset.diskon) || 0;
+        let jumlahInput = tr.querySelector('.jumlah');
+        let jumlah = parseInt(jumlahInput ? jumlahInput.value : 1) || 1;
+        if (jumlah < 1) jumlah = 1;
+        let total = (biaya * jumlah) * (1 - (diskon / 100));
+
+        let metodeSelect = tr.querySelector('.metode-select');
+        let metodeValue = metodeSelect ? metodeSelect.value : '';
+
+        let data = {
+          detUjiKode: btn.dataset.kode,
+          detAlat: btn.dataset.alat,
+          detBiaya: biaya,
+          detParameter: btn.dataset.parameter,
+          detNamaLayanan: btn.dataset.namaLayanan || '',
+          detDiskon: diskon,
+          detJumlah: jumlah,
+          detMetode: metodeValue,
+          detTotal: total
+        };
+
+
+        if (!data.detUjiKode) {
+          sayAlert('errorModal', 'Gagal', 'Kode Uji tidak ditemukan.', 'error');
+          return;
+        }
+        if (parseInt(data.detJumlah) < 1) {
+          sayAlert('errorModal', 'Gagal', 'Jumlah minimal 1.', 'error');
+          return;
+        }
+        if (!data.detMetode) {
+          sayAlert('errorModal', 'Gagal', 'Metode Uji harus dipilih.', 'warning');
+          return;
+        }
+
+        let formData = new FormData();
+        for (const key in data) formData.append(key, data[key]);
+
+        let csrfInput = document.querySelector('input[name="<?= csrf_token() ?>"]');
+        if (csrfInput) formData.append('<?= csrf_token() ?>', csrfInput.value);
+
+        saveData({
+          url: "<?= site_url('keranjangadmin/submit') ?>",
+          formData: formData,
+          onSuccess: function (res) {
+            if (res.xname && res.xhash) {
+              let csrfField = document.querySelector('input[name="' + res.xname + '"]');
+              if (csrfField) csrfField.value = res.xhash;
+            }
+            if (res.res === true) {
+              if (typeof table !== 'undefined' && typeof table.fetchData === 'function') table.fetchData({
                 reload: true
               });
-              setTimeout(function () {
-                updateKeranjangCounter();
-                calculateGrandTotal();
-              }, 400);
+              if (previewKeranjangTable && typeof previewKeranjangTable.fetchData === 'function') {
+                previewKeranjangTable.fetchData({
+                  reload: true
+                });
+                setTimeout(function () {
+                  updateKeranjangCounter();
+                  calculateGrandTotal();
+                }, 400);
+              }
+              if (jumlahInput) jumlahInput.value = 1;
+              if (metodeSelect) metodeSelect.value = '';
+              sayAlert('successModal', 'Berhasil', res.msg ?? 'Layanan berhasil ditambahkan ke keranjang.', 'success');
+            } else {
+              sayAlert('errorModal', 'Gagal', res.msg ?? 'Terjadi kesalahan saat menambahkan ke keranjang.', 'error');
             }
-            if (jumlahInput) jumlahInput.value = 1;
-            if (metodeSelect) metodeSelect.value = '';
-            sayAlert('successModal', 'Berhasil', res.msg ?? 'Layanan berhasil ditambahkan ke keranjang.', 'success');
-          } else {
-            sayAlert('errorModal', 'Gagal', res.msg ?? 'Terjadi kesalahan saat menambahkan ke keranjang.', 'error');
+          },
+          onError: function () {
+            sayAlert('errorModal', 'Gagal', 'Terjadi kesalahan koneksi ke server.', 'error');
           }
-        },
-        onError: function () {
-          sayAlert('errorModal', 'Gagal', 'Terjadi kesalahan koneksi ke server.', 'error');
-        }
-      });
-    }
+        });
+      }
 
-    if (e.target.closest('#btnCheckoutFromModal')) {
-      e.preventDefault();
-      const btn = e.target.closest('#btnCheckoutFromModal');
-      const customMsg = btn ? (btn.getAttribute('data-confirm') || '') : '';
-      const message = customMsg || 'Apakah Anda yakin ingin melakukan checkout?';
+      if (e.target.closest('#btnCheckoutFromModal')) {
+        e.preventDefault();
+        const btn = e.target.closest('#btnCheckoutFromModal');
+        const customMsg = btn ? (btn.getAttribute('data-confirm') || '') : '';
+        const message = customMsg || 'Apakah Anda yakin ingin melakukan checkout?';
 
-      // 'success' = hijau; label custom 'Ya, Checkout'
-      sayConfirm('Konfirmasi Checkout', message, () => {
-        doCheckout();
-      }, 'success', 'checkout');
-    }
+        // 'success' = hijau; label custom 'Ya, Checkout'
+        sayConfirm('Konfirmasi Checkout', message, () => {
+          doCheckout();
+        }, 'success', 'checkout');
+      }
 
 
-  });
+    });
+  }
 
   /* deleteItemFromPreview */
   function deleteItemFromPreview(eOrEl) {
