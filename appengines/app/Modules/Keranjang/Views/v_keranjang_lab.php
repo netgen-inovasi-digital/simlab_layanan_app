@@ -107,9 +107,6 @@
   </div>
 </div>
 
-<!-- Load dependencies yang diperlukan untuk modal ini -->
-<script src="<?= base_url('assets/js/sayTable.js?v=0.11') ?>"></script>
-
 <script>
     /**
      * buildApiUrlWithOptionalParam
@@ -152,8 +149,8 @@
   }
 
   //  Inisialisasi variabel untuk tabel modal Lab
-  let layananLabTable = null;
-  let previewKeranjangLabTable = null;
+  var layananLabTable = null;
+  var previewKeranjangLabTable = null;
 
   /* Helper build URL layanan lab (untuk modal) - selalu kode_jenis='C' */
   function buildLayananLabUrl() {

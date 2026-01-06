@@ -97,9 +97,6 @@
   </div>
 </div>
 
-<!-- Load dependencies yang diperlukan untuk modal ini -->
-<script src="<?= base_url('assets/js/sayTable.js?v=0.11') ?>"></script>
-
 <script>
     /**
      * buildApiUrlWithOptionalParam
@@ -142,9 +139,9 @@
   }
 
   //  Inisialisasi variabel global untuk tabel modal
-  let layananAlatTable = null;
-  let previewKeranjangAlatTable = null;
-  const jenFilterAlat = document.getElementById('jenFilterAlat');
+  var layananAlatTable = null;
+  var previewKeranjangAlatTable = null;
+  var jenFilterAlat = document.getElementById('jenFilterAlat');
 
   /* Helper build URL layanan alat (untuk modal)
   - memastikan jika jen diberikan -> url ...?kode=B*/

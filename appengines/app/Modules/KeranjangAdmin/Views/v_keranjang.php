@@ -197,9 +197,6 @@
   </div>
 </div>
 
-<!-- Load dependencies yang diperlukan untuk modal ini -->
-<script src="<?= base_url('assets/js/sayTable.js?v=0.11') ?>"></script>
-
 <script>
     /**
      * buildApiUrlWithOptionalParam
@@ -245,9 +242,9 @@
   }
 
   //  Inisialisasi variabel global untuk tabel modal
-  let layananTable = null;
-  let previewKeranjangTable = null;
-  const jenFilter = document.getElementById('jenFilter');
+  var layananTable = null;
+  var previewKeranjangTable = null;
+  var jenFilter = document.getElementById('jenFilter');
 
   /* Helper build URL layanan (untuk modal)
   - memastikan jika jen diberikan -> url ...?kode=A*/
@@ -1033,21 +1030,13 @@
   /* Initialize selectSearch untuk dropdown yang bisa dicari */
   if (typeof selectSearch === 'function') {
     // Inisialisasi untuk pelanggan select
-    const pelangganSelect = document.getElementById('ker_pelanggan_select');
-    if (pelangganSelect) {
-      selectSearch(pelangganSelect, {
-        placeholder: 'Cari pelanggan...',
-        searchable: true
-      });
+    if (document.getElementById('ker_pelanggan_select')) {
+      selectSearch('#ker_pelanggan_select');
     }
 
     // Inisialisasi untuk kategori select
-    const jenFilterSelect = document.getElementById('jenFilter');
-    if (jenFilterSelect) {
-      selectSearch(jenFilterSelect, {
-        placeholder: 'Pilih kategori...',
-        searchable: true
-      });
+    if (document.getElementById('jenFilter')) {
+      selectSearch('#jenFilter');
     }
   }
 </script>
