@@ -43,24 +43,36 @@ modal.addEventListener('shown.bs.modal', function (e) {
     if (id == "") pwd.setAttribute('required', true);
     else pwd.removeAttribute('required');
 
-    // === Tambahan: tampilkan input instansi jika NON ULM ===
+    // === Tambahan: tampilkan input instansi jika NON ULM, dan toggle bukti jika ULM ===
     const identitySelect = modal.querySelector('[name="user_identity"]');
     const instansiField = modal.querySelector('#instansiField');
     const instansiInput = instansiField.querySelector('input');
+    const buktiWrapper = modal.querySelector('#buktiWrapper');
+    const buktiInput = buktiWrapper.querySelector('input[type="file"]');
 
-    function toggleInstansi() {
+    function toggleFields() {
         if (identitySelect.value === "NON ULM") {
             instansiField.style.display = "flex"; 
             instansiInput.setAttribute("required", true);
+            buktiWrapper.style.display = "none";
+            buktiInput.removeAttribute("required");
+        } else if (identitySelect.value === "ULM") {
+            instansiField.style.display = "none"; 
+            instansiInput.removeAttribute("required");
+            instansiInput.value = "";
+            buktiWrapper.style.display = "flex";
+            buktiInput.setAttribute("required", true);
         } else {
             instansiField.style.display = "none"; 
             instansiInput.removeAttribute("required");
-            instansiInput.value = ""; 
+            instansiInput.value = "";
+            buktiWrapper.style.display = "none";
+            buktiInput.removeAttribute("required");
         }
     }
 
-    identitySelect.addEventListener("change", toggleInstansi);
-    toggleInstansi();
+    identitySelect.addEventListener("change", toggleFields);
+    toggleFields();
 });
 
 // === Edit Data: isi form dengan response dari controller ===
@@ -84,13 +96,27 @@ function editItem(event) {
             // identitas
             document.querySelector('[name="user_identity"]').value = data.user_identity;
 
-            // instansi
+            // toggle fields berdasarkan identitas
+            const identitySelect = document.querySelector('[name="user_identity"]');
+            const instansiField = document.querySelector('#instansiField');
+            const buktiWrapper = document.querySelector('#buktiWrapper');
+            const buktiInput = buktiWrapper.querySelector('input[type="file"]');
+
             if (data.user_identity === "NON ULM") {
-                document.querySelector('#instansiField').style.display = "flex";
+                instansiField.style.display = "flex";
                 document.querySelector('[name="user_instansi"]').value = data.user_instansi ?? "";
-            } else {
-                document.querySelector('#instansiField').style.display = "none";
+                buktiWrapper.style.display = "none";
+                buktiInput.removeAttribute("required");
+            } else if (data.user_identity === "ULM") {
+                instansiField.style.display = "none";
                 document.querySelector('[name="user_instansi"]').value = "";
+                buktiWrapper.style.display = "flex";
+                buktiInput.setAttribute("required", true);
+            } else {
+                instansiField.style.display = "none";
+                document.querySelector('[name="user_instansi"]').value = "";
+                buktiWrapper.style.display = "none";
+                buktiInput.removeAttribute("required");
             }
 
             // === Tambahan: bukti file ===
@@ -103,7 +129,7 @@ function editItem(event) {
                     <p class="text-muted small mt-1">Anda bisa unggah file baru untuk mengganti.</p>
                 `;
             } else {
-                buktiInfo.innerHTML = `<span class="text-danger">Belum ada bukti, silakan upload file.</span>`;
+                // buktiInfo.innerHTML = `<span class="text-danger">Belum ada bukti, silakan upload file.</span>`;
             }
 
         // === Tambahan: verifikasi ===
@@ -194,7 +220,10 @@ document.addEventListener("click", function(e) {
                 <div class="row mb-2">
                     <label class="col-md-4 col-form-label">Nomor Telepon</label>
                     <div class="col">
-                        <input name="user_telpon" type="text" class="form-control">
+                        <input name="user_telpon" type="text" class="form-control" required>
+                        <div class="mt-1">
+                            <!-- <span class="text-danger small">Wajib isi nomor telepon.</span> -->
+                        </div>
                     </div>
                 </div>
 
@@ -232,7 +261,7 @@ document.addEventListener("click", function(e) {
                     <div class="col">
                         <input type="file" name="bukti_file" class="form-control">
                         <div id="buktiInfo" class="mt-2">
-                            <span class="text-muted small">Belum ada bukti, silakan upload.</span>
+                            <!-- <span class="text-muted small">Belum ada bukti, silakan upload.</span> -->
                         </div>
                     </div>
                 </div>
