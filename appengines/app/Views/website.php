@@ -5,11 +5,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $title ?> | Netgen </title>
-    <link rel="stylesheet" href="<?php echo base_url('assets/css/bootstrap.min.css') ?>">
-    <link rel="stylesheet" href="<?php echo base_url('assets/css/bootstrap-icons.min.css') ?>">
+    <link rel="stylesheet" href="<?= asset_url('assets/css/bootstrap.min.css') ?>">
+    <link rel="stylesheet" href="<?= asset_url('assets/css/bootstrap-icons.min.css') ?>">
     <!-- CDN Swiper -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.css" />
-    <link rel="stylesheet" href="<?php echo base_url('assets/css/website.css?v=0.7') ?>">
+    <link rel="stylesheet" href="<?= asset_url('assets/css/website.css') ?>">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -214,12 +214,12 @@ echo view($content, [
     </div>
 
 
-    <script src="<?php echo base_url('assets/js/bootstrap.bundle.min.js') ?>"></script>
+    <script src="<?= asset_url('assets/js/bootstrap.bundle.min.js') ?>"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <script src="<?php echo base_url('assets/js/rupiahFormatter.js') ?>"></script>
+    <script src="<?= asset_url('assets/js/rupiahFormatter.js') ?>"></script>
     <?php if ($title !== 'Lab Terpadu ULM'): ?>
-    <script src="<?php echo base_url('assets/js/sayJS.js?v=0.02') ?>"></script>
-    <script src="<?php echo base_url('assets/js/sayTable.js?v=0.12') ?>"></script>
+    <script src="<?= asset_url('assets/js/sayJS.js') ?>"></script>
+    <script src="<?= asset_url('assets/js/sayTable.js') ?>"></script>
 <?php endif; ?>
 
     <!-- Cart Badge Script -->

@@ -158,3 +158,33 @@ if (!function_exists('send_order_status_email')) {
     }
 }
 
+/**
+ * Generate asset URL with automatic cache-busting based on file modification time.
+ * When the file is modified, the timestamp changes, forcing browsers to download the new version.
+ * 
+ * @param string $path Relative path to asset from base_url (e.g., 'assets/js/sayTable.js')
+ * @param string|null $version Optional manual version string (takes precedence if provided)
+ * @return string Full URL with cache-busting query parameter
+ */
+if (!function_exists('asset_url')) {
+    function asset_url(string $path, ?string $version = null): string
+    {
+        // Get the full filesystem path to the asset
+        $fullPath = FCPATH . $path;
+        
+        // Determine cache-busting value
+        if ($version !== null) {
+            // Use manual version if provided
+            $cacheBuster = $version;
+        } elseif (file_exists($fullPath)) {
+            // Use file modification time as cache buster
+            $cacheBuster = filemtime($fullPath);
+        } else {
+            // Fallback to current timestamp if file doesn't exist
+            $cacheBuster = time();
+        }
+        
+        return base_url($path) . '?v=' . $cacheBuster;
+    }
+}
+

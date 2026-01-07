@@ -5,9 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Template | Netx Template</title>
-    <link rel="stylesheet" href="<?php echo base_url('assets/css/bootstrap.min.css') ?>">
-    <link rel="stylesheet" href="<?php echo base_url('assets/css/bootstrap-icons.min.css') ?>">
-    <link rel="stylesheet" href="<?php echo base_url('assets/css/style.css?v=0.1112') ?>">
+    <link rel="stylesheet" href="<?= asset_url('assets/css/bootstrap.min.css') ?>">
+    <link rel="stylesheet" href="<?= asset_url('assets/css/bootstrap-icons.min.css') ?>">
+    <link rel="stylesheet" href="<?= asset_url('assets/css/style.css') ?>">
 
     <!-- CDN Quill js -->
     <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet" />
@@ -133,12 +133,12 @@
         </div>
     </div>
 
-    <script src="<?php echo base_url('assets/js/bootstrap.bundle.min.js') ?>"></script>
-    <script src="<?php echo base_url('assets/js/rupiahFormatter.js') ?>"></script>
-    <script src="<?php echo base_url('assets/js/app.js?v=0.03') ?>"></script>
-    <script src="<?php echo base_url('assets/js/sayJS.js?v=0.02') ?>"></script>
-    <script src="<?php echo base_url('assets/js/sayTable.js?v=0.12') ?>"></script>
-    <script src="<?php echo base_url('assets/js/sayTable1.js?v=0.01') ?>"></script>
+    <script src="<?= asset_url('assets/js/bootstrap.bundle.min.js') ?>"></script>
+    <script src="<?= asset_url('assets/js/rupiahFormatter.js') ?>"></script>
+    <script src="<?= asset_url('assets/js/app.js') ?>"></script>
+    <script src="<?= asset_url('assets/js/sayJS.js') ?>"></script>
+    <script src="<?= asset_url('assets/js/sayTable.js') ?>"></script>
+    <script src="<?= asset_url('assets/js/sayTable1.js') ?>"></script>
 
     <!-- Include the Quill library -->
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
