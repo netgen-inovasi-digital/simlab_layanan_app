@@ -17,7 +17,7 @@
                             <th show width="60%">Pertanyaan</th>
                             <th show width="15%">Tipe</th>
                             <th show width="10%">Wajib</th>
-                            <th show width="10%" class="action text-end">Aksi<i class="bi bi-code sort-icon"></i></th>
+                            <th show width="12%" class="action text-end">Aksi</th>
                         </tr>
                     </thead>
                     <tbody id="table-body"></tbody>
@@ -102,7 +102,8 @@
         if (typeof createTable === 'function') {
             return createTable({
                 tableId: 'data-table',
-                apiUrl: url
+                apiUrl: url,
+                itemsPerPage: currentLimit
             });
         }
         console.error('Fungsi createTable() tidak ditemukan.');
@@ -110,7 +111,7 @@
     }
 
     // 1. Inisiasi tabel
-    kuesionerTable = loadTable(apiUrl + "?page=" + currentPage + "&limit=" + currentLimit);
+    kuesionerTable = loadTable(apiUrl);
 
     // 2. Listener tombol Simpan
     var btnSimpan = document.querySelector('#btnSimpan');

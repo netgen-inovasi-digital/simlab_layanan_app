@@ -115,10 +115,7 @@ class Kuesioner extends BaseController
 
         foreach ($list as $row) {
             $id = bin2hex($this->encrypter->encrypt($row->{$this->id}));
-            $response = [];
-
-            $response[] = esc($row->pertanyaan_teks);
-
+            
             $tipe = '';
             switch ($row->pertanyaan_tipe) {
                 case 'pilihan':
@@ -131,18 +128,25 @@ class Kuesioner extends BaseController
                     $tipe = '<span class="badge bg-primary">Isian Teks</span>';
                     break;
             }
-            $response[] = $tipe;
             
-            $response[] = ($row->pertanyaan_wajib == 1)
+            $wajib = ($row->pertanyaan_wajib == 1)
                 ? '<span class="badge bg-success">Ya</span>'
-                : '<span class="badge bg-danger">Tidak</span>'; 
+                : '<span class="badge bg-danger">Tidak</span>';
 
-            $response[] = $this->aksi($id);
+            $response = [
+                'pertanyaan_teks' => esc($row->pertanyaan_teks),
+                'pertanyaan_tipe' => $tipe,
+                'pertanyaan_wajib' => $wajib,
+                'aksi' => $this->aksi($id)
+            ];
 
             $data[] = $response;
         }
 
-        $output = ["items" => $data];
+        $output = [
+            "items" => $data,
+            "total" => count($data)
+        ];
         return $this->response->setJSON($output);
     }
 
