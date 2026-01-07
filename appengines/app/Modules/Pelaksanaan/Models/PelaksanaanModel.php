@@ -103,8 +103,8 @@ class PelaksanaanModel extends MyModel
   public function getLhuHistoryRows($kode_layanan): array
   {
     return $this->db->table('t_files_lhu AS lhu')
-      ->select('lhu.file_id, lhu.file, lhu.tanggal_terbit, lhu.upload_by, users.user_name AS uploader_name')
-      ->join('account_users AS users', 'users.user_id = lhu.upload_by', 'left')
+      ->select('lhu.file_id, lhu.file, lhu.tanggal_terbit, lhu.upload_by, admin.nama AS uploader_name')
+      ->join('account AS admin', 'admin.user_id = lhu.upload_by', 'left')
       ->where('lhu.kode', $kode_layanan)
       ->orderBy('CASE WHEN lhu.tanggal_terbit IS NULL THEN 1 ELSE 0 END', 'ASC', false)
       ->orderBy('lhu.tanggal_terbit', 'ASC')
