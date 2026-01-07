@@ -234,14 +234,17 @@ abstract class KeranjangBase extends BaseController
     // Get categories menggunakan config dinamis
     $categories = $this->getCategories();
 
+    $users = $modelUser->getAllData();
+
     $data = [
       'title' => $this->config['title'],
       'user' => $modelUser->getDataById('user_id', $user_id),
+      'users' => $users,
       'categories' => $categories,
       'jenisLayanan' => $this->jenisLayanan,
     ];
 
-    return view('Modules\Keranjang\Views\v_keranjang', $data);
+    return view('Modules\KeranjangAdmin\Views\v_keranjang', $data);
   }
 
   /**
