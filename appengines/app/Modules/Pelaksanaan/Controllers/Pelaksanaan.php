@@ -270,7 +270,6 @@ class Pelaksanaan extends BaseController
         }
       }
 
-      $fileName = $row->file ?? '-';
       $fileUrl = null;
       if (!empty($row->file)) {
         if (preg_match('/^https?:\/\//i', $row->file)) {
@@ -283,7 +282,6 @@ class Pelaksanaan extends BaseController
       $items[] = [
         'no' => $index + 1,
         'tanggal' => $tanggal,
-        'filename' => $fileName,
         'uploader' => $row->uploader_name ?? '-',
         'url' => $fileUrl
       ];

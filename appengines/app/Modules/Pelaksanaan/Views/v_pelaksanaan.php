@@ -103,16 +103,15 @@
           <table class="table table-bordered">
             <thead>
               <tr>
-                <th width="8%">No</th>
-                <th width="25%">Tanggal Terbit</th>
-                <th width="35%">Nama File</th>
-                <th width="22%">Diunggah Oleh</th>
-                <th width="10%">Aksi</th>
+                <th width="10%">No</th>
+                <th width="35%">Tanggal Terbit</th>
+                <th width="40%">Diunggah Oleh</th>
+                <th width="15%">Aksi</th>
               </tr>
             </thead>
             <tbody id="lhu-history-body">
               <tr>
-                <td colspan="5" class="text-center text-muted">Belum ada data.</td>
+                <td colspan="4" class="text-center text-muted">Belum ada data.</td>
               </tr>
             </tbody>
           </table>
@@ -527,7 +526,7 @@
 
     if (emptyAlert) emptyAlert.classList.add('d-none');
     if (tbody) {
-      tbody.innerHTML = '<tr><td colspan="5" class="text-center">Memuat data...</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="4" class="text-center">Memuat data...</td></tr>';
     }
 
     const modal = (typeof bootstrap !== 'undefined' && bootstrap.Modal)
@@ -545,7 +544,7 @@
         if (!tbody) return;
 
         if (!items.length) {
-          tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Belum ada data.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Belum ada data.</td></tr>';
           if (emptyAlert) emptyAlert.classList.remove('d-none');
           return;
         }
@@ -559,7 +558,6 @@
           const columns = [
             item.no ?? (index + 1),
             item.tanggal || '-',
-            item.filename || '-',
             item.uploader || '-'
           ];
 
@@ -589,7 +587,7 @@
       .catch(error => {
         console.error(error);
         if (tbody) {
-          tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Gagal memuat data.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Gagal memuat data.</td></tr>';
         }
       });
   }

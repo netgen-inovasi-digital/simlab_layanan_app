@@ -48,6 +48,8 @@ class RekapModel extends Model
     $builder->join('account_users u', 'l.user_id = u.user_id', 'inner');
     $builder->join($this->tablePembayaran . ' p', 'l.kode_layanan = p.kode_layanan', 'inner');
 
+    $builder->where('p.status_bayar', 1);
+
     if (!empty($tanggalAwal) && !empty($tanggalAkhir)) {
       $builder->where('p.tanggal_invoice >=', $tanggalAwal);
       $builder->where('p.tanggal_invoice <=', $tanggalAkhir);
@@ -88,7 +90,7 @@ class RekapModel extends Model
 
   public function getRevenueData(?string $jenisLayanan, string $tanggalAwal, string $tanggalAkhir): array
   {
-    $dateCondition = 'l.kode_layanan = p.kode_layanan';
+    $dateCondition = 'l.kode_layanan = p.kode_layanan AND p.status_bayar = 1';
     if (!empty($tanggalAwal) && !empty($tanggalAkhir)) {
       $dateCondition .= ' AND p.tanggal_invoice >= ' . $this->db->escape($tanggalAwal);
       $dateCondition .= ' AND p.tanggal_invoice <= ' . $this->db->escape($tanggalAkhir);

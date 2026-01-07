@@ -40,7 +40,7 @@ class Pelayanan extends BaseController
       3 => 'In Review Petugas',
       4 => 'Pengujian Dilakukan',
       5 => 'Verifikasi Hasil Uji',
-      6 => 'Penerbitan LHUS',
+      6 => 'Verifikasi LHU',
       7 => 'Verifikasi LHU',
       8 => 'Penerbitan LHU',
       9 => 'Selesai',
