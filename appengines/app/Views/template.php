@@ -137,7 +137,7 @@
     <script src="<?php echo base_url('assets/js/rupiahFormatter.js') ?>"></script>
     <script src="<?php echo base_url('assets/js/app.js?v=0.03') ?>"></script>
     <script src="<?php echo base_url('assets/js/sayJS.js?v=0.02') ?>"></script>
-    <script src="<?php echo base_url('assets/js/sayTable.js?v=0.11') ?>"></script>
+    <script src="<?php echo base_url('assets/js/sayTable.js?v=0.12') ?>"></script>
     <script src="<?php echo base_url('assets/js/sayTable1.js?v=0.01') ?>"></script>
 
     <!-- Include the Quill library -->
