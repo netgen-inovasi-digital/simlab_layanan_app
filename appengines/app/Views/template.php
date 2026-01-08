@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Template | Netx Template</title>
-    <link rel="icon" type="image/x-icon" href="/netx/favicon.ico">
+    <link rel="icon" type="image/x-icon" href="<?= base_url('favicon.ico') ?>">
     <link rel="stylesheet" href="<?= asset_url('assets/css/bootstrap.min.css') ?>">
     <link rel="stylesheet" href="<?= asset_url('assets/css/bootstrap-icons.min.css') ?>">
     <link rel="stylesheet" href="<?= asset_url('assets/css/style.css') ?>">
