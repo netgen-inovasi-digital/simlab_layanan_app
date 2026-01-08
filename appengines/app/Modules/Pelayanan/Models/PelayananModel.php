@@ -35,8 +35,8 @@ class PelayananModel extends MyModel
     parent::__construct($this->layananTable);
     $this->db = \Config\Database::connect();
     $this->userModel = new MyModel('account_users');
-    $this->kuesionerModel = new MyModel('t_kuisioner');
-    $this->jawabanModel = new MyModel('t_kuisioner_jawaban');
+    $this->kuesionerModel = new MyModel('t_kuesioner');
+    $this->jawabanModel = new MyModel('t_kuesioner_jawaban');
     $this->sampleModel = new MyModel('t_identitas_sampel');
   }
 

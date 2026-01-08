@@ -33,17 +33,17 @@ class CreateSimlabTKuesionerJawaban extends Migration
         ]);
         $this->forge->addKey('id_jawaban', true);
         $this->forge->addKey('id_pertanyaan');
-        $this->forge->createTable('t_kuisioner_jawaban');
+        $this->forge->createTable('t_kuesioner_jawaban');
 
-        // add fk id_pertanyaan -> t_kuisioner.kuesioner_id
+        // add fk id_pertanyaan -> t_kuesioner.kuesioner_id
         $db = \Config\Database::connect();
-        $db->query('ALTER TABLE `t_kuisioner_jawaban`
-            ADD CONSTRAINT `fk_kuesioner_jawaban_pertanyaan` FOREIGN KEY (`id_pertanyaan`) REFERENCES `t_kuisioner` (`kuesioner_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+        $db->query('ALTER TABLE `t_kuesioner_jawaban`
+            ADD CONSTRAINT `fk_kuesioner_jawaban_pertanyaan` FOREIGN KEY (`id_pertanyaan`) REFERENCES `t_kuesioner` (`kuesioner_id`) ON DELETE CASCADE ON UPDATE CASCADE;
         ');
     }
 
     public function down()
     {
-        $this->forge->dropTable('t_kuisioner_jawaban', true);
+        $this->forge->dropTable('t_kuesioner_jawaban', true);
     }
 }

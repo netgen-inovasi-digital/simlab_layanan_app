@@ -41,24 +41,14 @@ class Pelaksanaan extends BaseController
       return $this->response->setJSON(["items" => []]);
     }
 
-    // [FILTER] ?status_layanan=7,6,uploaded,pending
+    // [FILTER] ?status_layanan=7,6
     $lnStatusParam = (string) ($this->request->getGet('status_layanan') ?? '');
-    $wantUploaded = false;   // status 6 + sudah upload
-    $wantPending = false;   // status 6 + belum upload
     $statusNums = [];
 
     if ($lnStatusParam !== '') {
       $parts = preg_split('/[,\s]+/', $lnStatusParam, -1, PREG_SPLIT_NO_EMPTY);
       foreach ($parts as $p) {
         $tp = strtolower(trim($p));
-        if (in_array($tp, ['uploaded', 'terunggah'], true)) {
-          $wantUploaded = true;
-          continue;
-        }
-        if (in_array($tp, ['pending', 'belumupload', 'belum_upload'], true)) {
-          $wantPending = true;
-          continue;
-        }
         if (is_numeric($tp)) {
           $statusNums[] = (int) $tp;
         }
@@ -119,27 +109,14 @@ class Pelaksanaan extends BaseController
       $lhuInfo = $this->detectLhuFile($row);
 
       // kolom status (single badge)
-      $response[] = '<div id="status-cell-' . $id . '">' . $this->formatStatus($row->status_layanan, $lhuInfo['has'], $isKajiUlang) . '</div>';
-
-      // ❗️RULE BARU: boleh accept jika status=6 DAN file LHU sudah ada
-      $allowAccept = ((int) $row->status_layanan === 6 && $lhuInfo['has'] === true);
+      $response[] = '<div id="status-cell-' . $id . '">' . $this->formatStatus($row->status_layanan, $isKajiUlang) . '</div>';
 
       // kolom aksi
-      $response[] = $this->aksiButton($id, $row->status_layanan, $allowAccept, $lhuInfo);
+      $response[] = $this->aksiButton($id, $row->status_layanan, $lhuInfo);
 
       // terapkan filter
-      if ($wantUploaded || $wantPending || !empty($statusNums)) {
-        $match = false;
-        if (!empty($statusNums) && in_array((int) $row->status_layanan, $statusNums, true))
-          $match = true;
-        if ((int) $row->status_layanan === 6) {
-          if ($wantUploaded && $lhuInfo['has'])
-            $match = true;
-          if ($wantPending && !$lhuInfo['has'])
-            $match = true;
-        }
-        if (!$match)
-          continue;
+      if (!empty($statusNums) && !in_array((int) $row->status_layanan, $statusNums, true)) {
+        continue;
       }
 
       $data[] = $response;
@@ -621,7 +598,7 @@ class Pelaksanaan extends BaseController
     return ['has' => false, 'url' => '#'];
   }
 
-  private function formatStatus($status, $uploaded = null, $isKajiUlang = false)
+  private function formatStatus($status, $isKajiUlang = false)
   {
     if ($isKajiUlang && (int) $status <= 5) {
       return '<span class="badge bg-warning text-dark">Pengujian Ulang</span>';
@@ -633,15 +610,13 @@ class Pelaksanaan extends BaseController
       case 9:
         return '<span class="badge bg-success">LHU Disetujui</span>';
       case 6:
-        return $uploaded === true
-          ? '<span class="badge bg-success">LHU terunggah</span>'
-          : '<span class="badge bg-primary">LHU belum diproses</span>';
+        return '<span class="badge bg-info">LHU belum diproses</span>';
       default:
         return '<span class="badge bg-dark">Unknown</span>';
     }
   }
 
-  private function aksiButton($id, $status, $allowAccept = true, $lhuInfo = ['has' => false, 'url' => '#'])
+  private function aksiButton($id, $status, $lhuInfo = ['has' => false, 'url' => '#'])
   {
     $btn = '<div id="' . $id . '" class="float-end d-flex align-items-center justify-content-end" style="gap:6px;">';
 

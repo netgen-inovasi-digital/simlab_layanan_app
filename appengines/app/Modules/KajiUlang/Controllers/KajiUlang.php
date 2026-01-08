@@ -162,13 +162,28 @@ class KajiUlang extends BaseController
 
       $response[] = $textarea;
 
-      // Cek apakah invoice sudah dikirim (no_invoice sudah ada)
+      // Disable jika: invoice sudah dikirim ATAU status layanan (t_layanan) >= 4.
       $invoiceKirim = !empty($row->no_invoice);
-      $disabledStyle = $invoiceKirim ? ' style="opacity:.5;pointer-events:none;cursor:not-allowed;"' : '';
+      $parentStatus = (int) ($row->layanan_status ?? 0);
+      $hasKajiUlang = (int) ($row->layanan_jumlah_kaji_ulang ?? 0) > 0;
+
+      // status >= 4 selalu disable (meskipun kaji ulang > 0)
+      $shouldDisable = ($parentStatus >= 4) || ($invoiceKirim && !$hasKajiUlang);
+
+      $disabledStyle = $shouldDisable ? ' style="opacity:.5;pointer-events:none;cursor:not-allowed;"' : '';
+
+      $disabledReason = '';
+      if ($shouldDisable) {
+        if ($parentStatus >= 4) {
+          $disabledReason = 'Layanan sudah masuk tahap pengujian, tidak bisa diubah';
+        } elseif ($invoiceKirim) {
+          $disabledReason = 'Invoice sudah dikirim, tidak bisa diubah';
+        }
+      }
 
       $aksiHtml = '<div class="d-flex justify-content-center gap-2 align-items-center">';
-      $aksiHtml .= '<span class="text-success btn-action btn-accept-manager" title="' . ($invoiceKirim ? 'Invoice sudah dikirim, tidak bisa diubah' : 'Setujui') . '" data-ln="' . $encLnForBtn . '" data-detail="' . $detailKode . '"' . $disabledStyle . '><i class="bi bi-check-circle"></i></span> ';
-      $aksiHtml .= '<span class="text-warning btn-action btn-reject-manager" title="' . ($invoiceKirim ? 'Invoice sudah dikirim, tidak bisa diubah' : 'Tolak') . '" data-ln="' . $encLnForBtn . '" data-detail="' . $detailKode . '"' . $disabledStyle . '><i class="bi bi-x-circle"></i></span>';
+      $aksiHtml .= '<span class="text-success btn-action btn-accept-manager" title="' . ($shouldDisable ? $disabledReason : 'Setujui') . '" data-ln="' . $encLnForBtn . '" data-detail="' . $detailKode . '"' . $disabledStyle . '><i class="bi bi-check-circle"></i></span> ';
+      $aksiHtml .= '<span class="text-warning btn-action btn-reject-manager" title="' . ($shouldDisable ? $disabledReason : 'Tolak') . '" data-ln="' . $encLnForBtn . '" data-detail="' . $detailKode . '"' . $disabledStyle . '><i class="bi bi-x-circle"></i></span>';
       $aksiHtml .= '</div>';
 
       $response[] = $aksiHtml;

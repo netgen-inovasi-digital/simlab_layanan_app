@@ -385,7 +385,7 @@ class PelayananRapatJas extends BaseController
       throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
     }
 
-    $modelPertanyaan = new MyModel('t_kuisioner');
+    $modelPertanyaan = new MyModel('t_kuesioner');
     $pertanyaan = $modelPertanyaan->getAllDataWithJoinWhereOrder([], [], ['kuesioner_id' => 'ASC']);
 
     $data = [
@@ -413,7 +413,7 @@ class PelayananRapatJas extends BaseController
       return $this->response->setJSON(['res' => false, 'msg' => 'Tidak ada jawaban yang dikirim.', 'xname' => csrf_token(), 'xhash' => csrf_hash()]);
     }
 
-    $modelJawaban = new MyModel('t_kuisioner_jawaban');
+    $modelJawaban = new MyModel('t_kuesioner_jawaban');
     $modelLayanan = new MyModel($this->table);
     $db = \Config\Database::connect();
 

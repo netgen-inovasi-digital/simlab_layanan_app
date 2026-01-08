@@ -22,8 +22,7 @@
           <select id="statusFilter" class="form-select form-select-sm" style="width:280px;">
             <option value="">— Semua status —</option>
             <!-- <option value="6">Memproses LHU (Semua)</option> -->
-            <option value="pending">Memproses LHU</option>
-            <option value="uploaded">LHU Terunggah</option>
+            <option value="6">Memproses LHU</option>
             <option value="7">LHU Disetujui</option>
           </select>
         </div>
