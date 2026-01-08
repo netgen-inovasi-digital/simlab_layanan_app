@@ -851,6 +851,15 @@ class PembayaranAdmin extends BaseController
       ];
       $update = $model->updateData($data, $this->id, $id);
 
+      if ($update) {
+        // Update status_lunas di t_layanan_detil untuk menandakan detail sudah lunas
+        $updateLunasResult = $model->updateStatusLunasDetil($currentData->kode_layanan, $id);
+        
+        if (!$updateLunasResult) {
+          log_message('warning', 'Gagal update status_lunas untuk kode_layanan: ' . $currentData->kode_layanan);
+        }
+      }
+
       if (!$update) {
         return $this->response->setJSON([
           'res' => false,
@@ -907,6 +916,18 @@ class PembayaranAdmin extends BaseController
       }
 
       $model = $this->pembayaranModel;
+      
+      // Ambil data pembayaran untuk mendapatkan kode_layanan
+      $currentData = $model->getDataById($this->id, $id);
+      
+      if (!$currentData) {
+        return $this->response->setJSON([
+          'res' => false,
+          'msg' => 'Data pembayaran tidak ditemukan',
+          'xname' => csrf_token(),
+          'xhash' => csrf_hash()
+        ]);
+      }
 
       // Update status_bayar menjadi 2 (Tidak Terverifikasi)
       $data = ['status_bayar' => 2];
@@ -917,6 +938,15 @@ class PembayaranAdmin extends BaseController
       }
 
       $update = $model->updateData($data, $this->id, $id);
+
+      if ($update) {
+        // Unset status_lunas di t_layanan_detil (set null) karena pembayaran ditolak
+        $updateLunasResult = $model->updateStatusLunasDetil($currentData->kode_layanan, null);
+        
+        if (!$updateLunasResult) {
+          log_message('warning', 'Gagal unset status_lunas untuk kode_layanan: ' . $currentData->kode_layanan);
+        }
+      }
 
       if (!$update) {
         return $this->response->setJSON([

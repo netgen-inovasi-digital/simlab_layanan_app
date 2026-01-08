@@ -202,4 +202,21 @@ class PembayaranAdminModel extends MyModel
       ->where('kode_layanan', $kode_layanan)
       ->update(['total_biaya' => $totalBiaya]);
   }
+
+  /**
+   * Update status_lunas di t_layanan_detil untuk semua detail layanan yang sudah diterima (status_layanan=1)
+   * Set status_lunas = kode_bayar untuk menandakan bahwa detail tersebut sudah lunas
+   * 
+   * @param int $kode_layanan Kode layanan yang detailnya akan diupdate
+   * @param int|null $kode_bayar Kode bayar untuk set status_lunas (null untuk unset/belum lunas)
+   * @return bool
+   */
+  public function updateStatusLunasDetil(int $kode_layanan, ?int $kode_bayar): bool
+  {
+    // Update semua detail yang status_layanan = 1 (sudah diterima)
+    return $this->db->table('t_layanan_detil')
+      ->where('kode_layanan', $kode_layanan)
+      ->where('status_layanan', 1)
+      ->update(['status_lunas' => $kode_bayar]);
+  }
 }
