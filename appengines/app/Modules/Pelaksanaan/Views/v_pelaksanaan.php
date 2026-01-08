@@ -229,7 +229,7 @@
   });
   addAction();
 
-  let trackingDetailTable;
+  var trackingDetailTable;
 
   function openPengujianUlangModal(encId) {
     const idInput = document.getElementById('pengujianUlangId');
