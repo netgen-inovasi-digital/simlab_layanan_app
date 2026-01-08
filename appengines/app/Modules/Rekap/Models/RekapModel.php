@@ -51,8 +51,6 @@ class RekapModel extends Model
     // Hanya hitung jika sudah lunas (status_lunas IS NOT NULL) dan invoice sudah diverifikasi (status_bayar = 1)
     $builder->where('d.status_lunas IS NOT NULL', null, false);
     $builder->where('p.status_bayar', 1);
-    // Hanya hitung jika layanan sudah diterima (status_layanan = 1), tidak termasuk yang ditolak (status_layanan = 2)
-    $builder->where('d.status_layanan', 1);
 
     if (!empty($tanggalAwal) && !empty($tanggalAkhir)) {
       $builder->where('p.tanggal_invoice >=', $tanggalAwal);
@@ -94,7 +92,7 @@ class RekapModel extends Model
 
   public function getRevenueData(?string $jenisLayanan, string $tanggalAwal, string $tanggalAkhir): array
   {
-    $dateCondition = 'd.status_lunas = p.kode_bayar AND p.status_bayar = 1 AND d.status_layanan = 1 AND d.status_lunas IS NOT NULL';
+    $dateCondition = 'd.status_lunas = p.kode_bayar AND p.status_bayar = 1 AND d.status_lunas IS NOT NULL';
     if (!empty($tanggalAwal) && !empty($tanggalAkhir)) {
       $dateCondition .= ' AND p.tanggal_invoice >= ' . $this->db->escape($tanggalAwal);
       $dateCondition .= ' AND p.tanggal_invoice <= ' . $this->db->escape($tanggalAkhir);
