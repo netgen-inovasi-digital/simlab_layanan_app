@@ -5,7 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title><?= $this->renderSection('title') ?> | Simlab</title>
-  <link rel="icon" type="image/x-icon" href="<?= base_url('assets/img/favicon.ico?v=0.2') ?>">
+  <link rel="icon" type="image/x-icon" href="<?= base_url('assets/img/logo_ulm.png?v=0.2') ?>">
   <link rel="stylesheet" href="<?= base_url('assets/css/bootstrap.min.css') ?>">
   <link rel="stylesheet" href="<?= base_url('assets/css/bootstrap-icons.min.css') ?>">
   <link rel="stylesheet" href="<?= base_url('assets/css/auth.css?v=0.20') ?>">

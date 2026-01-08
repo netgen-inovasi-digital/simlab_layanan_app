@@ -67,7 +67,7 @@
 
             <!-- Logo Section -->
             <div class="col-md-6 bg-light-gray d-flex flex-column justify-content-center align-items-center p-5">
-              <img src="<?php echo base_url('assets/img/logo_medikidz.png') ?>" alt="Logo Klinik MediKidz" class="img-fluid" />
+              <img src="<?php echo base_url('assets/img/logo_ulm.png') ?>" alt="Logo ULM" class="img-fluid" />
             </div>
 
           </div>

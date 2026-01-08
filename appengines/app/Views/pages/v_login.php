@@ -7,7 +7,7 @@ Login
 <?= $this->section('content') ?>
 <div class="row g-0">
     <div class="col-md-6 bg-light-gray d-flex flex-column justify-content-center align-items-center p-5">
-        <img src="https://placehold.co/250x100?text=Logo+Template" alt="Logo Template" style="width: 250px;" class="img-fluid" />
+        <img src="assets/img/logo_ulm.png" alt="Logo ULM" style="width: 250px;" class="img-fluid" />
     </div>
 
     <div class="col-md-6 bg-white p-5 d-flex flex-column justify-content-center">
