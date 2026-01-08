@@ -239,17 +239,12 @@ class TinjauLHUS extends BaseController
       else
         $statusBadge = '<span class="badge bg-secondary">Belum Diproses</span>';
 
-      // Cek apakah LHU sudah diupload (ada file_id dari t_files_lhu)
-      $lhuUploaded = !empty($row->lhu_uploaded);
-      $canAccept = ($statusLhus !== 1) && !$lhuUploaded;
-      $canReject = ($statusLhus !== 2) && !$lhuUploaded;
-
-      $acceptTitle = $lhuUploaded ? 'LHU sudah diupload di pelaksanaan, tidak bisa diubah' : 'Terima LHUS';
-      $rejectTitle = $lhuUploaded ? 'LHU sudah diupload di pelaksanaan, tidak bisa diubah' : 'Tolak LHUS';
+      $canAccept = ($statusLhus !== 1);
+      $canReject = ($statusLhus !== 2);
 
       $aksiHtml = '<div class="d-flex justify-content-center gap-2 align-items-center">';
-      $aksiHtml .= '<span class="text-success btn-action btn-accept-lhus" title="' . $acceptTitle . '" data-det="' . $detKode . '"' . ($canAccept ? '' : ' style="opacity:.5;pointer-events:none;cursor:not-allowed;"') . '><i class="bi bi-check-circle"></i></span>';
-      $aksiHtml .= '<span class="text-warning btn-action btn-reject-lhus" title="' . $rejectTitle . '" data-det="' . $detKode . '"' . ($canReject ? '' : ' style="opacity:.5;pointer-events:none;cursor:not-allowed;"') . '><i class="bi bi-x-circle"></i></span>';
+      $aksiHtml .= '<span class="text-success btn-action btn-accept-lhus" title="Terima LHUS" data-det="' . $detKode . '"' . ($canAccept ? '' : ' style="opacity:.5;pointer-events:none;"') . '><i class="bi bi-check-circle"></i></span>';
+      $aksiHtml .= '<span class="text-warning btn-action btn-reject-lhus" title="Tolak LHUS"  data-det="' . $detKode . '"' . ($canReject ? '' : ' style="opacity:.5;pointer-events:none;"') . '><i class="bi bi-x-circle"></i></span>';
       $aksiHtml .= '</div>';
 
       // ===== JSON row (8 kolom) — match header modal =====
