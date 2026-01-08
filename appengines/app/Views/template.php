@@ -111,14 +111,17 @@
                 $session = session();
                 $nama = esc($session->get('nama') ?? 'Pengguna');
                 $nama_role = esc($session->get('nama_role') ?? 'Role');
+                $role_id = $session->get('role_id');
                 ?>
                 <span class="fw-bold me-3 d-none d-sm-block"><?= "{$nama} ({$nama_role})" ?></span>
+                <?php if ($role_id == 2): ?>
                 <a href="<?= base_url('profiluser') ?>" class="header-link nav-link" title="Profil">
                     <button aria-label="button" type="button" class="btn btn-icon p-0 text-secondary">
                         <i class="bi bi-person-fill" style="font-size: 1.3rem;"></i>
                     </button>
                 </a>
                 <span class="divider vr ms-2 me-2"></span>
+                <?php endif; ?>
                 <a href="<?php echo site_url('logout') ?>" class="header-link ms-2" title="Logout">
                     <button aria-label="button" type="button" class="btn btn-icon p-0 text-danger">
                         <i class="bi bi-power" style="font-size: 1.3rem;"></i> </button>
