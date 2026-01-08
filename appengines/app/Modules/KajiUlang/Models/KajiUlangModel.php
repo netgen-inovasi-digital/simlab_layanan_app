@@ -164,10 +164,12 @@ class KajiUlangModel extends Model
             d.biaya,
             d.status_layanan,
             d.metode_pengujian,
-            m.nama AS metode_nama
+            m.nama AS metode_nama,
+            l.no_invoice
         ");
     $builder->join('r_tim rt', 'rt.uji_kode = d.uji_kode', 'inner');
     $builder->join('r_metode m', 'm.metode_kode = d.metode_pengujian', 'left');
+    $builder->join('t_layanan l', 'l.kode_layanan = d.kode_layanan', 'left');
     $builder->where('d.kode_layanan', $kode);
     $builder->where('rt.user_id', $userId);
     $builder->orderBy('d.uji_kode', 'ASC');

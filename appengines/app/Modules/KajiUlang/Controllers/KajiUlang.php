@@ -162,9 +162,13 @@ class KajiUlang extends BaseController
 
       $response[] = $textarea;
 
+      // Cek apakah invoice sudah dikirim (no_invoice sudah ada)
+      $invoiceKirim = !empty($row->no_invoice);
+      $disabledStyle = $invoiceKirim ? ' style="opacity:.5;pointer-events:none;cursor:not-allowed;"' : '';
+
       $aksiHtml = '<div class="d-flex justify-content-center gap-2 align-items-center">';
-      $aksiHtml .= '<span class="text-success btn-action btn-accept-manager" title="Setujui" data-ln="' . $encLnForBtn . '" data-detail="' . $detailKode . '"><i class="bi bi-check-circle"></i></span> ';
-      $aksiHtml .= '<span class="text-warning btn-action btn-reject-manager" title="Tolak" data-ln="' . $encLnForBtn . '" data-detail="' . $detailKode . '"><i class="bi bi-x-circle"></i></span>';
+      $aksiHtml .= '<span class="text-success btn-action btn-accept-manager" title="' . ($invoiceKirim ? 'Invoice sudah dikirim, tidak bisa diubah' : 'Setujui') . '" data-ln="' . $encLnForBtn . '" data-detail="' . $detailKode . '"' . $disabledStyle . '><i class="bi bi-check-circle"></i></span> ';
+      $aksiHtml .= '<span class="text-warning btn-action btn-reject-manager" title="' . ($invoiceKirim ? 'Invoice sudah dikirim, tidak bisa diubah' : 'Tolak') . '" data-ln="' . $encLnForBtn . '" data-detail="' . $detailKode . '"' . $disabledStyle . '><i class="bi bi-x-circle"></i></span>';
       $aksiHtml .= '</div>';
 
       $response[] = $aksiHtml;
