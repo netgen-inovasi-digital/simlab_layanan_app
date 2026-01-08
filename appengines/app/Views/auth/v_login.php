@@ -51,7 +51,7 @@ Login
              placeholder="Password" required 
              style="padding-right: 45px;" />
              
-      <i id="togglePassword" class="bi bi-eye position-absolute fs-5 toggle-eye"></i>
+      <i id="togglePassword" class="bi bi-eye-slash position-absolute fs-5 toggle-eye"></i>
     </div>
 
     <div class="d-grid">

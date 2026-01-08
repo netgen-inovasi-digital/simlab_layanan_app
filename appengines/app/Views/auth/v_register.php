@@ -36,18 +36,26 @@
         <div class="mb-3">
             <input name="email" type="email" class="form-control rounded-pill mx-auto" placeholder="Email" value="<?= old('email') ?>" required />
         </div>
-        <div class="mb-3 position-relative">
-            <input name="pwd" id="reg-password" type="password" 
-                   class="form-control rounded-pill mx-auto pe-5" 
-                   placeholder="Password" required style="padding-right: 45px;" />
-            <i id="toggleRegPassword" class="bi bi-eye position-absolute fs-5 toggle-eye"></i>
+        <div class="mb-3">
+            <div class="input-group rounded-pill mx-auto" style="border-radius: 50px; overflow: hidden;">
+                <input name="pwd" id="reg-password" type="password" 
+                       class="form-control border-0" 
+                       placeholder="Password" required />
+                <button class="btn btn-light border-0 pe-3" type="button" id="toggleRegPassword" style="background-color: transparent;">
+                    <i class="bi bi-eye-slash"></i>
+                </button>
+            </div>
         </div>
 
-        <div class="mb-3 position-relative">
-            <input name="repwd" id="reg-repassword" type="password" 
-                   class="form-control rounded-pill mx-auto pe-5" 
-                   placeholder="Ulangi Password" required style="padding-right: 45px;" />
-            <i id="toggleRegRePassword" class="bi bi-eye position-absolute fs-5 toggle-eye"></i>
+        <div class="mb-3">
+            <div class="input-group rounded-pill mx-auto" style="border-radius: 50px; overflow: hidden;">
+                <input name="repwd" id="reg-repassword" type="password" 
+                       class="form-control border-0" 
+                       placeholder="Ulangi Password" required />
+                <button class="btn btn-light border-0 pe-3" type="button" id="toggleRegRePassword" style="background-color: transparent;">
+                    <i class="bi bi-eye-slash"></i>
+                </button>
+            </div>
         </div>
 
     
@@ -78,21 +86,24 @@
         function setupPasswordToggle(inputId, toggleId) {
             const toggleBtn = document.getElementById(toggleId);
             const inputField = document.getElementById(inputId);
+            const icon = toggleBtn.querySelector('i');
 
             if (toggleBtn && inputField) {
-                toggleBtn.addEventListener('click', () => {
+                toggleBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
                     const isPassword = inputField.type === 'password';
+                    
+                    // Toggle input type
                     inputField.type = isPassword ? 'text' : 'password';
                     
-                    toggleBtn.classList.toggle('bi-eye');
-                    toggleBtn.classList.toggle('bi-eye-slash');
-                    toggleBtn.style.opacity = isPassword ? '1' : '0.7';
+                    // Toggle icon: eye-slash (tertutup) <-> eye (terbuka)
+                    icon.classList.toggle('bi-eye-slash');
+                    icon.classList.toggle('bi-eye');
                 });
             }
         }
 
         setupPasswordToggle('reg-password', 'toggleRegPassword');
-
         setupPasswordToggle('reg-repassword', 'toggleRegRePassword');
     });
 </script>

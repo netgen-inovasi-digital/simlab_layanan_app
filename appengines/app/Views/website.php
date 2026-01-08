@@ -269,12 +269,15 @@ echo view($content, [
                             <input name="email" type="text" class="form-control rounded-pill mx-auto bg-light-gray"
                                 placeholder="Email" value="<?= old('email') ?>" required />
                         </div>
-                        <div class="mb-3 position-relative">
-                            <input name="pwd" id="modal-password-input" type="password" 
-                                class="form-control rounded-pill mx-auto bg-light-gray pe-5"
-                                placeholder="Password" required style="padding-right: 45px;" />
-                                
-                            <i id="toggleModalPassword" class="bi bi-eye position-absolute fs-5 toggle-eye"></i>
+                        <div class="mb-3">
+                            <div class="input-group rounded-pill mx-auto" style="border-radius: 50px; overflow: hidden;">
+                                <input name="pwd" id="modal-password-input" type="password" 
+                                       class="form-control border-0" 
+                                       placeholder="Password" required />
+                                <button class="btn btn-light border-0 pe-3" type="button" id="toggleModalPassword" style="background-color: transparent;">
+                                    <i class="bi bi-eye-slash"></i>
+                                </button>
+                            </div>
                         </div>
                         <div class="d-grid">
                             <button type="submit" class="btn btn-primary rounded-pill mx-auto">MASUK</button>
@@ -366,20 +369,29 @@ echo view($content, [
     <script>
     document.addEventListener('DOMContentLoaded', function () {
         const authModal = new bootstrap.Modal(document.getElementById('authModal'));
-        const togglePassword = document.getElementById('toggleModalPassword');
-        const passwordField = document.getElementById('modal-password-input');
+        
+        function setupPasswordToggle(inputId, toggleId) {
+            const toggleBtn = document.getElementById(toggleId);
+            const inputField = document.getElementById(inputId);
+            const icon = toggleBtn.querySelector('i');
 
-        if(togglePassword && passwordField) {
-            togglePassword.addEventListener('click', () => {
-                const isPassword = passwordField.type === 'password';
-                passwordField.type = isPassword ? 'text' : 'password';
-                
-                togglePassword.classList.toggle('bi-eye');
-                togglePassword.classList.toggle('bi-eye-slash');
-                
-                togglePassword.style.opacity = isPassword ? '1' : '0.7';
-            });
+            if (toggleBtn && inputField) {
+                toggleBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const isPassword = inputField.type === 'password';
+                    
+                    // Toggle input type
+                    inputField.type = isPassword ? 'text' : 'password';
+                    
+                    // Toggle icon: eye-slash (tertutup) <-> eye (terbuka)
+                    icon.classList.toggle('bi-eye-slash');
+                    icon.classList.toggle('bi-eye');
+                });
+            }
         }
+
+        setupPasswordToggle('modal-password-input', 'toggleModalPassword');
+        
         let adaAksiFormulir = false;
 
         <?php if (session()->getFlashdata('login_error')): ?>
