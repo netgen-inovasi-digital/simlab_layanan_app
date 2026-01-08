@@ -7,7 +7,7 @@ use App\Models\MyModel;
 
 class Kuesioner extends BaseController
 {
-    private $table = 't_kuisioner';
+    private $table = 't_kuesioner';
     private $id = 'kuesioner_id';
     protected $encrypter;
 

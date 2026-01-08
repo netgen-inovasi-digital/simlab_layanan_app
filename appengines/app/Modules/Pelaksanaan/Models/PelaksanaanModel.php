@@ -93,7 +93,7 @@ class PelaksanaanModel extends MyModel
 
     return $detailModel->getAllDataWithJoinWhereOrder(
       $joins,
-      ['d.kode_layanan' => $kode_layanan, 'd.status_layanan' => 1],
+      ['d.kode_layanan' => $kode_layanan, 'd.status_layanan' => 1, 'lhus.status' => 1],
       ['d.kode' => 'ASC'],
       $select,
       'left'

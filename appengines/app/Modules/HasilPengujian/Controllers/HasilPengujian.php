@@ -203,6 +203,22 @@ class HasilPengujian extends BaseController
       return $this->jsonResponse('error', 'ID tidak valid');
     }
 
+    // Guard: jika file LHUS untuk detil ini sudah diterima (t_files_lhus.status = 1), kunci upload
+    if (!empty($detKode)) {
+      $db = \Config\Database::connect();
+      $latest = $db->table('t_files_lhus')
+        ->select('status')
+        ->where('kode', $detKode)
+        ->orderBy('file_id', 'DESC')
+        ->limit(1)
+        ->get()
+        ->getRow();
+      $latestStatus = $latest ? (int) ($latest->status ?? 0) : 0;
+      if ($latestStatus === 1) {
+        return $this->jsonResponse('error', 'LHUS sudah diterima, upload dikunci.');
+      }
+    }
+
     if (!($file && $file->isValid() && !$file->hasMoved())) {
       return $this->jsonResponse('error', 'File tidak valid atau tidak dipilih');
     }
@@ -351,6 +367,7 @@ class HasilPengujian extends BaseController
     // Check file status
     $detFilesMax = isset($row->detFilesMax) ? (int) $row->detFilesMax : null;
     $currentFile = $row->file_lhus ?? null;
+    $lhusStatus = isset($row->lhus_status) ? (int) $row->lhus_status : null;
 
     $rowHasFile = !empty($currentFile);
     $fileUrl = $rowHasFile ? base_url('uploads/lhus/' . ltrim($currentFile, '/')) : null;
@@ -368,7 +385,7 @@ class HasilPengujian extends BaseController
     }
 
     // Format action buttons
-    $combinedHtml = $this->formatActionButtons($rowHasFile, $fileUrl, $row->kode, $encLnId);
+    $combinedHtml = $this->formatActionButtons($rowHasFile, $fileUrl, $row->kode, $encLnId, $lhusStatus);
     $response[] = $this->formatStatusBadge($detFilesMax, $status_layanan, $rowHasFile);
     $response[] = $combinedHtml;
 
@@ -412,7 +429,7 @@ class HasilPengujian extends BaseController
   /**
    * Format action buttons untuk upload dan view file
    */
-  private function formatActionButtons(bool $hasFile, ?string $fileUrl, $detKode, string $encLnId): string
+  private function formatActionButtons(bool $hasFile, ?string $fileUrl, $detKode, string $encLnId, ?int $lhusStatus): string
   {
     $combinedHtml = '<div class="d-flex justify-content-center gap-2 align-items-center">';
 
@@ -423,14 +440,18 @@ class HasilPengujian extends BaseController
       $eyeButton = '<span class="text-secondary btn-action" title="Belum ada file"><i class="bi bi-eye"></i></span>';
     }
 
-    // Upload button
-    $detKodeAttr = htmlspecialchars($detKode ?? '', ENT_QUOTES, 'UTF-8');
-    $uploadInput = '<label class="mb-0 position-relative" style="cursor:pointer;">'
-      . '<input type="file" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx" '
-      . 'data-detlist="' . $detKodeAttr . '" data-detkode="' . $detKodeAttr . '" data-ln="' . $encLnId . '" '
-      . 'class="d-none lhus-uploader-input" onchange="autoUploadFile(this)" />'
-      . '<span class="text-primary btn-action" title="Unggah / Ubah File LHUS"><i class="bi bi-upload"></i></span>'
-      . '</label>';
+    // Upload button (lock jika status file LHUS sudah diterima)
+    if ($lhusStatus === 1) {
+      $uploadInput = '<span class="text-secondary btn-action" title="LHUS sudah diterima, upload dikunci"><i class="bi bi-upload"></i></span>';
+    } else {
+      $detKodeAttr = htmlspecialchars($detKode ?? '', ENT_QUOTES, 'UTF-8');
+      $uploadInput = '<label class="mb-0 position-relative" style="cursor:pointer;">'
+        . '<input type="file" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx" '
+        . 'data-detlist="' . $detKodeAttr . '" data-detkode="' . $detKodeAttr . '" data-ln="' . $encLnId . '" '
+        . 'class="d-none lhus-uploader-input" onchange="autoUploadFile(this)" />'
+        . '<span class="text-primary btn-action" title="Unggah / Ubah File LHUS"><i class="bi bi-upload"></i></span>'
+        . '</label>';
+    }
 
     $combinedHtml .= $eyeButton . $uploadInput . '</div>';
 

@@ -235,7 +235,8 @@ class HasilPengujianModel extends Model
             ANY_VALUE(lhus.validasi_by) AS validasi_by,
             ANY_VALUE(acc.nama) AS acc_by,
             (SELECT nama FROM r_metode WHERE metode_kode = d.metode_pengujian LIMIT 1) AS metode_nama,
-            ANY_VALUE(lhus.file_lhus) AS file_lhus
+            ANY_VALUE(lhus.file_lhus) AS file_lhus,
+            ANY_VALUE(lhus.status) AS lhus_status
         ");
 
     // "Acc Manajer" pada Hasil Pengujian mengacu pada validator file LHUS terbaru (t_files_lhus.validasi_by)

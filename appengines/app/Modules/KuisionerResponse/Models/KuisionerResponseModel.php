@@ -24,7 +24,7 @@ class KuisionerResponseModel extends Model
     $builder->select('GROUP_CONCAT(DISTINCT d.nama_layanan ORDER BY d.nama_layanan SEPARATOR ", ") as layanan_nama');
     $builder->select('u.user_name, u.user_email, u.user_identity, u.user_instansi');
     $builder->select('COUNT(DISTINCT jawab.id_jawaban) as total_jawaban');
-    $builder->join('t_kuisioner_jawaban as jawab', 'jawab.kode_layanan = l.kode_layanan', 'inner');
+    $builder->join('t_kuesioner_jawaban as jawab', 'jawab.kode_layanan = l.kode_layanan', 'inner');
     $builder->join('t_layanan_detil as d', 'd.kode_layanan = l.kode_layanan', 'left');
     $builder->join('account_users as u', 'u.user_id = l.user_id', 'left');
     $builder->where('l.kuisioner', 1);
@@ -52,10 +52,10 @@ class KuisionerResponseModel extends Model
    */
   public function getQuestionResponses($kode_layanan): array
   {
-    $builder = $this->db->table('t_kuisioner as q');
+    $builder = $this->db->table('t_kuesioner as q');
     $builder->select('q.kuesioner_id, q.pertanyaan_teks, q.pertanyaan_tipe, q.pertanyaan_wajib, jawab.jawaban, jawab.created_at');
     $builder->join(
-      't_kuisioner_jawaban as jawab',
+      't_kuesioner_jawaban as jawab',
       'jawab.id_pertanyaan = q.kuesioner_id AND jawab.kode_layanan = ' . $this->db->escape($kode_layanan),
       'left'
     );

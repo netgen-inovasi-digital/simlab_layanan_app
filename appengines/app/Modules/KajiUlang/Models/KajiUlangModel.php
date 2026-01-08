@@ -165,7 +165,9 @@ class KajiUlangModel extends Model
             d.status_layanan,
             d.metode_pengujian,
             m.nama AS metode_nama,
-            l.no_invoice
+            l.no_invoice,
+            l.status_layanan AS layanan_status,
+            l.jumlah_kaji_ulang AS layanan_jumlah_kaji_ulang
         ");
     $builder->join('r_tim rt', 'rt.uji_kode = d.uji_kode', 'inner');
     $builder->join('r_metode m', 'm.metode_kode = d.metode_pengujian', 'left');

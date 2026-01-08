@@ -239,12 +239,18 @@ class TinjauLHUS extends BaseController
       else
         $statusBadge = '<span class="badge bg-secondary">Belum Diproses</span>';
 
-      $canAccept = ($statusLhus !== 1);
-      $canReject = ($statusLhus !== 2);
+      $parentStatus = (int) ($row->layanan_status ?? 0);
+      $lockActions = ($parentStatus === 9);
+
+      $canAccept = ($statusLhus !== 1) && !$lockActions;
+      $canReject = ($statusLhus !== 2) && !$lockActions;
+
+      $acceptTitle = $lockActions ? 'Status layanan = 9 (Pengujian Selesai), aksi dikunci' : 'Terima LHUS';
+      $rejectTitle = $lockActions ? 'Status layanan = 9 (Pengujian Selesai), aksi dikunci' : 'Tolak LHUS';
 
       $aksiHtml = '<div class="d-flex justify-content-center gap-2 align-items-center">';
-      $aksiHtml .= '<span class="text-success btn-action btn-accept-lhus" title="Terima LHUS" data-det="' . $detKode . '"' . ($canAccept ? '' : ' style="opacity:.5;pointer-events:none;"') . '><i class="bi bi-check-circle"></i></span>';
-      $aksiHtml .= '<span class="text-warning btn-action btn-reject-lhus" title="Tolak LHUS"  data-det="' . $detKode . '"' . ($canReject ? '' : ' style="opacity:.5;pointer-events:none;"') . '><i class="bi bi-x-circle"></i></span>';
+      $aksiHtml .= '<span class="text-success btn-action btn-accept-lhus" title="' . $acceptTitle . '" data-det="' . $detKode . '"' . ($canAccept ? '' : ' style="opacity:.5;pointer-events:none;"') . '><i class="bi bi-check-circle"></i></span>';
+      $aksiHtml .= '<span class="text-warning btn-action btn-reject-lhus" title="' . $rejectTitle . '"  data-det="' . $detKode . '"' . ($canReject ? '' : ' style="opacity:.5;pointer-events:none;"') . '><i class="bi bi-x-circle"></i></span>';
       $aksiHtml .= '</div>';
 
       // ===== JSON row (8 kolom) — match header modal =====

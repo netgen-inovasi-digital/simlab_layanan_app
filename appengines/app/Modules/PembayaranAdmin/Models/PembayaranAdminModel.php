@@ -37,10 +37,13 @@ class PembayaranAdminModel extends MyModel
     $builder = $this->db->table('t_pembayaran as p');
     $builder->select('p.*, l.kode_layanan, l.user_email, l.no_invoice, l.tanggal_checkout, l.status_layanan, l.user_id, l.jumlah_kaji_ulang');
     $builder->join('t_layanan as l', 'p.kode_layanan = l.kode_layanan', 'inner');
-    $builder->where('l.status_layanan >', 2);
 
-    // Filter: hanya tampilkan jika ada minimal 1 detail layanan dengan status_layanan = 1
-    $builder->where('EXISTS (SELECT 1 FROM t_layanan_detil d WHERE d.kode_layanan = l.kode_layanan AND d.status_layanan = 1)', null, false);
+    // Tampilkan jika status_layanan > 2 ATAU status_bayar = 1 (terverifikasi)
+    $builder->groupStart()
+      ->where('l.status_layanan >', 2)
+      ->orWhere('p.status_bayar', 1)
+      ->groupEnd();
+
 
     if (!empty($tanggalAwal) && !empty($tanggalAkhir)) {
       $builder->where('DATE(l.tanggal_checkout) >=', $tanggalAwal);
