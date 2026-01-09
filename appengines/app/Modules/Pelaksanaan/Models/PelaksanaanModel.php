@@ -78,22 +78,32 @@ class PelaksanaanModel extends MyModel
                 ';
 
     $joins = [
+      // Join LHUS: ambil file LHUS terbaru per kode detail dengan status = 1 dan kode_layanan yang sesuai
       '(SELECT lhus1.* FROM t_files_lhus lhus1 
                             INNER JOIN (
                                 SELECT kode, MAX(file_id) as max_file_id 
                                 FROM t_files_lhus 
+                                WHERE status = 1
                                 GROUP BY kode
                             ) lhus2 ON lhus1.kode = lhus2.kode AND lhus1.file_id = lhus2.max_file_id
-                        ) lhus' => 'lhus.kode = d.kode',
+                            WHERE lhus1.status = 1
+                        ) lhus' => 'lhus.kode = d.kode AND lhus.kode_layanan = d.kode_layanan',
       'account up_lhus' => 'up_lhus.user_id = lhus.upload_by',
       'account acc_lhus' => 'acc_lhus.user_id = lhus.validasi_by',
-      't_files_lhu lhu' => 'lhu.kode = d.kode_layanan',
+      // Join LHU: ambil file LHU terbaru untuk kode_layanan (tidak perlu filter karena hanya 1 LHU per layanan)
+      '(SELECT lhu1.* FROM t_files_lhu lhu1
+                            INNER JOIN (
+                                SELECT kode, MAX(file_id) as max_file_id
+                                FROM t_files_lhu
+                                GROUP BY kode
+                            ) lhu2 ON lhu1.kode = lhu2.kode AND lhu1.file_id = lhu2.max_file_id
+                        ) lhu' => 'lhu.kode = d.kode_layanan',
       'account_users up_lhu' => 'up_lhu.user_id = lhu.upload_by',
     ];
 
     return $detailModel->getAllDataWithJoinWhereOrder(
       $joins,
-      ['d.kode_layanan' => $kode_layanan, 'd.status_layanan' => 1, 'lhus.status' => 1],
+      ['d.kode_layanan' => $kode_layanan, 'd.status_layanan' => 1],
       ['d.kode' => 'ASC'],
       $select,
       'left'
