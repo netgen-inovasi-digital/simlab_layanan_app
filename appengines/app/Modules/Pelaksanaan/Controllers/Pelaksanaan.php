@@ -142,6 +142,25 @@ class Pelaksanaan extends BaseController
       }
     }
 
+    // Validasi: cek apakah SEMUA t_files_lhus untuk kode_layanan ini berstatus 1
+    // Jika ada yang tidak status = 1, jangan tampilkan data sama sekali
+    $db = \Config\Database::connect();
+    $checkQuery = $db->table('t_files_lhus')
+      ->select('COUNT(*) as total_non_accepted')
+      ->where('kode_layanan', $kode_layanan)
+      ->groupStart()
+      ->where('status !=', 1)
+      ->orWhere('status IS NULL', null, false)
+      ->groupEnd()
+      ->get()
+      ->getRow();
+
+    $hasNonAccepted = $checkQuery && (int) ($checkQuery->total_non_accepted ?? 0) > 0;
+
+    if ($hasNonAccepted) {
+      return $this->response->setJSON(['items' => []]);
+    }
+
     $rows = $this->pelaksanaanModel->getAcceptedDetailRowsForLayanan($kode_layanan);
 
     if (empty($rows))
@@ -158,10 +177,8 @@ class Pelaksanaan extends BaseController
 
       $jumlah = (int) ($row->jumlah ?? 0);
 
-      // Prioritas file: 1) LHUS dari t_files_lhus, 2) LHU dari file_lhu
       $fileUrl = null;
 
-      // Cek file LHUS dulu (dari t_files_lhus)
       if (!empty($row->file_lhus)) {
         $val = trim((string) $row->file_lhus);
         if (preg_match('/^https?:\/\//i', $val)) {
@@ -170,19 +187,6 @@ class Pelaksanaan extends BaseController
           $p = FCPATH . 'uploads/lhus/' . ltrim($val, '/');
           if (is_file($p)) {
             $fileUrl = base_url('uploads/lhus/' . ltrim($val, '/'));
-          }
-        }
-      }
-
-      // Kalau LHUS tidak ada, cek file LHU
-      if (!$fileUrl && !empty($row->file_lhu)) {
-        $val = trim((string) $row->file_lhu);
-        if (preg_match('/^https?:\/\//i', $val)) {
-          $fileUrl = $val;
-        } else {
-          $p = FCPATH . 'uploads/lhu/' . ltrim($val, '/');
-          if (is_file($p)) {
-            $fileUrl = base_url('uploads/lhu/' . ltrim($val, '/'));
           }
         }
       }
