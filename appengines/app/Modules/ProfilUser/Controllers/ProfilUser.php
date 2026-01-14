@@ -275,28 +275,48 @@ class ProfilUser extends BaseController
             return ['status' => false, 'msg' => 'File tidak valid atau sudah dipindahkan'];
         }
 
-        $allowedExt  = ['jpg', 'jpeg', 'png'];
-        $allowedMime = ['image/jpeg', 'image/png'];
+        // Format yang diperbolehkan: JPG, PNG, dan PDF
+        $allowedExt  = ['jpg', 'jpeg', 'png', 'pdf'];
+        $allowedMime = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
 
         $ext  = strtolower($file->getClientExtension());
-        $mime = $file->getMimeType();
+        $tmpName = $file->getTempName();
 
-        if (!in_array($ext, $allowedExt) || !in_array($mime, $allowedMime)) {
-            return ['status' => false, 'msg' => 'Format gambar tidak diperbolehkan'];
+        // Deteksi MIME type yang sebenarnya menggunakan finfo
+        if (!is_file($tmpName)) {
+            return ['status' => false, 'msg' => 'File sementara tidak ditemukan'];
         }
 
-        if (@getimagesize($file->getTempName()) === false) {
-            return ['status' => false, 'msg' => 'File bukan gambar asli'];
+        $detectedMime = null;
+        if (function_exists('finfo_open')) {
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $detectedMime = finfo_file($finfo, $tmpName);
+            finfo_close($finfo);
+        } else {
+            $detectedMime = $file->getClientMimeType();
         }
 
-        if ($file->getSize() > 2 * 1024 * 1024) {
-            return ['status' => false, 'msg' => 'Ukuran file maksimal 2MB'];
+        // Validasi ekstensi dan MIME type
+        if (!in_array($ext, $allowedExt) || !in_array($detectedMime, $allowedMime)) {
+            return ['status' => false, 'msg' => 'Format file harus JPG, PNG, atau PDF'];
+        }
+
+        // Validasi khusus untuk gambar (JPG/PNG)
+        if (in_array($ext, ['jpg', 'jpeg', 'png'])) {
+            if (@getimagesize($tmpName) === false) {
+                return ['status' => false, 'msg' => 'File bukan gambar yang valid'];
+            }
+        }
+
+        // Validasi ukuran file maksimal 5MB
+        if ($file->getSize() > 5 * 1024 * 1024) {
+            return ['status' => false, 'msg' => 'Ukuran file maksimal 5 MB'];
         }
 
         try {
-            $filename = time() . bin2hex(random_bytes(5)) . '.' . $ext;
+            $filename = time() . '_' . bin2hex(random_bytes(8)) . '.' . $ext;
         } catch (\Exception $e) {
-            $filename = time() . '_' . bin2hex(openssl_random_pseudo_bytes(5)) . '.' . $ext;
+            $filename = time() . '_' . bin2hex(openssl_random_pseudo_bytes(8)) . '.' . $ext;
         }
 
         $path = FCPATH . 'uploads' . DIRECTORY_SEPARATOR . 'bukti';
@@ -304,9 +324,18 @@ class ProfilUser extends BaseController
             @mkdir($path, 0755, true);
         }
 
-        $file->move($path, $filename, true);
+        try {
+            $file->move($path, $filename, true);
+            $fullPath = $path . DIRECTORY_SEPARATOR . $filename;
 
-        return ['status' => true, 'filename' => $filename];
+            if (is_file($fullPath)) {
+                return ['status' => true, 'filename' => $filename];
+            } else {
+                return ['status' => false, 'msg' => 'File gagal dipindahkan'];
+            }
+        } catch (\Exception $e) {
+            return ['status' => false, 'msg' => 'Gagal memindahkan file: ' . $e->getMessage()];
+        }
     }
 
     public function upload()

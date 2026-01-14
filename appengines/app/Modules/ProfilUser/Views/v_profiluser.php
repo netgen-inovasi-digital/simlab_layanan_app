@@ -44,14 +44,15 @@
 
                         <!-- Upload Bukti (ULM) -->
                         <div class="mb-3" id="buktiWrapper" style="display: <?= $get->showBukti ? 'block' : 'none' ?>;">
-                            <label class="form-label"><i class="bi bi-paperclip"></i> Upload Bukti</label>
-                            <input type="file" class="form-control" name="bukti_file">
+                            <label class="form-label"><i class="bi bi-paperclip"></i> Upload Bukti (jpg/png/pdf, maksimal 5 MB)</label>
+                            <input type="file" class="form-control" name="bukti_file" id="buktiFile" accept=".jpg,.jpeg,.png,.pdf">
+                            <!-- <div class="form-text text-muted">Format: JPG, PNG, atau PDF | Ukuran maksimal: 5 MB</div> -->
                             <div id="buktiInfo" class="mt-2">
                                 <?php if (!empty($get->bukti ?? '')): ?>
                                     <a href="<?= $get->bukti_url ?>" target="_blank" class="btn btn-info btn-sm">
                                         <i class="bi bi-eye"></i> Lihat Bukti
                                     </a>
-                                    <p class="text-muted small mt-1">Anda bisa unggah file baru untuk mengganti.</p>
+                                    <p class="text-muted small mt-1">Anda bisa unggah file baru untuk mengganti. </p>
                                 <?php else: ?>
                                     <span class="text-danger">Silahkan upload KTM atau surat pernyataan ULM</span>
                                 <?php endif; ?>
