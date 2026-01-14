@@ -210,8 +210,11 @@ class PelaksanaanModel extends MyModel
       ->set('kuisioner', 0)
       ->update();
 
+    // Hanya reset detail layanan yang status_layanan = 1 (diterima)
+    // Detail dengan status lain (ditolak, pending, dll) tidak berubah
     $this->db->table('t_layanan_detil')
       ->where('kode_layanan', $kode_layanan)
+      ->where('status_layanan', 1)
       ->set([
         'status_layanan' => 0,
         'terima_layanan_by' => null,

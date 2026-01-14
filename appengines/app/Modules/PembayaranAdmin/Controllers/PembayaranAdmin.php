@@ -836,27 +836,23 @@ class PembayaranAdmin extends BaseController
         ]);
       }
 
-      // Hitung ulang total_biaya berdasarkan layanan yang sudah diterima
-      // Layanan yang ditolak (status_layanan=2) tidak masuk perhitungan
-      $updateTotalResult = $model->updateTotalBiayaByAccepted($currentData->kode_layanan);
-      
-      if (!$updateTotalResult) {
-        log_message('warning', 'Gagal update total_biaya untuk kode_layanan: ' . $currentData->kode_layanan);
-      }
-
       // Update status_bayar menjadi 1 (Terverifikasi) dan kosongkan catatan_pembayaran
       $data = [
         'status_bayar' => 1,
         'catatan_pembayaran' => null  // Hapus catatan penolakan lama
       ];
       $update = $model->updateData($data, $this->id, $id);
-
+      
       if ($update) {
         // Update status_lunas di t_layanan_detil untuk menandakan detail sudah lunas
         $updateLunasResult = $model->updateStatusLunasDetil($currentData->kode_layanan, $id);
         
-        if (!$updateLunasResult) {
-          log_message('warning', 'Gagal update status_lunas untuk kode_layanan: ' . $currentData->kode_layanan);
+        // Hitung ulang total_biaya berdasarkan layanan yang sudah diterima (status_layanan=1)
+        // Layanan yang ditolak (status_layanan=2) tidak masuk perhitungan
+        $updateTotalResult = $model->updateTotalBiayaByAccepted($currentData->kode_layanan);
+        
+        if (!$updateTotalResult) {
+          log_message('warning', 'Gagal update total_biaya untuk kode_layanan: ' . $currentData->kode_layanan);
         }
       }
 
@@ -942,10 +938,6 @@ class PembayaranAdmin extends BaseController
       if ($update) {
         // Unset status_lunas di t_layanan_detil (set null) karena pembayaran ditolak
         $updateLunasResult = $model->updateStatusLunasDetil($currentData->kode_layanan, null);
-        
-        if (!$updateLunasResult) {
-          log_message('warning', 'Gagal unset status_lunas untuk kode_layanan: ' . $currentData->kode_layanan);
-        }
       }
 
       if (!$update) {

@@ -90,7 +90,10 @@ class PembayaranUserModel extends MyModel
   }
 
   /**
-   * Map total biaya detail layanan yang sudah diterima (status_layanan=1).
+   * Map total biaya detail layanan yang ditampilkan.
+   * Menggunakan logic:
+   * - status_layanan = 1 (sedang diterima, mungkin belum lunas)
+   * - OR status_lunas IS NOT NULL (sudah pernah dibayar/lunas)
    *
    * @return array<string,float>
    */
@@ -104,7 +107,10 @@ class PembayaranUserModel extends MyModel
     $rows = $this->db->table('t_layanan_detil')
       ->select('kode_layanan, SUM(biaya) AS total_biaya')
       ->whereIn('kode_layanan', $lnKodes)
+      ->groupStart()
       ->where('status_layanan', 1)
+      ->orWhere('status_lunas IS NOT NULL', null, false)
+      ->groupEnd()
       ->groupBy('kode_layanan')
       ->get()->getResult();
 

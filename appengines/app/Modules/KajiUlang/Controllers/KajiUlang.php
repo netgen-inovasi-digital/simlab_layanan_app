@@ -181,9 +181,33 @@ class KajiUlang extends BaseController
         }
       }
 
+      // Kondisi khusus untuk pengujian ulang (jumlah_kaji_ulang != 0)
+      $disableAccept = $shouldDisable;
+      $disableReject = $shouldDisable;
+      $disableAcceptReason = $disabledReason;
+      $disableRejectReason = $disabledReason;
+
+      if ($hasKajiUlang) {
+        // Jika status_layanan = 0 (pending), disable button tolak
+        if ($status === 0) {
+          $disableReject = true;
+          $disableRejectReason = 'Sedang dalam pengujian ulang, status pending tidak bisa ditolak';
+        }
+        // Jika status_layanan = 2 (ditolak), disable button terima dan tolak
+        elseif ($status === 2) {
+          $disableAccept = true;
+          $disableReject = true;
+          $disableAcceptReason = 'Layanan ditolak pada pengujian sebelumnya, tidak bisa diubah';
+          $disableRejectReason = 'Layanan ditolak pada pengujian sebelumnya, tidak bisa diubah';
+        }
+      }
+
+      $disabledStyleAccept = $disableAccept ? ' style="opacity:.5;pointer-events:none;cursor:not-allowed;"' : '';
+      $disabledStyleReject = $disableReject ? ' style="opacity:.5;pointer-events:none;cursor:not-allowed;"' : '';
+
       $aksiHtml = '<div class="d-flex justify-content-center gap-2 align-items-center">';
-      $aksiHtml .= '<span class="text-success btn-action btn-accept-manager" title="' . ($shouldDisable ? $disabledReason : 'Setujui') . '" data-ln="' . $encLnForBtn . '" data-detail="' . $detailKode . '"' . $disabledStyle . '><i class="bi bi-check-circle"></i></span> ';
-      $aksiHtml .= '<span class="text-warning btn-action btn-reject-manager" title="' . ($shouldDisable ? $disabledReason : 'Tolak') . '" data-ln="' . $encLnForBtn . '" data-detail="' . $detailKode . '"' . $disabledStyle . '><i class="bi bi-x-circle"></i></span>';
+      $aksiHtml .= '<span class="text-success btn-action btn-accept-manager" title="' . ($disableAccept ? $disableAcceptReason : 'Setujui') . '" data-ln="' . $encLnForBtn . '" data-detail="' . $detailKode . '"' . $disabledStyleAccept . '><i class="bi bi-check-circle"></i></span> ';
+      $aksiHtml .= '<span class="text-warning btn-action btn-reject-manager" title="' . ($disableReject ? $disableRejectReason : 'Tolak') . '" data-ln="' . $encLnForBtn . '" data-detail="' . $detailKode . '"' . $disabledStyleReject . '><i class="bi bi-x-circle"></i></span>';
       $aksiHtml .= '</div>';
 
       $response[] = $aksiHtml;

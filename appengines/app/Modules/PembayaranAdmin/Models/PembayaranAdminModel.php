@@ -92,14 +92,17 @@ class PembayaranAdminModel extends MyModel
       ->join('r_metode metode', 'metode.metode_kode = d.metode_pengujian', 'left')
       ->where('d.kode_layanan', $kode_layanan)
       ->groupStart()
-        ->where('d.status_lunas IS NOT NULL', null, false)
-        ->orWhere('d.status_layanan', 1)
+      ->where('d.status_lunas IS NOT NULL', null, false)
+      ->orWhere('d.status_layanan', 1)
       ->groupEnd()
       ->get()->getResult();
   }
 
   /**
-   * Map total biaya detail layanan yang sudah lunas (status_lunas IS NOT NULL).
+   * Map total biaya detail layanan yang ditampilkan di modal detail.
+   * Menggunakan logic yang sama dengan getDetailLayananItems():
+   * - status_lunas IS NOT NULL (sudah pernah dibayar/lunas)
+   * - OR status_layanan = 1 (sedang diterima, belum lunas)
    *
    * @return array<string,float>
    */
@@ -113,7 +116,10 @@ class PembayaranAdminModel extends MyModel
     $rows = $this->db->table('t_layanan_detil')
       ->select('kode_layanan, SUM(biaya) AS total_biaya')
       ->whereIn('kode_layanan', $lnKodes)
+      ->groupStart()
       ->where('status_lunas IS NOT NULL', null, false)
+      ->orWhere('status_layanan', 1)
+      ->groupEnd()
       ->groupBy('kode_layanan')
       ->get()->getResult();
 
@@ -173,7 +179,7 @@ class PembayaranAdminModel extends MyModel
   }
 
   /**
-   * Hitung total biaya dari detail layanan yang sudah lunas (status_lunas IS NOT NULL)
+   * Hitung total biaya dari detail layanan yang diterima (status_layanan = 1)
    *
    * @param int $kode_layanan
    * @return float
@@ -183,7 +189,7 @@ class PembayaranAdminModel extends MyModel
     $result = $this->db->table('t_layanan_detil')
       ->selectSum('biaya')
       ->where('kode_layanan', $kode_layanan)
-      ->where('status_lunas IS NOT NULL', null, false)
+      ->where('status_layanan', 1)
       ->get()
       ->getRow();
 
@@ -206,8 +212,9 @@ class PembayaranAdminModel extends MyModel
   }
 
   /**
-   * Update status_lunas di t_layanan_detil untuk semua detail layanan
+   * Update status_lunas di t_layanan_detil HANYA untuk detail yang status_layanan = 1
    * Set status_lunas = kode_bayar untuk menandakan bahwa detail tersebut sudah lunas
+   * Detail layanan dengan status selain 1 tidak akan diupdate
    * 
    * @param int $kode_layanan Kode layanan yang detailnya akan diupdate
    * @param int|null $kode_bayar Kode bayar untuk set status_lunas (null untuk unset/belum lunas)
@@ -215,9 +222,10 @@ class PembayaranAdminModel extends MyModel
    */
   public function updateStatusLunasDetil(int $kode_layanan, ?int $kode_bayar): bool
   {
-    // Update semua detail layanan
+    // Update hanya detail layanan dengan status_layanan = 1 (diterima)
     return $this->db->table('t_layanan_detil')
       ->where('kode_layanan', $kode_layanan)
+      ->where('status_layanan', 1)
       ->update(['status_lunas' => $kode_bayar]);
   }
 }
