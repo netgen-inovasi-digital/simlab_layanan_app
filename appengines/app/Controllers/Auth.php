@@ -255,7 +255,7 @@ class Auth extends Controller
     // Simpan ke database
     try {
       $model->registerUser($data);
-      $session->setFlashdata('success', 'Registrasi berhasil! Silakan login.');
+      $session->setFlashdata('success', 'Registrasi berhasil! Silakan masuk.');
       return redirect()->to('/');
     } catch (\Exception $e) {
       $session->setFlashdata('error', 'Registrasi gagal: ' . $e->getMessage());

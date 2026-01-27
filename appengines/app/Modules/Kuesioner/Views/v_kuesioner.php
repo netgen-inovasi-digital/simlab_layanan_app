@@ -110,7 +110,7 @@
     }
 
     // 1. Inisiasi tabel
-    kuesionerTable = loadTable(apiUrl + "?page=" + currentPage + "&limit=" + currentLimit);
+    kuesionerTable = loadTable(apiUrl + "?init=1&page=" + currentPage + "&limit=" + currentLimit);
 
     // 2. Listener tombol Simpan
     var btnSimpan = document.querySelector('#btnSimpan');
