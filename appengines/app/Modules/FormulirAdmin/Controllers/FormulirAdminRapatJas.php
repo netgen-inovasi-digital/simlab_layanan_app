@@ -430,7 +430,7 @@ class FormulirAdminRapatJas extends BaseController
           $waDigits = $this->normalize_phone_for_whatsapp($phoneRaw);
           if ($waDigits !== '') {
             $displayName = $userObj->user_name ?? null;
-            $message = $displayName ? "Assalamualaikum Kak " . $displayName . ", saya ingin bertanya terkait layanan Rapat JAS bapak/ibu" : "Halo, saya ingin bertanya tentang layanan Rapat JAS.";
+            $message = $displayName ? "Permisi saudara/i " . $displayName . ", saya ingin bertanya terkait layanan Rapat JAS bapak/ibu" : "Halo, saya ingin bertanya tentang layanan Rapat JAS.";
             $msgEncoded = rawurlencode($message);
             $waUrl = "https://wa.me/" . $waDigits . "?text=" . $msgEncoded;
 

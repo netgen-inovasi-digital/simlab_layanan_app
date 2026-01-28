@@ -389,8 +389,8 @@ class PembayaranAdmin extends BaseController
 
           // Buat pesan pembuka (encoded)
           $message = $displayName
-            ? "Assalamualaikum Kak " . $displayName . ", saya ingin menginformasikan terkait pembayaran layanan pengujian."
-            : "Halo, saya ingin menginformasikan terkait pembayaran layanan pengujian.";
+            ? "Permisi saudara/i " . $displayName . ", saya ingin menginformasikan terkait pengujian sampel yang Anda pesan harus dibayar dalam jangka waktu 3 hari sejak dikirimkannya pesan ini."
+            : "Halo, saya ingin menginformasikan terkait pembayaran pengujian sampel yang Anda pesan harus dibayar dalam jangka waktu 3 hari sejak dikirimkannya pesan ini.";
           $msgEncoded = rawurlencode($message);
 
           $waUrl = "https://wa.me/" . $waDigits . "?text=" . $msgEncoded;
@@ -823,10 +823,10 @@ class PembayaranAdmin extends BaseController
       }
 
       $model = $this->pembayaranModel;
-      
+
       // Ambil data pembayaran untuk mendapatkan kode_layanan
       $currentData = $model->getDataById($this->id, $id);
-      
+
       if (!$currentData) {
         return $this->response->setJSON([
           'res' => false,
@@ -842,15 +842,15 @@ class PembayaranAdmin extends BaseController
         'catatan_pembayaran' => null  // Hapus catatan penolakan lama
       ];
       $update = $model->updateData($data, $this->id, $id);
-      
+
       if ($update) {
         // Update status_lunas di t_layanan_detil untuk menandakan detail sudah lunas
         $updateLunasResult = $model->updateStatusLunasDetil($currentData->kode_layanan, $id);
-        
+
         // Hitung ulang total_biaya berdasarkan layanan yang sudah diterima (status_layanan=1)
         // Layanan yang ditolak (status_layanan=2) tidak masuk perhitungan
         $updateTotalResult = $model->updateTotalBiayaByAccepted($currentData->kode_layanan);
-        
+
         if (!$updateTotalResult) {
           log_message('warning', 'Gagal update total_biaya untuk kode_layanan: ' . $currentData->kode_layanan);
         }
@@ -912,10 +912,10 @@ class PembayaranAdmin extends BaseController
       }
 
       $model = $this->pembayaranModel;
-      
+
       // Ambil data pembayaran untuk mendapatkan kode_layanan
       $currentData = $model->getDataById($this->id, $id);
-      
+
       if (!$currentData) {
         return $this->response->setJSON([
           'res' => false,

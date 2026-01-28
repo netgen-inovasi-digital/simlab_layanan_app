@@ -446,7 +446,7 @@ class FormulirAdmin extends BaseController
             $displayName = $userObj->user_name ?? null;
 
             // buat pesan pembuka (encoded)
-            $message = $displayName ? "Assalamualaikum Kak " . $displayName . ", saya ingin bertanya terkait layanan bapak yang beberapa ditolak, apakah kakak ingin melanjutkan layanan tersebut" : "Halo, saya ingin bertanya tentang layanan.";
+            $message = $displayName ? "Permisi saudara/i " . $displayName . ", kami dari pihak SIMLAB Terpadu ULM, terkait layanan pengujian sampel yang Anda pesan mendapatkan beberapa penolakan. Kami ingin mengonfirmasi apakah pengujian ingin tetap dilanjutkan atau tidak?" : "Halo, saya ingin bertanya tentang layanan.";
             $msgEncoded = rawurlencode($message);
 
             $waUrl = "https://wa.me/" . $waDigits . "?text=" . $msgEncoded;
