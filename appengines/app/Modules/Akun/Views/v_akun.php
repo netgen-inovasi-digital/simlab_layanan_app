@@ -163,6 +163,22 @@ function editItem(event) {
         });
 }
 
+// === Toggle Password Visibility ===
+document.getElementById('togglePassword').addEventListener('click', function() {
+    const passwordInput = document.getElementById('passwordInput');
+    const passwordIcon = document.getElementById('passwordIcon');
+    
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        passwordIcon.classList.remove('bi-eye-slash');
+        passwordIcon.classList.add('bi-eye');
+    } else {
+        passwordInput.type = 'password';
+        passwordIcon.classList.remove('bi-eye');
+        passwordIcon.classList.add('bi-eye-slash');
+    }
+});
+
 // === Hapus Data: langsung inline tanpa function deleteItem ===
 document.addEventListener("click", function(e) {
     if (e.target.classList.contains("btn-delete")) {
@@ -248,7 +264,12 @@ document.addEventListener("click", function(e) {
                 <div class="row mb-2">
                     <label class="col-md-4 col-form-label">Password</label>
                     <div class="col">
-                        <input name="user_password" type="password" class="form-control">
+                        <div class="input-group">
+                            <input name="user_password" type="password" class="form-control" id="passwordInput" style="border-right: none;">
+                            <span class="input-group-text" id="togglePassword" style="background: white; cursor: pointer; border-left: none;">
+                                <i class="bi bi-eye-slash" id="passwordIcon"></i>
+                            </span>
+                        </div>
                     </div>
                 </div>
 
