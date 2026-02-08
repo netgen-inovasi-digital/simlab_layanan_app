@@ -37,13 +37,10 @@ class KuisionerResponse extends BaseController
     foreach ($rows as $row) {
       $encId = bin2hex($this->encrypter->encrypt($row->kode_layanan));
 
-      $namaLayanan = $row->layanan_nama ?: '-';
-      $noTransaksi = $row->no_invoice ?: '-';
-      $colLayanan = '<div class="fw-semibold">' . esc($namaLayanan) . '</div>' .
-        '<small class="text-muted">No. Invoice: ' . esc($noTransaksi) . '</small>';
+      $noInvoice = $row->no_invoice ?: '-';
 
       $data[] = [
-        $colLayanan,
+        $noInvoice,
         $this->buildPemesanColumn($row),
         $this->buildActionButton($encId)
       ];

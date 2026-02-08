@@ -9,8 +9,8 @@
                     <thead>
                         <tr>
                             <th show width="6%">No.</th>
-                            <th show width="34%">Nama Layanan</th>
-                            <th show width="40%">Pemesan</th>
+                            <th show width="20%">No Invoice</th>
+                            <th show width="54%">Pemesan</th>
                             <th show width="20%">Hasil Kuisioner</th>
                         </tr>
                     </thead>
