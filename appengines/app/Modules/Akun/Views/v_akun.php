@@ -51,6 +51,9 @@ modal.addEventListener('shown.bs.modal', function (e) {
     const buktiInput = buktiWrapper.querySelector('input[type="file"]');
 
     function toggleFields() {
+        const isEditing = document.querySelector('[name="id"]').value !== "";
+        const hasExistingFile = document.getElementById("buktiInfo").querySelector('a.btn-info') !== null;
+        
         if (identitySelect.value === "NON ULM") {
             instansiField.style.display = "flex"; 
             instansiInput.setAttribute("required", true);
@@ -61,7 +64,13 @@ modal.addEventListener('shown.bs.modal', function (e) {
             instansiInput.removeAttribute("required");
             instansiInput.value = "";
             buktiWrapper.style.display = "flex";
-            buktiInput.setAttribute("required", true);
+            
+            // Hanya set required jika sedang tambah data baru atau belum ada file
+            if (!isEditing || !hasExistingFile) {
+                buktiInput.setAttribute("required", true);
+            } else {
+                buktiInput.removeAttribute("required");
+            }
         } else {
             instansiField.style.display = "none"; 
             instansiInput.removeAttribute("required");
@@ -121,6 +130,8 @@ function editItem(event) {
 
             // === Tambahan: bukti file ===
             const buktiInfo = document.getElementById("buktiInfo");
+            const buktiFileInput = buktiWrapper.querySelector('input[type="file"]');
+            
             if (data.bukti_url) {
                 buktiInfo.innerHTML = `
                     <a href="${data.bukti_url}" target="_blank" class="btn btn-info btn-sm">
@@ -128,8 +139,14 @@ function editItem(event) {
                     </a>
                     <p class="text-muted small mt-1">Anda bisa unggah file baru untuk mengganti.</p>
                 `;
+                // Hapus required jika file sudah ada
+                buktiFileInput.removeAttribute("required");
             } else {
                 // buktiInfo.innerHTML = `<span class="text-danger">Belum ada bukti, silakan upload file.</span>`;
+                // Set required jika file belum ada dan identity adalah ULM
+                if (data.user_identity === "ULM") {
+                    buktiFileInput.setAttribute("required", true);
+                }
             }
 
         // === Tambahan: verifikasi ===
@@ -229,7 +246,7 @@ document.addEventListener("click", function(e) {
 
                 <!-- Password -->
                 <div class="row mb-2">
-                    <label class="col-md-4 col-form-label">Ubah Password</label>
+                    <label class="col-md-4 col-form-label">Password</label>
                     <div class="col">
                         <input name="user_password" type="password" class="form-control">
                     </div>
