@@ -336,7 +336,7 @@ document.getElementById('togglePassword').addEventListener('click', function() {
                 <div class="row mb-2" id="buktiWrapper">
                     <label class="col-md-4 col-form-label">Bukti</label>
                     <div class="col">
-                        <input type="file" name="bukti_file" class="form-control">
+                        <input type="file" name="bukti_file" class="form-control" accept=".pdf,.jpg,.jpeg,.png">
                         <div id="buktiInfo" class="mt-2">
                             <!-- <span class="text-muted small">Belum ada bukti, silakan upload.</span> -->
                         </div>
