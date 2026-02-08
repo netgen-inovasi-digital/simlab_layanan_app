@@ -8,10 +8,10 @@
                 <table id="response-table" class="saytable border-top-bottom">
                     <thead>
                         <tr>
-                            <th show width="6%">No.</th>
-                            <th show width="20%">No Invoice</th>
-                            <th show width="54%">Pemesan</th>
-                            <th show width="20%">Hasil Kuisioner</th>
+                            <th width="6%">No.</th>
+                            <th width="20%">No Invoice</th>
+                            <th width="54%">Pemesan</th>
+                            <th width="20%">Hasil Kuisioner</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
@@ -22,7 +22,7 @@
 </div>
 
 <div class="modal fade" id="modalResponseDetail" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
-    <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content">
             <div class="modal-header">
                 <div>
@@ -32,7 +32,19 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div id="response-detail" class="list-group list-group-flush"></div>
+                <div class="table-wrapper">
+                    <table id="response-detail-table" class="saytable border-top-bottom">
+                        <thead>
+                            <tr>
+                                <th width="6%">No.</th>
+                                <th width="45%">Pertanyaan</th>
+                                <th width="35%">Jawaban</th>
+                                <th width="20%">Jenis Jawaban</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-light" data-bs-dismiss="modal">Tutup</button>
@@ -49,13 +61,13 @@
         dataSrc: 'items'
     });
 
+    var detailTable = null;
+
     function showResponseModal(encId) {
         const modalEl = document.getElementById('modalResponseDetail');
         const metaEl = document.getElementById('response-meta');
-        const detailEl = document.getElementById('response-detail');
 
         if (metaEl) metaEl.textContent = 'Memuat data...';
-        if (detailEl) detailEl.innerHTML = '<div class="text-center py-3 text-muted">Memuat jawaban...</div>';
 
         const modalInstance = (typeof bootstrap !== 'undefined' && bootstrap.Modal)
             ? bootstrap.Modal.getOrCreateInstance(modalEl)
@@ -67,43 +79,32 @@
             $('#modalResponseDetail').modal('show');
         }
 
+        // Reset atau create detail table
+        const tableBody = document.querySelector('#response-detail-table tbody');
+        if (tableBody) {
+            tableBody.innerHTML = '<tr><td colspan="3" class="text-center py-3"><div class="spinner-table"></div><em>Memuat jawaban...</em></td></tr>';
+        }
+
+        detailTable = createModal({
+            tableId: 'response-detail-table',
+            apiUrl: '<?= site_url("response_kuisioner/detaillist/") ?>' + encId,
+            showFilter: false,
+            numbering: true,
+            treeview: false,
+            dataSrc: 'items'
+        });
+
+        // Fetch header data untuk meta
         fetch('<?= site_url("response_kuisioner/detail/") ?>' + encId, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
             .then(res => res.json())
             .then(data => {
-                if (!data.success) {
-                    if (detailEl) detailEl.innerHTML = '<div class="text-center text-danger py-3">' + escapeHtml(data.msg || 'Gagal memuat data') + '</div>';
-                    return;
-                }
-
-                if (metaEl) {
-                    const metaText = `No. Invoice: ${escapeHtml(data.meta.no_transaksi ?? '-')}`;
+                if (data.success && data.meta && metaEl) {
+                    const metaText = `No. Invoice: ${escapeHtml(data.meta.no_transaksi ?? '-')} | Pemesan: ${escapeHtml(data.meta.pemesan ?? '-')}`;
                     metaEl.textContent = metaText;
-                }
-
-                if (detailEl) {
-                    if (!Array.isArray(data.items) || data.items.length === 0) {
-                        detailEl.innerHTML = '<div class="text-center py-3 text-muted">Belum ada jawaban.</div>';
-                        return;
-                    }
-
-                    const html = data.items.map(item => {
-                        const answer = item.jawaban ? escapeHtml(String(item.jawaban)) : '<span class="text-muted">-</span>';
-                        return `
-                            <div class="list-group-item">
-                                <div class="fw-semibold mb-1">${item.no}. ${escapeHtml(item.pertanyaan ?? '')}</div>
-                                <div>${answer}</div>
-                            </div>
-                        `;
-                    }).join('');
-
-                    detailEl.innerHTML = html;
                 }
             })
             .catch(err => {
-                console.error(err);
-                if (detailEl) {
-                    detailEl.innerHTML = '<div class="text-center text-danger py-3">Terjadi kesalahan saat memuat data.</div>';
-                }
+                console.error('Error fetching meta:', err);
             });
     }
 

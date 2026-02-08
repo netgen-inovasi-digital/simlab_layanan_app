@@ -49,6 +49,53 @@ class KuisionerResponse extends BaseController
     return $this->response->setJSON(['items' => $data]);
   }
 
+  public function detailList($id = null)
+  {
+    if (!$id) {
+      return $this->response->setJSON(['items' => []]);
+    }
+
+    try {
+      $kode_layanan = $this->encrypter->decrypt(hex2bin($id));
+    } catch (\Throwable $e) {
+      try {
+        $kode_layanan = $this->encrypter->decrypt($id);
+      } catch (\Throwable $e2) {
+        return $this->response->setJSON(['items' => []]);
+      }
+    }
+
+    $rows = $this->responseModel->getQuestionResponses($kode_layanan);
+
+    if (empty($rows)) {
+      return $this->response->setJSON(['items' => []]);
+    }
+
+    $data = [];
+    foreach ($rows as $row) {
+      $tipeLabel = $this->getTipeLabel($row->pertanyaan_tipe);
+      $jawaban = $row->jawaban ?? '-';
+
+      $data[] = [
+        $row->pertanyaan_teks,
+        $jawaban,
+        $tipeLabel
+      ];
+    }
+
+    return $this->response->setJSON(['items' => $data]);
+  }
+
+  private function getTipeLabel($tipe): string
+  {
+    $labels = [
+      'isian' => 'Isian',
+      'pilihan' => 'Pilihan ganda ',
+      'rating' => 'Rating'
+    ];
+    return $labels[$tipe] ?? $tipe;
+  }
+
   public function detail($id = null)
   {
     if (!$id) {
