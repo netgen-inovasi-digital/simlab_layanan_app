@@ -72,10 +72,14 @@ class Dashboard extends BaseController
 		$statusInReviewAdmin = $modelLayanan->getCountAll('status_layanan', 3);
 		$statusPengujian = $modelLayanan->getCountAll('status_layanan', 4);
 		$statusMemprosesLHUS = $modelLayanan->getCountAll('status_layanan', 5);
-		$statusLHUSDisetujui = $modelLayanan->getCountAll('status_layanan', 6);
-		$statusMemprosesLHU = $modelLayanan->getCountAll('status_layanan', 7);
-		$statusLHUDisetujui = $modelLayanan->getCountAll('status_layanan', 8);
+		$statusMemprosesLHU = $modelLayanan->getCountAll('status_layanan', 6);
 		$statusSelesai = $modelLayanan->getCountAll('status_layanan', 9);
+		
+		// ---------- Penerbitan Invoice (no_invoice kosong/null) ----------
+		$statusPenerbitanInvoice = $modelPembayaran->getCountAllbyManyWhere(['no_invoice' => null]);
+		
+		// ---------- Verifikasi Pembayaran (bukti_bayar ada, status_bayar = 0) ----------
+		$statusVerifikasiPembayaran = $modelPembayaran->getCountAllbyManyWhere(['bukti_bayar IS NOT NULL' => null, 'status_bayar' => 0]);
 		
 		// ---------- Jumlah Kaji Ulang ----------
 		$totalKajiUlang = $modelLayanan->getCountAllbyManyWhere(['jumlah_kaji_ulang >' => 0]);
@@ -93,11 +97,11 @@ class Dashboard extends BaseController
 			// ===== Progress Status Layanan ===== //
 			'statusInReviewManajer' => $statusInReviewManajer,
 			'statusInReviewAdmin' => $statusInReviewAdmin,
+			'statusPenerbitanInvoice' => $statusPenerbitanInvoice,
+			'statusVerifikasiPembayaran' => $statusVerifikasiPembayaran,
 			'statusPengujian' => $statusPengujian,
 			'statusMemprosesLHUS' => $statusMemprosesLHUS,
-			'statusLHUSDisetujui' => $statusLHUSDisetujui,
 			'statusMemprosesLHU' => $statusMemprosesLHU,
-			'statusLHUDisetujui' => $statusLHUDisetujui,
 			'statusSelesai' => $statusSelesai,
 			'totalKajiUlang' => $totalKajiUlang,
 			'greeting' => $greeting,
