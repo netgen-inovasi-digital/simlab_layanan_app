@@ -66,6 +66,20 @@ class Dashboard extends BaseController
 		$countRole6 = $modelAccount->getCountAllbyManyWhere(['role_id' => 6]);
 		$totalPengelola = $countRole4 + $countRole6;
 
+		// ---------- Progress Status Layanan dari t_layanan ----------
+		$modelLayanan = new MyModel('t_layanan');
+		$statusInReviewManajer = $modelLayanan->getCountAll('status_layanan', 1);
+		$statusInReviewAdmin = $modelLayanan->getCountAll('status_layanan', 3);
+		$statusPengujian = $modelLayanan->getCountAll('status_layanan', 4);
+		$statusMemprosesLHUS = $modelLayanan->getCountAll('status_layanan', 5);
+		$statusLHUSDisetujui = $modelLayanan->getCountAll('status_layanan', 6);
+		$statusMemprosesLHU = $modelLayanan->getCountAll('status_layanan', 7);
+		$statusLHUDisetujui = $modelLayanan->getCountAll('status_layanan', 8);
+		$statusSelesai = $modelLayanan->getCountAll('status_layanan', 9);
+		
+		// ---------- Jumlah Kaji Ulang ----------
+		$totalKajiUlang = $modelLayanan->getCountAllbyManyWhere(['jumlah_kaji_ulang >' => 0]);
+
 		return [
 			// ===== Layanan Masuk (Kode Jenis A) ===== //
 			'totalLayananMasuk' => formatAngkaSingkat($totalLayananMasuk),
@@ -76,6 +90,16 @@ class Dashboard extends BaseController
 			'totalPengelola' => $totalPengelola,
 			'totalLayananPengujian' => $totalLayananPengujian,
 			'totalPelanggan' => $totalPelanggan,
+			// ===== Progress Status Layanan ===== //
+			'statusInReviewManajer' => $statusInReviewManajer,
+			'statusInReviewAdmin' => $statusInReviewAdmin,
+			'statusPengujian' => $statusPengujian,
+			'statusMemprosesLHUS' => $statusMemprosesLHUS,
+			'statusLHUSDisetujui' => $statusLHUSDisetujui,
+			'statusMemprosesLHU' => $statusMemprosesLHU,
+			'statusLHUDisetujui' => $statusLHUDisetujui,
+			'statusSelesai' => $statusSelesai,
+			'totalKajiUlang' => $totalKajiUlang,
 			'greeting' => $greeting,
 			'nama_user' => $nama,
 			'role_id' => $role_id,

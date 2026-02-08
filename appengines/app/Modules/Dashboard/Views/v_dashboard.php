@@ -104,6 +104,136 @@
                 </div>
             </div>
         </div>
+
+        <!-- Progress Status Layanan -->
+        <div class="row mt-3">
+            <div class="col-lg-12">
+                <h5 class="mb-3">Total Progress Status Layanan</h5>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Status In Review Manajer -->
+            <div class=" col-lg-3">
+                <div class="board">
+                    <div class="board-left">
+                        <h6>In Review Manajer</h6>
+                        <div class="value"><?= $statusInReviewManajer ?? 0 ?></div>
+                    </div>
+                    <div class="board-right">
+                        <i class="bi bi-clock-history fs-2 text-warning"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status In Review Admin -->
+            <div class=" col-lg-3">
+                <div class="board">
+                    <div class="board-left">
+                        <h6>In Review Admin</h6>
+                        <div class="value"><?= $statusInReviewAdmin ?? 0 ?></div>
+                    </div>
+                    <div class="board-right">
+                        <i class="bi bi-hourglass-split fs-2 text-info"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status Pengujian -->
+            <div class=" col-lg-3">
+                <div class="board">
+                    <div class="board-left">
+                        <h6>Pengujian</h6>
+                        <div class="value"><?= $statusPengujian ?? 0 ?></div>
+                    </div>
+                    <div class="board-right">
+                        <i class="bi bi-search fs-2 text-primary"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status Memproses LHUS -->
+            <div class=" col-lg-3">
+                <div class="board">
+                    <div class="board-left">
+                        <h6>Memproses LHUS</h6>
+                        <div class="value"><?= $statusMemprosesLHUS ?? 0 ?></div>
+                    </div>
+                    <div class="board-right">
+                        <i class="bi bi-file-earmark-text fs-2 text-secondary"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Status LHUS Disetujui -->
+            <div class=" col-lg-3">
+                <div class="board">
+                    <div class="board-left">
+                        <h6>LHUS Disetujui</h6>
+                        <div class="value"><?= $statusLHUSDisetujui ?? 0 ?></div>
+                    </div>
+                    <div class="board-right">
+                        <i class="bi bi-check-circle fs-2 text-success"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status Memproses LHU -->
+            <div class=" col-lg-3">
+                <div class="board">
+                    <div class="board-left">
+                        <h6>Memproses LHU</h6>
+                        <div class="value"><?= $statusMemprosesLHU ?? 0 ?></div>
+                    </div>
+                    <div class="board-right">
+                        <i class="bi bi-file-earmark-arrow-up fs-2 text-secondary"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status LHU Disetujui -->
+            <div class=" col-lg-3">
+                <div class="board">
+                    <div class="board-left">
+                        <h6>LHU Disetujui</h6>
+                        <div class="value"><?= $statusLHUDisetujui ?? 0 ?></div>
+                    </div>
+                    <div class="board-right">
+                        <i class="bi bi-check-circle-fill fs-2 text-success"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status Selesai -->
+            <div class=" col-lg-3">
+                <div class="board">
+                    <div class="board-left">
+                        <h6>Selesai</h6>
+                        <div class="value"><?= $statusSelesai ?? 0 ?></div>
+                    </div>
+                    <div class="board-right">
+                        <i class="bi bi-check2-all fs-2 text-success"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Total Kaji Ulang -->
+            <div class=" col-lg-3">
+                <div class="board">
+                    <div class="board-left">
+                        <h6>Jumlah Uji Ulang</h6>
+                        <div class="value"><?= $totalKajiUlang ?? 0 ?></div>
+                    </div>
+                    <div class="board-right">
+                        <i class="bi bi-arrow-repeat fs-2 text-danger"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
     <?php endif ?>
 
     </div>
