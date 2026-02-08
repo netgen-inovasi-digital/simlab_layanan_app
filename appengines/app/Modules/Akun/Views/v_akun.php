@@ -34,14 +34,50 @@ table = createTable({
 });
 addAction();
 
+// === Password Validation Function ===
+function validatePassword() {
+    const pwd = document.querySelector('[name="user_password"]');
+    const errorMsg = document.getElementById('passwordError');
+    const id = document.querySelector('[name="id"]').value;
+    const passwordValue = pwd.value.trim();
+
+    // Clear previous error
+    errorMsg.style.display = 'none';
+    errorMsg.textContent = '';
+
+    // If adding new data, password is required
+    if (id == "") {
+        if (passwordValue === "") {
+            errorMsg.textContent = 'Password wajib diisi.';
+            errorMsg.style.display = 'block';
+            return false;
+        }
+    }
+
+    // If password is filled (either add or edit), check minimum length
+    if (passwordValue !== "" && passwordValue.length < 6) {
+        errorMsg.textContent = 'Password minimal harus 6 karakter.';
+        errorMsg.style.display = 'block';
+        return false;
+    }
+
+    return true;
+}
+
 // === Modal form logic ===
 var modal = document.getElementById('modalForm');
 modal.addEventListener('shown.bs.modal', function (e) {
     const pwd = document.querySelector('[name="user_password"]');
     pwd.value = "";
     const id = document.querySelector('[name="id"]').value;
-    if (id == "") pwd.setAttribute('required', true);
-    else pwd.removeAttribute('required');
+    
+    // Clear password error on modal open
+    const errorMsg = document.getElementById('passwordError');
+    errorMsg.style.display = 'none';
+    errorMsg.textContent = '';
+
+    // Add real-time validation listener
+    pwd.addEventListener('input', validatePassword);
 
     // === Tambahan: tampilkan input instansi jika NON ULM, dan toggle bukti jika ULM ===
     const identitySelect = modal.querySelector('[name="user_identity"]');
@@ -163,22 +199,6 @@ function editItem(event) {
         });
 }
 
-// === Toggle Password Visibility ===
-document.getElementById('togglePassword').addEventListener('click', function() {
-    const passwordInput = document.getElementById('passwordInput');
-    const passwordIcon = document.getElementById('passwordIcon');
-    
-    if (passwordInput.type === 'password') {
-        passwordInput.type = 'text';
-        passwordIcon.classList.remove('bi-eye-slash');
-        passwordIcon.classList.add('bi-eye');
-    } else {
-        passwordInput.type = 'password';
-        passwordIcon.classList.remove('bi-eye');
-        passwordIcon.classList.add('bi-eye-slash');
-    }
-});
-
 // === Hapus Data: langsung inline tanpa function deleteItem ===
 document.addEventListener("click", function(e) {
     if (e.target.classList.contains("btn-delete")) {
@@ -217,6 +237,22 @@ document.addEventListener("click", function(e) {
                 hideLoading();
             });
         }
+    }
+});
+
+// === Toggle Password Visibility ===
+document.getElementById('togglePassword').addEventListener('click', function() {
+    const passwordInput = document.getElementById('passwordInput');
+    const passwordIcon = document.getElementById('passwordIcon');
+    
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        passwordIcon.classList.remove('bi-eye-slash');
+        passwordIcon.classList.add('bi-eye');
+    } else {
+        passwordInput.type = 'password';
+        passwordIcon.classList.remove('bi-eye');
+        passwordIcon.classList.add('bi-eye-slash');
     }
 });
 </script>
@@ -269,6 +305,9 @@ document.addEventListener("click", function(e) {
                             <span class="input-group-text" id="togglePassword" style="background: white; cursor: pointer; border-left: none;">
                                 <i class="bi bi-eye-slash" id="passwordIcon"></i>
                             </span>
+                        </div>
+                        <div class="mt-1">
+                            <span id="passwordError" class="text-danger small" style="display: none;"></span>
                         </div>
                     </div>
                 </div>
@@ -340,7 +379,7 @@ document.addEventListener("click", function(e) {
                 <button class="btn btn-light" type="button" data-bs-dismiss="modal">
                     <i class="bi bi-x-circle"></i> Batal
                 </button>
-                <button class="btn btn-success" type="submit">
+                <button class="btn btn-success" type="submit" onclick="return validatePassword();">
                     <i class="bi bi-check2-circle"></i> Simpan
                 </button>
             </div>
