@@ -34,6 +34,23 @@ table = createTable({
 });
 addAction();
 
+// === Reset Form untuk Mode Tambah ===
+document.getElementById('add').addEventListener('click', function() {
+    document.querySelector('[name="id"]').value = '';
+    document.querySelector('[name="user_name"]').value = '';
+    document.querySelector('[name="user_email"]').value = '';
+    document.querySelector('[name="user_telpon"]').value = '';
+    document.querySelector('[name="user_password"]').value = '';
+    document.querySelector('[name="user_identity"]').value = '';
+    document.querySelector('[name="user_instansi"]').value = '';
+    document.querySelector('input[type="file"]').value = '';
+    document.getElementById("verifikasi1").checked = false;
+    document.getElementById("verifikasi0").checked = false;
+    document.getElementById("status1").checked = true;
+    document.getElementById("status0").checked = false;
+    document.getElementById('buktiInfo').innerHTML = '';
+});
+
 // === Password Validation Function ===
 function validatePassword() {
     const pwd = document.querySelector('[name="user_password"]');
@@ -70,17 +87,23 @@ modal.addEventListener('shown.bs.modal', function (e) {
     const pwd = document.querySelector('[name="user_password"]');
     pwd.value = "";
     const id = document.querySelector('[name="id"]').value;
+    const identitySelect = modal.querySelector('[name="user_identity"]');
     
     // Clear password error on modal open
     const errorMsg = document.getElementById('passwordError');
     errorMsg.style.display = 'none';
     errorMsg.textContent = '';
 
+    // Reset status identitas dan clear bukti info untuk mode Tambah
+    if (id === "") {
+        identitySelect.value = '';
+        document.getElementById('buktiInfo').innerHTML = '';
+    }
+
     // Add real-time validation listener
     pwd.addEventListener('input', validatePassword);
 
     // === Tambahan: tampilkan input instansi jika NON ULM, dan toggle bukti jika ULM ===
-    const identitySelect = modal.querySelector('[name="user_identity"]');
     const instansiField = modal.querySelector('#instansiField');
     const instansiInput = instansiField.querySelector('input');
     const buktiWrapper = modal.querySelector('#buktiWrapper');
@@ -126,6 +149,17 @@ function editItem(event) {
     fetch("<?php echo site_url('akun/edit/') ?>" + id)
         .then(res => res.json())
         .then(data => {
+            // Reset form terlebih dahulu
+            document.querySelector('[name="user_name"]').value = '';
+            document.querySelector('[name="user_email"]').value = '';
+            document.querySelector('[name="user_telpon"]').value = '';
+            document.querySelector('[name="user_password"]').value = '';
+            document.querySelector('[name="user_identity"]').value = '';
+            document.querySelector('[name="user_instansi"]').value = '';
+            document.querySelector('input[type="file"]').value = '';
+            document.getElementById('buktiInfo').innerHTML = '';
+            
+            // Kemudian isikan dengan data dari server
             document.querySelector('[name="id"]').value = data.id;
             document.querySelector('[name="user_name"]').value = data.user_name;
             document.querySelector('[name="user_email"]').value = data.user_email;
