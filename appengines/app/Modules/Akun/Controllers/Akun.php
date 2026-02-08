@@ -77,20 +77,39 @@ class Akun extends BaseController
         $username = $this->request->getPost('user_name');
         $email    = $this->request->getPost('user_email');
         $telpon   = $this->request->getPost('user_telpon');
+        $newIdentity = $this->request->getPost('user_identity');
 
         $model = new MyModel($this->table);
+
+        // Ambil data lama jika ini UPDATE
+        $oldData = null;
+        if (!empty($idenc)) {
+            $id = $this->encrypter->decrypt(hex2bin($idenc));
+            $oldData = $model->getDataById($this->id, $id);
+        }
 
         $data = [
             'user_name'     => $username,
             'user_email'    => $email,
             'user_telpon'   => $telpon, 
             'status_user'   => $this->request->getPost('status_user'),
-            'user_identity' => $this->request->getPost('user_identity'),
+            'user_identity' => $newIdentity,
             'role_id'       => 2,
         ];
 
+        // Cek perubahan identity dari ULM ke NON ULM → hapus file bukti lama
+        if ($oldData && $oldData->user_identity === 'ULM' && $newIdentity === 'NON ULM') {
+            if (!empty($oldData->bukti)) {
+                $oldPath = FCPATH . 'uploads/bukti/' . $oldData->bukti;
+                if (is_file($oldPath) && strpos(realpath($oldPath), realpath(FCPATH . 'uploads/bukti')) === 0) {
+                    @unlink($oldPath);
+                }
+            }
+            $data['bukti'] = null;
+        }
+
         // simpan instansi hanya jika NON ULM
-        if ($this->request->getPost('user_identity') === 'NON ULM') {
+        if ($newIdentity === 'NON ULM') {
             $data['user_instansi'] = $this->request->getPost('user_instansi');
         } else {
             $data['user_instansi'] = null;
@@ -102,9 +121,9 @@ class Akun extends BaseController
             $data['user_password'] = password_hash($password, PASSWORD_DEFAULT);
         }
         
-        // Upload Bukti File 
+        // Upload Bukti File - hanya untuk ULM
         $file = $this->request->getFile('bukti_file');
-        if ($file && $file->isValid() && !$file->hasMoved()) {
+        if ($newIdentity === 'ULM' && $file && $file->isValid() && !$file->hasMoved()) {
             // Jika ini UPDATE, hapus file lama sebelum upload baru
             if (!empty($idenc)) {
                 $id      = $this->encrypter->decrypt(hex2bin($idenc));
@@ -112,7 +131,7 @@ class Akun extends BaseController
                 if (!empty($current->bukti)) {
                     $oldPath = FCPATH . 'uploads/bukti/' . $current->bukti;
                     if (is_file($oldPath) && strpos(realpath($oldPath), realpath(FCPATH . 'uploads/bukti')) === 0) {
-                        unlink($oldPath);
+                        @unlink($oldPath);
                     }
                 }
             }
@@ -230,8 +249,8 @@ class Akun extends BaseController
             return $result;
         }
 
-        $allowedExt  = ['jpg', 'jpeg', 'png'];
-        $allowedMime = ['image/jpeg', 'image/png'];
+        $allowedExt  = ['jpg', 'jpeg', 'png', 'pdf'];
+        $allowedMime = ['image/jpeg', 'image/png', 'application/pdf'];
 
         $ext  = strtolower($file->getClientExtension());
 
@@ -249,10 +268,11 @@ class Akun extends BaseController
             return ['status' => false, 'msg' => 'File sementara tidak ditemukan', 'filename' => ''];
         }
         if (!in_array($ext, $allowedExt) || !in_array($detectedMime, $allowedMime)) {
-            return ['status' => false, 'msg' => 'Format gambar tidak diperbolehkan', 'filename' => ''];
+            return ['status' => false, 'msg' => 'Format file tidak diperbolehkan (hanya JPG, PNG, PDF)', 'filename' => ''];
         }
 
-        if (@getimagesize($tmpName) === false) {
+        // Validasi image jika bukan PDF
+        if ($ext !== 'pdf' && @getimagesize($tmpName) === false) {
             return ['status' => false, 'msg' => 'File bukan gambar asli', 'filename' => ''];
         }
 
