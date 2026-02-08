@@ -41,37 +41,41 @@ class Dashboard extends BaseController
 			$greeting = 'Selamat malam';
 		}
 
-		$modelVisitor = new MyModel('visitor');
-		// ---------- Hari Ini ----------
-		$today = date('Y-m-d');
-		$whereToday = ['DATE(visitDate)' => $today];
-		$totalViewsToday = $modelVisitor->getCountAllbyManyWhere($whereToday);
-		// ---------- Bulan Ini ----------
-		$thisMonth = date('m');
-		$thisYear = date('Y');
-		$whereMonth = ['MONTH(visitDate)' => $thisMonth, 'YEAR(visitDate)' => $thisYear];
-		$totalViewsThisMonth = $modelVisitor->getCountAllbyManyWhere($whereMonth);
-		// ---------- Sepanjang Masa ----------
-		$totalViewsAllTime = $modelVisitor->getCountAllbyManyWhere([]);
+		$modelLayananDetil = new MyModel('t_layanan_detil');
+		// ---------- Layanan Masuk (Kode Jenis A) ----------
+		$totalLayananMasuk = $modelLayananDetil->getCountAll('kode_jenis', 'A');
+		// ---------- LHU yang Telah Diterbitkan ----------
+		$modelFilesLHU = new MyModel('t_files_lhu');
+		$totalLHUDiterbitkan = $modelFilesLHU->getCountAllbyManyWhere([]);
+		// ---------- Invoice yang Dikeluarkan ----------
+		$modelPembayaran = new MyModel('t_pembayaran');
+		$totalInvoice = $modelPembayaran->getCountAllbyManyWhere([]);
 
 
-		$modelPengumuman = new MyModel('pengumuman');
-		$dataPengumuman = $modelPengumuman->getCountAll('status', 'tampil');
-		$modelPosts = new MyModel('posts');
-		$dataPosts = $modelPosts->getCountAll('status', 'publish');
-		$modelPages = new MyModel('pages');
-		$dataPages = $modelPages->getCountAll('status', 'publish');
+		// ---------- Jumlah Layanan Pengujian Sampel ----------
+		$modelLayananPengujian = new MyModel('r_layanan_pengujian');
+		$totalLayananPengujian = $modelLayananPengujian->getCountAllbyManyWhere([]);
+		
+		// ---------- Jumlah Pelanggan Terdaftar ----------
+		$modelAccountUsers = new MyModel('account_users');
+		$totalPelanggan = $modelAccountUsers->getCountAllbyManyWhere([]);
+		
+		// ---------- Jumlah Pengelola (Manajer Teknis & Penyelia) ----------
+		$modelAccount = new MyModel('account');
+		$countRole4 = $modelAccount->getCountAllbyManyWhere(['role_id' => 4]);
+		$countRole6 = $modelAccount->getCountAllbyManyWhere(['role_id' => 6]);
+		$totalPengelola = $countRole4 + $countRole6;
 
 		return [
-			// ===== statistik hari ini ini ===== //
-			'viewsToday' => formatAngkaSingkat($totalViewsToday),
-			// ===== statistik bulan ini ===== //
-			'viewsThisMonth' => formatAngkaSingkat($totalViewsThisMonth),
-			// ===== statistik sepanjang masa ===== //
-			'viewsAllTime' => formatAngkaSingkat($totalViewsAllTime),
-			'totalPengumuman' => $dataPengumuman,
-			'totalPosts' => $dataPosts,
-			'totalPages' => $dataPages,
+			// ===== Layanan Masuk (Kode Jenis A) ===== //
+			'totalLayananMasuk' => formatAngkaSingkat($totalLayananMasuk),
+			// ===== LHU yang Telah Diterbitkan ===== //
+			'totalLHUDiterbitkan' => formatAngkaSingkat($totalLHUDiterbitkan),
+			// ===== Invoice yang Dikeluarkan ===== //
+			'totalInvoice' => formatAngkaSingkat($totalInvoice),
+			'totalPengelola' => $totalPengelola,
+			'totalLayananPengujian' => $totalLayananPengujian,
+			'totalPelanggan' => $totalPelanggan,
 			'greeting' => $greeting,
 			'nama_user' => $nama,
 			'role_id' => $role_id,

@@ -25,11 +25,11 @@
             <div class=" col-lg-4">
                 <div class="board">
                     <div class="board-left">
-                        <h6>Pengunjung (Hari Ini)</h6>
-                        <div class="value"><?= $viewsToday ?? 0 ?></div>
+                        <h6>Total layanan masuk</h6>
+                        <div class="value"><?= $totalLayananMasuk ?? 0 ?></div>
                     </div>
                     <div class="board-right">
-                        <i class="bi bi-eye fs-2 text-primary"></i>
+                        <i class="bi bi-clipboard-check fs-2 text-primary"></i>
                     </div>
                 </div>
             </div>
@@ -38,11 +38,11 @@
             <div class=" col-lg-4">
                 <div class="board">
                     <div class="board-left">
-                        <h6>Pengunjung (Bulan Ini)</h6>
-                        <div class="value"><?= $viewsThisMonth ?? 0 ?></div>
+                        <h6>Total LHU diterbitkan</h6>
+                        <div class="value"><?= $totalLHUDiterbitkan ?? 0 ?></div>
                     </div>
                     <div class="board-right">
-                        <i class="bi bi-eye fs-2 text-primary"></i>
+                        <i class="bi bi-file-earmark-check fs-2 text-primary"></i>
                     </div>
                 </div>
             </div>
@@ -51,11 +51,11 @@
             <div class=" col-lg-4">
                 <div class="board">
                     <div class="board-left">
-                        <h6>Pengunjung (Total)</h6>
-                        <div class="value"><?= $viewsAllTime ?? 0 ?></div>
+                        <h6>Total Invoice</h6>
+                        <div class="value"><?= $totalInvoice ?? 0 ?></div>
                     </div>
                     <div class="board-right">
-                        <i class="bi bi-eye fs-2 text-primary"></i>
+                        <i class="bi bi-receipt fs-2 text-primary"></i>
                     </div>
                 </div>
             </div>
@@ -66,11 +66,11 @@
             <div class=" col-lg-4 me">
                 <div class="board">
                     <div class="board-left">
-                        <h6>Total Berita</h6>
-                        <div class="value"><?= $totalPosts ?? 0 ?></div>
+                        <h6>Total Layanan Pengujian Sampel</h6>
+                        <div class="value"><?= $totalLayananPengujian ?? 0 ?></div>
                     </div>
                     <div class="board-right">
-                        <i class="bi bi-newspaper fs-2 text-primary"></i>
+                        <i class="bi bi-flask fs-2 text-primary"></i>
                     </div>
                 </div>
             </div>
@@ -79,12 +79,12 @@
             <div class=" col-lg-4 me">
                 <div class="board">
                     <div class="board-left">
-                        <h6>Total Halaman</h6>
-                        <div class="value"><?= $totalPages ?? 0 ?></div>
+                        <h6>Total Pelanggan Terdaftar</h6>
+                        <div class="value"><?= $totalPelanggan ?? 0 ?></div>
                     </div>
                     <div class="board-right">
                         <!-- User Icon -->
-                        <i class="bi bi-file-earmark-text fs-2 text-primary"></i>
+                        <i class="bi bi-people fs-2 text-primary"></i>
 
                     </div>
                 </div>
@@ -94,12 +94,12 @@
             <div class=" col-lg-4">
                 <div class="board">
                     <div class="board-left">
-                        <h6>Total Pengumuman</h6>
-                        <div class="value"><?= $totalPengumuman ?? 0 ?></div>
+                        <h6>Total Pengelola Layanan Sampel</h6>
+                        <div class="value"><?= $totalPengelola ?? 0 ?></div>
                     </div>
                     <div class="board-right">
                         <!-- Chart Icon -->
-                        <i class="bi bi-megaphone fs-2 text-primary"></i>
+                        <i class="bi bi-person-gear fs-2 text-primary"></i>
                     </div>
                 </div>
             </div>
