@@ -369,6 +369,10 @@ class Pelayanan extends BaseController
         ]);
       }
 
+      // Ambil surat pengantar dari t_layanan (kolom: surat_pertanyaan)
+      $layanan = $this->pelayananModel->getLayananByKode($kode_layanan);
+      $suratPengantar = $layanan->surat_pertanyaan ?? null;
+
       return $this->response->setJSON([
         'success' => true,
         'data' => [
@@ -377,7 +381,9 @@ class Pelayanan extends BaseController
           'sifat' => $sampleData->sifat ?? '-',
           'sisa' => $sampleData->sisa ?? '-',
           'deskripsi' => $sampleData->deskripsi ?? '-',
-          'keterangan_khusus' => $sampleData->keterangan_khusus ?? '-'
+          'keterangan_khusus' => $sampleData->keterangan_khusus ?? '-',
+          'surat_pengantar' => $suratPengantar,
+          'surat_pengantar_url' => $suratPengantar ? base_url('uploads/surat_pengantar/' . $suratPengantar) : null,
         ]
       ]);
     } catch (\Exception $e) {
@@ -622,5 +628,142 @@ class Pelayanan extends BaseController
       'xname' => csrf_token(),
       'xhash' => csrf_hash()
     ]);
+  }
+
+  /**
+   * Upload / Re-upload surat pengantar dari halaman progress & detail layanan.
+   */
+  public function uploadSuratPengantar()
+  {
+    $session = session();
+    $userId = (int) ($session->get('id_user') ?? 0);
+
+    if ($userId <= 0) {
+      return $this->response->setJSON([
+        'res' => false,
+        'msg' => 'Sesi Anda telah habis. Silakan login kembali.',
+        'xname' => csrf_token(),
+        'xhash' => csrf_hash()
+      ]);
+    }
+
+    $kode_layanan = (int) $this->request->getPost('kode_layanan');
+    if ($kode_layanan <= 0) {
+      return $this->response->setJSON([
+        'res' => false,
+        'msg' => 'Kode layanan tidak valid.',
+        'xname' => csrf_token(),
+        'xhash' => csrf_hash()
+      ]);
+    }
+
+    // Pastikan layanan milik user ini
+    $layanan = $this->pelayananModel->getLayananByKode($kode_layanan);
+    if (!$layanan || (int) ($layanan->user_id ?? 0) !== $userId) {
+      return $this->response->setJSON([
+        'res' => false,
+        'msg' => 'Anda tidak memiliki akses ke layanan ini.',
+        'xname' => csrf_token(),
+        'xhash' => csrf_hash()
+      ]);
+    }
+
+    try {
+      $fileSurat = $this->request->getFile('surat_pengantar');
+      if (!$fileSurat || !$fileSurat->isValid() || $fileSurat->hasMoved()) {
+        return $this->response->setJSON([
+          'res' => false,
+          'msg' => 'File surat pengantar tidak valid atau belum dipilih.',
+          'xname' => csrf_token(),
+          'xhash' => csrf_hash()
+        ]);
+      }
+
+      // Validasi tipe file
+      $allowedMimes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+      if (!in_array($fileSurat->getMimeType(), $allowedMimes)) {
+        return $this->response->setJSON([
+          'res' => false,
+          'msg' => 'Tipe file tidak diizinkan. Hanya PDF, JPG, PNG.',
+          'xname' => csrf_token(),
+          'xhash' => csrf_hash()
+        ]);
+      }
+
+      // Validasi ukuran (max 5MB)
+      if ($fileSurat->getSize() > 5 * 1024 * 1024) {
+        return $this->response->setJSON([
+          'res' => false,
+          'msg' => 'Ukuran file terlalu besar. Maksimal 5MB.',
+          'xname' => csrf_token(),
+          'xhash' => csrf_hash()
+        ]);
+      }
+
+      // Hapus file lama jika ada
+      $oldFile = $layanan->surat_pertanyaan ?? null;
+      if ($oldFile) {
+        $oldPath = FCPATH . 'uploads/surat_pengantar/' . $oldFile;
+        if (file_exists($oldPath)) {
+          @unlink($oldPath);
+        }
+      }
+
+      // Generate nama file unik
+      $ext = strtolower($fileSurat->getClientExtension());
+      try {
+        $newFileName = time() . bin2hex(random_bytes(5)) . '.' . $ext;
+      } catch (\Exception $e) {
+        $newFileName = time() . bin2hex(openssl_random_pseudo_bytes(5)) . '.' . $ext;
+      }
+
+      // Upload path
+      $uploadPath = FCPATH . 'uploads/surat_pengantar/';
+      if (!is_dir($uploadPath)) {
+        mkdir($uploadPath, 0755, true);
+      }
+
+      // Pindahkan file
+      $tmpPath = $fileSurat->getTempName();
+      $destPath = $uploadPath . $newFileName;
+      if (!rename($tmpPath, $destPath)) {
+        if (!copy($tmpPath, $destPath)) {
+          return $this->response->setJSON([
+            'res' => false,
+            'msg' => 'Gagal memindahkan file surat pengantar.',
+            'xname' => csrf_token(),
+            'xhash' => csrf_hash()
+          ]);
+        }
+        @unlink($tmpPath);
+      }
+
+      // Update kolom surat_pertanyaan di t_layanan
+      if (!$this->pelayananModel->updateSuratPengantar($kode_layanan, $newFileName)) {
+        return $this->response->setJSON([
+          'res' => false,
+          'msg' => 'Gagal menyimpan data surat pengantar.',
+          'xname' => csrf_token(),
+          'xhash' => csrf_hash()
+        ]);
+      }
+
+      return $this->response->setJSON([
+        'res' => true,
+        'msg' => 'Surat pengantar berhasil diunggah!',
+        'fileName' => $newFileName,
+        'fileUrl' => base_url('uploads/surat_pengantar/' . $newFileName),
+        'xname' => csrf_token(),
+        'xhash' => csrf_hash()
+      ]);
+    } catch (\Exception $e) {
+      log_message('error', 'Upload surat pengantar error: ' . $e->getMessage());
+      return $this->response->setJSON([
+        'res' => false,
+        'msg' => 'Terjadi kesalahan saat mengunggah file.',
+        'xname' => csrf_token(),
+        'xhash' => csrf_hash()
+      ]);
+    }
   }
 }

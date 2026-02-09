@@ -337,6 +337,86 @@
             </div>
           </div>
         </div>
+
+        <!-- Bukti Surat Pengantar Section (terpisah dari identitas sampel) -->
+        <div class="detail-table mt-4" id="suratPengantarTrackSection" style="display: none;">
+          <h6 class="mb-3">
+            <i class="bi bi-file-earmark-arrow-up"></i> Bukti Surat Pengantar
+          </h6>
+
+          <!-- State: Sudah diunggah -->
+          <div id="suratTrackSudahUpload" style="display: none;">
+            <table class="table table-bordered mb-0">
+              <tbody>
+                <tr>
+                  <td class="fw-semibold" style="width:35%">File Surat Pengantar <span class="text-danger">*</span></td>
+                  <td>
+                    <span id="suratPengantarTrackName">-</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="fw-semibold">Format</td>
+                  <td>PDF / JPG / PNG</td>
+                </tr>
+                <tr>
+                  <td class="fw-semibold">Ukuran Maks</td>
+                  <td>5 MB</td>
+                </tr>
+                <tr>
+                  <td class="fw-semibold">Status</td>
+                  <td><span class="text-success"><i class="bi bi-check-circle-fill"></i> Sudah diunggah</span></td>
+                </tr>
+                <tr>
+                  <td class="fw-semibold">Aksi</td>
+                  <td>
+                    <a href="#" id="btnLihatSuratTrack" class="btn btn-sm btn-outline-primary" target="_blank" rel="noopener">
+                      <i class="bi bi-eye"></i> Lihat
+                    </a>
+                    <button type="button" class="btn btn-sm btn-outline-warning ms-1" id="btnReuploadSuratToggle">
+                      <i class="bi bi-arrow-repeat"></i> Upload Ulang
+                    </button>
+                    <!-- Hidden file input for reupload -->
+                    <input type="file" class="d-none" id="fileSuratPengantarTrack" name="fileSuratPengantarTrack"
+                      accept=".pdf,.jpg,.jpeg,.png">
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- State: Belum diunggah -->
+          <div id="suratTrackBelumUpload" style="display: none;">
+            <table class="table table-bordered mb-0">
+              <tbody>
+                <tr>
+                  <td class="fw-semibold" style="width:35%">File Surat Pengantar <span class="text-danger">*</span></td>
+                  <td>
+                    <input type="file" class="form-control" id="fileSuratPengantarTrackNew" name="fileSuratPengantarTrackNew"
+                      accept=".pdf,.jpg,.jpeg,.png">
+                  </td>
+                </tr>
+                <tr>
+                  <td class="fw-semibold">Format</td>
+                  <td>PDF / JPG / PNG</td>
+                </tr>
+                <tr>
+                  <td class="fw-semibold">Ukuran Maks</td>
+                  <td>5 MB</td>
+                </tr>
+                <tr>
+                  <td class="fw-semibold">Status</td>
+                  <td><span class="text-muted"><i class="bi bi-x-circle"></i> Belum diunggah</span></td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="mt-2 text-end">
+              <button type="button" class="btn btn-sm btn-secondary ms-1" id="btnBatalReupload" style="display: none;">
+                <i class="bi bi-x-circle"></i> Batal
+              </button>
+            </div>
+          </div>
+
+        </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
@@ -427,11 +507,16 @@
       });
     }
 
+    // Simpan kode_layanan di variabel global agar bisa diakses fungsi upload
+    window._currentKodeLayan = kode_layanan;
+
     // Fetch sample identity data
     fetch(`<?= site_url('pelayanan/getSampleIdentity/') ?>${kode_layanan}`)
       .then(response => response.json())
       .then(data => {
         const sampleSection = document.getElementById('sampleIdentitySection');
+        const suratSection = document.getElementById('suratPengantarTrackSection');
+
         if (data.success && data.data) {
           // Populate sample identity fields
           document.getElementById('sampleJenis').textContent = data.data.jenis || '-';
@@ -441,13 +526,28 @@
           document.getElementById('sampleDeskripsi').textContent = data.data.deskripsi || '-';
           document.getElementById('sampleKeteranganKhusus').textContent = data.data.keterangan_khusus || '-';
           sampleSection.style.display = 'block';
+
+          // Surat Pengantar - section terpisah
+          resetSuratTrackUI();
+          if (data.data.surat_pengantar && data.data.surat_pengantar_url) {
+            document.getElementById('suratPengantarTrackName').textContent = data.data.surat_pengantar;
+            document.getElementById('btnLihatSuratTrack').href = data.data.surat_pengantar_url;
+            document.getElementById('suratTrackSudahUpload').style.display = 'block';
+            document.getElementById('suratTrackBelumUpload').style.display = 'none';
+          } else {
+            document.getElementById('suratTrackSudahUpload').style.display = 'none';
+            document.getElementById('suratTrackBelumUpload').style.display = 'block';
+          }
+          if (suratSection) suratSection.style.display = 'block';
         } else {
           sampleSection.style.display = 'none';
+          if (suratSection) suratSection.style.display = 'none';
         }
       })
       .catch(error => {
         console.error('Error fetching sample identity:', error);
         document.getElementById('sampleIdentitySection').style.display = 'none';
+        document.getElementById('suratPengantarTrackSection').style.display = 'none';
       });
 
     // Fetch tracking data (including t_log_sampel timestamps) and populate date labels above steps
@@ -477,4 +577,144 @@
     const trackingModal = new bootstrap.Modal(document.getElementById('modalTracking'));
     trackingModal.show();
   }
+
+  /* === Surat Pengantar Track: Reset UI === */
+  function resetSuratTrackUI() {
+    const fileInput = document.getElementById('fileSuratPengantarTrack');
+    const fileInputNew = document.getElementById('fileSuratPengantarTrackNew');
+    if (fileInput) fileInput.value = '';
+    if (fileInputNew) fileInputNew.value = '';
+    document.getElementById('btnBatalReupload').style.display = 'none';
+  }
+
+  /* === Surat Pengantar Track: upload, reupload === */
+  (function initSuratPengantarTrack() {
+    const fileInputReupload = document.getElementById('fileSuratPengantarTrack');
+    const fileInputNew = document.getElementById('fileSuratPengantarTrackNew');
+    const belumUpload = document.getElementById('suratTrackBelumUpload');
+    const sudahUpload = document.getElementById('suratTrackSudahUpload');
+    const btnReuploadToggle = document.getElementById('btnReuploadSuratToggle');
+    const btnBatalReupload = document.getElementById('btnBatalReupload');
+
+    // Klik "Upload Ulang" -> langsung buka file picker
+    if (btnReuploadToggle && fileInputReupload) {
+      btnReuploadToggle.addEventListener('click', function () {
+        fileInputReupload.click();
+      });
+    }
+
+    // Setelah pilih file dari reupload -> langsung upload
+    if (fileInputReupload) {
+      fileInputReupload.addEventListener('change', function () {
+        if (this.files.length > 0) {
+          const file = this.files[0];
+          if (!validateSuratFile(file)) {
+            this.value = '';
+            return;
+          }
+          doUploadSuratTrack(file);
+        }
+      });
+    }
+
+    // File input untuk state "Belum diunggah" -> langsung upload setelah pilih file
+    if (fileInputNew) {
+      fileInputNew.addEventListener('change', function () {
+        if (this.files.length > 0) {
+          const file = this.files[0];
+          if (!validateSuratFile(file)) {
+            this.value = '';
+            return;
+          }
+          doUploadSuratTrack(file);
+        }
+      });
+    }
+
+    // Batal reupload -> kembali ke state "Sudah diunggah"
+    if (btnBatalReupload) {
+      btnBatalReupload.addEventListener('click', function () {
+        if (belumUpload) belumUpload.style.display = 'none';
+        if (sudahUpload) sudahUpload.style.display = 'block';
+        if (fileInputReupload) fileInputReupload.value = '';
+        if (fileInputNew) fileInputNew.value = '';
+        this.style.display = 'none';
+      });
+    }
+
+    function validateSuratFile(file) {
+      const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+      if (!allowedTypes.includes(file.type)) {
+        sayAlert('errorModal', 'Validasi', 'Format file tidak diizinkan. Hanya PDF, JPG, dan PNG.', 'warning');
+        return false;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        sayAlert('errorModal', 'Validasi', 'Ukuran file terlalu besar. Maksimal 5 MB.', 'warning');
+        return false;
+      }
+      return true;
+    }
+
+    function doUploadSuratTrack(file) {
+      const kodeLayan = window._currentKodeLayan;
+      if (!kodeLayan) {
+        sayAlert('errorModal', 'Error', 'Kode layanan tidak ditemukan.', 'error');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('surat_pengantar', file);
+      formData.append('kode_layanan', kodeLayan);
+
+      // Ambil CSRF token dari input hidden yang ada di halaman (selalu up-to-date)
+      const csrfInput = document.querySelector('input[name="<?= csrf_token() ?>"]');
+      if (csrfInput) {
+        formData.append('<?= csrf_token() ?>', csrfInput.value);
+      } else {
+        formData.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+      }
+
+      // Disable button
+      if (btnReuploadToggle) btnReuploadToggle.disabled = true;
+
+      fetch('<?= site_url('pelayanan/uploadSuratPengantar') ?>', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      })
+        .then(res => res.json())
+        .then(result => {
+          // Update CSRF token di semua input hidden
+          if (result.xname && result.xhash) {
+            document.querySelectorAll('[name="' + result.xname + '"]').forEach(input => input.value = result.xhash);
+          }
+
+          if (result.res) {
+            sayAlert('errorModal', 'Berhasil', result.msg || 'Surat pengantar berhasil diunggah!', 'success');
+
+            // Update UI ke state "Sudah diunggah"
+            document.getElementById('suratPengantarTrackName').textContent = result.fileName || file.name;
+            if (result.fileUrl) {
+              document.getElementById('btnLihatSuratTrack').href = result.fileUrl;
+            }
+            if (sudahUpload) sudahUpload.style.display = 'block';
+            if (belumUpload) belumUpload.style.display = 'none';
+            if (btnBatalReupload) btnBatalReupload.style.display = 'none';
+            if (fileInputReupload) fileInputReupload.value = '';
+            if (fileInputNew) fileInputNew.value = '';
+          } else {
+            sayAlert('errorModal', 'Gagal', result.msg || 'Gagal mengunggah surat pengantar.', 'error');
+          }
+        })
+        .catch(err => {
+          console.error('Upload error:', err);
+          sayAlert('errorModal', 'Error', 'Terjadi kesalahan koneksi ke server.', 'error');
+        })
+        .finally(() => {
+          if (btnReuploadToggle) btnReuploadToggle.disabled = false;
+        });
+    }
+  })();
 </script>

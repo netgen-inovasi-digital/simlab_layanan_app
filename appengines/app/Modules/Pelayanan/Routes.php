@@ -11,6 +11,7 @@ $routes->group('pelayanan', ['namespace' => 'Modules\Pelayanan\Controllers'], fu
     $subroutes->get('detailList/(:any)', 'Pelayanan::detailList/$1');
     $subroutes->get('getTrackingData/(:any)', 'Pelayanan::getTrackingData/$1');
     $subroutes->get('getSampleIdentity/(:num)', 'Pelayanan::getSampleIdentity/$1');
+    $subroutes->post('uploadSuratPengantar', 'Pelayanan::uploadSuratPengantar');
     $subroutes->get('detail/(:any)', 'Pelayanan::detail/$1');
     $subroutes->get('checkVerified', 'Pelayanan::checkVerified');
     $subroutes->get('lhulist/(:any)', 'Pelayanan::lhuList/$1');
