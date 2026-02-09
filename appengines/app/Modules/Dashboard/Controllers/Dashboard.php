@@ -28,6 +28,7 @@ class Dashboard extends BaseController
 		$session = session();
 		$nama = $session->get('nama');
 		$role_id = $session->get('role_id');
+		$user_id = $session->get('id_user');
 
 		date_default_timezone_set('Asia/Makassar');
 		$hour = date('H');
@@ -84,6 +85,99 @@ class Dashboard extends BaseController
 		// ---------- Jumlah Kaji Ulang ----------
 		$totalKajiUlang = $modelLayanan->getCountAllbyManyWhere(['jumlah_kaji_ulang >' => 0]);
 
+		// ---------- Progress Status Manajer Teknis (role_id = 4) ----------
+		$mtBelumReview = 0;
+		$mtTerkirimKeAdmin = 0;
+		$mtLhusDitolak = 0;
+		$mtLhusBelumTinjau = 0;
+		$mtLhusDiprosesKembali = 0;
+		$mtLhusDisetujui = 0;
+
+		if ($role_id == 4) {
+			// Card 1: Layanan belum direview (detail pending, layanan in review)
+			$modelDetil1 = new MyModel('t_layanan_detil');
+			$belumReviewRows = $modelDetil1->getAllDataWithJoinWhereOrder(
+				[
+					'r_tim' => 'r_tim.uji_kode = t_layanan_detil.uji_kode',
+					't_layanan' => 't_layanan.kode_layanan = t_layanan_detil.kode_layanan'
+				],
+				[
+					'r_tim.user_id' => $user_id,
+					't_layanan_detil.status_layanan' => 0,
+					't_layanan.status_layanan' => 1
+				],
+				[],
+				't_layanan_detil.kode_layanan'
+			);
+			$belumReviewKodes = array_unique(array_map(fn($r) => $r->kode_layanan, $belumReviewRows));
+			$mtBelumReview = count($belumReviewKodes);
+
+			// Card 2: Layanan terkirim ke admin (semua item sudah direview)
+			$modelDetil2 = new MyModel('t_layanan_detil');
+			$allAssignedRows = $modelDetil2->getAllDataWithJoinWhereOrder(
+				[
+					'r_tim' => 'r_tim.uji_kode = t_layanan_detil.uji_kode',
+					't_layanan' => 't_layanan.kode_layanan = t_layanan_detil.kode_layanan'
+				],
+				[
+					'r_tim.user_id' => $user_id,
+					't_layanan.status_layanan >=' => 1,
+					't_layanan.status_layanan !=' => 2,
+				],
+				[],
+				't_layanan_detil.kode_layanan'
+			);
+			$allKodes = array_unique(array_map(fn($r) => $r->kode_layanan, $allAssignedRows));
+			$mtTerkirimKeAdmin = count(array_diff($allKodes, $belumReviewKodes));
+
+			// Cards 3-6: TinjauLHUS logic — derivedStatus per layanan
+			// Fetch all detail records for this user where detail accepted (status_layanan=1) and parent status >= 5
+			$modelDetilLhus = new MyModel('t_layanan_detil');
+			$lhusRows = $modelDetilLhus->getAllDataWithJoinWhereOrder(
+				[
+					'r_tim' => 'r_tim.uji_kode = t_layanan_detil.uji_kode',
+					't_layanan' => 't_layanan.kode_layanan = t_layanan_detil.kode_layanan'
+				],
+				[
+					'r_tim.user_id' => $user_id,
+					't_layanan_detil.status_layanan' => 1,
+					't_layanan.status_layanan >=' => 5,
+				],
+				[],
+				't_layanan_detil.kode_layanan, t_layanan_detil.files'
+			);
+
+			// Group by kode_layanan and compute summary (same as TinjauLHUS getUserStatusSummary)
+			$lhusSummary = [];
+			foreach ($lhusRows as $r) {
+				$kode = $r->kode_layanan;
+				if (!isset($lhusSummary[$kode])) {
+					$lhusSummary[$kode] = ['total' => 0, 'cnt0' => 0, 'cnt1' => 0, 'cnt2' => 0];
+				}
+				$files = (int) ($r->files ?? 0);
+				$lhusSummary[$kode]['total']++;
+				if ($files === 1) $lhusSummary[$kode]['cnt1']++;
+				elseif ($files === 2) $lhusSummary[$kode]['cnt2']++;
+				else $lhusSummary[$kode]['cnt0']++; // files=0 or files=3 → pending
+			}
+
+			// Derive status per layanan (same logic as TinjauLHUS controller derivedStatus)
+			foreach ($lhusSummary as $s) {
+				if ($s['total'] === 0) continue;
+
+				if ($s['cnt0'] > 0) {
+					$mtLhusBelumTinjau++;       // derivedStatus = 5: masih ada pending
+				} elseif ($s['cnt1'] === $s['total']) {
+					$mtLhusDisetujui++;         // derivedStatus = 6: semua diterima
+				} elseif ($s['cnt2'] > 0) {
+					$mtLhusDiprosesKembali++;   // derivedStatus = 2: semua ditinjau, ada ditolak
+				}
+
+				// LHUS ditolak: jumlah item detail yang ditolak (files=2)
+				$mtLhusDitolak += $s['cnt2'];
+			}
+		}
+
 		return [
 			// ===== Layanan Masuk (Kode Jenis A) ===== //
 			'totalLayananMasuk' => formatAngkaSingkat($totalLayananMasuk),
@@ -107,6 +201,13 @@ class Dashboard extends BaseController
 			'greeting' => $greeting,
 			'nama_user' => $nama,
 			'role_id' => $role_id,
+			// ===== Manajer Teknis Dashboard (role_id = 4) ===== //
+			'mtBelumReview' => $mtBelumReview,
+			'mtTerkirimKeAdmin' => $mtTerkirimKeAdmin,
+			'mtLhusDitolak' => $mtLhusDitolak,
+			'mtLhusBelumTinjau' => $mtLhusBelumTinjau,
+			'mtLhusDiprosesKembali' => $mtLhusDiprosesKembali,
+			'mtLhusDisetujui' => $mtLhusDisetujui,
 		];
 	}
 }

@@ -243,4 +243,95 @@
         </div>
     <?php endif ?>
 
+    <?php if ($role_id == 4) : ?>
+        <!-- Progress Status Layanan Manajer Teknis -->
+        <div class="row mt-3">
+            <div class="col-lg-12">
+                <h5 class="mb-3">Progress Status : </h5>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Layanan Belum Direview -->
+            <div class="col-lg-4">
+                <div class="board">
+                    <div class="board-left">
+                        <h6>Layanan Belum Direview</h6>
+                        <div class="value"><?= $mtBelumReview ?? 0 ?></div>
+                    </div>
+                    <div class="board-right">
+                        <i class="bi bi-clock-history fs-2 text-warning"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Layanan Terkirim ke Admin -->
+            <div class="col-lg-4">
+                <div class="board">
+                    <div class="board-left">
+                        <h6>Layanan Terkirim ke Admin</h6>
+                        <div class="value"><?= $mtTerkirimKeAdmin ?? 0 ?></div>
+                    </div>
+                    <div class="board-right">
+                        <i class="bi bi-send-check fs-2 text-info"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LHUS Ditolak -->
+            <div class="col-lg-4">
+                <div class="board">
+                    <div class="board-left">
+                        <h6>LHUS Ditolak</h6>
+                        <div class="value"><?= $mtLhusDitolak ?? 0 ?></div>
+                    </div>
+                    <div class="board-right">
+                        <i class="bi bi-x-circle fs-2 text-danger"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- LHUS Belum Ditinjau -->
+            <div class="col-lg-4">
+                <div class="board">
+                    <div class="board-left">
+                        <h6>LHUS Belum Ditinjau</h6>
+                        <div class="value"><?= $mtLhusBelumTinjau ?? 0 ?></div>
+                    </div>
+                    <div class="board-right">
+                        <i class="bi bi-file-earmark-text fs-2 text-secondary"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LHUS Diproses Kembali -->
+            <div class="col-lg-4">
+                <div class="board">
+                    <div class="board-left">
+                        <h6>LHUS Diproses Kembali</h6>
+                        <div class="value"><?= $mtLhusDiprosesKembali ?? 0 ?></div>
+                    </div>
+                    <div class="board-right">
+                        <i class="bi bi-arrow-repeat fs-2 text-warning"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LHUS Disetujui -->
+            <div class="col-lg-4">
+                <div class="board">
+                    <div class="board-left">
+                        <h6>LHUS Disetujui</h6>
+                        <div class="value"><?= $mtLhusDisetujui ?? 0 ?></div>
+                    </div>
+                    <div class="board-right">
+                        <i class="bi bi-check-circle fs-2 text-success"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    <?php endif ?>
+
     </div>
