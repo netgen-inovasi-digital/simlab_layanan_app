@@ -183,6 +183,70 @@
                 placeholder="Informasi tambahan yang perlu diketahui"></textarea>
             </div>
           </div>
+
+          <!-- Bukti Surat Pengantar -->
+          <hr class="my-4">
+          <h6 class="fw-bold text-primary mb-3">
+            <i class="bi bi-file-earmark-arrow-up"></i> Bukti Surat Pengantar
+          </h6>
+
+          <!-- State: Belum diunggah -->
+          <div id="suratBelumUpload">
+            <table class="table table-bordered mb-0">
+              <tbody>
+                <tr>
+                  <td class="fw-semibold" style="width:35%">File Surat Pengantar <span class="text-danger">*</span></td>
+                  <td>
+                    <input type="file" class="form-control" id="fileSuratPengantar" name="fileSuratPengantar"
+                      accept=".pdf,.jpg,.jpeg,.png">
+                  </td>
+                </tr>
+                <tr>
+                  <td class="fw-semibold">Format</td>
+                  <td>PDF / JPG / PNG</td>
+                </tr>
+                <tr>
+                  <td class="fw-semibold">Ukuran Maks</td>
+                  <td>5 MB</td>
+                </tr>
+                <tr>
+                  <td class="fw-semibold">Status</td>
+                  <td><span class="text-muted"><i class="bi bi-x-circle"></i> Belum diunggah</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- State: Sudah diunggah (preview client-side) -->
+          <div id="suratSudahUpload" style="display: none;">
+            <table class="table table-bordered mb-0">
+              <tbody>
+                <tr>
+                  <td class="fw-semibold" style="width:35%">File Surat Pengantar <span class="text-danger">*</span></td>
+                  <td id="suratFileName">-</td>
+                </tr>
+                <tr>
+                  <td class="fw-semibold">Ukuran File</td>
+                  <td id="suratFileSize">-</td>
+                </tr>
+                <tr>
+                  <td class="fw-semibold">Status</td>
+                  <td><span class="text-success"><i class="bi bi-check-circle-fill"></i> Berhasil diunggah</span></td>
+                </tr>
+                <tr>
+                  <td class="fw-semibold">Aksi</td>
+                  <td>
+                    <button type="button" class="btn btn-sm btn-outline-primary" id="btnLihatSurat">
+                      <i class="bi bi-eye"></i> Lihat
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-danger ms-1" id="btnHapusSurat">
+                      <i class="bi bi-trash"></i> Hapus
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
       <div class="modal-footer">
@@ -921,6 +985,13 @@
       return;
     }
 
+    // Validasi surat pengantar (wajib)
+    const fileSuratPengantar = document.getElementById('fileSuratPengantar');
+    if (!fileSuratPengantar || fileSuratPengantar.files.length === 0) {
+      sayAlert('errorModal', 'Validasi', 'File Surat Pengantar harus diunggah!', 'warning');
+      return;
+    }
+
     // Show loading indicator
     showLoading();
 
@@ -939,6 +1010,9 @@
     const keteranganKhusus = document.getElementById('keteranganKhusus');
     if (deskripsiSampel) formData.append('deskripsiSampel', deskripsiSampel.value.trim());
     if (keteranganKhusus) formData.append('keteranganKhusus', keteranganKhusus.value.trim());
+
+    // Tambahkan file surat pengantar
+    formData.append('surat_pengantar', fileSuratPengantar.files[0]);
 
     fetch('<?= site_url("keranjangadmin/checkout") ?>', {
       method: 'POST',
@@ -970,6 +1044,14 @@
           if (sisaSampel) sisaSampel.value = '';
           if (deskripsiSampel) deskripsiSampel.value = '';
           if (keteranganKhusus) keteranganKhusus.value = '';
+
+          // Reset surat pengantar
+          const fileSuratReset = document.getElementById('fileSuratPengantar');
+          if (fileSuratReset) fileSuratReset.value = '';
+          const belumUploadReset = document.getElementById('suratBelumUpload');
+          const sudahUploadReset = document.getElementById('suratSudahUpload');
+          if (belumUploadReset) belumUploadReset.style.display = 'block';
+          if (sudahUploadReset) sudahUploadReset.style.display = 'none';
 
           const modalForm = bootstrap.Modal.getInstance(document.getElementById('modalForm'));
           if (modalForm) modalForm.hide();
@@ -1029,6 +1111,73 @@
         });
     } else {
       if (typeof applyJenFilter === 'function') applyJenFilter();
+    }
+  })();
+
+  /* === Surat Pengantar: file preview, lihat, hapus === */
+  (function initSuratPengantar() {
+    const fileInput = document.getElementById('fileSuratPengantar');
+    const belumUpload = document.getElementById('suratBelumUpload');
+    const sudahUpload = document.getElementById('suratSudahUpload');
+    const namaEl = document.getElementById('suratFileName');
+    const sizeEl = document.getElementById('suratFileSize');
+    const btnLihat = document.getElementById('btnLihatSurat');
+    const btnHapus = document.getElementById('btnHapusSurat');
+
+    if (fileInput) {
+      fileInput.addEventListener('change', function () {
+        if (this.files.length > 0) {
+          const file = this.files[0];
+
+          // Validasi tipe file
+          const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+          if (!allowedTypes.includes(file.type)) {
+            sayAlert('errorModal', 'Validasi', 'Format file tidak diizinkan. Hanya PDF, JPG, dan PNG.', 'warning');
+            this.value = '';
+            return;
+          }
+
+          // Validasi ukuran (max 5MB)
+          if (file.size > 5 * 1024 * 1024) {
+            sayAlert('errorModal', 'Validasi', 'Ukuran file terlalu besar. Maksimal 5 MB.', 'warning');
+            this.value = '';
+            return;
+          }
+
+          // Tampilkan preview
+          if (namaEl) namaEl.textContent = file.name;
+          if (sizeEl) {
+            const kb = (file.size / 1024).toFixed(0);
+            const mb = (file.size / (1024 * 1024)).toFixed(2);
+            sizeEl.textContent = file.size >= 1024 * 1024 ? mb + ' MB' : kb + ' KB';
+          }
+
+          if (belumUpload) belumUpload.style.display = 'none';
+          if (sudahUpload) sudahUpload.style.display = 'block';
+        } else {
+          if (belumUpload) belumUpload.style.display = 'block';
+          if (sudahUpload) sudahUpload.style.display = 'none';
+        }
+      });
+    }
+
+    // Lihat file (preview client-side)
+    if (btnLihat) {
+      btnLihat.addEventListener('click', function () {
+        if (fileInput && fileInput.files.length > 0) {
+          const url = URL.createObjectURL(fileInput.files[0]);
+          window.open(url, '_blank');
+        }
+      });
+    }
+
+    // Hapus file
+    if (btnHapus) {
+      btnHapus.addEventListener('click', function () {
+        if (fileInput) fileInput.value = '';
+        if (belumUpload) belumUpload.style.display = 'block';
+        if (sudahUpload) sudahUpload.style.display = 'none';
+      });
     }
   })();
 

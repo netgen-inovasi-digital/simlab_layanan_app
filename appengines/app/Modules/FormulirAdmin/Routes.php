@@ -19,6 +19,7 @@ $routes->group('formuliradmin', ['namespace' => 'Modules\FormulirAdmin\Controlle
     $subroutes->post('keranjangSubmit', 'FormulirAdmin::keranjangSubmit', ['as' => 'formuliradmin.keranjangSubmit']);
     $subroutes->post('keranjangDelete/(:any)', 'FormulirAdmin::keranjangDelete/$1', ['as' => 'formuliradmin.keranjangDelete']);
     $subroutes->post('keranjangCheckout', 'FormulirAdmin::keranjangCheckout', ['as' => 'formuliradmin.keranjangCheckout']);
+    $subroutes->post('uploadSuratPengantar', 'FormulirAdmin::uploadSuratPengantar', ['as' => 'formuliradmin.uploadSuratPengantar']);
     $subroutes->post('keranjangSetPelanggan', 'FormulirAdmin::keranjangSetPelanggan', ['as' => 'formuliradmin.keranjangSetPelanggan']);
     $subroutes->get('checkVerified', 'FormulirAdmin::checkVerified', ['as' => 'formuliradmin.checkVerified']);
     $subroutes->get('kategoriList', 'FormulirAdmin::kategoriList', ['as' => 'formuliradmin.kategoriList']);
