@@ -185,6 +185,18 @@ class Dashboard extends BaseController
 		$pyLhusDisetujui = 0;
 		$pyLhusDitolak = 0;
 
+		// ---------- Dashboard Pelanggan (role_id = 2) ----------
+		$plTotalLayananSampel = 0;
+		$plTotalLhuTerbit = 0;
+		$plTotalTransaksi = 0;
+		$plInReviewPetugas = 0;
+		$plPengujian = 0;
+		$plVerifikasiHasilUji = 0;
+		$plPenerbitanLhus = 0;
+		$plVerifikasiLhus = 0;
+		$plLhuDiterbitkan = 0;
+		$plUjiUlang = 0;
+
 		if ($role_id == 6) {
 			// Fetch all detail records for this penyelia (status_layanan=1, parent >= 4)
 			$modelDetilPy = new MyModel('t_layanan_detil');
@@ -258,6 +270,62 @@ class Dashboard extends BaseController
 			}
 		}
 
+		if ($role_id == 2) {
+			// Total: Layanan sampel dipesan (kode_jenis = A, milik user ini)
+			$modelDetilPl = new MyModel('t_layanan_detil');
+			$plTotalLayananSampel = $modelDetilPl->getTotalRowsWithJoin(
+				['t_layanan' => 't_layanan.kode_layanan = t_layanan_detil.kode_layanan'],
+				['t_layanan.user_id' => $user_id, 't_layanan_detil.kode_jenis' => 'A']
+			);
+
+			// Total: LHU terbit (t_files_lhu milik layanan user ini)
+			$modelLhuPl = new MyModel('t_files_lhu');
+			$plTotalLhuTerbit = $modelLhuPl->getTotalRowsWithJoin(
+				['t_layanan' => 't_layanan.kode_layanan = t_files_lhu.kode'],
+				['t_layanan.user_id' => $user_id]
+			);
+
+			// Total: Transaksi (jumlah layanan milik user ini)
+			$modelLayananPl = new MyModel('t_layanan');
+			$plTotalTransaksi = $modelLayananPl->getCountAllbyManyWhere(['user_id' => $user_id]);
+
+			// Progress Status: In Review Petugas (status 1 + 3)
+			$modelLnPl1 = new MyModel('t_layanan');
+			$plInReview1 = $modelLnPl1->getCountAllbyManyWhere(['user_id' => $user_id, 'status_layanan' => 1]);
+			$modelLnPl3 = new MyModel('t_layanan');
+			$plInReview3 = $modelLnPl3->getCountAllbyManyWhere(['user_id' => $user_id, 'status_layanan' => 3]);
+			$plInReviewPetugas = $plInReview1 + $plInReview3;
+
+			// Progress Status: Pengujian dilakukan (status 4)
+			$modelLnPl4 = new MyModel('t_layanan');
+			$plPengujian = $modelLnPl4->getCountAllbyManyWhere(['user_id' => $user_id, 'status_layanan' => 4]);
+
+			// Progress Status: Verifikasi hasil uji (status 5)
+			$modelLnPl5 = new MyModel('t_layanan');
+			$plVerifikasiHasilUji = $modelLnPl5->getCountAllbyManyWhere(['user_id' => $user_id, 'status_layanan' => 5]);
+
+			// Progress Status: Penerbitan LHUS (tidak ada status_layanan tersendiri di Pelayanan)
+			// $plPenerbitanLhus tetap 0
+
+			// Progress Status: Verifikasi LHUS (status 6 + 7, keduanya "Verifikasi LHU" di Pelayanan)
+			$modelLnPl6 = new MyModel('t_layanan');
+			$plVerLhus6 = $modelLnPl6->getCountAllbyManyWhere(['user_id' => $user_id, 'status_layanan' => 6]);
+			$modelLnPl7 = new MyModel('t_layanan');
+			$plVerLhus7 = $modelLnPl7->getCountAllbyManyWhere(['user_id' => $user_id, 'status_layanan' => 7]);
+			$plVerifikasiLhus = $plVerLhus6 + $plVerLhus7;
+
+			// Progress Status: LHU diterbitkan (status 8 + 9)
+			$modelLnPl8 = new MyModel('t_layanan');
+			$plLhu8 = $modelLnPl8->getCountAllbyManyWhere(['user_id' => $user_id, 'status_layanan' => 8]);
+			$modelLnPl9 = new MyModel('t_layanan');
+			$plLhu9 = $modelLnPl9->getCountAllbyManyWhere(['user_id' => $user_id, 'status_layanan' => 9]);
+			$plLhuDiterbitkan = $plLhu8 + $plLhu9;
+
+			// Progress Status: Uji Ulang
+			$modelLnPlKu = new MyModel('t_layanan');
+			$plUjiUlang = $modelLnPlKu->getCountAllbyManyWhere(['user_id' => $user_id, 'jumlah_kaji_ulang >' => 0]);
+		}
+
 		return [
 			// ===== Layanan Masuk (Kode Jenis A) ===== //
 			'totalLayananMasuk' => formatAngkaSingkat($totalLayananMasuk),
@@ -294,6 +362,17 @@ class Dashboard extends BaseController
 			'pyLhusVerifikasi' => $pyLhusVerifikasi,
 			'pyLhusDisetujui' => $pyLhusDisetujui,
 			'pyLhusDitolak' => $pyLhusDitolak,
+			// ===== Pelanggan Dashboard (role_id = 2) ===== //
+			'plTotalLayananSampel' => $plTotalLayananSampel,
+			'plTotalLhuTerbit' => $plTotalLhuTerbit,
+			'plTotalTransaksi' => $plTotalTransaksi,
+			'plInReviewPetugas' => $plInReviewPetugas,
+			'plPengujian' => $plPengujian,
+			'plVerifikasiHasilUji' => $plVerifikasiHasilUji,
+			'plPenerbitanLhus' => $plPenerbitanLhus,
+			'plVerifikasiLhus' => $plVerifikasiLhus,
+			'plLhuDiterbitkan' => $plLhuDiterbitkan,
+			'plUjiUlang' => $plUjiUlang,
 		];
 	}
 }
