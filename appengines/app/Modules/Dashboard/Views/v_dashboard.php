@@ -334,4 +334,82 @@
         </div>
     <?php endif ?>
 
+    <?php if ($role_id == 6) : ?>
+        <!-- Progress Status Layanan Penyelia -->
+        <div class="row mt-3">
+            <div class="col-lg-12">
+                <h5 class="mb-3">Progress Status Layanan Penyelia :</h5>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Sedang Dalam Pengujian -->
+            <div class="col-lg-4">
+                <div class="board">
+                    <div class="board-left">
+                        <h6>Dalam Pengujian</h6>
+                        <div class="value"><?= $pySedangPengujian ?? 0 ?></div>
+                    </div>
+                    <div class="board-right">
+                        <i class="bi bi-flask fs-2 text-info"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LHUS Terunggah -->
+            <div class="col-lg-4">
+                <div class="board">
+                    <div class="board-left">
+                        <h6>LHUS Terunggah</h6>
+                        <div class="value"><?= $pyLhusTerunggah ?? 0 ?></div>
+                    </div>
+                    <div class="board-right">
+                        <i class="bi bi-cloud-upload fs-2 text-primary"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LHUS Diverifikasi Manajer Teknis -->
+            <div class="col-lg-4">
+                <div class="board">
+                    <div class="board-left">
+                        <h6>LHUS Diverifikasi Manajer Teknis</h6>
+                        <div class="value"><?= $pyLhusVerifikasi ?? 0 ?></div>
+                    </div>
+                    <div class="board-right">
+                        <i class="bi bi-hourglass-split fs-2 text-warning"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- LHUS Disetujui -->
+            <div class="col-lg-4">
+                <div class="board">
+                    <div class="board-left">
+                        <h6>LHUS Diterima</h6>
+                        <div class="value"><?= $pyLhusDisetujui ?? 0 ?></div>
+                    </div>
+                    <div class="board-right">
+                        <i class="bi bi-check-circle fs-2 text-success"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LHUS Ditolak -->
+            <div class="col-lg-4">
+                <div class="board">
+                    <div class="board-left">
+                        <h6>LHUS Ditolak</h6>
+                        <div class="value"><?= $pyLhusDitolak ?? 0 ?></div>
+                    </div>
+                    <div class="board-right">
+                        <i class="bi bi-x-circle fs-2 text-danger"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    <?php endif ?>
+
     </div>

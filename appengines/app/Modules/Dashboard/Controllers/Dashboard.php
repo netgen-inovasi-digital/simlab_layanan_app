@@ -178,6 +178,86 @@ class Dashboard extends BaseController
 			}
 		}
 
+		// ---------- Progress Status Penyelia (role_id = 6) ----------
+		$pySedangPengujian = 0;
+		$pyLhusTerunggah = 0;
+		$pyLhusVerifikasi = 0;
+		$pyLhusDisetujui = 0;
+		$pyLhusDitolak = 0;
+
+		if ($role_id == 6) {
+			// Fetch all detail records for this penyelia (status_layanan=1, parent >= 4)
+			$modelDetilPy = new MyModel('t_layanan_detil');
+			$pyRows = $modelDetilPy->getAllDataWithJoinWhereOrder(
+				[
+					'r_tim' => 'r_tim.uji_kode = t_layanan_detil.uji_kode',
+					't_layanan' => 't_layanan.kode_layanan = t_layanan_detil.kode_layanan'
+				],
+				[
+					'r_tim.user_id' => $user_id,
+					't_layanan_detil.status_layanan' => 1,
+					't_layanan.status_layanan >=' => 4,
+					't_layanan.status_layanan !=' => 2,
+				],
+				[],
+				't_layanan_detil.kode_layanan, t_layanan_detil.files, t_layanan.status_layanan AS parent_status'
+			);
+
+			// Group by kode_layanan
+			$pySummary = [];
+			foreach ($pyRows as $r) {
+				$kode = $r->kode_layanan;
+				if (!isset($pySummary[$kode])) {
+					$pySummary[$kode] = [
+						'total' => 0,
+						'files_null' => 0,  // NULL = belum upload
+						'files_0' => 0,     // 0 = terkirim ke manajer
+						'files_1' => 0,     // 1 = diterima/disetujui
+						'files_2' => 0,     // 2 = ditolak
+						'files_3' => 0,     // 3 = terunggah belum kirim
+						'parent_status' => (int) ($r->parent_status ?? 4),
+					];
+				}
+				$pySummary[$kode]['total']++;
+				$files = $r->files;
+				if ($files === null) $pySummary[$kode]['files_null']++;
+				elseif ((int)$files === 0) $pySummary[$kode]['files_0']++;
+				elseif ((int)$files === 1) $pySummary[$kode]['files_1']++;
+				elseif ((int)$files === 2) $pySummary[$kode]['files_2']++;
+				elseif ((int)$files === 3) $pySummary[$kode]['files_3']++;
+			}
+
+			// Derive status per layanan using same priority as formatStatusForPenyelia
+			foreach ($pySummary as $s) {
+				if ($s['total'] === 0) continue;
+
+				// Priority 1: ada files=2 → LHUS ditolak
+				if ($s['files_2'] > 0) {
+					$pyLhusDitolak++;
+					continue;
+				}
+				// Priority 2: ada files=3 → LHUS terunggah
+				if ($s['files_3'] > 0) {
+					$pyLhusTerunggah++;
+					continue;
+				}
+				// Priority 3: semua files=1 → LHUS disetujui
+				if ($s['files_1'] === $s['total']) {
+					$pyLhusDisetujui++;
+					continue;
+				}
+				// Priority 4: ada files=0 → LHUS diverifikasi manajer (terkirim)
+				if ($s['files_0'] > 0) {
+					$pyLhusVerifikasi++;
+					continue;
+				}
+				// Fallback: masih ada files NULL → sedang dalam pengujian
+				if ($s['files_null'] > 0 && $s['parent_status'] == 4) {
+					$pySedangPengujian++;
+				}
+			}
+		}
+
 		return [
 			// ===== Layanan Masuk (Kode Jenis A) ===== //
 			'totalLayananMasuk' => formatAngkaSingkat($totalLayananMasuk),
@@ -208,6 +288,12 @@ class Dashboard extends BaseController
 			'mtLhusBelumTinjau' => $mtLhusBelumTinjau,
 			'mtLhusDiprosesKembali' => $mtLhusDiprosesKembali,
 			'mtLhusDisetujui' => $mtLhusDisetujui,
+			// ===== Penyelia Dashboard (role_id = 6) ===== //
+			'pySedangPengujian' => $pySedangPengujian,
+			'pyLhusTerunggah' => $pyLhusTerunggah,
+			'pyLhusVerifikasi' => $pyLhusVerifikasi,
+			'pyLhusDisetujui' => $pyLhusDisetujui,
+			'pyLhusDitolak' => $pyLhusDitolak,
 		];
 	}
 }
