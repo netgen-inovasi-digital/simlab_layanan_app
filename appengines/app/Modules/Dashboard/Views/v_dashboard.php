@@ -19,7 +19,7 @@
         </div>
     </div>
 
-    <?php if ($role_id != 2) : ?>
+    <?php if ($role_id == 1) : ?>
         <!-- Total Overview Dashboard -->
         <div class="row mt-3">
             <div class="col-lg-12">
