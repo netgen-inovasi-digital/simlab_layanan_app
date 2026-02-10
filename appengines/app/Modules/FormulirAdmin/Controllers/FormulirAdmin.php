@@ -288,8 +288,7 @@ class FormulirAdmin extends BaseController
     }
 
     return $this->response->setJSON([
-      'items' => $data,
-      'total' => count($data)
+      'items' => $data
     ]);
   }
 

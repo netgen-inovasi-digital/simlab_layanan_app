@@ -273,7 +273,7 @@
   // Inisialisasi table (fungsi createTable diasumsikan sudah ada di project)
   table = createTable({
     apiUrl: baseApiUrl,
-    dataSrc: 'items'
+    showFilter: true
   });
 
   // Patch table.fetchData untuk menormalisasi apiUrl bila helper createTable menambahkan '?ganda'
