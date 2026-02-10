@@ -338,7 +338,7 @@
         <!-- Progress Status Layanan Penyelia -->
         <div class="row mt-3">
             <div class="col-lg-12">
-                <h5 class="mb-3">Progress Status Layanan Penyelia :</h5>
+                <h5 class="mb-3">Progress Status Layanan  :</h5>
             </div>
         </div>
 
