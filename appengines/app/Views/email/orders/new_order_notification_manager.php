@@ -62,7 +62,7 @@
   <hr style="border: none; border-top: 1px solid #eee; margin: 25px 0;">
 
   <p style="font-size: 13px; color: #777; text-align: center;">
-    Waktu Pemesanan: <?= esc(date('d F Y, H:i', strtotime($tanggal_checkout))) ?> WIB
+    Waktu Pemesanan: <?= esc(date('d F Y, H:i', strtotime($tanggal_checkout))) ?> WITA
   </p>
 </div>
 

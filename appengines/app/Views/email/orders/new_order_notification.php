@@ -31,7 +31,7 @@
     <tr>
       <td style="padding: 6px 0; color: #777; font-size: 14px;">Waktu Pemesanan</td>
       <td style="padding: 6px 0; color: #333; font-size: 14px;">
-        <?= esc(date('d F Y, H:i', strtotime($tanggal_checkout))) ?> WIB</td>
+        <?= esc(date('d F Y, H:i', strtotime($tanggal_checkout))) ?> WITA</td>
     </tr>
   </table>
 
