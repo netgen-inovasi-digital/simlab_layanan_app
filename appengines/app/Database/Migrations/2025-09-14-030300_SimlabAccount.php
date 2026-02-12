@@ -43,8 +43,13 @@ class CreateSimlabAccount extends Migration
                 'null'       => false,
                 'default'    => 1,
             ],
-            // Perhatikan nama kolom "Telepon" sesuai dump (kapital T)
             'Telepon' => [
+                'type'       => 'VARCHAR',
+                'constraint' => 255,
+                'null'       => true,
+                'default'    => null,
+            ],
+            'email' => [
                 'type'       => 'VARCHAR',
                 'constraint' => 255,
                 'null'       => true,

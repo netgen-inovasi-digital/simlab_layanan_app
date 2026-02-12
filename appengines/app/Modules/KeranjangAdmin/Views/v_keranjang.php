@@ -409,6 +409,10 @@
           });
         }
 
+        // Refresh layanan table agar label diskon terupdate sesuai status pelanggan
+        const currentJen = (jenFilter && jenFilter.value) ? jenFilter.value.trim() : '';
+        createOrRefreshLayananTable(currentJen);
+
         // Update tombol checkout
         const btnCheckout = document.getElementById('btnCheckoutFromModal');
         if (btnCheckout && j.items_count && j.items_count > 0) {
@@ -500,6 +504,41 @@
     document.body.classList.remove('modal-open');
     document.body.style.overflow = '';
     document.body.style.paddingRight = '';
+
+    // Reset pelanggan dropdown dan clear session pelanggan
+    const selPel = document.getElementById('ker_pelanggan_select');
+    if (selPel) {
+      selPel.value = '';
+      // Update tampilan selectSearch custom dropdown
+      var wrapper = selPel.closest('.position-relative') || selPel.parentElement;
+      if (wrapper) {
+        var selectedDiv = wrapper.querySelector('.selected');
+        if (selectedDiv) selectedDiv.textContent = '-- pilih pelanggan --';
+      }
+    }
+
+    // Clear pelanggan session di server
+    const csrfClear = getCsrfTokenFromPage();
+    const clearForm = new FormData();
+    clearForm.append('selectedUserId', '');
+    clearForm.append('name', '');
+    clearForm.append('email', '');
+    clearForm.append('status', '');
+    if (csrfClear && csrfClear.name && csrfClear.value) clearForm.append(csrfClear.name, csrfClear.value);
+
+    fetch('<?= site_url("keranjangadmin/clearPelanggan") ?>', {
+      method: 'POST',
+      body: clearForm,
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+      .then(r => r.json())
+      .then(j => {
+        if (j.xname && j.xhash) {
+          let f = document.querySelector('input[name="' + j.xname + '"]');
+          if (f) f.value = j.xhash;
+        }
+      })
+      .catch(err => console.warn('Clear pelanggan error:', err));
   });
 
 

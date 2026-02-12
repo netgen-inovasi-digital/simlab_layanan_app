@@ -592,6 +592,9 @@ abstract class KeranjangBase extends BaseController
       $db->transComplete();
       $session->remove($this->sessionKey);
 
+      // Kirim notifikasi email ke admin dan manajer teknis
+      $this->sendOrderNotifications($kode_layanan, $userRow, $totalBiaya, $keranjang);
+
       return $this->response->setJSON([
         'res' => true,
         'msg' => 'Checkout berhasil! Data Anda sedang diproses.',
@@ -747,5 +750,21 @@ abstract class KeranjangBase extends BaseController
     $userIdentity = $this->keranjangModel->getUserIdentity($user_id);
 
     return ($userIdentity === 'ULM') ? max(0, $originalDiskon) : 0;
+  }
+
+  /**
+   * Kirim notifikasi email setelah checkout
+   * Menggunakan OrderNotificationService untuk logika pengiriman
+   * 
+   * @param int $kode_layanan Kode layanan yang baru dibuat
+   * @param object $userRow Data user yang checkout
+   * @param float $totalBiaya Total biaya pesanan
+   * @param array $keranjang Item-item yang dipesan
+   * @param string $triggeredBy 'pelanggan' atau 'admin'
+   */
+  protected function sendOrderNotifications(int $kode_layanan, $userRow, float $totalBiaya, array $keranjang, string $triggeredBy = 'pelanggan'): void
+  {
+    $notificationController = new \Modules\Notifications\Controllers\OrderNotificationController();
+    $notificationController->sendNewOrderNotification($kode_layanan, $userRow, $totalBiaya, $keranjang, $triggeredBy);
   }
 }

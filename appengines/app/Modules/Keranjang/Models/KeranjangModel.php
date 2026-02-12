@@ -3,6 +3,7 @@
 namespace Modules\Keranjang\Models;
 
 use CodeIgniter\Database\BaseConnection;
+use App\Models\MyModel;
 
 /**
  * KeranjangModel mengonsolidasikan seluruh interaksi database

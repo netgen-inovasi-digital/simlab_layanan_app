@@ -296,10 +296,11 @@ class Keranjang extends KeranjangBase
   public function keranjangCheckout()
   {
     $session = session();
-    $user_id = (int) $session->GET('id_user');
+    $user_id = (int) $session->get('id_user');
     $userRow = $this->keranjangModel->getUserById($user_id);
 
     $keranjang = $session->get($this->sessionKey) ?? [];
+
     if (empty($keranjang)) {
       return $this->response->setJSON([
         'res' => false,
@@ -395,7 +396,14 @@ class Keranjang extends KeranjangBase
 
       // Commit dan bersihkan keranjang
       $db->transComplete();
+
+      if ($db->transStatus() === FALSE) {
+        throw new \RuntimeException('Transaksi gagal disimpan ke database');
+      }
+
       $session->remove($this->sessionKey);
+
+      $this->sendOrderNotifications($kode_layanan, $userRow, $totalBiaya, $keranjang);
 
       return $this->response->setJSON([
         'res' => true,
@@ -403,6 +411,7 @@ class Keranjang extends KeranjangBase
         'xname' => csrf_token(),
         'xhash' => csrf_hash()
       ]);
+
     } catch (\Exception $e) {
       if ($db->transStatus() === FALSE) {
         $db->transRollback();

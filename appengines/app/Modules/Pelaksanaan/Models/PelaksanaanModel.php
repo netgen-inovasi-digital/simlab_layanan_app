@@ -207,7 +207,6 @@ class PelaksanaanModel extends MyModel
       ->set('status_layanan', 1)
       ->set('jumlah_kaji_ulang', 'COALESCE(jumlah_kaji_ulang,0)+1', false)
       ->set('catatan_kaji_ulang', $catatan)
-      ->set('kuisioner', 0)
       ->update();
 
     // Hanya reset detail layanan yang status_layanan = 1 (diterima)

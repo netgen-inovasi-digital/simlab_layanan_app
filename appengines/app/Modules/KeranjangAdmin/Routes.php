@@ -21,6 +21,7 @@ $routes->group('keranjangadmin', ['namespace' => 'Modules\KeranjangAdmin\Control
   $subroutes->post('checkout', 'Keranjang::keranjangCheckout');
   $subroutes->post('setPelanggan', 'Keranjang::keranjangSetPelanggan'); // Admin feature
   $subroutes->get('getPelanggan', 'Keranjang::keranjangGetPelanggan'); // Get pelanggan from session
+  $subroutes->post('clearPelanggan', 'Keranjang::keranjangClearPelanggan'); // Clear pelanggan on modal close
 
   // Endpoints untuk tracking dan detail (tetap di Keranjang controller)
   $subroutes->get('detailList/(:any)', 'Keranjang::detailList/$1');

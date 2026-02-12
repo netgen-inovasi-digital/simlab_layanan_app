@@ -534,41 +534,6 @@ class Pelaksanaan extends BaseController
     return ['status' => true, 'filename' => $filename];
   }
 
-  // detect LHUS - UPDATED: gunakan t_files_lhus dengan kode_layanan
-  private function detectLhusFile($row)
-  {
-    // Cek langsung ke t_files_lhus berdasarkan kode_layanan (kode_layanan)
-    if (!empty($row->kode_layanan)) {
-      try {
-        $db = \Config\Database::connect();
-
-        // Cek apakah ada file LHUS yang sudah dikirim (status=0) atau diterima (status=1)
-        $lhusFile = $db->table('t_files_lhus')
-          ->select('file_lhus')
-          ->where('kode_layanan', $row->kode_layanan)
-          ->whereIn('status', [0, 1]) // 0=terkirim, 1=diterima
-          ->orderBy('file_id', 'DESC')
-          ->limit(1)
-          ->get()->getRow();
-
-        if ($lhusFile && !empty($lhusFile->file_lhus)) {
-          $raw = $lhusFile->file_lhus;
-          if (preg_match('/^https?:\/\//i', $raw)) {
-            return ['has' => true, 'url' => $raw];
-          }
-          $p = FCPATH . 'uploads/lhus/' . ltrim($raw, '/');
-          if (is_file($p)) {
-            return ['has' => true, 'url' => base_url('uploads/lhus/' . ltrim($raw, '/'))];
-          }
-        }
-      } catch (\Throwable $e) {
-        // Silent catch
-      }
-    }
-
-    return ['has' => false, 'url' => '#'];
-  }
-
   // detect LHU - UPDATED: gunakan t_files_lhu (database baru)
   private function detectLhuFile($row)
   {

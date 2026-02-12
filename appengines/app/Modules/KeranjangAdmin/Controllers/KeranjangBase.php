@@ -541,6 +541,13 @@ abstract class KeranjangBase extends BaseController
 
     $totalBiaya = array_sum(array_column($keranjang, 'biaya'));
 
+    // Simpan data pelanggan sebelum session dihapus (untuk email notifikasi)
+    $pelangganForEmail = (object) [
+      'user_name' => $pelanggan['name'] ?? 'Pelanggan',
+      'user_email' => $pelanggan['email'] ?? '',
+      'user_telpon' => '-',
+    ];
+
     $modelPembayaran = new MyModel($this->tablePembayaran);
     $modelLayanan = new MyModel($this->tableLayanan);
     $modelDetil = new MyModel($this->tableLayananDetail);
@@ -595,6 +602,9 @@ abstract class KeranjangBase extends BaseController
       $db->transComplete();
       $session->remove($this->sessionKey);
       $session->remove($this->sessionKey . '_pelanggan');  // Clear pelanggan info also
+
+      // Kirim email notifikasi ke manajer teknis saja (admin checkout)
+      $this->sendOrderNotifications($kode_layanan, $pelangganForEmail, $totalBiaya, $keranjang, 'admin');
 
       return $this->response->setJSON([
         'res' => true,
@@ -683,17 +693,6 @@ abstract class KeranjangBase extends BaseController
   public function keranjangDelete($id)
   {
     $session = session();
-
-    // ADMIN MUST SELECT PELANGGAN FIRST
-    $pelanggan = $session->get($this->sessionKey . '_pelanggan');
-    if (!$pelanggan || !is_array($pelanggan) || empty($pelanggan['user_id'])) {
-      return $this->response->setJSON([
-        'success' => false,
-        'message' => 'Silakan pilih pelanggan terlebih dahulu.',
-        'xname' => csrf_token(),
-        'xhash' => csrf_hash()
-      ]);
-    }
 
     $keranjang = $session->get($this->sessionKey) ?? [];
 
@@ -827,6 +826,37 @@ abstract class KeranjangBase extends BaseController
   }
 
   /**
+   * Clear pelanggan dari session (saat modal ditutup)
+   * Endpoint: POST /keranjangadmin/clearPelanggan
+   */
+  public function keranjangClearPelanggan()
+  {
+    $session = session();
+    $session->remove($this->sessionKey . '_pelanggan');
+
+    // Recalculate keranjang: hapus semua diskon karena pelanggan di-clear
+    $keranjang = $session->get($this->sessionKey) ?? [];
+    foreach ($keranjang as $i => $item) {
+      $biayaAsli = isset($item['biaya_asli']) ? (float) $item['biaya_asli'] : (float) ($item['biaya'] ?? 0);
+      $jumlah = isset($item['jumlah']) ? max(1, (int) $item['jumlah']) : 1;
+
+      $keranjang[$i]['diskon'] = 0;
+      $keranjang[$i]['biaya'] = $biayaAsli * $jumlah;
+      if (!isset($keranjang[$i]['biaya_asli'])) {
+        $keranjang[$i]['biaya_asli'] = $biayaAsli;
+      }
+    }
+    $session->set($this->sessionKey, $keranjang);
+
+    return $this->response->setJSON([
+      'res' => true,
+      'msg' => 'Pelanggan berhasil di-reset.',
+      'xname' => csrf_token(),
+      'xhash' => csrf_hash()
+    ]);
+  }
+
+  /**
    * Set pelanggan untuk keranjang admin
    * Endpoint: POST /keranjangadmin/setPelanggan
    */
@@ -928,5 +958,21 @@ abstract class KeranjangBase extends BaseController
       'xname' => csrf_token(),
       'xhash' => csrf_hash()
     ]);
+  }
+
+  /**
+   * Kirim notifikasi email setelah checkout
+   * Menggunakan OrderNotificationService untuk logika pengiriman
+   * 
+   * @param int $kode_layanan Kode layanan yang baru dibuat
+   * @param object $userRow Data pelanggan (bukan admin)
+   * @param float $totalBiaya Total biaya pesanan
+   * @param array $keranjang Item-item yang dipesan
+   * @param string $triggeredBy 'admin' → hanya kirim ke manajer teknis
+   */
+  protected function sendOrderNotifications(int $kode_layanan, $userRow, float $totalBiaya, array $keranjang, string $triggeredBy = 'admin'): void
+  {
+    $notificationController = new \Modules\Notifications\Controllers\OrderNotificationController();
+    $notificationController->sendNewOrderNotification($kode_layanan, $userRow, $totalBiaya, $keranjang, $triggeredBy);
   }
 }

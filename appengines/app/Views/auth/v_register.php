@@ -1,65 +1,65 @@
 <div class="register-form-container">
-    <h5 class="fw-bold mb-4 text-center">Daftar Pengguna</h5>
+  <h5 class="fw-bold mb-4 text-center">Daftar Pengguna</h5>
 
-    <?php $validation = service('validation'); ?>
-    <?php if ($validation->getErrors()) : ?>
-        <div class="alert alert-danger" role="alert">
-            <strong>Ditemukan Kesalahan Validasi :</strong>
-            <ul>
-            <?php foreach ($validation->getErrors() as $error) : ?>
-                <li><?= esc($error) ?></li>
-            <?php endforeach ?>
-            </ul>
-        </div>
-    <?php endif ?>
+  <?php $validation = service('validation'); ?>
+  <?php if ($validation->getErrors()): ?>
+    <div class="alert alert-danger" role="alert">
+      <strong>Ditemukan Kesalahan Validasi :</strong>
+      <ul>
+        <?php foreach ($validation->getErrors() as $error): ?>
+          <li><?= esc($error) ?></li>
+        <?php endforeach ?>
+      </ul>
+    </div>
+  <?php endif ?>
 
-     <!-- Flash message -->
-    <?php if(session()->getFlashdata('error')): ?>
-        <div class="alert alert-danger">
-            <?= session()->getFlashdata('error') ?>
-        </div>
-    <?php endif; ?>
+  <!-- Flash message -->
+  <?php if (session()->getFlashdata('error')): ?>
+    <div class="alert alert-danger">
+      <?= session()->getFlashdata('error') ?>
+    </div>
+  <?php endif; ?>
 
-    <?php if(session()->getFlashdata('success')): ?>
-        <div class="alert alert-success">
-            <?= session()->getFlashdata('success') ?>
-        </div>
-    <?php endif; ?>
-    
-      <?= form_open_multipart('register/auth', ['id' => 'register-form', 'method' => 'post'   ]) ?>
-      
-      <?= csrf_field() ?>
-    
-        <div class="mb-3">
-            <input name="nama" type="text" class="form-control rounded-pill mx-auto" placeholder="Nama Lengkap" value="<?= old('nama') ?>" required />
-        </div>
-        <div class="mb-3">
-            <input name="email" type="email" class="form-control rounded-pill mx-auto" placeholder="Email" value="<?= old('email') ?>" required />
-        </div>
-        <div class="mb-3">
-            <div class="input-group rounded-pill mx-auto" style="border-radius: 50px; overflow: hidden;">
-                <input name="pwd" id="reg-password" type="password" 
-                       class="form-control border-0" 
-                       placeholder="Password" required />
-                <button class="btn btn-light border-0 pe-3" type="button" id="toggleRegPassword" style="background-color: transparent;">
-                    <i class="bi bi-eye-slash"></i>
-                </button>
-            </div>
-        </div>
+  <?php if (session()->getFlashdata('success')): ?>
+    <div class="alert alert-success">
+      <?= session()->getFlashdata('success') ?>
+    </div>
+  <?php endif; ?>
 
-        <div class="mb-3">
-            <div class="input-group rounded-pill mx-auto" style="border-radius: 50px; overflow: hidden;">
-                <input name="repwd" id="reg-repassword" type="password" 
-                       class="form-control border-0" 
-                       placeholder="Ulangi Password" required />
-                <button class="btn btn-light border-0 pe-3" type="button" id="toggleRegRePassword" style="background-color: transparent;">
-                    <i class="bi bi-eye-slash"></i>
-                </button>
-            </div>
-        </div>
+  <?= form_open_multipart('register/auth', ['id' => 'register-form', 'method' => 'post']) ?>
 
-    
-    <!-- <div class="mb-3 text-center">
+  <?= csrf_field() ?>
+
+  <div class="mb-3">
+    <input name="nama" type="text" class="form-control rounded-pill mx-auto bg-light-gray" placeholder="Nama Lengkap"
+      value="<?= old('nama') ?>" required />
+  </div>
+  <div class="mb-3">
+    <input name="email" type="email" class="form-control rounded-pill mx-auto bg-light-gray" placeholder="Email"
+      value="<?= old('email') ?>" required />
+  </div>
+  <div class="mb-3">
+    <div class="input-group rounded-pill mx-auto bg-light-gray" style="border-radius: 50px; overflow: hidden;">
+      <input name="pwd" id="reg-password" type="password" class="form-control border-0 bg-light-gray"
+        placeholder="Password" required />
+      <button class="btn border-0 pe-3" type="button" id="toggleRegPassword" style="background-color: transparent;">
+        <i class="bi bi-eye-slash"></i>
+      </button>
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <div class="input-group rounded-pill mx-auto bg-light-gray" style="border-radius: 50px; overflow: hidden;">
+      <input name="repwd" id="reg-repassword" type="password" class="form-control border-0 bg-light-gray"
+        placeholder="Ulangi Password" required />
+      <button class="btn border-0 pe-3" type="button" id="toggleRegRePassword" style="background-color: transparent;">
+        <i class="bi bi-eye-slash"></i>
+      </button>
+    </div>
+  </div>
+
+
+  <!-- <div class="mb-3 text-center">
         <div class="form-check form-check-inline">
             <input class="form-check-input" type="radio" name="status_mahasiswa" id="radioNonUlm" value="Non-ULM" <?= old('status_mahasiswa', 'Non-ULM') == 'Non-ULM' ? 'checked' : '' ?>>
             <label class="form-check-label" for="radioNonUlm">Nonsdf-ULM</label>
@@ -70,40 +70,40 @@
         </div>
     </div> -->
 
-    <!-- <div class="mb-3" id="ktm-upload-field" style="display: <?= old('status_mahasiswa') == 'ULM' ? 'block' : 'none' ?>;">
+  <!-- <div class="mb-3" id="ktm-upload-field" style="display: <?= old('status_mahasiswa') == 'ULM' ? 'block' : 'none' ?>;">
         <label for="ktm_image" class="form-label small d-block text-center">Upload Foto KTM/Screenshot SIMARI</label>
         <input name="ktm_image" class="form-control" type="file" id="ktm_image" accept="image/png, image/jpeg, image/jpg">
     </div> -->
 
-    <div class="d-grid">
-        <button type="submit" class="btn btn-primary rounded-pill mx-auto">DAFTAR</button>
-    </div>
-    <?= form_close(); ?>
+  <div class="d-grid">
+    <button type="submit" class="btn btn-primary rounded-pill mx-auto">DAFTAR</button>
+  </div>
+  <?= form_close(); ?>
 
 </div>
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        function setupPasswordToggle(inputId, toggleId) {
-            const toggleBtn = document.getElementById(toggleId);
-            const inputField = document.getElementById(inputId);
-            const icon = toggleBtn.querySelector('i');
+  document.addEventListener('DOMContentLoaded', function () {
+    function setupPasswordToggle(inputId, toggleId) {
+      const toggleBtn = document.getElementById(toggleId);
+      const inputField = document.getElementById(inputId);
+      const icon = toggleBtn.querySelector('i');
 
-            if (toggleBtn && inputField) {
-                toggleBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const isPassword = inputField.type === 'password';
-                    
-                    // Toggle input type
-                    inputField.type = isPassword ? 'text' : 'password';
-                    
-                    // Toggle icon: eye-slash (tertutup) <-> eye (terbuka)
-                    icon.classList.toggle('bi-eye-slash');
-                    icon.classList.toggle('bi-eye');
-                });
-            }
-        }
+      if (toggleBtn && inputField) {
+        toggleBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const isPassword = inputField.type === 'password';
 
-        setupPasswordToggle('reg-password', 'toggleRegPassword');
-        setupPasswordToggle('reg-repassword', 'toggleRegRePassword');
-    });
+          // Toggle input type
+          inputField.type = isPassword ? 'text' : 'password';
+
+          // Toggle icon: eye-slash (tertutup) <-> eye (terbuka)
+          icon.classList.toggle('bi-eye-slash');
+          icon.classList.toggle('bi-eye');
+        });
+      }
+    }
+
+    setupPasswordToggle('reg-password', 'toggleRegPassword');
+    setupPasswordToggle('reg-repassword', 'toggleRegRePassword');
+  });
 </script>
