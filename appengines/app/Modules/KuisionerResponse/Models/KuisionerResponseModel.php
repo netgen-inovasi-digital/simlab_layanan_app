@@ -56,7 +56,9 @@ class KuisionerResponseModel extends Model
     $builder->select('q.kuesioner_id, q.pertanyaan_teks, q.pertanyaan_tipe, q.pertanyaan_wajib, jawab.jawaban, jawab.created_at');
     $builder->join(
       't_kuesioner_jawaban as jawab',
-      'jawab.id_pertanyaan = q.kuesioner_id AND jawab.kode_layanan = ' . $this->db->escape($kode_layanan),
+      'jawab.id_pertanyaan = q.kuesioner_id AND jawab.user_id IN (
+        SELECT user_id FROM t_layanan WHERE kode_layanan = ' . $this->db->escape($kode_layanan) . '
+      )',
       'left'
     );
     $builder->orderBy('q.kuesioner_id', 'ASC');

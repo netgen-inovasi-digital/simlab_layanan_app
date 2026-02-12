@@ -34,23 +34,85 @@ table = createTable({
 });
 addAction();
 
+// === Reset Form untuk Mode Tambah ===
+document.getElementById('add').addEventListener('click', function() {
+    document.querySelector('[name="id"]').value = '';
+    document.querySelector('[name="user_name"]').value = '';
+    document.querySelector('[name="user_email"]').value = '';
+    document.querySelector('[name="user_telpon"]').value = '';
+    document.querySelector('[name="user_password"]').value = '';
+    document.querySelector('[name="user_identity"]').value = '';
+    document.querySelector('[name="user_instansi"]').value = '';
+    document.querySelector('input[type="file"]').value = '';
+    document.getElementById("verifikasi1").checked = false;
+    document.getElementById("verifikasi0").checked = false;
+    document.getElementById("status1").checked = true;
+    document.getElementById("status0").checked = false;
+    document.getElementById('buktiInfo').innerHTML = '';
+});
+
+// === Password Validation Function ===
+function validatePassword() {
+    const pwd = document.querySelector('[name="user_password"]');
+    const errorMsg = document.getElementById('passwordError');
+    const id = document.querySelector('[name="id"]').value;
+    const passwordValue = pwd.value.trim();
+
+    // Clear previous error
+    errorMsg.style.display = 'none';
+    errorMsg.textContent = '';
+
+    // If adding new data, password is required
+    if (id == "") {
+        if (passwordValue === "") {
+            errorMsg.textContent = 'Password wajib diisi.';
+            errorMsg.style.display = 'block';
+            return false;
+        }
+    }
+
+    // If password is filled (either add or edit), check minimum length
+    if (passwordValue !== "" && passwordValue.length < 6) {
+        errorMsg.textContent = 'Password minimal harus 6 karakter.';
+        errorMsg.style.display = 'block';
+        return false;
+    }
+
+    return true;
+}
+
 // === Modal form logic ===
 var modal = document.getElementById('modalForm');
 modal.addEventListener('shown.bs.modal', function (e) {
     const pwd = document.querySelector('[name="user_password"]');
     pwd.value = "";
     const id = document.querySelector('[name="id"]').value;
-    if (id == "") pwd.setAttribute('required', true);
-    else pwd.removeAttribute('required');
+    const identitySelect = modal.querySelector('[name="user_identity"]');
+    
+    // Clear password error on modal open
+    const errorMsg = document.getElementById('passwordError');
+    errorMsg.style.display = 'none';
+    errorMsg.textContent = '';
+
+    // Reset status identitas dan clear bukti info untuk mode Tambah
+    if (id === "") {
+        identitySelect.value = '';
+        document.getElementById('buktiInfo').innerHTML = '';
+    }
+
+    // Add real-time validation listener
+    pwd.addEventListener('input', validatePassword);
 
     // === Tambahan: tampilkan input instansi jika NON ULM, dan toggle bukti jika ULM ===
-    const identitySelect = modal.querySelector('[name="user_identity"]');
     const instansiField = modal.querySelector('#instansiField');
     const instansiInput = instansiField.querySelector('input');
     const buktiWrapper = modal.querySelector('#buktiWrapper');
     const buktiInput = buktiWrapper.querySelector('input[type="file"]');
 
     function toggleFields() {
+        const isEditing = document.querySelector('[name="id"]').value !== "";
+        const hasExistingFile = document.getElementById("buktiInfo").querySelector('a.btn-info') !== null;
+        
         if (identitySelect.value === "NON ULM") {
             instansiField.style.display = "flex"; 
             instansiInput.setAttribute("required", true);
@@ -61,7 +123,13 @@ modal.addEventListener('shown.bs.modal', function (e) {
             instansiInput.removeAttribute("required");
             instansiInput.value = "";
             buktiWrapper.style.display = "flex";
-            buktiInput.setAttribute("required", true);
+            
+            // Hanya set required jika sedang tambah data baru atau belum ada file
+            if (!isEditing || !hasExistingFile) {
+                buktiInput.setAttribute("required", true);
+            } else {
+                buktiInput.removeAttribute("required");
+            }
         } else {
             instansiField.style.display = "none"; 
             instansiInput.removeAttribute("required");
@@ -81,6 +149,17 @@ function editItem(event) {
     fetch("<?php echo site_url('akun/edit/') ?>" + id)
         .then(res => res.json())
         .then(data => {
+            // Reset form terlebih dahulu
+            document.querySelector('[name="user_name"]').value = '';
+            document.querySelector('[name="user_email"]').value = '';
+            document.querySelector('[name="user_telpon"]').value = '';
+            document.querySelector('[name="user_password"]').value = '';
+            document.querySelector('[name="user_identity"]').value = '';
+            document.querySelector('[name="user_instansi"]').value = '';
+            document.querySelector('input[type="file"]').value = '';
+            document.getElementById('buktiInfo').innerHTML = '';
+            
+            // Kemudian isikan dengan data dari server
             document.querySelector('[name="id"]').value = data.id;
             document.querySelector('[name="user_name"]').value = data.user_name;
             document.querySelector('[name="user_email"]').value = data.user_email;
@@ -121,6 +200,8 @@ function editItem(event) {
 
             // === Tambahan: bukti file ===
             const buktiInfo = document.getElementById("buktiInfo");
+            const buktiFileInput = buktiWrapper.querySelector('input[type="file"]');
+            
             if (data.bukti_url) {
                 buktiInfo.innerHTML = `
                     <a href="${data.bukti_url}" target="_blank" class="btn btn-info btn-sm">
@@ -128,8 +209,14 @@ function editItem(event) {
                     </a>
                     <p class="text-muted small mt-1">Anda bisa unggah file baru untuk mengganti.</p>
                 `;
+                // Hapus required jika file sudah ada
+                buktiFileInput.removeAttribute("required");
             } else {
                 // buktiInfo.innerHTML = `<span class="text-danger">Belum ada bukti, silakan upload file.</span>`;
+                // Set required jika file belum ada dan identity adalah ULM
+                if (data.user_identity === "ULM") {
+                    buktiFileInput.setAttribute("required", true);
+                }
             }
 
         // === Tambahan: verifikasi ===
@@ -186,6 +273,22 @@ document.addEventListener("click", function(e) {
         }
     }
 });
+
+// === Toggle Password Visibility ===
+document.getElementById('togglePassword').addEventListener('click', function() {
+    const passwordInput = document.getElementById('passwordInput');
+    const passwordIcon = document.getElementById('passwordIcon');
+    
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        passwordIcon.classList.remove('bi-eye-slash');
+        passwordIcon.classList.add('bi-eye');
+    } else {
+        passwordInput.type = 'password';
+        passwordIcon.classList.remove('bi-eye');
+        passwordIcon.classList.add('bi-eye-slash');
+    }
+});
 </script>
 
 <div class="modal fade" id="modalForm" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
@@ -229,9 +332,17 @@ document.addEventListener("click", function(e) {
 
                 <!-- Password -->
                 <div class="row mb-2">
-                    <label class="col-md-4 col-form-label">Ubah Password</label>
+                    <label class="col-md-4 col-form-label">Password</label>
                     <div class="col">
-                        <input name="user_password" type="password" class="form-control">
+                        <div class="input-group">
+                            <input name="user_password" type="password" class="form-control" id="passwordInput" style="border-right: none;">
+                            <span class="input-group-text" id="togglePassword" style="background: white; cursor: pointer; border-left: none;">
+                                <i class="bi bi-eye-slash" id="passwordIcon"></i>
+                            </span>
+                        </div>
+                        <div class="mt-1">
+                            <span id="passwordError" class="text-danger small" style="display: none;"></span>
+                        </div>
                     </div>
                 </div>
 
@@ -259,7 +370,7 @@ document.addEventListener("click", function(e) {
                 <div class="row mb-2" id="buktiWrapper">
                     <label class="col-md-4 col-form-label">Bukti</label>
                     <div class="col">
-                        <input type="file" name="bukti_file" class="form-control">
+                        <input type="file" name="bukti_file" class="form-control" accept=".pdf,.jpg,.jpeg,.png">
                         <div id="buktiInfo" class="mt-2">
                             <!-- <span class="text-muted small">Belum ada bukti, silakan upload.</span> -->
                         </div>
@@ -302,7 +413,7 @@ document.addEventListener("click", function(e) {
                 <button class="btn btn-light" type="button" data-bs-dismiss="modal">
                     <i class="bi bi-x-circle"></i> Batal
                 </button>
-                <button class="btn btn-success" type="submit">
+                <button class="btn btn-success" type="submit" onclick="return validatePassword();">
                     <i class="bi bi-check2-circle"></i> Simpan
                 </button>
             </div>

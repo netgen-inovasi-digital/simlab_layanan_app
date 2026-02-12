@@ -394,6 +394,50 @@ class Keranjang extends KeranjangBase
         throw new \RuntimeException('Gagal menyimpan log sampel');
       }
 
+      // Upload surat pengantar jika ada
+      $fileSurat = $this->request->getFile('surat_pengantar');
+      if ($fileSurat && $fileSurat->isValid() && !$fileSurat->hasMoved()) {
+        // Validasi tipe file
+        $allowedMimes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+        if (!in_array($fileSurat->getMimeType(), $allowedMimes)) {
+          throw new \RuntimeException('Tipe file surat pengantar tidak diizinkan. Hanya PDF, JPG, PNG.');
+        }
+
+        // Validasi ukuran file (max 5MB)
+        if ($fileSurat->getSize() > 5 * 1024 * 1024) {
+          throw new \RuntimeException('Ukuran file surat pengantar terlalu besar. Maksimal 5MB.');
+        }
+
+        // Generate nama file unik (format sama dengan Akun: time + random hex, tanpa strip)
+        $ext = strtolower($fileSurat->getClientExtension());
+        try {
+          $newFileName = time() . bin2hex(random_bytes(5)) . '.' . $ext;
+        } catch (\Exception $e) {
+          $newFileName = time() . bin2hex(openssl_random_pseudo_bytes(5)) . '.' . $ext;
+        }
+
+        // Upload path
+        $uploadPath = FCPATH . 'uploads/surat_pengantar/';
+        if (!is_dir($uploadPath)) {
+          mkdir($uploadPath, 0755, true);
+        }
+
+        // Pindahkan file secara manual agar nama file tidak di-override oleh CI4
+        $tmpPath = $fileSurat->getTempName();
+        $destPath = $uploadPath . $newFileName;
+        if (!rename($tmpPath, $destPath)) {
+          if (!copy($tmpPath, $destPath)) {
+            throw new \RuntimeException('Gagal memindahkan file surat pengantar.');
+          }
+          @unlink($tmpPath);
+        }
+
+        // Update kolom surat_pengantar di t_layanan
+        if (!$this->keranjangModel->updateSuratPengantar($kode_layanan, $newFileName)) {
+          throw new \RuntimeException('Gagal menyimpan data surat pengantar');
+        }
+      }
+
       // Commit dan bersihkan keranjang
       $db->transComplete();
 

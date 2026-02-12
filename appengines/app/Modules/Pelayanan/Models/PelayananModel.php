@@ -183,4 +183,14 @@ class PelayananModel extends MyModel
   {
     return $this->getDataById('kode_layanan', $kode_layanan);
   }
+
+  /**
+   * Update kolom surat_pertanyaan di t_layanan.
+   */
+  public function updateSuratPengantar(int $kode_layanan, string $fileName): bool
+  {
+    return (bool) $this->db->table($this->layananTable)
+      ->where('kode_layanan', $kode_layanan)
+      ->update(['surat_pertanyaan' => $fileName]);
+  }
 }
