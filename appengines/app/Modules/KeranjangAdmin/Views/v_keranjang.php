@@ -185,68 +185,72 @@
           </div>
 
           <!-- Bukti Surat Pengantar -->
-          <hr class="my-4">
-          <h6 class="fw-bold text-primary mb-3">
-            <i class="bi bi-file-earmark-arrow-up"></i> Bukti Surat Pengantar
-          </h6>
+          <div id="sectionSuratPengantar" style="display: none;">
+            <hr class="my-4">
+            <h6 class="fw-bold text-primary mb-3">
+              <i class="bi bi-file-earmark-arrow-up"></i> Bukti Surat Pengantar
+            </h6>
 
-          <!-- State: Belum diunggah -->
-          <div id="suratBelumUpload">
-            <table class="table table-bordered mb-0">
-              <tbody>
-                <tr>
-                  <td class="fw-semibold" style="width:35%">File Surat Pengantar <span class="text-danger">*</span></td>
-                  <td>
-                    <input type="file" class="form-control" id="fileSuratPengantar" name="fileSuratPengantar"
-                      accept=".pdf,.jpg,.jpeg,.png">
-                  </td>
-                </tr>
-                <tr>
-                  <td class="fw-semibold">Format</td>
-                  <td>PDF / JPG / PNG</td>
-                </tr>
-                <tr>
-                  <td class="fw-semibold">Ukuran Maks</td>
-                  <td>5 MB</td>
-                </tr>
-                <tr>
-                  <td class="fw-semibold">Status</td>
-                  <td><span class="text-muted"><i class="bi bi-x-circle"></i> Belum diunggah</span></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+            <!-- State: Belum diunggah -->
+            <div id="suratBelumUpload">
+              <table class="table table-bordered mb-0">
+                <tbody>
+                  <tr>
+                    <td class="fw-semibold" style="width:35%">File Surat Pengantar <span class="text-danger">*</span>
+                    </td>
+                    <td>
+                      <input type="file" class="form-control" id="fileSuratPengantar" name="fileSuratPengantar"
+                        accept=".pdf,.jpg,.jpeg,.png">
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="fw-semibold">Format</td>
+                    <td>PDF / JPG / PNG</td>
+                  </tr>
+                  <tr>
+                    <td class="fw-semibold">Ukuran Maks</td>
+                    <td>5 MB</td>
+                  </tr>
+                  <tr>
+                    <td class="fw-semibold">Status</td>
+                    <td><span class="text-muted"><i class="bi bi-x-circle"></i> Belum diunggah</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
 
-          <!-- State: Sudah diunggah (preview client-side) -->
-          <div id="suratSudahUpload" style="display: none;">
-            <table class="table table-bordered mb-0">
-              <tbody>
-                <tr>
-                  <td class="fw-semibold" style="width:35%">File Surat Pengantar <span class="text-danger">*</span></td>
-                  <td id="suratFileName">-</td>
-                </tr>
-                <tr>
-                  <td class="fw-semibold">Ukuran File</td>
-                  <td id="suratFileSize">-</td>
-                </tr>
-                <tr>
-                  <td class="fw-semibold">Status</td>
-                  <td><span class="text-success"><i class="bi bi-check-circle-fill"></i> Berhasil diunggah</span></td>
-                </tr>
-                <tr>
-                  <td class="fw-semibold">Aksi</td>
-                  <td>
-                    <button type="button" class="btn btn-sm btn-outline-primary" id="btnLihatSurat">
-                      <i class="bi bi-eye"></i> Lihat
-                    </button>
-                    <button type="button" class="btn btn-sm btn-outline-danger ms-1" id="btnHapusSurat">
-                      <i class="bi bi-trash"></i> Hapus
-                    </button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+            <!-- State: Sudah diunggah (preview client-side) -->
+            <div id="suratSudahUpload" style="display: none;">
+              <table class="table table-bordered mb-0">
+                <tbody>
+                  <tr>
+                    <td class="fw-semibold" style="width:35%">File Surat Pengantar <span class="text-danger">*</span>
+                    </td>
+                    <td id="suratFileName">-</td>
+                  </tr>
+                  <tr>
+                    <td class="fw-semibold">Ukuran File</td>
+                    <td id="suratFileSize">-</td>
+                  </tr>
+                  <tr>
+                    <td class="fw-semibold">Status</td>
+                    <td><span class="text-success"><i class="bi bi-check-circle-fill"></i> Berhasil diunggah</span></td>
+                  </tr>
+                  <tr>
+                    <td class="fw-semibold">Aksi</td>
+                    <td>
+                      <button type="button" class="btn btn-sm btn-outline-primary" id="btnLihatSurat">
+                        <i class="bi bi-eye"></i> Lihat
+                      </button>
+                      <button type="button" class="btn btn-sm btn-outline-danger ms-1" id="btnHapusSurat">
+                        <i class="bi bi-trash"></i> Hapus
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div><!-- /sectionSuratPengantar -->
         </div>
       </div>
       <div class="modal-footer">
@@ -493,6 +497,23 @@
 
       } catch (err) {
         console.error('Error setting pelanggan:', err);
+      }
+
+      // Toggle Surat Pengantar section based on pelanggan identity
+      const sectionSurat = document.getElementById('sectionSuratPengantar');
+      if (sectionSurat) {
+        const selectedStatus = opt?.dataset?.status || '';
+        sectionSurat.style.display = (selectedStatus === 'ULM') ? 'block' : 'none';
+
+        // Reset file input jika disembunyikan
+        if (selectedStatus !== 'ULM') {
+          const fileInput = document.getElementById('fileSuratPengantar');
+          if (fileInput) fileInput.value = '';
+          const belum = document.getElementById('suratBelumUpload');
+          const sudah = document.getElementById('suratSudahUpload');
+          if (belum) belum.style.display = 'block';
+          if (sudah) sudah.style.display = 'none';
+        }
       }
     });
   })();
@@ -1039,9 +1060,12 @@
       return;
     }
 
-    // Validasi surat pengantar (wajib)
+    // Validasi surat pengantar
+    const selectedOption = pelangganSelect.options[pelangganSelect.selectedIndex];
+    const pelangganStatus = selectedOption?.dataset?.status || '';
+    const isUlm = (pelangganStatus === 'ULM');
     const fileSuratPengantar = document.getElementById('fileSuratPengantar');
-    if (!fileSuratPengantar || fileSuratPengantar.files.length === 0) {
+    if (isUlm && (!fileSuratPengantar || fileSuratPengantar.files.length === 0)) {
       sayAlert('errorModal', 'Validasi', 'File Surat Pengantar harus diunggah!', 'warning');
       return;
     }
@@ -1063,7 +1087,9 @@
     formData.append('keteranganKhusus', keteranganKhusus.value.trim());
 
     // Tambahkan file surat pengantar
-    formData.append('surat_pengantar', fileSuratPengantar.files[0]);
+    if (isUlm && fileSuratPengantar && fileSuratPengantar.files.length > 0) {
+      formData.append('surat_pengantar', fileSuratPengantar.files[0]);
+    }
 
     fetch('<?= site_url("keranjangadmin/checkout") ?>', {
       method: 'POST',

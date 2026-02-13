@@ -338,7 +338,7 @@
           </div>
         </div>
 
-        <!-- Bukti Surat Pengantar Section (terpisah dari identitas sampel) -->
+        <!-- Bukti Surat Pengantar Section (untuk ULM atau jika sudah ada file) -->
         <div class="detail-table mt-4" id="suratPengantarTrackSection" style="display: none;">
           <h6 class="mb-3">
             <i class="bi bi-file-earmark-arrow-up"></i> Bukti Surat Pengantar
@@ -369,7 +369,8 @@
                 <tr>
                   <td class="fw-semibold">Aksi</td>
                   <td>
-                    <a href="#" id="btnLihatSuratTrack" class="btn btn-sm btn-outline-primary" target="_blank" rel="noopener">
+                    <a href="#" id="btnLihatSuratTrack" class="btn btn-sm btn-outline-primary" target="_blank"
+                      rel="noopener">
                       <i class="bi bi-eye"></i> Lihat
                     </a>
                     <button type="button" class="btn btn-sm btn-outline-warning ms-1" id="btnReuploadSuratToggle">
@@ -391,8 +392,8 @@
                 <tr>
                   <td class="fw-semibold" style="width:35%">File Surat Pengantar <span class="text-danger">*</span></td>
                   <td>
-                    <input type="file" class="form-control" id="fileSuratPengantarTrackNew" name="fileSuratPengantarTrackNew"
-                      accept=".pdf,.jpg,.jpeg,.png">
+                    <input type="file" class="form-control" id="fileSuratPengantarTrackNew"
+                      name="fileSuratPengantarTrackNew" accept=".pdf,.jpg,.jpeg,.png">
                   </td>
                 </tr>
                 <tr>
@@ -528,17 +529,38 @@
           sampleSection.style.display = 'block';
 
           // Surat Pengantar - section terpisah
-          resetSuratTrackUI();
-          if (data.data.surat_pengantar && data.data.surat_pengantar_url) {
-            document.getElementById('suratPengantarTrackName').textContent = data.data.surat_pengantar;
-            document.getElementById('btnLihatSuratTrack').href = data.data.surat_pengantar_url;
-            document.getElementById('suratTrackSudahUpload').style.display = 'block';
-            document.getElementById('suratTrackBelumUpload').style.display = 'none';
+          const isUlm = data.data.user_identity === 'ULM';
+          const hasSuratFile = data.data.surat_pengantar && data.data.surat_pengantar_url;
+          
+          // Tampilkan section jika: (1) user ULM, atau (2) ada file yang sudah terupload
+          if (isUlm || hasSuratFile) {
+            resetSuratTrackUI();
+            
+            if (hasSuratFile) {
+              // Ada file yang sudah terupload
+              document.getElementById('suratPengantarTrackName').textContent = data.data.surat_pengantar;
+              document.getElementById('btnLihatSuratTrack').href = data.data.surat_pengantar_url;
+              document.getElementById('suratTrackSudahUpload').style.display = 'block';
+              document.getElementById('suratTrackBelumUpload').style.display = 'none';
+              
+              // Jika NON-ULM, sembunyikan tombol "Upload Ulang" (read-only mode)
+              const btnReupload = document.getElementById('btnReuploadSuratToggle');
+              if (!isUlm && btnReupload) {
+                btnReupload.style.display = 'none';
+              } else if (isUlm && btnReupload) {
+                btnReupload.style.display = 'inline-block';
+              }
+            } else {
+              // Belum ada file (hanya mungkin jika isUlm = true)
+              document.getElementById('suratTrackSudahUpload').style.display = 'none';
+              document.getElementById('suratTrackBelumUpload').style.display = 'block';
+            }
+            
+            if (suratSection) suratSection.style.display = 'block';
           } else {
-            document.getElementById('suratTrackSudahUpload').style.display = 'none';
-            document.getElementById('suratTrackBelumUpload').style.display = 'block';
+            // NON-ULM dan tidak ada file → sembunyikan section
+            if (suratSection) suratSection.style.display = 'none';
           }
-          if (suratSection) suratSection.style.display = 'block';
         } else {
           sampleSection.style.display = 'none';
           if (suratSection) suratSection.style.display = 'none';

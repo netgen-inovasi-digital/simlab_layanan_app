@@ -366,10 +366,10 @@ class FormulirAdmin extends BaseController
       'keterangan_khusus' => $sampleRow->keterangan_khusus ?? '-'
     ];
 
-    // Ambil surat pengantar dari t_layanan (kolom: surat_pertanyaan)
+    // Ambil surat pengantar dari t_layanan (kolom: surat_pernyataan)
     $modelLayanan = new MyModel($this->table);
     $layanan = $modelLayanan->getDataById('kode_layanan', $kode);
-    $suratPengantar = $layanan->surat_pertanyaan ?? null;
+    $suratPengantar = $layanan->surat_pernyataan ?? null;
 
     $sampleData['surat_pengantar'] = $suratPengantar;
     $sampleData['surat_pengantar_url'] = $suratPengantar ? base_url('uploads/surat_pengantar/' . $suratPengantar) : null;
@@ -438,7 +438,7 @@ class FormulirAdmin extends BaseController
       }
 
       // Hapus file lama jika ada
-      $oldFile = $layanan->surat_pertanyaan ?? null;
+      $oldFile = $layanan->surat_pernyataan ?? null;
       if ($oldFile) {
         $oldPath = FCPATH . 'uploads/surat_pengantar/' . $oldFile;
         if (file_exists($oldPath)) {
@@ -475,8 +475,8 @@ class FormulirAdmin extends BaseController
         @unlink($tmpPath);
       }
 
-      // Update kolom surat_pertanyaan di t_layanan
-      $modelLayanan->updateData(['surat_pertanyaan' => $newFileName], 'kode_layanan', $kode_layanan);
+      // Update kolom surat_pernyataan di t_layanan
+      $modelLayanan->updateData(['surat_pernyataan' => $newFileName], 'kode_layanan', $kode_layanan);
 
       return $this->response->setJSON([
         'res' => true,

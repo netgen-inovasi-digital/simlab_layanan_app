@@ -369,12 +369,14 @@ abstract class KeranjangBase extends BaseController
     $user_id = $session->get('id_user');
     $user = $this->keranjangModel->getUserById((int) $user_id);
     $categories = $this->getCategories();
+    $userIdentity = $this->keranjangModel->getUserIdentity((int) $user_id);
 
     $data = [
       'title' => $this->config['title'],
       'user' => $user,
       'categories' => $categories,
       'jenisLayanan' => $this->jenisLayanan,
+      'user_identity' => $userIdentity,
     ];
 
     return view('Modules\Keranjang\Views\v_keranjang', $data);

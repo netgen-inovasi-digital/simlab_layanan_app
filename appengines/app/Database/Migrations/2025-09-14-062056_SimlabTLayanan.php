@@ -58,7 +58,7 @@ class CreateSimlabTLayanan extends Migration
                 'default' => 0,
                 'null' => true,
             ],
-            'surat_pertanyaan' => [
+            'surat_pernyataan' => [
                 'type' => 'VARCHAR',
                 'constraint' => 255,
                 'null' => true,
