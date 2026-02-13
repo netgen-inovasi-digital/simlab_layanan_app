@@ -4,10 +4,10 @@ namespace Modules\PembayaranAdmin\Controllers;
 
 use App\Controllers\BaseController;
 use Modules\PembayaranAdmin\Models\PembayaranAdminModel;
+use Modules\Notifications\Controllers\PaymentNotificationController;
 
 class PembayaranAdmin extends BaseController
 {
-  private $table = 't_pembayaran';
   private $id = 'kode_bayar';
   protected $pembayaranModel;
 
@@ -706,6 +706,14 @@ class PembayaranAdmin extends BaseController
       // Update nomor transaksi di tabel layanan (sync dengan invoice)
       $this->pembayaranModel->updateLayananNoTransaksi($currentData->kode_layanan, $invoiceNo);
 
+      // Kirim notifikasi email invoice ke pelanggan
+      try {
+        $notif = new PaymentNotificationController();
+        $notif->sendInvoiceNotification($id);
+      } catch (\Exception $e) {
+        log_message('error', 'Gagal kirim notifikasi invoice: ' . $e->getMessage());
+      }
+
       return $this->response->setJSON([
         'res' => 'success',
         'msg' => 'Invoice berhasil diupload dan dikirim ke pelanggan',
@@ -854,6 +862,14 @@ class PembayaranAdmin extends BaseController
         if (!$updateTotalResult) {
           log_message('warning', 'Gagal update total_biaya untuk kode_layanan: ' . $currentData->kode_layanan);
         }
+
+        // Kirim notifikasi email hasil verifikasi (diterima) ke pelanggan
+        try {
+          $notif = new PaymentNotificationController();
+          $notif->sendVerificationResultNotification($id, true);
+        } catch (\Exception $e) {
+          log_message('error', 'Gagal kirim notifikasi verifikasi diterima: ' . $e->getMessage());
+        }
       }
 
       if (!$update) {
@@ -938,6 +954,14 @@ class PembayaranAdmin extends BaseController
       if ($update) {
         // Unset status_lunas di t_layanan_detil (set null) karena pembayaran ditolak
         $updateLunasResult = $model->updateStatusLunasDetil($currentData->kode_layanan, null);
+
+        // Kirim notifikasi email hasil verifikasi (ditolak) ke pelanggan
+        try {
+          $notif = new PaymentNotificationController();
+          $notif->sendVerificationResultNotification($id, false, $alasan);
+        } catch (\Exception $e) {
+          log_message('error', 'Gagal kirim notifikasi verifikasi ditolak: ' . $e->getMessage());
+        }
       }
 
       if (!$update) {
@@ -957,235 +981,6 @@ class PembayaranAdmin extends BaseController
       ]);
     } catch (\Exception $e) {
       log_message('error', 'TolakVerifikasi exception: ' . $e->getMessage());
-      return $this->response->setJSON([
-        'res' => false,
-        'msg' => 'Terjadi kesalahan: ' . $e->getMessage(),
-        'xname' => csrf_token(),
-        'xhash' => csrf_hash()
-      ]);
-    }
-  }
-
-  /**
-   * Upload file invoice (PDF) - Admin upload invoice untuk pelanggan
-   */
-  public function uploadInvoice()
-  {
-    try {
-      $file = $this->request->getFile('file_invoice');
-      $encId = $this->request->getPost('id');
-
-      if (empty($encId)) {
-        return $this->response->setJSON([
-          'res' => false,
-          'msg' => 'ID tidak ditemukan',
-          'xname' => csrf_token(),
-          'xhash' => csrf_hash()
-        ]);
-      }
-
-      try {
-        $id = service('encrypter')->decrypt(hex2bin($encId));
-      } catch (\Throwable $e) {
-        return $this->response->setJSON([
-          'res' => false,
-          'msg' => 'ID tidak valid',
-          'xname' => csrf_token(),
-          'xhash' => csrf_hash()
-        ]);
-      }
-
-      if (!($file && $file->isValid() && !$file->hasMoved())) {
-        return $this->response->setJSON([
-          'res' => false,
-          'msg' => 'File tidak valid atau belum dipilih',
-          'xname' => csrf_token(),
-          'xhash' => csrf_hash()
-        ]);
-      }
-
-      // Upload file ke folder invoice
-      $uploadResult = $this->doUpload($file, 'invoice');
-
-      if (!$uploadResult['status']) {
-        return $this->response->setJSON([
-          'res' => false,
-          'msg' => $uploadResult['msg'],
-          'xname' => csrf_token(),
-          'xhash' => csrf_hash()
-        ]);
-      }
-
-      $filename = $uploadResult['filename'];
-
-      // Update file invoice di database (tanpa nomor invoice)
-      $model = $this->pembayaranModel;
-      $currentData = $model->getDataById($this->id, $id);
-
-      // Hapus file lama jika ada
-      if (!empty($currentData->invoice_file)) {
-        $oldFile = FCPATH . 'uploads/invoice/' . $currentData->invoice_file;
-        if (file_exists($oldFile)) {
-          @unlink($oldFile);
-        }
-      }
-
-      // Update file invoice di database
-      $dataPembayaran = [
-        'invoice_file' => $filename
-      ];
-
-      $update = $model->updateData($dataPembayaran, $this->id, $id);
-
-      if (!$update) {
-        return $this->response->setJSON([
-          'res' => false,
-          'msg' => 'Gagal menyimpan invoice',
-          'xname' => csrf_token(),
-          'xhash' => csrf_hash()
-        ]);
-      }
-
-      // Simpan ke session juga (sebagai penanda file baru diupload)
-      session()->set('temp_invoice_' . $id, $filename);
-
-      return $this->response->setJSON([
-        'res' => 'success',
-        'msg' => 'Invoice berhasil diupload. Silakan kirim ke pelanggan.',
-        'xname' => csrf_token(),
-        'xhash' => csrf_hash()
-      ]);
-    } catch (\Exception $e) {
-      log_message('error', 'UploadInvoice exception: ' . $e->getMessage());
-      return $this->response->setJSON([
-        'res' => false,
-        'msg' => 'Terjadi kesalahan: ' . $e->getMessage(),
-        'xname' => csrf_token(),
-        'xhash' => csrf_hash()
-      ]);
-    }
-  }
-
-  /**
-   * Kirim invoice ke pelanggan - Update nomor invoice dan file ke database
-   */
-  public function kirimInvoice()
-  {
-    try {
-      $encId = $this->request->getPost('id');
-      $noInvoice = $this->request->getPost('no_invoice');
-
-      if (empty($encId)) {
-        return $this->response->setJSON([
-          'res' => false,
-          'msg' => 'ID tidak ditemukan',
-          'xname' => csrf_token(),
-          'xhash' => csrf_hash()
-        ]);
-      }
-
-      try {
-        $id = service('encrypter')->decrypt(hex2bin($encId));
-      } catch (\Throwable $e) {
-        return $this->response->setJSON([
-          'res' => false,
-          'msg' => 'ID tidak valid',
-          'xname' => csrf_token(),
-          'xhash' => csrf_hash()
-        ]);
-      }
-
-      $model = $this->pembayaranModel;
-      $currentData = $model->getDataById($this->id, $id);
-
-      // Cek file dari session (file yang baru diupload)
-      $sessionKey = 'temp_invoice_' . $id;
-      $tempFilename = session()->get($sessionKey);
-
-      // Jika tidak ada file di session, cek di database (file lama)
-      if (empty($tempFilename) && (empty($currentData) || empty($currentData->invoice_file))) {
-        return $this->response->setJSON([
-          'res' => false,
-          'msg' => 'Upload file invoice terlebih dahulu',
-          'xname' => csrf_token(),
-          'xhash' => csrf_hash()
-        ]);
-      }
-
-      // Gunakan file dari session jika ada, jika tidak gunakan file lama
-      $filename = !empty($tempFilename) ? $tempFilename : $currentData->invoice_file;
-
-      // Validasi nomor invoice
-      if (empty($noInvoice)) {
-        return $this->response->setJSON([
-          'res' => false,
-          'msg' => 'Nomor invoice harus diisi',
-          'xname' => csrf_token(),
-          'xhash' => csrf_hash()
-        ]);
-      }
-
-      // Cek apakah nomor invoice sudah ada di pembayaran lain
-      if ($this->pembayaranModel->invoiceNumberExists($noInvoice, $id)) {
-        return $this->response->setJSON([
-          'res' => false,
-          'msg' => 'Nomor invoice sudah digunakan',
-          'xname' => csrf_token(),
-          'xhash' => csrf_hash()
-        ]);
-      }
-
-      // Ambil kode_layanan dari pembayaran
-      $kode_layanan = $currentData->kode_layanan;
-      if (empty($kode_layanan)) {
-        return $this->response->setJSON([
-          'res' => false,
-          'msg' => 'Data layanan tidak ditemukan',
-          'xname' => csrf_token(),
-          'xhash' => csrf_hash()
-        ]);
-      }
-
-      // Hapus file lama jika ada dan berbeda dengan file baru
-      if (!empty($currentData->invoice_file) && !empty($tempFilename) && $currentData->invoice_file !== $tempFilename) {
-        $oldFilePath = FCPATH . 'uploads/invoice/' . $currentData->invoice_file;
-        if (file_exists($oldFilePath)) {
-          @unlink($oldFilePath);
-        }
-      }
-
-      // Update nomor invoice dan filename di tabel pembayaran
-      $dataPembayaran = [
-        'no_invoice' => $noInvoice,
-        'invoice_file' => $filename
-      ];
-
-      $updatePembayaran = $model->updateData($dataPembayaran, $this->id, $id);
-
-      if (!$updatePembayaran) {
-        return $this->response->setJSON([
-          'res' => false,
-          'msg' => 'Gagal menyimpan invoice',
-          'xname' => csrf_token(),
-          'xhash' => csrf_hash()
-        ]);
-      }
-
-      // Hapus dari session setelah berhasil save
-      if (!empty($tempFilename)) {
-        session()->remove($sessionKey);
-      }
-
-      $this->pembayaranModel->updateLayananNoTransaksi($kode_layanan, $noInvoice);
-
-      return $this->response->setJSON([
-        'res' => true,
-        'msg' => 'Invoice berhasil dikirim ke pelanggan',
-        'xname' => csrf_token(),
-        'xhash' => csrf_hash()
-      ]);
-    } catch (\Exception $e) {
-      log_message('error', 'KirimInvoice exception: ' . $e->getMessage());
       return $this->response->setJSON([
         'res' => false,
         'msg' => 'Terjadi kesalahan: ' . $e->getMessage(),

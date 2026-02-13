@@ -4,6 +4,7 @@ namespace Modules\PembayaranUser\Controllers;
 
 use App\Controllers\BaseController;
 use Modules\PembayaranUser\Models\PembayaranUserModel;
+use Modules\Notifications\Controllers\PaymentNotificationController;
 
 class PembayaranUser extends BaseController
 {
@@ -314,6 +315,14 @@ class PembayaranUser extends BaseController
         ]);
       }
 
+      // Kirim notifikasi email bukti bayar ke admin
+      try {
+        $notif = new PaymentNotificationController();
+        $notif->sendPaymentProofNotification($id);
+      } catch (\Exception $e) {
+        log_message('error', 'Gagal kirim notifikasi bukti bayar: ' . $e->getMessage());
+      }
+
       return $this->response->setJSON([
         'res' => 'success',
         'msg' => 'Bukti pembayaran berhasil dikirim ke admin. Menunggu verifikasi.',
@@ -544,6 +553,14 @@ class PembayaranUser extends BaseController
     // Hapus dari session setelah berhasil save
     if (!empty($tempFilename)) {
       session()->remove($sessionKey);
+    }
+
+    // Kirim notifikasi email bukti bayar ke admin
+    try {
+      $notif = new PaymentNotificationController();
+      $notif->sendPaymentProofNotification($id);
+    } catch (\Exception $e) {
+      log_message('error', 'Gagal kirim notifikasi bukti bayar: ' . $e->getMessage());
     }
 
     return $this->response->setJSON([

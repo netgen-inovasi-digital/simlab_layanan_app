@@ -91,7 +91,7 @@ class EmailServices
 
     $fromEmail = $config->email ?? config('Email')->fromEmail;
 
-    $this->email->setFrom($fromEmail, 'Simlab System');
+    $this->email->setFrom($fromEmail, 'SIMLAB ULM');
     $this->email->setTo($toEmail);
     $this->email->setSubject($subject);
     $this->email->setMessage($message);
@@ -126,7 +126,7 @@ class EmailServices
 
     $fromEmail = $config->email ?? config('Email')->fromEmail;
 
-    $this->email->setFrom($fromEmail, 'Simlab System');
+    $this->email->setFrom($fromEmail, 'SIMLAB ULM');
     $this->email->setTo($toEmail);
     $this->email->setSubject($subject);
     $this->email->setMessage($message);
@@ -167,7 +167,7 @@ class EmailServices
 
     $fromEmail = $config->email ?? config('Email')->fromEmail;
 
-    $this->email->setFrom($fromEmail, 'Simlab System');
+    $this->email->setFrom($fromEmail, 'SIMLAB ULM');
     $this->email->setTo($toEmail);
     $this->email->setSubject($subject);
     $this->email->setMessage($message);
@@ -206,7 +206,119 @@ class EmailServices
 
     $fromEmail = $config->email ?? config('Email')->fromEmail;
 
-    $this->email->setFrom($fromEmail, 'Simlab System');
+    $this->email->setFrom($fromEmail, 'SIMLAB ULM');
+    $this->email->setTo($toEmail);
+    $this->email->setSubject($subject);
+    $this->email->setMessage($message);
+    $this->email->setMailType('html');
+
+    return $this->email->send();
+  }
+
+  /**
+   * Kirim notifikasi invoice masuk ke pelanggan
+   * 
+   * @param string $toEmail Email pelanggan
+   * @param array $data [no_invoice, kode_layanan, nama_pelanggan, total_biaya, tanggal_invoice]
+   * @return bool Success status
+   */
+  public function sendInvoiceNotification(string $toEmail, array $data): bool
+  {
+    $model = new \App\Models\MyModel('konfigurasi');
+    $config = $model->getDataById('id_konfigurasi', 1);
+
+    $subject = 'Invoice Pembayaran - ' . ($data['no_invoice'] ?? '');
+
+    $viewData = [
+      'subject' => $subject,
+      'no_invoice' => $data['no_invoice'] ?? '-',
+      'kode_layanan' => $data['kode_layanan'] ?? '-',
+      'nama_pelanggan' => $data['nama_pelanggan'] ?? 'Pelanggan',
+      'total_biaya' => $data['total_biaya'] ?? 'Rp 0',
+      'tanggal_invoice' => $data['tanggal_invoice'] ?? date('d-m-Y H:i'),
+    ];
+
+    $message = view('email/payment/invoice_sent', $viewData);
+
+    $fromEmail = $config->email ?? config('Email')->fromEmail;
+
+    $this->email->setFrom($fromEmail, 'SIMLAB ULM');
+    $this->email->setTo($toEmail);
+    $this->email->setSubject($subject);
+    $this->email->setMessage($message);
+    $this->email->setMailType('html');
+
+    return $this->email->send();
+  }
+
+  /**
+   * Kirim notifikasi bukti bayar baru ke admin
+   * 
+   * @param string $toEmail Email admin
+   * @param array $data [no_invoice, kode_layanan, nama_pelanggan, email_pelanggan, total_biaya, tanggal_upload]
+   * @return bool Success status
+   */
+  public function sendPaymentProofNotification(string $toEmail, array $data): bool
+  {
+    $model = new \App\Models\MyModel('konfigurasi');
+    $config = $model->getDataById('id_konfigurasi', 1);
+
+    $subject = 'Bukti Pembayaran Baru - ' . ($data['nama_pelanggan'] ?? 'Pelanggan');
+
+    $viewData = [
+      'subject' => $subject,
+      'no_invoice' => $data['no_invoice'] ?? '-',
+      'kode_layanan' => $data['kode_layanan'] ?? '-',
+      'nama_pelanggan' => $data['nama_pelanggan'] ?? 'Pelanggan',
+      'email_pelanggan' => $data['email_pelanggan'] ?? '-',
+      'total_biaya' => $data['total_biaya'] ?? 'Rp 0',
+      'tanggal_upload' => $data['tanggal_upload'] ?? date('d-m-Y H:i'),
+    ];
+
+    $message = view('email/payment/payment_proof_uploaded', $viewData);
+
+    $fromEmail = $config->email ?? config('Email')->fromEmail;
+
+    $this->email->setFrom($fromEmail, 'SIMLAB ULM');
+    $this->email->setTo($toEmail);
+    $this->email->setSubject($subject);
+    $this->email->setMessage($message);
+    $this->email->setMailType('html');
+
+    return $this->email->send();
+  }
+
+  /**
+   * Kirim notifikasi hasil verifikasi bukti bayar ke pelanggan
+   * 
+   * @param string $toEmail Email pelanggan
+   * @param array $data [no_invoice, kode_layanan, nama_pelanggan, accepted, catatan]
+   * @return bool Success status
+   */
+  public function sendPaymentVerificationResult(string $toEmail, array $data): bool
+  {
+    $model = new \App\Models\MyModel('konfigurasi');
+    $config = $model->getDataById('id_konfigurasi', 1);
+
+    $accepted = $data['accepted'] ?? false;
+    $subject = $accepted
+      ? 'Pembayaran Diterima - ' . ($data['no_invoice'] ?? '')
+      : 'Pembayaran Ditolak - ' . ($data['no_invoice'] ?? '');
+
+    $viewData = [
+      'subject' => $subject,
+      'no_invoice' => $data['no_invoice'] ?? '-',
+      'kode_layanan' => $data['kode_layanan'] ?? '-',
+      'nama_pelanggan' => $data['nama_pelanggan'] ?? 'Pelanggan',
+      'accepted' => $accepted,
+      'catatan' => $data['catatan'] ?? null,
+    ];
+
+    $message = view('email/payment/payment_verification_result', $viewData);
+
+    $fromEmail = $config->email ?? config('Email')->fromEmail;
+
+    $this->email->setFrom($fromEmail, 'SIMLAB ULM');
     $this->email->setTo($toEmail);
     $this->email->setSubject($subject);
     $this->email->setMessage($message);

@@ -1,18 +1,16 @@
 <?php
 
 if (!isset($routes)) {
-    $routes = \Config\Services::routes(true);
+  $routes = \Config\Services::routes(true);
 }
 
 $routes->group('pembayaran_admin', ['namespace' => 'Modules\PembayaranAdmin\Controllers'], function ($subroutes) {
 
-    $subroutes->get('/', 'PembayaranAdmin::index');
-    $subroutes->get('dataList', 'PembayaranAdmin::dataList');
-    $subroutes->get('detailLayanan/(:any)', 'PembayaranAdmin::detailLayanan/$1');
-    $subroutes->post('uploadInvoice', 'PembayaranAdmin::uploadInvoice');
-    $subroutes->post('kirimInvoice', 'PembayaranAdmin::kirimInvoice');
-    $subroutes->post('uploadKirimInvoice', 'PembayaranAdmin::uploadKirimInvoice');
-    $subroutes->post('uploadBukti', 'PembayaranAdmin::uploadBukti');
-    $subroutes->post('terimaVerifikasi', 'PembayaranAdmin::terimaVerifikasi');
-    $subroutes->post('tolakVerifikasi', 'PembayaranAdmin::tolakVerifikasi');
+  $subroutes->get('/', 'PembayaranAdmin::index');
+  $subroutes->get('dataList', 'PembayaranAdmin::dataList');
+  $subroutes->get('detailLayanan/(:any)', 'PembayaranAdmin::detailLayanan/$1');
+  $subroutes->post('uploadKirimInvoice', 'PembayaranAdmin::uploadKirimInvoice');
+  $subroutes->post('uploadBukti', 'PembayaranAdmin::uploadBukti');
+  $subroutes->post('terimaVerifikasi', 'PembayaranAdmin::terimaVerifikasi');
+  $subroutes->post('tolakVerifikasi', 'PembayaranAdmin::tolakVerifikasi');
 });
