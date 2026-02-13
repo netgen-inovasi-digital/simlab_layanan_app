@@ -640,8 +640,8 @@ abstract class KeranjangBase extends BaseController
         @unlink($tmpPath);
       }
 
-      // Update kolom surat_pertanyaan di t_layanan
-      $modelLayanan->updateData(['surat_pertanyaan' => $newFileName], 'kode_layanan', $kode_layanan);
+      // Update kolom surat_pernyataan di t_layanan
+      $modelLayanan->updateData(['surat_pernyataan' => $newFileName], 'kode_layanan', $kode_layanan);
 
       // Simpan log sampel dengan tanggal dan waktu checkout pada kolom pengecekan
       $modelLogSampel = new MyModel('t_log_sampel');
