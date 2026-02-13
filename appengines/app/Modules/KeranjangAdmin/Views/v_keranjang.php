@@ -168,19 +168,19 @@
             <!-- Deskripsi Sampel -->
             <div class="col-md-12">
               <label for="deskripsiSampel" class="form-label">
-                Deskripsi Sampel
+                Deskripsi Sampel <span class="text-danger">*</span>
               </label>
               <textarea class="form-control" id="deskripsiSampel" name="deskripsiSampel" rows="3"
-                placeholder="Tambahkan deskripsi detail sampel jika diperlukan"></textarea>
+                placeholder="Tambahkan deskripsi detail sampel jika diperlukan" required></textarea>
             </div>
 
             <!-- Keterangan Khusus -->
             <div class="col-md-12">
               <label for="keteranganKhusus" class="form-label">
-                Keterangan Khusus
+                Keterangan Khusus <span class="text-danger">*</span>
               </label>
               <textarea class="form-control" id="keteranganKhusus" name="keteranganKhusus" rows="3"
-                placeholder="Informasi tambahan yang perlu diketahui"></textarea>
+                placeholder="Informasi tambahan yang perlu diketahui" required></textarea>
             </div>
           </div>
 
@@ -1024,6 +1024,21 @@
       return;
     }
 
+    const deskripsiSampel = document.getElementById('deskripsiSampel');
+    const keteranganKhusus = document.getElementById('keteranganKhusus');
+
+    if (!deskripsiSampel || !deskripsiSampel.value.trim()) {
+      sayAlert('errorModal', 'Validasi', 'Deskripsi Sampel harus diisi!', 'warning');
+      if (deskripsiSampel) deskripsiSampel.focus();
+      return;
+    }
+
+    if (!keteranganKhusus || !keteranganKhusus.value.trim()) {
+      sayAlert('errorModal', 'Validasi', 'Keterangan Khusus harus diisi!', 'warning');
+      if (keteranganKhusus) keteranganKhusus.focus();
+      return;
+    }
+
     // Validasi surat pengantar (wajib)
     const fileSuratPengantar = document.getElementById('fileSuratPengantar');
     if (!fileSuratPengantar || fileSuratPengantar.files.length === 0) {
@@ -1044,11 +1059,8 @@
     formData.append('kemasanSampel', kemasanSampel.value.trim());
     formData.append('sifatSampel', sifatSampel.value);
     formData.append('sisaSampel', sisaSampel.value);
-
-    const deskripsiSampel = document.getElementById('deskripsiSampel');
-    const keteranganKhusus = document.getElementById('keteranganKhusus');
-    if (deskripsiSampel) formData.append('deskripsiSampel', deskripsiSampel.value.trim());
-    if (keteranganKhusus) formData.append('keteranganKhusus', keteranganKhusus.value.trim());
+    formData.append('deskripsiSampel', deskripsiSampel.value.trim());
+    formData.append('keteranganKhusus', keteranganKhusus.value.trim());
 
     // Tambahkan file surat pengantar
     formData.append('surat_pengantar', fileSuratPengantar.files[0]);

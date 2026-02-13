@@ -27,6 +27,19 @@ class ProfileNotificationController
     $this->recipientModel = new NotificationRecipientModel();
   }
 
+  
+  /**
+   * Siapkan data profil untuk template email
+   */
+  protected function prepareProfileData(object $userRow): array
+  {
+    return [
+      'nama_pelanggan' => $userRow->user_name ?? 'Pelanggan',
+      'email_pelanggan' => $userRow->user_email ?? '',
+      'telpon_pelanggan' => $userRow->user_telpon ?? '-',
+    ];
+  }
+
   /**
    * Kirim notifikasi ke admin bahwa ada pelanggan yang mengajukan verifikasi ULM
    * 
@@ -47,14 +60,20 @@ class ProfileNotificationController
   }
 
   /**
-   * Siapkan data profil untuk template email
+   * Kirim notifikasi hasil verifikasi ke pelanggan
+   * 
+   * @param object $userRow Data pelanggan (user_name, user_email)
+   * @param bool $accepted True jika diterima, false jika ditolak
    */
-  protected function prepareProfileData(object $userRow): array
+  public function sendVerificationResultNotification(object $userRow, bool $accepted): void
   {
-    return [
-      'nama_pelanggan' => $userRow->user_name ?? 'Pelanggan',
-      'email_pelanggan' => $userRow->user_email ?? '',
-      'telpon_pelanggan' => $userRow->user_telpon ?? '-',
-    ];
+    $toEmail = $userRow->user_email ?? '';
+    if (empty($toEmail)) {
+      return;
+    }
+
+    $profileData = $this->prepareProfileData($userRow);
+    $this->emailService->sendVerificationResultNotification($toEmail, $profileData, $accepted);
+    $this->emailService->clearEmail();
   }
 }

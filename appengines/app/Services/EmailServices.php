@@ -11,7 +11,7 @@ class EmailServices
     $this->email = \Config\Services::email();
   }
 
-    /**
+  /**
    * Clear email data untuk reset connection SMTP
    * Gunakan ini setelah setiap send untuk menghindari connection reuse issues
    * 
@@ -21,7 +21,7 @@ class EmailServices
   {
     $this->email->clear();
   }
-  
+
   // notifikasi sederhana (lupa password)
   public function send(array $params): bool
   {
@@ -135,5 +135,83 @@ class EmailServices
     $result = $this->email->send();
 
     return $result;
+  }
+
+  /**
+   * Kirim notifikasi hasil verifikasi ULM ke pelanggan
+   * 
+   * @param string $toEmail Email pelanggan
+   * @param array $profileData Data profil [nama_pelanggan, email_pelanggan, telpon_pelanggan]
+   * @param bool $accepted True jika diterima, false jika ditolak
+   * @return bool Success status
+   */
+  public function sendVerificationResultNotification(string $toEmail, array $profileData, bool $accepted): bool
+  {
+    $model = new \App\Models\MyModel('konfigurasi');
+    $config = $model->getDataById('id_konfigurasi', 1);
+
+    $subject = $accepted
+      ? 'Verifikasi ULM Diterima'
+      : 'Verifikasi ULM Ditolak';
+
+    $viewData = [
+      'subject' => $subject,
+      'nama_pelanggan' => $profileData['nama_pelanggan'],
+    ];
+
+    $templatePath = $accepted
+      ? 'email/profile/verification_accepted'
+      : 'email/profile/verification_rejected';
+
+    $message = view($templatePath, $viewData);
+
+    $fromEmail = $config->email ?? config('Email')->fromEmail;
+
+    $this->email->setFrom($fromEmail, 'Simlab System');
+    $this->email->setTo($toEmail);
+    $this->email->setSubject($subject);
+    $this->email->setMessage($message);
+    $this->email->setMailType('html');
+
+    return $this->email->send();
+  }
+
+  /**
+   * Kirim notifikasi review layanan selesai ke admin
+   * 
+   * @param string $toEmail Email penerima (admin)
+   * @param array $reviewData Data review [kode_layanan, no_invoice, nama_pelanggan, email_pelanggan, total_detail, jumlah_diterima, jumlah_ditolak, detail_items]
+   * @return bool Success status
+   */
+  public function sendReviewCompleteNotification(string $toEmail, array $reviewData): bool
+  {
+    $model = new \App\Models\MyModel('konfigurasi');
+    $config = $model->getDataById('id_konfigurasi', 1);
+
+    $subject = 'Review Layanan Selesai - ' . ($reviewData['kode_layanan'] ?? '');
+
+    $viewData = [
+      'subject' => $subject,
+      'kode_layanan' => $reviewData['kode_layanan'],
+      'no_invoice' => $reviewData['no_invoice'] ?? '',
+      'nama_pelanggan' => $reviewData['nama_pelanggan'],
+      'email_pelanggan' => $reviewData['email_pelanggan'],
+      'total_detail' => $reviewData['total_detail'],
+      'jumlah_diterima' => $reviewData['jumlah_diterima'],
+      'jumlah_ditolak' => $reviewData['jumlah_ditolak'],
+      'detail_items' => $reviewData['detail_items'] ?? [],
+    ];
+
+    $message = view('email/review/review_complete_notification', $viewData);
+
+    $fromEmail = $config->email ?? config('Email')->fromEmail;
+
+    $this->email->setFrom($fromEmail, 'Simlab System');
+    $this->email->setTo($toEmail);
+    $this->email->setSubject($subject);
+    $this->email->setMessage($message);
+    $this->email->setMailType('html');
+
+    return $this->email->send();
   }
 }

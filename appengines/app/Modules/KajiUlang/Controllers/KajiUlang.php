@@ -5,6 +5,7 @@ namespace Modules\KajiUlang\Controllers;
 use App\Controllers\BaseController;
 use App\Models\MyModel;
 use Modules\KajiUlang\Models\KajiUlangModel;
+use Modules\Notifications\Controllers\ReviewNotificationController;
 
 class KajiUlang extends BaseController
 {
@@ -355,44 +356,20 @@ class KajiUlang extends BaseController
     $already = $this->kajiUlangModel->countDetailByKode($detailKode, 1);
 
     if ($already === $total) {
-      // Already approved, check if parent needs update
-      $pendingRemaining = $this->kajiUlangModel->countPendingForLayanan($lnId);
-
-      $parentUpdated = false;
-      if ($pendingRemaining === 0) {
-        $model = new MyModel($this->table);
-        $resParent = $model->updateData(['status_layanan' => 3], $this->id, $lnId);
-        $parentUpdated = ($resParent === true || $resParent === 1);
-      }
-
       return $this->response->setJSON([
         'res' => true,
         'affected' => 0,
         'msg' => 'Sudah disetujui',
-        'parent_updated' => $parentUpdated,
         'xname' => csrf_token(),
         'xhash' => csrf_hash()
       ]);
     }
 
-    // Start transaction
+    // Start transaction — hanya update detail, parent status diupdate saat Kirim
     $this->kajiUlangModel->transStart();
 
     // Approve detail
     $affected = $this->kajiUlangModel->approveLayananDetailByKode($detailKode, $managerId);
-    $parentUpdated = false;
-
-    if ($affected > 0) {
-      // Check remaining pending
-      $pendingRemaining = $this->kajiUlangModel->countPendingForLayanan($lnId);
-
-      if ($pendingRemaining === 0) {
-        // Update parent status to 3
-        $model = new MyModel($this->table);
-        $resParent = $model->updateData(['status_layanan' => 3], $this->id, $lnId);
-        $parentUpdated = ($resParent === true || $resParent === 1);
-      }
-    }
 
     $this->kajiUlangModel->transComplete();
     $transOk = $this->kajiUlangModel->transStatus();
@@ -401,7 +378,6 @@ class KajiUlang extends BaseController
       'res' => $transOk && $affected > 0,
       'affected' => $affected,
       'msg' => $affected > 0 ? 'Berhasil disetujui' : 'No rows updated',
-      'parent_updated' => $parentUpdated,
       'xname' => csrf_token(),
       'xhash' => csrf_hash()
     ]);
@@ -489,44 +465,20 @@ class KajiUlang extends BaseController
     $already = $this->kajiUlangModel->countDetailByKode($detailKode, 2);
 
     if ($already === $total) {
-      // Already rejected, check if parent needs update
-      $pendingRemaining = $this->kajiUlangModel->countPendingForLayanan($lnId);
-
-      $parentUpdated = false;
-      if ($pendingRemaining === 0) {
-        $model = new MyModel($this->table);
-        $resParent = $model->updateData(['status_layanan' => 3], $this->id, $lnId);
-        $parentUpdated = ($resParent === true || $resParent === 1);
-      }
-
       return $this->response->setJSON([
         'res' => true,
         'affected' => 0,
         'msg' => 'Sudah ditolak',
-        'parent_updated' => $parentUpdated,
         'xname' => csrf_token(),
         'xhash' => csrf_hash()
       ]);
     }
 
-    // Start transaction
+    // Start transaction — hanya update detail, parent status diupdate saat Kirim
     $this->kajiUlangModel->transStart();
 
     // Reject detail
     $affected = $this->kajiUlangModel->rejectLayananDetailByKode($detailKode, $managerId);
-    $parentUpdated = false;
-
-    if ($affected > 0) {
-      // Check remaining pending
-      $pendingRemaining = $this->kajiUlangModel->countPendingForLayanan($lnId);
-
-      if ($pendingRemaining === 0) {
-        // Update parent status to 3
-        $model = new MyModel($this->table);
-        $resParent = $model->updateData(['status_layanan' => 3], $this->id, $lnId);
-        $parentUpdated = ($resParent === true || $resParent === 1);
-      }
-    }
 
     $this->kajiUlangModel->transComplete();
     $transOk = $this->kajiUlangModel->transStatus();
@@ -535,7 +487,6 @@ class KajiUlang extends BaseController
       'res' => $transOk && $affected > 0,
       'affected' => $affected,
       'msg' => $affected > 0 ? 'OK' : 'No rows updated',
-      'parent_updated' => $parentUpdated,
       'xname' => csrf_token(),
       'xhash' => csrf_hash()
     ]);
@@ -637,6 +588,16 @@ class KajiUlang extends BaseController
         'xname' => csrf_token(),
         'xhash' => csrf_hash()
       ]);
+    }
+
+    // Kirim notifikasi review selesai ke admin
+    if ($parentUpdated) {
+      try {
+        $reviewNotif = new ReviewNotificationController();
+        $reviewNotif->sendReviewCompleteNotification($lnId);
+      } catch (\Exception $e) {
+        log_message('error', 'Review notification (kirim) failed: ' . $e->getMessage());
+      }
     }
 
     return $this->response->setJSON([

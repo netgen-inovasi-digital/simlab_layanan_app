@@ -101,6 +101,9 @@
         </div>
       </div>
       <div class="modal-footer">
+        <button type="button" id="btnKirim" class="btn btn-success">
+          <i class="bi bi-send"></i> Kirim ke Admin
+        </button>
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
       </div>
     </div>
@@ -335,7 +338,7 @@
       // Auto-save saat klik tombol close (X) atau tombol "Tutup" HANYA di modalDetail
       const closeBtn = e.target.matches('[data-bs-dismiss="modal"]') ? e.target : e.target.closest('[data-bs-dismiss="modal"]');
       if (!closeBtn) return;
-      
+
       // Pastikan hanya untuk modalDetail
       const modal = closeBtn.closest('#modalDetail');
       if (!modal) return;
@@ -464,7 +467,7 @@
     trackingDetailTable = createModal({
       tableId: 'tableDetail',
       apiUrl: `<?php echo site_url("kajiulang/detailList/") ?>${id}`,
-      showFilter:false,
+      showFilter: false,
       treeview: false,
       numbering: false,
       dataSrc: 'items',
@@ -651,6 +654,80 @@
         }
         return;
       }
+    });
+  })();
+
+  // ============================================================
+  // KIRIM KE ADMIN
+  // ============================================================
+  (function attachKirimButton() {
+    const btn = document.getElementById('btnKirim');
+    if (!btn || btn.dataset.bound === '1') return;
+    btn.dataset.bound = '1';
+    btn.addEventListener('click', async function () {
+      const modalEl = document.getElementById('modalDetail');
+      const encLn = modalEl ? modalEl.dataset.encLn : null;
+      if (!encLn) {
+        sayAlert('errorModal', 'Gagal', 'Data belum dimuat dengan lengkap.', 'warning');
+        return;
+      }
+
+      // Konfirmasi
+      sayConfirm('Konfirmasi Kirim', 'Apakah Anda yakin ingin mengirim hasil review ini ke admin?', async function () {
+        showLoading();
+        btn.disabled = true;
+
+        try {
+          // 1. Simpan komentar terlebih dahulu
+          await saveKomentarAsync();
+
+          // 2. Kirim ke admin
+          const csrfToken = _getCsrf();
+          const formData = new FormData();
+          formData.append('ln', encLn);
+
+          const res = await fetch('<?php echo site_url("kajiulang/kirim") ?>', {
+            method: 'POST',
+            body: formData,
+            headers: {
+              'X-Requested-With': 'XMLHttpRequest',
+              'X-CSRF-TOKEN': csrfToken
+            }
+          });
+
+          const data = await res.json();
+
+          // Update CSRF
+          if (data.xname && data.xhash) {
+            document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => input.value = data.xhash);
+          }
+
+          if (data.res) {
+            sayAlert('successModal', 'Berhasil', data.msg || 'Layanan berhasil dikirim ke admin.', 'success');
+
+            if (data.parent_updated) {
+              // Tutup modal dan refresh tabel utama
+              try {
+                var modalInstance = bootstrap.Modal.getInstance(modalEl);
+                if (modalInstance) modalInstance.hide();
+              } catch (err) { }
+            } else {
+              // Reload tabel detail
+              if (trackingDetailTable && trackingDetailTable.fetchData) {
+                removePaginationBeforeReload('tableDetail');
+                trackingDetailTable.fetchData({ reload: true });
+              }
+            }
+          } else {
+            sayAlert('errorModal', 'Gagal', data.msg || 'Gagal mengirim layanan.', 'warning');
+          }
+        } catch (err) {
+          sayAlert('errorModal', 'Error', 'Terjadi kesalahan saat mengirim layanan.', 'error');
+        } finally {
+          hideLoading();
+          btn.disabled = false;
+        }
+      }, 'success', 'kirim');
     });
   })();
 
