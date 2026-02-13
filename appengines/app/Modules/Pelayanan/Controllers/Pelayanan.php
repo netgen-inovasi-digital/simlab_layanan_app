@@ -369,9 +369,19 @@ class Pelayanan extends BaseController
         ]);
       }
 
-      // Ambil surat pengantar dari t_layanan (kolom: surat_pertanyaan)
+      // Ambil surat pengantar dari t_layanan (kolom: surat_pernyataan)
       $layanan = $this->pelayananModel->getLayananByKode($kode_layanan);
-      $suratPengantar = $layanan->surat_pertanyaan ?? null;
+      $suratPengantar = $layanan->surat_pernyataan ?? null;
+
+      // Ambil user_identity dari account_users
+      $userIdentity = '';
+      if ($layanan && isset($layanan->user_id)) {
+        $modelUser = new \App\Models\MyModel('account_users');
+        $user = $modelUser->getDataById('user_id', (int) $layanan->user_id);
+        if ($user && isset($user->user_identity)) {
+          $userIdentity = strtoupper(trim((string) $user->user_identity));
+        }
+      }
 
       return $this->response->setJSON([
         'success' => true,
@@ -384,6 +394,7 @@ class Pelayanan extends BaseController
           'keterangan_khusus' => $sampleData->keterangan_khusus ?? '-',
           'surat_pengantar' => $suratPengantar,
           'surat_pengantar_url' => $suratPengantar ? base_url('uploads/surat_pengantar/' . $suratPengantar) : null,
+          'user_identity' => $userIdentity,
         ]
       ]);
     } catch (\Exception $e) {
@@ -701,7 +712,7 @@ class Pelayanan extends BaseController
       }
 
       // Hapus file lama jika ada
-      $oldFile = $layanan->surat_pertanyaan ?? null;
+      $oldFile = $layanan->surat_pernyataan ?? null;
       if ($oldFile) {
         $oldPath = FCPATH . 'uploads/surat_pengantar/' . $oldFile;
         if (file_exists($oldPath)) {
@@ -738,7 +749,7 @@ class Pelayanan extends BaseController
         @unlink($tmpPath);
       }
 
-      // Update kolom surat_pertanyaan di t_layanan
+      // Update kolom surat_pernyataan di t_layanan
       if (!$this->pelayananModel->updateSuratPengantar($kode_layanan, $newFileName)) {
         return $this->response->setJSON([
           'res' => false,

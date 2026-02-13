@@ -539,9 +539,12 @@ abstract class KeranjangBase extends BaseController
       ]);
     }
 
-    // Validasi file surat pengantar (wajib)
+    // Cek apakah pelanggan ULM
+    $isUlm = isset($pelanggan['status']) && strtoupper(trim((string) $pelanggan['status'])) === 'ULM';
+
+    // Validasi file surat pengantar
     $fileSurat = $this->request->getFile('surat_pengantar');
-    if (!$fileSurat || !$fileSurat->isValid()) {
+    if ($isUlm && (!$fileSurat || !$fileSurat->isValid())) {
       return $this->response->setJSON([
         'res' => false,
         'msg' => 'File Surat Pengantar harus diunggah!',
@@ -550,25 +553,27 @@ abstract class KeranjangBase extends BaseController
       ]);
     }
 
-    // Validasi tipe file
-    $allowedMimes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
-    if (!in_array($fileSurat->getMimeType(), $allowedMimes)) {
-      return $this->response->setJSON([
-        'res' => false,
-        'msg' => 'Tipe file tidak diizinkan. Hanya PDF, JPG, PNG.',
-        'xname' => csrf_token(),
-        'xhash' => csrf_hash()
-      ]);
-    }
+    // Validasi tipe file (hanya jika file dikirim)
+    if ($fileSurat && $fileSurat->isValid()) {
+      $allowedMimes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+      if (!in_array($fileSurat->getMimeType(), $allowedMimes)) {
+        return $this->response->setJSON([
+          'res' => false,
+          'msg' => 'Tipe file tidak diizinkan. Hanya PDF, JPG, PNG.',
+          'xname' => csrf_token(),
+          'xhash' => csrf_hash()
+        ]);
+      }
 
-    // Validasi ukuran (max 5MB)
-    if ($fileSurat->getSize() > 5 * 1024 * 1024) {
-      return $this->response->setJSON([
-        'res' => false,
-        'msg' => 'Ukuran file terlalu besar. Maksimal 5MB.',
-        'xname' => csrf_token(),
-        'xhash' => csrf_hash()
-      ]);
+      // Validasi ukuran (max 5MB)
+      if ($fileSurat->getSize() > 5 * 1024 * 1024) {
+        return $this->response->setJSON([
+          'res' => false,
+          'msg' => 'Ukuran file terlalu besar. Maksimal 5MB.',
+          'xname' => csrf_token(),
+          'xhash' => csrf_hash()
+        ]);
+      }
     }
 
     $totalBiaya = array_sum(array_column($keranjang, 'biaya'));
@@ -618,30 +623,32 @@ abstract class KeranjangBase extends BaseController
         throw new \RuntimeException('Gagal menyimpan identitas sampel');
       }
 
-      // Upload file surat pengantar
-      $ext = strtolower($fileSurat->getClientExtension());
-      try {
-        $newFileName = time() . bin2hex(random_bytes(5)) . '.' . $ext;
-      } catch (\Exception $e) {
-        $newFileName = time() . bin2hex(openssl_random_pseudo_bytes(5)) . '.' . $ext;
-      }
-
-      $uploadPath = FCPATH . 'uploads/surat_pengantar/';
-      if (!is_dir($uploadPath)) {
-        mkdir($uploadPath, 0755, true);
-      }
-
-      $tmpPath = $fileSurat->getTempName();
-      $destPath = $uploadPath . $newFileName;
-      if (!rename($tmpPath, $destPath)) {
-        if (!copy($tmpPath, $destPath)) {
-          throw new \RuntimeException('Gagal memindahkan file surat pengantar.');
+      // Upload file surat pengantar (hanya jika file dikirim)
+      if ($fileSurat && $fileSurat->isValid() && !$fileSurat->hasMoved()) {
+        $ext = strtolower($fileSurat->getClientExtension());
+        try {
+          $newFileName = time() . bin2hex(random_bytes(5)) . '.' . $ext;
+        } catch (\Exception $e) {
+          $newFileName = time() . bin2hex(openssl_random_pseudo_bytes(5)) . '.' . $ext;
         }
-        @unlink($tmpPath);
-      }
 
-      // Update kolom surat_pernyataan di t_layanan
-      $modelLayanan->updateData(['surat_pernyataan' => $newFileName], 'kode_layanan', $kode_layanan);
+        $uploadPath = FCPATH . 'uploads/surat_pengantar/';
+        if (!is_dir($uploadPath)) {
+          mkdir($uploadPath, 0755, true);
+        }
+
+        $tmpPath = $fileSurat->getTempName();
+        $destPath = $uploadPath . $newFileName;
+        if (!rename($tmpPath, $destPath)) {
+          if (!copy($tmpPath, $destPath)) {
+            throw new \RuntimeException('Gagal memindahkan file surat pengantar.');
+          }
+          @unlink($tmpPath);
+        }
+
+        // Update kolom surat_pernyataan di t_layanan
+        $modelLayanan->updateData(['surat_pernyataan' => $newFileName], 'kode_layanan', $kode_layanan);
+      }
 
       // Simpan log sampel dengan tanggal dan waktu checkout pada kolom pengecekan
       $modelLogSampel = new MyModel('t_log_sampel');

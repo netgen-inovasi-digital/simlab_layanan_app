@@ -122,7 +122,7 @@ class Akun extends BaseController
       $data['user_password'] = password_hash($password, PASSWORD_DEFAULT);
     }
 
-    // Upload Bukti File - hanya untuk ULM
+    // Upload Bukti File
     $file = $this->request->getFile('bukti_file');
     if ($newIdentity === 'ULM' && $file && $file->isValid() && !$file->hasMoved()) {
       // Jika ini UPDATE, hapus file lama sebelum upload baru
