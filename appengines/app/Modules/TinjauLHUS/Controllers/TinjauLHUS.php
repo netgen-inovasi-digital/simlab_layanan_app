@@ -5,6 +5,7 @@ namespace Modules\TinjauLHUS\Controllers;
 use App\Controllers\BaseController;
 use App\Models\MyModel;
 use Modules\TinjauLHUS\Models\TinjauLhusModel;
+use Modules\Notifications\Controllers\LhusNotificationController;
 
 class TinjauLHUS extends BaseController
 {
@@ -273,27 +274,27 @@ class TinjauLHUS extends BaseController
     ]);
   }
 
-  // Simpan detKetLhus (JSON) - Update ke t_files_lhus.catatan
-  public function saveDetKetLhus()
+  /**
+   * Batch submit review LHUS (terima/tolak + keterangan).
+   * Menerima JSON: { encLn: "...", items: [{detKode, aksi, ket}, ...] }
+   */
+  public function submitReview()
   {
     $raw = file_get_contents('php://input');
     $input = json_decode($raw, true);
 
-    if (!$input || !isset($input['detKode'])) {
+    if (!$input || !isset($input['items']) || !is_array($input['items']) || empty($input['items'])) {
       return $this->response->setJSON([
         'res' => false,
-        'msg' => 'Parameter tidak lengkap',
+        'msg' => 'Tidak ada data yang diproses',
         'xname' => csrf_token(),
         'xhash' => csrf_hash()
       ]);
     }
 
-    $detKode = (int) $input['detKode'];
-    $ket = $input['ket'] ?? null;
-
     $session = session();
-    $userId = (int) ($session->get('id_user') ?? 0);
-    if ($userId <= 0) {
+    $accUserId = (int) ($session->get('id_user') ?? 0);
+    if ($accUserId <= 0) {
       return $this->response->setJSON([
         'res' => false,
         'msg' => 'User tidak terautentikasi',
@@ -302,199 +303,58 @@ class TinjauLHUS extends BaseController
       ]);
     }
 
+    // Decrypt encLn → kode_layanan
+    $encLn = $input['encLn'] ?? '';
     try {
-      $ok = $this->tinjauLhusModel->updateFileLhusCatatan($detKode, $ket, $userId);
-
-      return $this->response->setJSON([
-        'res' => $ok,
-        'msg' => $ok ? 'Keterangan LHUS disimpan' : 'Tidak ada perubahan',
-        'xname' => csrf_token(),
-        'xhash' => csrf_hash()
-      ]);
+      $kode_layanan = (int) $this->encrypter->decrypt(hex2bin($encLn));
     } catch (\Throwable $e) {
-      return $this->response->setJSON([
-        'res' => false,
-        'msg' => 'Error: ' . $e->getMessage(),
-        'xname' => csrf_token(),
-        'xhash' => csrf_hash()
-      ]);
-    }
-  }
-
-  // Proses detil (POST form-data): 'terima'->1, 'tolak'->2
-  public function prosesDetailLhus()
-  {
-    $detKode = $this->request->getPost('detKode');
-    $aksi = $this->request->getPost('aksi');
-
-    if (empty($detKode) || empty($aksi)) {
-      return $this->response->setJSON([
-        'res' => false,
-        'msg' => 'Parameter tidak lengkap',
-        'xname' => csrf_token(),
-        'xhash' => csrf_hash()
-      ]);
-    }
-
-    $detKode = (int) $detKode;
-    $map = ['terima' => 1, 'tolak' => 2];
-    if (!isset($map[$aksi])) {
-      return $this->response->setJSON([
-        'res' => false,
-        'msg' => 'Aksi tidak valid',
-        'xname' => csrf_token(),
-        'xhash' => csrf_hash()
-      ]);
-    }
-    $new = $map[$aksi];
-
-    // Ambil user yang sedang login untuk dicatat sebagai validasi_by
-    $session = session();
-    $accUserId = (int) ($session->get('id_user') ?? 0);
-    if ($accUserId <= 0) {
-      return $this->response->setJSON([
-        'res' => false,
-        'msg' => 'User login tidak ditemukan',
-        'xname' => csrf_token(),
-        'xhash' => csrf_hash()
-      ]);
+      try {
+        $kode_layanan = (int) $this->encrypter->decrypt($encLn);
+      } catch (\Throwable $e2) {
+        return $this->response->setJSON([
+          'res' => false,
+          'msg' => 'ID tidak valid',
+          'xname' => csrf_token(),
+          'xhash' => csrf_hash()
+        ]);
+      }
     }
 
     try {
-      $result = $this->tinjauLhusModel->processDetailLhusTransaction($detKode, $new, $accUserId);
+      $result = $this->tinjauLhusModel->processBatchReview($input['items'], $accUserId, $kode_layanan);
 
       if (!$result['success']) {
         return $this->response->setJSON([
           'res' => false,
-          'msg' => $result['error'] ?? 'Tidak ada perubahan',
+          'msg' => $result['error'] ?? 'Gagal menyimpan review',
           'xname' => csrf_token(),
           'xhash' => csrf_hash()
         ]);
+      }
+
+      // Kirim notifikasi email ke Penyelia bahwa review LHUS selesai
+      try {
+        $lhusNotif = new LhusNotificationController();
+        $lhusNotif->sendLhusReviewCompleteNotification($kode_layanan, $input['items']);
+      } catch (\Throwable $e) {
+        log_message('error', 'TinjauLHUS::submitReview - Notifikasi review LHUS gagal: ' . $e->getMessage());
+      }
+
+      $msg = 'Review LHUS berhasil disimpan.';
+      if (!empty($result['allAccepted'])) {
+        $msg = 'Semua LHUS telah diterima. Status layanan diperbarui.';
       }
 
       return $this->response->setJSON([
         'res' => true,
-        'msg' => 'Status LHUS diperbarui',
+        'msg' => $msg,
         'xname' => csrf_token(),
         'xhash' => csrf_hash()
       ]);
-
     } catch (\Throwable $e) {
       return $this->response->setJSON([
         'res' => false,
         'msg' => 'Error: ' . $e->getMessage(),
-        'xname' => csrf_token(),
-        'xhash' => csrf_hash()
-      ]);
-    }
-  }
-
-
-  // Proses parent LN (terima/tolak)
-  public function proses($idEnc = null, $aksi = null)
-  {
-    $default = [
-      'success' => false,
-      'msg' => 'Invalid request',
-      'xname' => csrf_token(),
-      'xhash' => csrf_hash()
-    ];
-
-    if (empty($idEnc) || empty($aksi)) {
-      $default['msg'] = 'ID atau aksi tidak ditemukan';
-      return $this->response->setJSON($default);
-    }
-
-    // decrypt tolerant
-    try {
-      $kode_layanan = $this->encrypter->decrypt(hex2bin($idEnc));
-    } catch (\Throwable $e) {
-      try {
-        $kode_layanan = $this->encrypter->decrypt($idEnc);
-      } catch (\Throwable $e2) {
-        $default['msg'] = 'ID tidak valid';
-        return $this->response->setJSON($default);
-      }
-    }
-
-    $map = ['terima' => 5, 'tolak' => 2];
-    if (!isset($map[$aksi])) {
-      $default['msg'] = 'Aksi tidak dikenali';
-      return $this->response->setJSON($default);
-    }
-
-    try {
-      if ($aksi === 'terima') {
-        $session = session();
-        $user_id = (int) $session->get('id_user');
-
-        // Get global and user status summaries
-        $rowG = $this->tinjauLhusModel->getGlobalStatusSummaryForLayanan($kode_layanan);
-        $rowU = $this->tinjauLhusModel->getUserStatusSummaryForLayanan($kode_layanan, $user_id);
-
-        $gTotal = (int) ($rowG['total'] ?? 0);
-        $gCnt1 = (int) ($rowG['cnt1'] ?? 0);
-        $gCnt0 = (int) ($rowG['cnt0'] ?? 0);
-
-        $uTotal = (int) ($rowU['total'] ?? 0);
-        $uCnt1 = (int) ($rowU['cnt1'] ?? 0);
-        $uCnt0 = (int) ($rowU['cnt0'] ?? 0);
-
-        // Global semua diterima -> status_layanan = 6
-        if ($gTotal > 0 && $gCnt1 === $gTotal) {
-          $this->tinjauLhusModel->updateLayananStatus($kode_layanan, 6);
-
-          // Update log sampel
-          $currentTime = date('Y-m-d H:i:s');
-          $this->tinjauLhusModel->updateLogSampelLhus($kode_layanan, $currentTime);
-
-          return $this->response->setJSON([
-            'success' => true,
-            'msg' => 'Berhasil. Semua layanan aktif telah diterima. LHUS disetujui (status_layanan = 6) dan dikirim ke admin.',
-            'xname' => csrf_token(),
-            'xhash' => csrf_hash()
-          ]);
-        }
-
-        // Parsial selesai pada subset user (tidak ubah status_layanan)
-        if ($uTotal > 0 && $uCnt0 === 0 && $uCnt1 === $uTotal) {
-          return $this->response->setJSON([
-            'success' => true,
-            'msg' => 'Masih ada beberapa item LHUS yang belum diproses.',
-            'xname' => csrf_token(),
-            'xhash' => csrf_hash()
-          ]);
-        }
-
-        return $this->response->setJSON([
-          'success' => false,
-          'msg' => 'Masih ada item LHUS yang belum diproses. Harap terima atau tolak semua item aktif terlebih dahulu.',
-          'xname' => csrf_token(),
-          'xhash' => csrf_hash()
-        ]);
-      }
-
-      // Tolak parent
-      if ($aksi === 'tolak') {
-        $this->tinjauLhusModel->updateLayananStatus($kode_layanan, 2);
-        return $this->response->setJSON([
-          'success' => true,
-          'msg' => 'LN ditolak (status_layanan = 2).',
-          'xname' => csrf_token(),
-          'xhash' => csrf_hash()
-        ]);
-      }
-
-      return $this->response->setJSON([
-        'success' => false,
-        'msg' => 'Aksi tidak dikenali.',
-        'xname' => csrf_token(),
-        'xhash' => csrf_hash()
-      ]);
-    } catch (\Throwable $e) {
-      return $this->response->setJSON([
-        'success' => false,
-        'msg' => 'Terjadi error: ' . $e->getMessage(),
         'xname' => csrf_token(),
         'xhash' => csrf_hash()
       ]);

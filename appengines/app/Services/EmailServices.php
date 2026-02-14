@@ -22,6 +22,43 @@ class EmailServices
     $this->email->clear();
   }
 
+  /**
+   * Load konfigurasi dari database untuk SMTP settings
+   * 
+   * @return object|null
+   */
+  private function loadConfig()
+  {
+    $model = new \App\Models\MyModel('konfigurasi');
+    return $model->getDataById('id_konfigurasi', 1);
+  }
+
+  /**
+   * Helper untuk mengirim email dengan template HTML
+   * 
+   * @param string $toEmail Email penerima
+   * @param string $subject Subject email
+   * @param string $message HTML message (sudah di-render dari view)
+   * @param object|null $config Config object (opsional, akan di-load jika null)
+   * @return bool Success status
+   */
+  private function sendEmailWithTemplate(string $toEmail, string $subject, string $message, $config = null): bool
+  {
+    if ($config === null) {
+      $config = $this->loadConfig();
+    }
+
+    $fromEmail = $config->email ?? config('Email')->fromEmail;
+
+    $this->email->setFrom($fromEmail, 'SIMLAB ULM');
+    $this->email->setTo($toEmail);
+    $this->email->setSubject($subject);
+    $this->email->setMessage($message);
+    $this->email->setMailType('html');
+
+    return $this->email->send();
+  }
+
   // notifikasi sederhana (lupa password)
   public function send(array $params): bool
   {
@@ -57,8 +94,7 @@ class EmailServices
    */
   public function sendNewOrderNotification(string $toEmail, array $orderData, string $recipientType = 'admin'): bool
   {
-    $model = new \App\Models\MyModel('konfigurasi');
-    $config = $model->getDataById('id_konfigurasi', 1);
+    $config = $this->loadConfig();
 
     // Buat subject berdasarkan recipient type
     if ($recipientType === 'manajer') {
@@ -89,16 +125,7 @@ class EmailServices
 
     $message = view($templatePath, $viewData);
 
-    $fromEmail = $config->email ?? config('Email')->fromEmail;
-
-    $this->email->setFrom($fromEmail, 'SIMLAB ULM');
-    $this->email->setTo($toEmail);
-    $this->email->setSubject($subject);
-    $this->email->setMessage($message);
-    $this->email->setMailType('html');
-
-
-    return $this->email->send();
+    return $this->sendEmailWithTemplate($toEmail, $subject, $message, $config);
   }
 
   /**
@@ -110,9 +137,6 @@ class EmailServices
    */
   public function sendProfileVerificationNotification(string $toEmail, array $profileData): bool
   {
-    $model = new \App\Models\MyModel('konfigurasi');
-    $config = $model->getDataById('id_konfigurasi', 1);
-
     $subject = 'Permintaan Verifikasi ULM - ' . ($profileData['nama_pelanggan'] ?? 'Pelanggan');
 
     $viewData = [
@@ -124,17 +148,7 @@ class EmailServices
 
     $message = view('email/profile/ulm_verification_request', $viewData);
 
-    $fromEmail = $config->email ?? config('Email')->fromEmail;
-
-    $this->email->setFrom($fromEmail, 'SIMLAB ULM');
-    $this->email->setTo($toEmail);
-    $this->email->setSubject($subject);
-    $this->email->setMessage($message);
-    $this->email->setMailType('html');
-
-    $result = $this->email->send();
-
-    return $result;
+    return $this->sendEmailWithTemplate($toEmail, $subject, $message);
   }
 
   /**
@@ -147,9 +161,6 @@ class EmailServices
    */
   public function sendVerificationResultNotification(string $toEmail, array $profileData, bool $accepted): bool
   {
-    $model = new \App\Models\MyModel('konfigurasi');
-    $config = $model->getDataById('id_konfigurasi', 1);
-
     $subject = $accepted
       ? 'Verifikasi ULM Diterima'
       : 'Verifikasi ULM Ditolak';
@@ -165,15 +176,7 @@ class EmailServices
 
     $message = view($templatePath, $viewData);
 
-    $fromEmail = $config->email ?? config('Email')->fromEmail;
-
-    $this->email->setFrom($fromEmail, 'SIMLAB ULM');
-    $this->email->setTo($toEmail);
-    $this->email->setSubject($subject);
-    $this->email->setMessage($message);
-    $this->email->setMailType('html');
-
-    return $this->email->send();
+    return $this->sendEmailWithTemplate($toEmail, $subject, $message);
   }
 
   /**
@@ -185,9 +188,6 @@ class EmailServices
    */
   public function sendReviewCompleteNotification(string $toEmail, array $reviewData): bool
   {
-    $model = new \App\Models\MyModel('konfigurasi');
-    $config = $model->getDataById('id_konfigurasi', 1);
-
     $subject = 'Review Layanan Selesai - ' . ($reviewData['kode_layanan'] ?? '');
 
     $viewData = [
@@ -204,15 +204,7 @@ class EmailServices
 
     $message = view('email/review/review_complete_notification', $viewData);
 
-    $fromEmail = $config->email ?? config('Email')->fromEmail;
-
-    $this->email->setFrom($fromEmail, 'SIMLAB ULM');
-    $this->email->setTo($toEmail);
-    $this->email->setSubject($subject);
-    $this->email->setMessage($message);
-    $this->email->setMailType('html');
-
-    return $this->email->send();
+    return $this->sendEmailWithTemplate($toEmail, $subject, $message);
   }
 
   /**
@@ -224,9 +216,6 @@ class EmailServices
    */
   public function sendInvoiceNotification(string $toEmail, array $data): bool
   {
-    $model = new \App\Models\MyModel('konfigurasi');
-    $config = $model->getDataById('id_konfigurasi', 1);
-
     $subject = 'Invoice Pembayaran - ' . ($data['no_invoice'] ?? '');
 
     $viewData = [
@@ -240,15 +229,7 @@ class EmailServices
 
     $message = view('email/payment/invoice_sent', $viewData);
 
-    $fromEmail = $config->email ?? config('Email')->fromEmail;
-
-    $this->email->setFrom($fromEmail, 'SIMLAB ULM');
-    $this->email->setTo($toEmail);
-    $this->email->setSubject($subject);
-    $this->email->setMessage($message);
-    $this->email->setMailType('html');
-
-    return $this->email->send();
+    return $this->sendEmailWithTemplate($toEmail, $subject, $message);
   }
 
   /**
@@ -260,9 +241,6 @@ class EmailServices
    */
   public function sendPaymentProofNotification(string $toEmail, array $data): bool
   {
-    $model = new \App\Models\MyModel('konfigurasi');
-    $config = $model->getDataById('id_konfigurasi', 1);
-
     $subject = 'Bukti Pembayaran Baru - ' . ($data['nama_pelanggan'] ?? 'Pelanggan');
 
     $viewData = [
@@ -277,15 +255,7 @@ class EmailServices
 
     $message = view('email/payment/payment_proof_uploaded', $viewData);
 
-    $fromEmail = $config->email ?? config('Email')->fromEmail;
-
-    $this->email->setFrom($fromEmail, 'SIMLAB ULM');
-    $this->email->setTo($toEmail);
-    $this->email->setSubject($subject);
-    $this->email->setMessage($message);
-    $this->email->setMailType('html');
-
-    return $this->email->send();
+    return $this->sendEmailWithTemplate($toEmail, $subject, $message);
   }
 
   /**
@@ -297,9 +267,6 @@ class EmailServices
    */
   public function sendPaymentVerificationResult(string $toEmail, array $data): bool
   {
-    $model = new \App\Models\MyModel('konfigurasi');
-    $config = $model->getDataById('id_konfigurasi', 1);
-
     $accepted = $data['accepted'] ?? false;
     $subject = $accepted
       ? 'Pembayaran Diterima - ' . ($data['no_invoice'] ?? '')
@@ -316,14 +283,63 @@ class EmailServices
 
     $message = view('email/payment/payment_verification_result', $viewData);
 
-    $fromEmail = $config->email ?? config('Email')->fromEmail;
+    return $this->sendEmailWithTemplate($toEmail, $subject, $message);
+  }
 
-    $this->email->setFrom($fromEmail, 'SIMLAB ULM');
-    $this->email->setTo($toEmail);
-    $this->email->setSubject($subject);
-    $this->email->setMessage($message);
-    $this->email->setMailType('html');
+  /**
+   * Kirim notifikasi LHUS siap ditinjau ke Manajer Teknis
+   * 
+   * @param string $toEmail Email Manajer Teknis
+   * @param array $data [kode_layanan, no_invoice, nama_pelanggan, nama_penyelia, total_detail, detail_items]
+   * @return bool Success status
+   */
+  public function sendLhusReadyNotification(string $toEmail, array $data): bool
+  {
+    $subject = 'LHUS Siap Ditinjau';
 
-    return $this->email->send();
+    $viewData = [
+      'subject' => $subject,
+      'kode_layanan' => $data['kode_layanan'] ?? '-',
+      'no_invoice' => $data['no_invoice'] ?? '',
+      'nama_pelanggan' => $data['nama_pelanggan'] ?? '-',
+      'nama_penyelia' => $data['nama_penyelia'] ?? 'Penyelia',
+      'total_detail' => $data['total_detail'] ?? 0,
+      'detail_items' => $data['detail_items'] ?? [],
+    ];
+
+    $message = view('email/lhus/lhus_ready_for_review', $viewData);
+
+    return $this->sendEmailWithTemplate($toEmail, $subject, $message);
+  }
+
+  /**
+   * Kirim notifikasi hasil review LHUS ke Penyelia
+   * 
+   * @param string $toEmail Email Penyelia
+   * @param array $data [kode_layanan, no_invoice, nama_pelanggan, total_detail, jumlah_diterima, jumlah_ditolak, all_accepted, detail_items]
+   * @return bool Success status
+   */
+  public function sendLhusReviewResultNotification(string $toEmail, array $data): bool
+  {
+    $allAccepted = $data['all_accepted'] ?? false;
+    $subject = $allAccepted
+      ? 'LHUS Diterima'
+      : 'Hasil Review LHUS';
+
+    $viewData = [
+      'subject' => $subject,
+      'kode_layanan' => $data['kode_layanan'] ?? '-',
+      'no_invoice' => $data['no_invoice'] ?? '',
+      'nama_pelanggan' => $data['nama_pelanggan'] ?? '-',
+      'total_detail' => $data['total_detail'] ?? 0,
+      'jumlah_diterima' => $data['jumlah_diterima'] ?? 0,
+      'jumlah_ditolak' => $data['jumlah_ditolak'] ?? 0,
+      'all_accepted' => $allAccepted,
+      'detail_items' => $data['detail_items'] ?? [],
+    ];
+
+    $message = view('email/lhus/lhus_review_complete', $viewData);
+
+    return $this->sendEmailWithTemplate($toEmail, $subject, $message);
   }
 }

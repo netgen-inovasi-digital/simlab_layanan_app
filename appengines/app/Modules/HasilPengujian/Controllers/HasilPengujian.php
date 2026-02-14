@@ -5,6 +5,7 @@ namespace Modules\HasilPengujian\Controllers;
 use App\Controllers\BaseController;
 use App\Models\MyModel;
 use Modules\HasilPengujian\Models\HasilPengujianModel;
+use Modules\Notifications\Controllers\LhusNotificationController;
 
 /**
  * HasilPengujian Controller
@@ -514,6 +515,14 @@ class HasilPengujian extends BaseController
         );
       } else {
         $this->hasilPengujianModel->transCommit();
+      }
+
+      // Kirim notifikasi email ke Manajer Teknis bahwa LHUS siap ditinjau
+      try {
+        $lhusNotif = new LhusNotificationController();
+        $lhusNotif->sendLhusReadyForReviewNotification($kode_layanan, $user_id);
+      } catch (\Throwable $e) {
+        log_message('error', 'HasilPengujian::processSubmission - Notifikasi LHUS gagal: ' . $e->getMessage());
       }
 
       // Prepare response
