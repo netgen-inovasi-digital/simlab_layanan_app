@@ -114,7 +114,12 @@
       </div>
 
       <div class="modal-footer">
-        <!-- Tidak ada tombol "Kirim" sesuai permintaan -->
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <i class="bi bi-x-circle"></i> Tutup
+        </button>
+        <button type="button" class="btn btn-primary" id="btnSelesaiReview">
+          <i class="bi bi-check-circle"></i> Selesai Ulasan
+        </button>
       </div>
     </div>
   </div>
@@ -320,7 +325,9 @@
 
   // Load detail LN -> tampilkan modal
   var trackingDetailTable = null;
+  var pendingChanges = {};
   function loadDetail(id) {
+    pendingChanges = {};
     const modalEl = document.getElementById('modalDetail');
     if (modalEl) {
       modalEl.dataset.encLn = id;
@@ -348,7 +355,7 @@
       treeview: false,
       numbering: false,
       dataSrc: 'items',
-      sortable:false
+      sortable: false
     });
 
     // Load identitas sampel dan data tambahan setelah modal dibuat
@@ -385,79 +392,85 @@
     }
   }
 
-  // Handler: Simpan keterangan LHUS per baris (manual)
-  document.addEventListener('click', function (e) {
-    const btnSave = e.target.closest('.btn-save-detketlhus');
-    if (!btnSave) return;
+  // ============================================================
+  // LOGIKA REVIEW LHUS: LOCAL STATE + BATCH SAVE
+  // ============================================================
 
-    e.preventDefault();
-    const det = btnSave.dataset.det;
-    if (!det) return;
-
-    const textarea = document.getElementById('detketlhus_' + det);
-    const ket = textarea ? textarea.value : '';
-    const st = textarea ? parseInt(textarea.getAttribute('data-statuslhus') || '0', 10) : 0;
-
-    // Simpan hanya jika status != 0 (sudah diproses: diterima/ditolak)
-    if (st === 0) {
-      sayAlert('errorModal', 'Tidak Bisa Disimpan', 'Komentar hanya disimpan untuk item yang sudah diproses (Diterima/Ditolak).', 'warning');
-      return;
-    }
-
-    btnSave.disabled = true;
-    const csrfToken = _getCsrf();
-
-    fetch('<?php echo site_url("tinjaulhus/savedetketlhus") ?>', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-TOKEN': csrfToken,
-        'X-Requested-With': 'XMLHttpRequest'
-      },
-      body: JSON.stringify({ detKode: parseInt(det, 10), ket: ket })
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (data.xname && data.xhash) {
-          document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => input.value = data.xhash);
-        }
-        if (data.res) {
-          sayAlert('successModal', 'Berhasil', data.msg || 'Tersimpan', 'success');
-        } else {
-          sayAlert('errorModal', 'Gagal', data.msg || 'Gagal menyimpan', 'warning');
-        }
-      })
-      .catch(err => {
-        console.error(err);
-        sayAlert('errorModal', 'Error', 'Terjadi kesalahan sistem', 'warning');
-      })
-      .finally(() => { btnSave.disabled = false; });
-  });
-
-  // Handler: Terima / Tolak per det (langsung tanpa konfirmasi)
+  // Handler: Terima / Tolak per item (toggle lokal, belum simpan ke DB)
   document.addEventListener('click', function (e) {
     const btnAccept = e.target.closest('.btn-accept-lhus');
     const btnReject = e.target.closest('.btn-reject-lhus');
     if (!btnAccept && !btnReject) return;
-
     e.preventDefault();
+
     const isAccept = !!btnAccept;
-    theEl = isAccept ? btnAccept : btnReject;
-    const det = theEl.dataset.det;
+    const el = isAccept ? btnAccept : btnReject;
+    const det = el.dataset.det;
     if (!det) return;
 
-    theEl.disabled = true;
-    const formData = new FormData();
-    formData.append('detKode', det);
-    formData.append('aksi', isAccept ? 'terima' : 'tolak');
+    const row = el.closest('tr');
+    if (!row) return;
 
-    const csrfInput = document.querySelector('[name="<?= csrf_token() ?>"]');
-    if (csrfInput) formData.append(csrfInput.getAttribute('name'), csrfInput.value);
+    // Update local pending state
+    pendingChanges[det] = isAccept ? 'terima' : 'tolak';
 
-    fetch('<?php echo site_url("tinjaulhus/prosesdetaillhus") ?>', {
+    // Visual feedback: update status badge
+    const statusCell = row.cells[4];
+    const actionDiv = el.closest('.d-flex');
+    const acceptBtn = actionDiv.querySelector('.btn-accept-lhus');
+    const rejectBtn = actionDiv.querySelector('.btn-reject-lhus');
+
+    if (isAccept) {
+      statusCell.innerHTML = '<span class="badge bg-success">Diterima</span>';
+      acceptBtn.style.opacity = '0.5';
+      acceptBtn.style.pointerEvents = 'none';
+      rejectBtn.style.opacity = '1';
+      rejectBtn.style.pointerEvents = 'auto';
+    } else {
+      statusCell.innerHTML = '<span class="badge bg-danger">Ditolak</span>';
+      rejectBtn.style.opacity = '0.5';
+      rejectBtn.style.pointerEvents = 'none';
+      acceptBtn.style.opacity = '1';
+      acceptBtn.style.pointerEvents = 'auto';
+    }
+  });
+
+  // Handler: Tombol Selesai — batch submit semua perubahan ke server
+  document.getElementById('btnSelesaiReview').addEventListener('click', function () {
+    const modalEl = document.getElementById('modalDetail');
+    const encLn = modalEl ? modalEl.dataset.encLn : null;
+
+    if (!encLn) {
+      sayAlert('errorModal', 'Error', 'Data layanan tidak valid.', 'error');
+      return;
+    }
+
+    // Collect semua perubahan
+    const items = [];
+    for (const [det, aksi] of Object.entries(pendingChanges)) {
+      const textarea = document.getElementById('detketlhus_' + det);
+      items.push({
+        detKode: parseInt(det, 10),
+        aksi: aksi,
+        ket: textarea ? textarea.value.trim() : ''
+      });
+    }
+
+    if (items.length === 0) {
+      sayAlert('errorModal', 'Info', 'Belum ada perubahan. Silakan terima atau tolak item LHUS terlebih dahulu.', 'warning');
+      return;
+    }
+
+    showLoading();
+
+    fetch('<?= site_url("tinjaulhus/submitreview") ?>', {
       method: 'POST',
-      headers: { 'X-Requested-With': 'XMLHttpRequest' },
-      body: formData
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': _getCsrf(),
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: JSON.stringify({ encLn: encLn, items: items })
     })
       .then(res => res.json())
       .then(data => {
@@ -465,167 +478,44 @@
           document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => input.value = data.xhash);
         }
         if (data.res) {
-          const modalEl = document.getElementById('modalDetail');
-          const encLn = modalEl ? modalEl.dataset.encLn : null;
-          if (encLn) {
-            try { loadDetail(encLn); } catch (err) { if (typeof table !== 'undefined') table.fetchData({ reload: true }); }
-          } else {
-            if (typeof table !== 'undefined') table.fetchData({ reload: true });
+          pendingChanges = {};
+          sayAlert('successModal', 'Berhasil', data.msg || 'Review berhasil disimpan', 'success');
+
+          // Tutup modal
+          try {
+            const modalEl = document.getElementById('modalDetail');
+            if (typeof bootstrap !== 'undefined') {
+              const modalInstance = bootstrap.Modal.getInstance(modalEl);
+              if (modalInstance) modalInstance.hide();
+            } else if (typeof $ === 'function') {
+              $('#modalDetail').modal('hide');
+            }
+          } catch (err) {
+            console.warn('Modal close error', err);
           }
+
+          if (typeof table !== 'undefined') table.fetchData({ reload: true });
         } else {
-          sayAlert('errorModal', 'Gagal', data.msg || 'Gagal memproses', 'warning');
+          sayAlert('errorModal', 'Gagal', data.msg || 'Gagal menyimpan review', 'error');
         }
       })
       .catch(err => {
         console.error(err);
-        sayAlert('errorModal', 'Error', 'Terjadi kesalahan sistem', 'warning');
+        sayAlert('errorModal', 'Error', 'Terjadi kesalahan sistem', 'error');
       })
-      .finally(() => { theEl.disabled = false; });
+      .finally(() => { hideLoading(); });
   });
 
-  (function () {
-    const SAVE_URL = '<?php echo site_url("tinjaulhus/savedetketlhus") ?>';
-
-    // Debounce helper
-    function debounce(fn, wait) {
-      var t;
-      return function (...args) {
-        clearTimeout(t);
-        t = setTimeout(() => fn.apply(this, args), wait);
-      };
-    }
-
-    // Ambil token CSRF sekarang
-    function _getCsrfLocal() {
-      const csrfInput = document.querySelector('[name="<?= csrf_token() ?>"]');
-      return csrfInput ? csrfInput.value : '';
-    }
-
-    // Simpan satu det (promise). HANYA dipanggil jika status != 0
-    function saveSingleDet(detKode, ket) {
-      const csrfToken = _getCsrfLocal();
-      return fetch(SAVE_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': csrfToken,
-          'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: JSON.stringify({ detKode: parseInt(detKode, 10), ket: ket })
-      })
-        .then(res => res.json())
-        .then(data => {
-          if (data && data.xname && data.xhash) {
-            document.querySelectorAll('[name="' + data.xname + '"]').forEach(input => input.value = data.xhash);
-          }
-          return data;
-        })
-        .catch(err => {
-          console.error('saveSingleDet error det=' + detKode, err);
-          return { res: false, error: err };
-        });
-    }
-
-    // Simpan semua textarea yang statusnya != 0
-    function saveAllDetKetLhus() {
-      const modalEl = document.getElementById('modalDetail');
-      if (!modalEl) return Promise.resolve({ ok: false, msg: 'Modal tidak ditemukan' });
-
-      const inputs = modalEl.querySelectorAll('.detketlhus-input');
-      const promises = [];
-      inputs.forEach(input => {
-        const det = input.getAttribute('data-det');
-        const st = parseInt(input.getAttribute('data-statuslhus') || '0', 10);
-        if (det && st !== 0) {
-          promises.push(saveSingleDet(det, input.value));
-        }
-      });
-
-      if (promises.length === 0) return Promise.resolve({ ok: true, skipped: true });
-
-      return Promise.all(promises).then(results => {
-        const successCount = results.filter(r => r && r.res).length;
-        return { ok: successCount === results.length, results: results, saved: successCount };
-      });
-    }
-
-    // Debounced saver on typing — hanya untuk status != 0
-    const debouncedSave = debounce(function (input) {
-      const det = input.getAttribute('data-det');
-      const st = parseInt(input.getAttribute('data-statuslhus') || '0', 10);
-      if (!det || st === 0) return;
-      const saveBtn = input.closest('td, tr')?.querySelector('.btn-save-detketlhus');
-      if (saveBtn) saveBtn.disabled = true;
-      saveSingleDet(det, input.value).then(() => { if (saveBtn) saveBtn.disabled = false; });
-    }, 800);
-
-    // Autosave saat input (hanya status != 0)
-    document.addEventListener('input', function (e) {
-      const t = e.target;
-      if (!t || !t.classList) return;
-      if (t.classList.contains('detketlhus-input')) {
-        const st = parseInt(t.getAttribute('data-statuslhus') || '0', 10);
-        if (st !== 0) debouncedSave(t);
-      }
-    });
-
-    // Simpan on blur (lebih agresif, hanya status != 0)
-    document.addEventListener('blur', function (e) {
-      const t = e.target;
-      if (!t || !t.classList) return;
-      if (t.classList.contains('detketlhus-input')) {
-        const det = t.getAttribute('data-det');
-        const st = parseInt(t.getAttribute('data-statuslhus') || '0', 10);
-        if (det && st !== 0) {
-          const saveBtn = t.closest('td, tr')?.querySelector('.btn-save-detketlhus');
-          if (saveBtn) saveBtn.disabled = true;
-          saveSingleDet(det, t.value).finally(() => { if (saveBtn) saveBtn.disabled = false; });
-        }
-      }
-    }, true);
-
-    // Saat modal akan / selesai ditutup -> simpan komentar yang eligible dan refresh table utama
-    (function attachModalCloseHandlers() {
-      const modalEl = document.getElementById('modalDetail');
-      if (!modalEl) return;
-
-      function refreshMainTable() {
+  // Refresh table utama saat modal ditutup
+  (function attachModalCloseRefresh() {
+    const modalEl = document.getElementById('modalDetail');
+    if (!modalEl) return;
+    if (typeof bootstrap !== 'undefined') {
+      modalEl.addEventListener('hidden.bs.modal', function () {
+        pendingChanges = {};
         try { if (typeof table !== 'undefined') table.fetchData({ reload: true }); } catch (e) { }
-      }
-
-      try {
-        if (typeof bootstrap !== 'undefined') {
-          modalEl.addEventListener('hide.bs.modal', function () {
-            saveAllDetKetLhus().catch(err => console.error(err));
-          });
-          modalEl.addEventListener('hidden.bs.modal', function () {
-            // Pastikan refresh setelah benar-benar tertutup
-            refreshMainTable();
-          });
-        } else if (typeof $ === 'function') {
-          $(modalEl).on('hide.bs.modal', function () {
-            saveAllDetKetLhus().catch(err => console.error(err));
-          });
-          $(modalEl).on('hidden.bs.modal', function () {
-            refreshMainTable();
-          });
-        } else {
-          // fallback click dismiss
-          modalEl.addEventListener('click', function (ev) {
-            const btn = ev.target.closest('[data-bs-dismiss="modal"]');
-            if (btn) {
-              saveAllDetKetLhus().catch(err => console.error(err));
-              setTimeout(refreshMainTable, 300);
-            }
-          });
-        }
-      } catch (err) {
-        console.warn('attachModalCloseHandlers error', err);
-      }
-    })();
-
-    // Expose helper (opsional)
-    window.saveAllDetKetLhus = saveAllDetKetLhus;
+      });
+    }
   })();
 
   // ============================================================

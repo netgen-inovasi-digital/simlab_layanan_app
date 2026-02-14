@@ -230,10 +230,16 @@ class TinjauLhusModel extends Model
     }
 
     // Jika belum ada record di t_files_lhus (kasus jarang), buat placeholder baru
-    $layanan = $this->getLayananKodeByDetailKode($detKode);
+    // Ambil kode_layanan dari t_layanan_detil
+    $detilRow = $db->table('t_layanan_detil')
+      ->select('kode_layanan')
+      ->where('kode', $detKode)
+      ->get()
+      ->getRow();
+
     $insertData = [
       'kode' => $detKode,
-      'kode_layanan' => $layanan->kode_layanan ?? null,
+      'kode_layanan' => $detilRow->kode_layanan ?? null,
       'catatan' => $catatan,
       'status' => null,
     ];
@@ -243,23 +249,6 @@ class TinjauLhusModel extends Model
     }
 
     return $db->table('t_files_lhus')->insert($insertData);
-  }
-
-  /**
-   * Get kode_layanan dari detail kode
-   * 
-   * @param int $detKode
-   * @return object|null
-   */
-  public function getLayananKodeByDetailKode($detKode)
-  {
-    $db = $this->db;
-
-    return $db->table('t_layanan_detil')
-      ->select('kode_layanan')
-      ->where('kode', $detKode)
-      ->get()
-      ->getRow();
   }
 
   /**
@@ -356,106 +345,71 @@ class TinjauLhusModel extends Model
   }
 
   /**
-   * Process detail LHUS dengan transaction
-   * 
-   * @param int $detKode
-   * @param int $newStatus 1=terima, 2=tolak
-   * @param int $accUserId
-   * @return array ['success' => bool, 'kode_layanan' => int|null, 'error' => string|null]
+   * Batch process LHUS review: terima/tolak + keterangan dalam satu transaksi.
+   *
+   * @param array $items  Array of ['detKode' => int, 'aksi' => 'terima'|'tolak', 'ket' => string|null]
+   * @param int   $accUserId  User yang melakukan review
+   * @param int   $kode_layanan  Kode layanan parent
+   * @return array ['success' => bool, 'processed' => int, 'allAccepted' => bool, 'error' => string|null]
    */
-  public function processDetailLhusTransaction($detKode, $newStatus, $accUserId)
+  public function processBatchReview(array $items, int $accUserId, int $kode_layanan): array
   {
     $db = $this->db;
     $db->transStart();
 
     try {
-      // Ambil LN parent dari detil ini
-      $detRow = $this->getLayananKodeByDetailKode($detKode);
+      $map = ['terima' => 1, 'tolak' => 2];
+      $processed = 0;
 
-      if (!$detRow) {
-        $db->transRollback();
-        return ['success' => false, 'kode_layanan' => null, 'error' => 'Detil tidak ditemukan'];
+      foreach ($items as $item) {
+        $detKode = (int) ($item['detKode'] ?? 0);
+        $aksi = $item['aksi'] ?? '';
+        $ket = $item['ket'] ?? null;
+
+        if ($detKode <= 0 || !isset($map[$aksi]))
+          continue;
+
+        $newStatus = $map[$aksi];
+
+        // Update files status di t_layanan_detil
+        $this->updateDetailFilesStatus($detKode, $newStatus);
+
+        // Update validasi_by dan status di t_files_lhus
+        $this->updateFileLhusValidation($detKode, $newStatus, $accUserId);
+
+        // Update keterangan (catatan) jika diisi
+        if ($ket !== null && $ket !== '') {
+          $this->updateFileLhusCatatan($detKode, $ket, $accUserId);
+        }
+
+        $processed++;
       }
 
-      $kode_layanan = (int) $detRow->kode_layanan;
-
-      // UPDATE status files di t_layanan_detil
-      $this->updateDetailFilesStatus($detKode, $newStatus);
-
-      // Update validasi_by di t_files_lhus
-      $this->updateFileLhusValidation($detKode, $newStatus, $accUserId);
-
-      // Auto set status_layanan = 6 jika semua det aktif sudah diterima
+      // Cek apakah semua item sudah diterima → auto set status_layanan = 6
+      $allAccepted = false;
       $rowG = $this->getLayananStatusSummary($kode_layanan);
-
       $gTotal = (int) ($rowG['total'] ?? 0);
       $gCnt1 = (int) ($rowG['cnt1'] ?? 0);
 
       if ($gTotal > 0 && $gCnt1 === $gTotal) {
         $this->updateLayananStatus($kode_layanan, 6);
-
-        // Update log sampel
         $currentTime = date('Y-m-d H:i:s');
         $this->updateLogSampelLhus($kode_layanan, $currentTime);
+        $allAccepted = true;
       }
 
       $db->transComplete();
 
       return [
         'success' => $db->transStatus(),
-        'kode_layanan' => $kode_layanan,
+        'processed' => $processed,
+        'allAccepted' => $allAccepted,
         'error' => null
       ];
-
     } catch (\Throwable $e) {
       $db->transRollback();
-      return ['success' => false, 'kode_layanan' => null, 'error' => $e->getMessage()];
+      return ['success' => false, 'processed' => 0, 'allAccepted' => false, 'error' => $e->getMessage()];
     }
-  }
-
-  /**
-   * Get user status summary untuk satu layanan
-   * 
-   * @param int $kode_layanan
-   * @param int $userId
-   * @return array|null
-   */
-  public function getUserStatusSummaryForLayanan($kode_layanan, $userId)
-  {
-    $db = $this->db;
-
-    return $db->table('t_layanan_detil as d')
-      ->select("
-                COUNT(*) AS total,
-                SUM(CASE WHEN d.files = 1 THEN 1 ELSE 0 END) AS cnt1,
-                SUM(CASE WHEN d.files = 0 OR d.files = 3 THEN 1 ELSE 0 END) AS cnt0
-            ", false)
-      ->join('r_tim rt', 'rt.uji_kode = d.uji_kode', 'inner')
-      ->where('d.kode_layanan', $kode_layanan)
-      ->where('d.status_layanan', 1)
-      ->where('rt.user_id', $userId)
-      ->get()
-      ->getRowArray();
-  }
-
-  /**
-   * Get global status summary untuk satu layanan
-   * 
-   * @param int $kode_layanan
-   * @return array|null
-   */
-  public function getGlobalStatusSummaryForLayanan($kode_layanan)
-  {
-    $db = $this->db;
-
-    return $db->query("
-            SELECT 
-                COUNT(*) AS total,
-                SUM(CASE WHEN files = 1 THEN 1 ELSE 0 END) AS cnt1,
-                SUM(CASE WHEN files = 0 OR files = 3 THEN 1 ELSE 0 END) AS cnt0
-            FROM t_layanan_detil
-            WHERE kode_layanan = ? AND status_layanan = 1
-        ", [$kode_layanan])->getRowArray();
   }
 
   /**

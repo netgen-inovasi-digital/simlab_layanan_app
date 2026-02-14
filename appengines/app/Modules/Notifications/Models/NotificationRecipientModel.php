@@ -100,6 +100,39 @@ class NotificationRecipientModel
   }
 
   /**
+   * Ambil email user berdasarkan kode_layanan dan role
+   * Query t_layanan_detil → r_tim → account untuk mendapatkan
+   * email user dengan role tertentu yang terkait layanan
+   * 
+   * @param int|string $kodeLayanan Kode layanan
+   * @param int $roleId Filter role (4=MT, 6=Penyelia)
+   * @return array Array email unik
+   */
+  public function getEmailsByLayanan($kodeLayanan, int $roleId): array
+  {
+    try {
+      $result = $this->db->table('t_layanan_detil as d')
+        ->select('acc.email')
+        ->join('r_tim as tim', 'tim.uji_kode = d.uji_kode', 'inner')
+        ->join('account as acc', 'acc.user_id = tim.user_id', 'inner')
+        ->where('d.kode_layanan', $kodeLayanan)
+        ->where('d.status_layanan', 1)
+        ->where('acc.role_id', $roleId)
+        ->where('acc.status_user', 1)
+        ->where('acc.email IS NOT NULL')
+        ->where('acc.email !=', '')
+        ->distinct()
+        ->get()
+        ->getResult();
+
+      return $this->extractUniqueEmails($result);
+    } catch (\Exception $e) {
+      log_message('error', 'NotificationRecipientModel::getEmailsByLayanan error: ' . $e->getMessage());
+      return [];
+    }
+  }
+
+  /**
    * Extract email unik dari result set
    * 
    * @param array $rows Database result rows
