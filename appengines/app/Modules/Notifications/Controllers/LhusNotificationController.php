@@ -9,9 +9,10 @@ use Modules\Notifications\Models\LhusDataModel;
 /**
  * Controller untuk mengirim notifikasi email terkait LHUS.
  * 
- * Mengelola 2 jenis notifikasi:
+ * Mengelola 3 jenis notifikasi:
  * 1. LHUS siap ditinjau → dikirim ke Manajer Teknis (trigger: Penyelia klik "Kirim")
  * 2. Review LHUS selesai → dikirim ke Penyelia (trigger: MT klik "Selesai")
+ * 3. LHUS semua diterima → dikirim ke Admin (trigger: MT menerima semua item secara global)
  * 
  * @package Modules\Notifications\Controllers
  */
@@ -116,6 +117,47 @@ class LhusNotificationController
       log_message('info', 'LhusNotificationController: Notifikasi review LHUS terkirim ke ' . count($penyeliaEmails) . ' Penyelia untuk kode_layanan: ' . $kodeLayanan);
     } catch (\Throwable $e) {
       log_message('error', 'LhusNotificationController::sendLhusReviewComplete error: ' . $e->getMessage());
+    }
+  }
+
+  /**
+   * Notifikasi #3: Kirim email ke Admin bahwa seluruh LHUS telah diterima (all accepted globally)
+   * 
+   * Trigger: MT klik "Selesai" dan SEMUA item layanan (dari semua MT) sudah diterima
+   * Target: Admin (role_id = 1)
+   * 
+   * @param int|string $kodeLayanan Kode layanan
+   */
+  public function sendLhusAllAcceptedToAdmin($kodeLayanan): void
+  {
+    try {
+      $data = $this->prepareLhusAllAcceptedData($kodeLayanan);
+
+      if (empty($data)) {
+        log_message('warning', 'LhusNotificationController::sendLhusAllAcceptedToAdmin - Data kosong untuk kode_layanan: ' . $kodeLayanan);
+        return;
+      }
+
+      // Ambil email Admin
+      $adminEmails = $this->recipientModel->getEmailsByRole(
+        NotificationRecipientModel::ROLE_ADMIN
+      );
+
+      if (empty($adminEmails)) {
+        log_message('warning', 'LhusNotificationController::sendLhusAllAcceptedToAdmin - Tidak ada email Admin');
+        return;
+      }
+
+      foreach ($adminEmails as $email) {
+        if (!empty($email)) {
+          $this->emailService->sendLhusAllAcceptedNotification($email, $data);
+          $this->emailService->clearEmail();
+        }
+      }
+
+      log_message('info', 'LhusNotificationController: Notifikasi LHUS all accepted terkirim ke ' . count($adminEmails) . ' Admin untuk kode_layanan: ' . $kodeLayanan);
+    } catch (\Throwable $e) {
+      log_message('error', 'LhusNotificationController::sendLhusAllAcceptedToAdmin error: ' . $e->getMessage());
     }
   }
 
@@ -225,4 +267,37 @@ class LhusNotificationController
       'detail_items' => $detailItems,
     ];
   }
+
+  /**
+   * Siapkan data untuk notifikasi LHUS all accepted ke Admin
+   * 
+   * @param int|string $kodeLayanan
+   * @return array
+   */
+  protected function prepareLhusAllAcceptedData($kodeLayanan): array
+  {
+    $layanan = $this->lhusDataModel->getLayananWithPelanggan($kodeLayanan);
+    if (!$layanan) {
+      return [];
+    }
+
+    $details = $this->lhusDataModel->getLhusDetailsByKodeLayanan($kodeLayanan);
+
+    $detailItems = [];
+    foreach ($details as $d) {
+      $detailItems[] = [
+        'nama_layanan' => $d->nama_layanan ?? '-',
+        'metode_nama' => $d->metode_nama ?? '',
+      ];
+    }
+
+    return [
+      'kode_layanan' => $layanan->kode_layanan,
+      'no_invoice' => $layanan->no_invoice ?? '',
+      'nama_pelanggan' => $layanan->nama_pelanggan,
+      'total_detail' => count($detailItems),
+      'detail_items' => $detailItems,
+    ];
+  }
+
 }

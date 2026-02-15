@@ -342,4 +342,55 @@ class EmailServices
 
     return $this->sendEmailWithTemplate($toEmail, $subject, $message);
   }
+
+  /**
+   * Kirim notifikasi ke Admin bahwa seluruh LHUS telah diterima
+   * dan layanan siap dibuatkan LHU
+   * 
+   * @param string $toEmail Email Admin
+   * @param array $data [kode_layanan, no_invoice, nama_pelanggan, total_detail, detail_items]
+   * @return bool Success status
+   */
+  public function sendLhusAllAcceptedNotification(string $toEmail, array $data): bool
+  {
+    $subject = 'LHUS Telah Diverifikasi - Siap Buat LHU';
+
+    $viewData = [
+      'subject' => $subject,
+      'kode_layanan' => $data['kode_layanan'] ?? '-',
+      'no_invoice' => $data['no_invoice'] ?? '',
+      'nama_pelanggan' => $data['nama_pelanggan'] ?? '-',
+      'total_detail' => $data['total_detail'] ?? 0,
+      'detail_items' => $data['detail_items'] ?? [],
+    ];
+
+    $message = view('email/lhus/lhus_all_accepted_admin', $viewData);
+
+    return $this->sendEmailWithTemplate($toEmail, $subject, $message);
+  }
+
+  /**
+   * Kirim notifikasi ke Pelanggan bahwa LHU telah diterbitkan
+   * 
+   * @param string $toEmail Email Pelanggan
+   * @param array $data [kode_layanan, no_invoice, nama_pelanggan, tanggal_terbit, detail_items]
+   * @return bool Success status
+   */
+  public function sendLhuPublishedNotification(string $toEmail, array $data): bool
+  {
+    $subject = 'LHU Telah Diterbitkan';
+
+    $viewData = [
+      'subject' => $subject,
+      'kode_layanan' => $data['kode_layanan'] ?? '-',
+      'no_invoice' => $data['no_invoice'] ?? '',
+      'nama_pelanggan' => $data['nama_pelanggan'] ?? 'Pelanggan',
+      'tanggal_terbit' => $data['tanggal_terbit'] ?? date('d-m-Y'),
+      'detail_items' => $data['detail_items'] ?? [],
+    ];
+
+    $message = view('email/lhus/lhu_published_notification', $viewData);
+
+    return $this->sendEmailWithTemplate($toEmail, $subject, $message);
+  }
 }
