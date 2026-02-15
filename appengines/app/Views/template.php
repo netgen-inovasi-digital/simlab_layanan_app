@@ -149,6 +149,66 @@
     <!-- quill image resize -->
     <script src="https://cdn.jsdelivr.net/npm/quill-resize-module@2.0.4/dist/resize.min.js"></script>
 
+    <!-- Persistensi menu saat refresh -->
+    <script>
+    (function() {
+        // Simpan URL menu yang aktif ke sessionStorage setiap kali menu diklik
+        document.querySelectorAll('.nav-link').forEach(function(link) {
+            link.addEventListener('click', function() {
+                var isCollapseToggle = link.getAttribute('data-bs-toggle') === 'collapse';
+                if (!isCollapseToggle) {
+                    var page = link.getAttribute('href');
+                    if (page && page !== '#') {
+                        sessionStorage.setItem('activeMenuUrl', page);
+                    }
+                }
+            });
+        });
+
+        // Hapus sessionStorage saat logout
+        var logoutLink = document.querySelector('a[href*="logout"]');
+        if (logoutLink) {
+            logoutLink.addEventListener('click', function() {
+                sessionStorage.removeItem('activeMenuUrl');
+            });
+        }
+
+        // Saat halaman dimuat, cek apakah ada menu tersimpan di sessionStorage
+        var savedUrl = sessionStorage.getItem('activeMenuUrl');
+        if (savedUrl) {
+            // Update active state pada menu
+            document.querySelectorAll('.nav-link').forEach(function(item) {
+                item.classList.remove('active');
+                var href = item.getAttribute('href');
+                if (href === savedUrl) {
+                    item.classList.add('active');
+                    // Buka parent collapse jika menu berada di dalam submenu
+                    var parentCollapse = item.closest('.collapse');
+                    while (parentCollapse) {
+                        parentCollapse.classList.add('show');
+                        // Update caret icon pada toggle parent
+                        var toggleBtn = parentCollapse.previousElementSibling;
+                        if (toggleBtn) {
+                            var caret = toggleBtn.querySelector('.caret');
+                            if (caret) {
+                                caret.classList.remove('bi-chevron-right');
+                                caret.classList.add('bi-chevron-down');
+                            }
+                        }
+                        parentCollapse = parentCollapse.parentElement ? parentCollapse.parentElement.closest('.collapse') : null;
+                    }
+                }
+            });
+
+            // Muat konten menu yang tersimpan
+            if (typeof loadContent === 'function') {
+                loadContent(savedUrl);
+                currentUrl = savedUrl;
+            }
+        }
+    })();
+    </script>
+
 </body>
 
 </html>
