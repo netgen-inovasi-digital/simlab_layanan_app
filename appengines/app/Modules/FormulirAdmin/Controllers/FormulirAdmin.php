@@ -31,8 +31,8 @@ class FormulirAdmin extends BaseController
 
     $modelUser = new MyModel('account_users');
 
-    // Ambil user list untuk dropdown pemilih pelanggan
-    $users = $modelUser->getAllDataWithOrder(['user_name' => 'ASC']);
+    // Ambil user list untuk dropdown pemilih pelanggan (hanya yang sudah diverifikasi)
+    $users = $modelUser->getAllDataById(['verifikasi' => 1], ['user_name' => 'ASC']);
 
     // Ambil daftar kategori menggunakan model
     $categoriesRaw = $this->formulirAdminModel->getKategoriLayanan();

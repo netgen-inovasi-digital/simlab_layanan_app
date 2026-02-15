@@ -29,16 +29,18 @@ class FormulirAdminRapatJas extends BaseController
 
     $modelUser = new MyModel('account_users');
 
-    // Ambil user list untuk dropdown pemilih pelanggan
+    // Ambil user list untuk dropdown pemilih pelanggan (hanya yang sudah diverifikasi)
     $users = [];
-    if (method_exists($modelUser, 'getAllData')) {
-      $users = $modelUser->getAllData();
+    if (method_exists($modelUser, 'getAllDataById')) {
+      $users = $modelUser->getAllDataById(['verifikasi' => 1], ['user_name' => 'ASC']);
     } elseif (method_exists($modelUser, 'getAllDataWithOrder')) {
-      $users = $modelUser->getAllDataWithOrder(['user_name' => 'ASC']);
+      // fallback dengan query builder untuk filter verifikasi
+      $db = \Config\Database::connect();
+      $users = $db->table('account_users')->select('user_id, user_name, user_email, user_identity, user_instansi')->where('verifikasi', 1)->orderBy('user_name', 'ASC')->get()->getResult();
     } else {
       // fallback ke query builder jika MyModel tidak punya helper
       $db = \Config\Database::connect();
-      $users = $db->table('account_users')->select('user_id, user_name, user_email, user_identity, user_instansi')->orderBy('user_name', 'ASC')->get()->getResult();
+      $users = $db->table('account_users')->select('user_id, user_name, user_email, user_identity, user_instansi')->where('verifikasi', 1)->orderBy('user_name', 'ASC')->get()->getResult();
     }
 
     // Ambil daftar kategori yang benar-benar ada di data pengujian

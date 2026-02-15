@@ -234,7 +234,8 @@ abstract class KeranjangBase extends BaseController
     // Get categories menggunakan config dinamis
     $categories = $this->getCategories();
 
-    $users = $modelUser->getAllData();
+    // Ambil hanya user yang sudah diverifikasi (verifikasi = 1)
+    $users = $modelUser->getAllDataById(['verifikasi' => 1], ['user_name' => 'ASC']);
 
     $data = [
       'title' => $this->config['title'],
