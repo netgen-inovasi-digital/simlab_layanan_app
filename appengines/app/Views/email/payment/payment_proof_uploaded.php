@@ -21,10 +21,6 @@
       <td style="padding: 6px 0; color: #333; font-size: 14px; font-weight: bold;"><?= esc($no_invoice) ?></td>
     </tr>
     <tr>
-      <td style="padding: 6px 0; color: #777; font-size: 14px;">Kode Layanan</td>
-      <td style="padding: 6px 0; color: #333; font-size: 14px;"><?= esc($kode_layanan) ?></td>
-    </tr>
-    <tr>
       <td style="padding: 6px 0; color: #777; font-size: 14px;">Pelanggan</td>
       <td style="padding: 6px 0; color: #333; font-size: 14px;"><?= esc($nama_pelanggan) ?></td>
     </tr>

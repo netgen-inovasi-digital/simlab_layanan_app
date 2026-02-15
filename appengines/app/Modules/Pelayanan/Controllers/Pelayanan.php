@@ -143,10 +143,15 @@ class Pelayanan extends BaseController
       }
     }
 
+    // Ambil user identity untuk toggle surat pengantar di keranjang
+    $user = $this->pelayananModel->getUserById((int) $user_id);
+    $userIdentity = ($user && isset($user->user_identity)) ? strtoupper(trim((string) $user->user_identity)) : '';
+
     $data = [
       'title' => 'Data Pelayanan',
-      'user' => $this->pelayananModel->getUserById((int) $user_id),
+      'user' => $user,
       'categories' => array_values($normalized),
+      'user_identity' => $userIdentity,
     ];
 
     return view('Modules\Pelayanan\Views\v_pelayanan', $data);

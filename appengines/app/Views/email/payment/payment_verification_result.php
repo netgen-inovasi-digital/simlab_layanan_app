@@ -20,10 +20,6 @@
       <td style="padding: 6px 0; color: #777; width: 40%; font-size: 14px;">No. Invoice</td>
       <td style="padding: 6px 0; color: #333; font-size: 14px; font-weight: bold;"><?= esc($no_invoice) ?></td>
     </tr>
-    <tr>
-      <td style="padding: 6px 0; color: #777; font-size: 14px;">Kode Layanan</td>
-      <td style="padding: 6px 0; color: #333; font-size: 14px;"><?= esc($kode_layanan) ?></td>
-    </tr>
   </table>
 
   <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">

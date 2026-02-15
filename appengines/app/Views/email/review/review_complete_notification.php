@@ -17,10 +17,6 @@
 
   <!-- Informasi Transaksi -->
   <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 25px;">
-    <tr>
-      <td style="padding: 6px 0; color: #777; width: 40%; font-size: 14px;">Kode Layanan</td>
-      <td style="padding: 6px 0; color: #333; font-size: 14px;"><?= esc($kode_layanan) ?></td>
-    </tr>
     <?php if (!empty($no_invoice)): ?>
       <tr>
         <td style="padding: 6px 0; color: #777; font-size: 14px;">No. Invoice</td>

@@ -63,9 +63,6 @@
               <i class="bi bi-cart3"></i> Keranjang Anda
               (<span id="jumlahItemKeranjang">0</span> Item)
             </h6>
-            <!-- <button type="button" id="btnRefreshKeranjang" class="btn btn-sm btn-outline-secondary">
-                            <i class="bi bi-arrow-clockwise"></i> Refresh
-                        </button> -->
           </div>
 
           <div id="keranjangKosong" class="alert alert-warning text-center" style="display:none;">

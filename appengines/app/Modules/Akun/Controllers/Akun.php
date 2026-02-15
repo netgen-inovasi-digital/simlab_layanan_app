@@ -151,11 +151,11 @@ class Akun extends BaseController
       }
     }
 
-    // Verifikasi
+    // Verifikasi: 0 = menunggu, 1 = terverifikasi, 2 = ditolak
     $verifikasi = $this->request->getPost('verifikasi');
     $verifikasiExplicit = ($verifikasi !== null && $verifikasi !== '');
     if ($verifikasiExplicit) {
-      $data['verifikasi'] = ($verifikasi === '1') ? 1 : 0;
+      $data['verifikasi'] = ((int) $verifikasi === 1) ? 1 : 2;
     }
 
     $check = $model->getDataById('user_email', $email);
