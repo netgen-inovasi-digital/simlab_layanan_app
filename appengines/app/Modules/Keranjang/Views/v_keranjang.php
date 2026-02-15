@@ -160,7 +160,7 @@
             </div>
           </div>
           <!-- Bukti Surat Pengantar -->
-          <?php if (isset($user_identity) && $user_identity === 'ULM'): ?>
+          <div id="sectionSuratPengantar" style="display: none;">
             <hr class="my-4">
             <h6 class="fw-bold text-primary mb-3">
               <i class="bi bi-file-earmark-arrow-up"></i> Bukti Surat Pengantar
@@ -171,7 +171,8 @@
               <table class="table table-bordered mb-0">
                 <tbody>
                   <tr>
-                    <td class="fw-semibold" style="width:35%">File Surat Pengantar <span class="text-danger">*</span></td>
+                    <td class="fw-semibold" style="width:35%">File Surat Pengantar <span class="text-danger">*</span>
+                    </td>
                     <td>
                       <input type="file" class="form-control" id="fileSuratPengantar" name="fileSuratPengantar"
                         accept=".pdf,.jpg,.jpeg,.png">
@@ -198,7 +199,8 @@
               <table class="table table-bordered mb-0">
                 <tbody>
                   <tr>
-                    <td class="fw-semibold" style="width:35%">File Surat Pengantar <span class="text-danger">*</span></td>
+                    <td class="fw-semibold" style="width:35%">File Surat Pengantar <span class="text-danger">*</span>
+                    </td>
                     <td id="suratFileName">-</td>
                   </tr>
                   <tr>
@@ -223,7 +225,7 @@
                 </tbody>
               </table>
             </div>
-          <?php endif; ?>
+          </div><!-- /sectionSuratPengantar -->
         </div>
       </div>
       <div class="modal-footer">
@@ -239,6 +241,17 @@
 </div>
 
 <script>
+  // Status identitas user (ULM / NON ULM) — digunakan untuk toggle surat pengantar
+  var isUserUlm = '<?= isset($user_identity) ? esc($user_identity) : '' ?>' === 'ULM';
+
+  // Tampilkan section surat pengantar jika user ULM
+  (function () {
+    if (isUserUlm) {
+      var section = document.getElementById('sectionSuratPengantar');
+      if (section) section.style.display = 'block';
+    }
+  })();
+
     /**
      * buildApiUrlWithOptionalParam
      * - path: path ke endpoint, mis. '<?= site_url("keranjang/datalist") ?>'
@@ -329,6 +342,10 @@
     }
 
     // create/recreate layananTable
+    // 🔹 Bersihkan tbody sebelum create untuk hindari duplikat loading
+    const layananTbody = document.querySelector('#layanan-table-body');
+    if (layananTbody) layananTbody.innerHTML = '';
+
     layananTable = createModal({
       apiUrl: api,
       tableId: 'layanan-table',
@@ -357,6 +374,9 @@
   /* applyJenFilter: dipanggil saat select berubah */
   function applyJenFilter() {
     const jen = (jenFilter && jenFilter.value) ? jenFilter.value.trim() : '';
+    // 🔹 Bersihkan tbody sebelum refresh untuk hindari duplikat loading
+    const layananBody = document.querySelector('#layanan-table-body');
+    if (layananBody) layananBody.innerHTML = '';
     // refresh layanan modal table
     createOrRefreshLayananTable(jen);
   }
@@ -368,8 +388,25 @@
     });
   }
 
+  // Event listener untuk membersihkan backdrop saat modal ditutup
+  document.getElementById('modalForm').addEventListener('hidden.bs.modal', function () {
+    // Bersihkan semua backdrop yang tersisa
+    const backdrops = document.querySelectorAll('.modal-backdrop');
+    backdrops.forEach(backdrop => backdrop.remove());
+
+    // Kembalikan scroll pada body
+    document.body.classList.remove('modal-open');
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+  });
+
   document.getElementById('modalForm').addEventListener('shown.bs.modal', function () {
     const currentJen = (jenFilter && jenFilter.value) ? jenFilter.value.trim() : '';
+
+    // 🔹 Bersihkan isi tabel layanan — pastikan tidak ada sisa baris loading lama
+    const layananBody = document.querySelector('#layanan-table-body');
+    if (layananBody) layananBody.innerHTML = '';
+
     createOrRefreshLayananTable(currentJen);
 
     // 🔹 Bersihkan isi tabel manual — pastikan tidak ada sisa baris lama
@@ -624,102 +661,107 @@
   /* =========================
      Event delegation: masukkan item / checkout / delete
      ========================= */
-  document.addEventListener('click', function (e) {
-    // Tombol masukkan
-    if (e.target.closest('.btnMasukkan')) {
-      let btn = e.target.closest('.btnMasukkan');
-      let tr = btn.closest('tr');
+  // Prevent duplicate event handlers
+  if (!window.keranjangClickHandlerAttached) {
+    window.keranjangClickHandlerAttached = true;
 
-      let biaya = parseFloat(btn.dataset.biaya) || 0;
-      let diskon = parseFloat(btn.dataset.diskon) || 0;
-      let jumlahInput = tr.querySelector('.jumlah');
-      let jumlah = parseInt(jumlahInput ? jumlahInput.value : 1) || 1;
-      if (jumlah < 1) jumlah = 1;
-      let total = (biaya * jumlah) * (1 - (diskon / 100));
+    document.addEventListener('click', function (e) {
+      // Tombol masukkan
+      if (e.target.closest('.btnMasukkan')) {
+        let btn = e.target.closest('.btnMasukkan');
+        let tr = btn.closest('tr');
 
-      let metodeSelect = tr.querySelector('.metode-select');
-      let metodeValue = metodeSelect ? metodeSelect.value : '';
+        let biaya = parseFloat(btn.dataset.biaya) || 0;
+        let diskon = parseFloat(btn.dataset.diskon) || 0;
+        let jumlahInput = tr.querySelector('.jumlah');
+        let jumlah = parseInt(jumlahInput ? jumlahInput.value : 1) || 1;
+        if (jumlah < 1) jumlah = 1;
+        let total = (biaya * jumlah) * (1 - (diskon / 100));
 
-      let data = {
-        detUjiKode: btn.dataset.kode,
-        detAlat: btn.dataset.alat,
-        detBiaya: biaya,
-        detParameter: btn.dataset.parameter,
-        detNamaLayanan: btn.dataset.namaLayanan || '',
-        detDiskon: diskon,
-        detJumlah: jumlah,
-        detMetode: metodeValue,
-        detTotal: total
-      };
+        let metodeSelect = tr.querySelector('.metode-select');
+        let metodeValue = metodeSelect ? metodeSelect.value : '';
+
+        let data = {
+          detUjiKode: btn.dataset.kode,
+          detAlat: btn.dataset.alat,
+          detBiaya: biaya,
+          detParameter: btn.dataset.parameter,
+          detNamaLayanan: btn.dataset.namaLayanan || '',
+          detDiskon: diskon,
+          detJumlah: jumlah,
+          detMetode: metodeValue,
+          detTotal: total
+        };
 
 
-      if (!data.detUjiKode) {
-        sayAlert('errorModal', 'Gagal', 'Kode Uji tidak ditemukan.', 'error');
-        return;
-      }
-      if (parseInt(data.detJumlah) < 1) {
-        sayAlert('errorModal', 'Gagal', 'Jumlah minimal 1.', 'error');
-        return;
-      }
-      if (!data.detMetode) {
-        sayAlert('errorModal', 'Gagal', 'Metode Uji harus dipilih.', 'warning');
-        return;
-      }
+        if (!data.detUjiKode) {
+          sayAlert('errorModal', 'Gagal', 'Kode Uji tidak ditemukan.', 'error');
+          return;
+        }
+        if (parseInt(data.detJumlah) < 1) {
+          sayAlert('errorModal', 'Gagal', 'Jumlah minimal 1.', 'error');
+          return;
+        }
+        if (!data.detMetode) {
+          sayAlert('errorModal', 'Gagal', 'Metode Uji harus dipilih.', 'warning');
+          return;
+        }
 
-      let formData = new FormData();
-      for (const key in data) formData.append(key, data[key]);
+        let formData = new FormData();
+        for (const key in data) formData.append(key, data[key]);
 
-      let csrfInput = document.querySelector('input[name="<?= csrf_token() ?>"]');
-      if (csrfInput) formData.append('<?= csrf_token() ?>', csrfInput.value);
+        let csrfInput = document.querySelector('input[name="<?= csrf_token() ?>"]');
+        if (csrfInput) formData.append('<?= csrf_token() ?>', csrfInput.value);
 
-      saveData({
-        url: "<?= site_url('keranjang/submit') ?>",
-        formData: formData,
-        onSuccess: function (res) {
-          if (res.xname && res.xhash) {
-            let csrfField = document.querySelector('input[name="' + res.xname + '"]');
-            if (csrfField) csrfField.value = res.xhash;
-          }
-          if (res.res === true) {
-            if (typeof table !== 'undefined' && typeof table.fetchData === 'function') table.fetchData({
-              reload: true
-            });
-            if (previewKeranjangTable && typeof previewKeranjangTable.fetchData === 'function') {
-              previewKeranjangTable.fetchData({
+        saveData({
+          url: "<?= site_url('keranjang/submit') ?>",
+          formData: formData,
+          onSuccess: function (res) {
+            if (res.xname && res.xhash) {
+              let csrfField = document.querySelector('input[name="' + res.xname + '"]');
+              if (csrfField) csrfField.value = res.xhash;
+            }
+            if (res.res === true) {
+              if (typeof table !== 'undefined' && typeof table.fetchData === 'function') table.fetchData({
                 reload: true
               });
-              setTimeout(function () {
-                updateKeranjangCounter();
-                calculateGrandTotal();
-              }, 400);
+              if (previewKeranjangTable && typeof previewKeranjangTable.fetchData === 'function') {
+                previewKeranjangTable.fetchData({
+                  reload: true
+                });
+                setTimeout(function () {
+                  updateKeranjangCounter();
+                  calculateGrandTotal();
+                }, 400);
+              }
+              if (jumlahInput) jumlahInput.value = 1;
+              if (metodeSelect) metodeSelect.value = '';
+              sayAlert('successModal', 'Berhasil', res.msg ?? 'Layanan berhasil ditambahkan ke keranjang.', 'success');
+            } else {
+              sayAlert('errorModal', 'Gagal', res.msg ?? 'Terjadi kesalahan saat menambahkan ke keranjang.', 'error');
             }
-            if (jumlahInput) jumlahInput.value = 1;
-            if (metodeSelect) metodeSelect.value = '';
-            sayAlert('successModal', 'Berhasil', res.msg ?? 'Layanan berhasil ditambahkan ke keranjang.', 'success');
-          } else {
-            sayAlert('errorModal', 'Gagal', res.msg ?? 'Terjadi kesalahan saat menambahkan ke keranjang.', 'error');
+          },
+          onError: function () {
+            sayAlert('errorModal', 'Gagal', 'Terjadi kesalahan koneksi ke server.', 'error');
           }
-        },
-        onError: function () {
-          sayAlert('errorModal', 'Gagal', 'Terjadi kesalahan koneksi ke server.', 'error');
-        }
-      });
-    }
+        });
+      }
 
-    if (e.target.closest('#btnCheckoutFromModal')) {
-      e.preventDefault();
-      const btn = e.target.closest('#btnCheckoutFromModal');
-      const customMsg = btn ? (btn.getAttribute('data-confirm') || '') : '';
-      const message = customMsg || 'Apakah Anda yakin ingin melakukan checkout?';
+      if (e.target.closest('#btnCheckoutFromModal')) {
+        e.preventDefault();
+        const btn = e.target.closest('#btnCheckoutFromModal');
+        const customMsg = btn ? (btn.getAttribute('data-confirm') || '') : '';
+        const message = customMsg || 'Apakah Anda yakin ingin melakukan checkout?';
 
-      // 'success' = hijau; label custom 'Ya, Checkout'
-      sayConfirm('Konfirmasi Checkout', message, () => {
-        doCheckout();
-      }, 'success', 'checkout');
-    }
+        // 'success' = hijau; label custom 'Ya, Checkout'
+        sayConfirm('Konfirmasi Checkout', message, () => {
+          doCheckout();
+        }, 'success', 'checkout');
+      }
 
 
-  });
+    });
+  }
 
   /* deleteItemFromPreview */
   function deleteItemFromPreview(eOrEl) {
@@ -772,6 +814,24 @@
 
   /* doCheckout */
   function doCheckout() {
+    // Tutup modal konfirmasi dan bersihkan backdrop
+    const confirmModalEl = document.getElementById('confirmModal');
+    if (confirmModalEl) {
+      const confirmModalInstance = bootstrap.Modal.getInstance(confirmModalEl);
+      if (confirmModalInstance) {
+        confirmModalInstance.hide();
+      }
+    }
+
+    // Bersihkan semua backdrop yang tersisa
+    const backdrops = document.querySelectorAll('.modal-backdrop');
+    backdrops.forEach(backdrop => backdrop.remove());
+
+    // Reset body styling
+    document.body.classList.remove('modal-open');
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+
     // Validasi form identitas sampel
     const jenisSampel = document.getElementById('jenisSampel').value.trim();
     const kemasanSampel = document.getElementById('kemasanSampel').value.trim();
@@ -818,7 +878,7 @@
     }
 
     // Validasi surat pengantar
-    const isUlm = <?= (isset($user_identity) && $user_identity === 'ULM') ? 'true' : 'false' ?>;
+    const isUlm = isUserUlm;
     const fileSuratPengantar = document.getElementById('fileSuratPengantar');
     if (isUlm && (!fileSuratPengantar || fileSuratPengantar.files.length === 0)) {
       sayAlert('errorModal', 'Validasi', 'File Surat Pengantar harus diunggah!', 'warning');
@@ -894,7 +954,19 @@
       .catch(err => {
         sayAlert('errorModal', 'Error', 'Terjadi kesalahan koneksi ke server.', 'error');
       })
-      .finally(() => { hideLoading(); });
+      .finally(() => {
+        // Always hide loading indicator
+        hideLoading();
+
+        // Bersihkan semua backdrop yang mungkin tersisa
+        setTimeout(() => {
+          const backdrops = document.querySelectorAll('.modal-backdrop');
+          backdrops.forEach(backdrop => backdrop.remove());
+          document.body.classList.remove('modal-open');
+          document.body.style.overflow = '';
+          document.body.style.paddingRight = '';
+        }, 100);
+      });
   }
 
   /* === Surat Pengantar: file preview, lihat, hapus === */

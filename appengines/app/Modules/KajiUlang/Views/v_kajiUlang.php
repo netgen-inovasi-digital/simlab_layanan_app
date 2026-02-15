@@ -101,10 +101,10 @@
         </div>
       </div>
       <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
         <button type="button" id="btnKirim" class="btn btn-success">
           <i class="bi bi-send"></i> Kirim ke Admin
         </button>
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
       </div>
     </div>
   </div>

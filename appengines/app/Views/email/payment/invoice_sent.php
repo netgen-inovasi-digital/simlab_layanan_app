@@ -37,7 +37,7 @@
   <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
 
   <div
-    style="background-color: #eee; padding: 15px; border-radius: 4px; border-left: 4px solid #ffc107; margin-bottom: 20px;">
+    style="background-color: #eee; padding: 15px; border-radius: 4px; border-left: 4px solid #ffffff; margin-bottom: 20px;">
     <p style="font-size: 14px; color: #777; margin: 0 0 5px 0;"><strong>Informasi Penting:</strong></p>
     <p style="font-size: 14px; color: #777; margin: 0;">
       Silakan lakukan pembayaran dan upload bukti bayar melalui menu <strong>Pembayaran</strong> di dashboard Anda.

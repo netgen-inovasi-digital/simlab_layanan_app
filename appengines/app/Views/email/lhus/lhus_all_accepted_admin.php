@@ -3,7 +3,7 @@
 
 <div style="padding: 20px 0;">
   <h2 style="color: #333; margin: 0 0 20px 0; font-size: 22px;">
-    Review Layanan Selesai
+    LHUS Telah Diverifikasi
   </h2>
 
   <p style="font-size: 15px; color: #333; margin-bottom: 15px;">
@@ -11,45 +11,31 @@
   </p>
 
   <p style="font-size: 14px; color: #555; line-height: 1.6; margin-bottom: 20px;">
-    Seluruh layanan dalam transaksi berikut telah selesai direview oleh Manajer Teknis dan siap untuk diproses lebih
-    lanjut.
+    Seluruh LHUS (Laporan Hasil Uji Sementara) untuk layanan berikut telah
+    <strong>diterima</strong> oleh Manajer Teknis.
+    Layanan ini siap untuk dibuatkan LHU (Laporan Hasil Uji).
   </p>
 
-  <!-- Informasi Transaksi -->
+  <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+
+  <!-- Informasi Layanan -->
+  <h3 style="color: #333; margin: 0 0 15px 0; font-size: 16px;">Informasi Layanan</h3>
+
   <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 25px;">
     <?php if (!empty($no_invoice)): ?>
       <tr>
-        <td style="padding: 6px 0; color: #777; font-size: 14px;">No. Invoice</td>
+        <td style="padding: 6px 0; color: #777; width: 40%; font-size: 14px;">No. Invoice</td>
         <td style="padding: 6px 0; color: #333; font-size: 14px;"><?= esc($no_invoice) ?></td>
       </tr>
     <?php endif; ?>
     <tr>
-      <td style="padding: 6px 0; color: #777; font-size: 14px;">Pelanggan</td>
+      <td style="padding: 6px 0; color: #777; width: 40%; font-size: 14px;">Pelanggan</td>
       <td style="padding: 6px 0; color: #333; font-size: 14px;"><?= esc($nama_pelanggan) ?></td>
     </tr>
     <tr>
-      <td style="padding: 6px 0; color: #777; font-size: 14px;">Email Pelanggan</td>
-      <td style="padding: 6px 0; color: #333; font-size: 14px;"><?= esc($email_pelanggan) ?></td>
-    </tr>
-  </table>
-
-  <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
-
-  <!-- Ringkasan Review -->
-  <h3 style="color: #333; margin: 0 0 15px 0; font-size: 16px;">Ringkasan Review</h3>
-
-  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 25px;">
-    <tr>
-      <td style="padding: 6px 0; color: #777; width: 40%; font-size: 14px;">Total Layanan</td>
-      <td style="padding: 6px 0; color: #333; font-size: 14px;"><?= esc($total_detail) ?> item</td>
-    </tr>
-    <tr>
-      <td style="padding: 6px 0; color: #777; font-size: 14px;">Diterima</td>
-      <td style="padding: 6px 0; color: #333; font-size: 14px;"><?= esc($jumlah_diterima) ?> item</td>
-    </tr>
-    <tr>
-      <td style="padding: 6px 0; color: #777; font-size: 14px;">Ditolak</td>
-      <td style="padding: 6px 0; color: #333; font-size: 14px;"><?= esc($jumlah_ditolak) ?> item</td>
+      <td style="padding: 6px 0; color: #777; font-size: 14px;">Total Layanan</td>
+      <td style="padding: 6px 0; color: #333; font-size: 14px; font-weight: bold;"><?= esc($total_detail) ?> item
+        diterima</td>
     </tr>
   </table>
 
@@ -79,13 +65,7 @@
               <?php endif; ?>
             </td>
             <td style="padding: 8px 10px; text-align: center; border-bottom: 1px solid #eee;">
-              <?php if ((int) $item['status_layanan'] === 1): ?>
-                <span style="color: #333; font-weight: bold;">Diterima</span>
-              <?php elseif ((int) $item['status_layanan'] === 2): ?>
-                <span style="color: #333; font-weight: bold;">Ditolak</span>
-              <?php else: ?>
-                <span style="color: #999;">-</span>
-              <?php endif; ?>
+              <span style="font-weight: bold;">Diterima</span>
             </td>
           </tr>
         <?php endforeach; ?>
@@ -95,8 +75,12 @@
 
   <hr style="border: none; border-top: 1px solid #eee; margin: 25px 0;">
 
-  <p style="font-size: 13px; color: #777;">
-    Seluruh layanan telah direview. Silakan lanjutkan proses pelaksanaan pengujian.
+  <p style="font-size: 14px; color: #555; line-height: 1.6;">
+    Silakan buat dan unggah LHU melalui menu <em>Pelaksanaan</em> di SIMLAB.
+  </p>
+
+  <p style="font-size: 13px; color: #777; margin-top: 15px;">
+    Status layanan telah diperbarui secara otomatis menjadi <strong>LHUS Disetujui</strong>.
   </p>
 </div>
 

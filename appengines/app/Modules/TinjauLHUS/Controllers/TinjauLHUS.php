@@ -336,6 +336,11 @@ class TinjauLHUS extends BaseController
       try {
         $lhusNotif = new LhusNotificationController();
         $lhusNotif->sendLhusReviewCompleteNotification($kode_layanan, $input['items']);
+
+        // Jika seluruh LHUS diterima secara global, kirim notifikasi ke Admin
+        if (!empty($result['allAccepted'])) {
+          $lhusNotif->sendLhusAllAcceptedToAdmin($kode_layanan);
+        }
       } catch (\Throwable $e) {
         log_message('error', 'TinjauLHUS::submitReview - Notifikasi review LHUS gagal: ' . $e->getMessage());
       }

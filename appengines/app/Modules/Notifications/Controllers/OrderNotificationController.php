@@ -50,7 +50,6 @@ class OrderNotificationController
       if ($triggeredBy === 'pelanggan') {
         // Pelanggan checkout → kirim ke admin DAN manajer teknis
         $this->sendToAdmins($orderData);
-        $this->delayForRateLimit();
         $this->sendToManagers($orderData, $keranjang);
       } elseif ($triggeredBy === 'admin') {
         // Admin checkout → hanya kirim ke manajer teknis
@@ -119,16 +118,5 @@ class OrderNotificationController
       'tanggal_checkout' => date('Y-m-d H:i:s'),
       'detail_items' => $detailItems,
     ];
-  }
-
-  /**
-   * Delay untuk menghindari SMTP rate limit
-   * Mailtrap free plan: max 1 email/detik
-   * 
-   * Catatan: HAPUS atau kurangi delay saat menggunakan production SMTP
-   */
-  protected function delayForRateLimit(): void
-  {
-    sleep(10);
   }
 }

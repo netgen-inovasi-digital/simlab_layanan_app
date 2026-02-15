@@ -2,7 +2,10 @@
 <?php require_once(__DIR__ . '/v_track_modal.php'); ?>
 
 <!-- Include Modal Keranjang -->
-<?php echo view('Modules\Keranjang\Views\v_keranjang', ['categories' => $categories ?? []]); ?>
+<?php echo view('Modules\Keranjang\Views\v_keranjang', [
+  'categories' => $categories ?? [],
+  'user_identity' => $user_identity ?? '',
+]); ?>
 
 <!-- modal tabel utama -->
 <div class="row">

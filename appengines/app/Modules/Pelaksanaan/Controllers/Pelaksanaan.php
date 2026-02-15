@@ -3,6 +3,7 @@ namespace Modules\Pelaksanaan\Controllers;
 
 use App\Controllers\BaseController;
 use Modules\Pelaksanaan\Models\PelaksanaanModel;
+use Modules\Notifications\Controllers\LhuNotificationController;
 
 class Pelaksanaan extends BaseController
 {
@@ -387,6 +388,14 @@ class Pelaksanaan extends BaseController
 
       // Update status menjadi 9 (LHU Disetujui) setelah upload berhasil
       $this->pelaksanaanModel->setLayananStatus((string) $kode_layanan, 9);
+
+      // Kirim notifikasi email ke Pelanggan bahwa LHU telah diterbitkan
+      try {
+        $lhuNotif = new LhuNotificationController();
+        $lhuNotif->sendLhuPublishedToCustomer($kode_layanan, $tanggalTerbitFormatted);
+      } catch (\Throwable $e) {
+        log_message('error', 'Pelaksanaan::upload - Notifikasi LHU published gagal: ' . $e->getMessage());
+      }
 
       return $this->response->setJSON([
         'res' => true,

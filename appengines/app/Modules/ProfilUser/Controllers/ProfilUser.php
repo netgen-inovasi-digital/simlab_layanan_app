@@ -72,6 +72,8 @@ class ProfilUser extends BaseController
 
     if (!$identityFilled || !$telpFilled || !$buktiOrInstansiFilled) {
       $data['statusVerifikasi'] = ['text' => 'Silahkan lengkapi identitas Anda', 'class' => 'bg-danger'];
+    } elseif ((int) $user->verifikasi === 2) {
+      $data['statusVerifikasi'] = ['text' => 'Tertolak — Silakan unggah ulang bukti ULM Anda', 'class' => 'bg-danger', 'icon' => 'bi bi-x-circle'];
     } elseif ((int) $user->verifikasi === 0) {
       $data['statusVerifikasi'] = ['text' => 'Harap tunggu verifikasi', 'class' => 'bg-success'];
     } else {
