@@ -108,6 +108,13 @@
                     </button>
                 </a>
                 <span class="divider vr ms-2 me-2"></span>
+                 <a href="<?= site_url('fileumum/downloadManual') ?>" title="Download Manual Penggunaan">
+                    <button aria-label="button" type="button" class="btn btn-outline-success btn-sm d-flex align-items-center">
+                        <i class="bi bi-book" style="font-size: 1rem;"></i>
+                        <span class="ms-1 d-none d-md-inline">Panduan Pengguna</span>
+                    </button>
+                </a>
+                <span class="divider vr ms-2 me-2"></span>
                 <?php
                 $session = session();
                 $nama = esc($session->get('nama') ?? 'Pengguna');

@@ -163,6 +163,51 @@ class FileUmum extends BaseController
         return $this->response->download($filePath, null)->setFileName($filename);
     }
 
+    /**
+     * Download manual penggunaan berdasarkan role_id user yang sedang login.
+     * Mapping: role_id 2 (pelanggan) => file_id 2, role_id 1 (admin) => file_id 3,
+     *          role_id 4 (manajer) => file_id 4, role_id 6 (penyelia) => file_id 5
+     */
+    public function downloadManual()
+    {
+        $session = session();
+        if (!$session->get('logged_in')) {
+            return redirect()->to('/login');
+        }
+
+        $roleId = $session->get('role_id');
+
+        // Mapping role_id ke file_id manual
+        $manualMap = [
+            2 => 2, // pelanggan
+            1 => 3, // admin
+            4 => 4, // manajer
+            6 => 5, // penyelia
+        ];
+
+        if (!isset($manualMap[$roleId])) {
+            return redirect()->back()->with('error', 'Manual tidak tersedia untuk role Anda.');
+        }
+
+        $fileId = $manualMap[$roleId];
+        $model = new MyModel($this->table);
+        $get = $model->getDataById($this->id, $fileId);
+
+        if (!$get || empty($get->file_path)) {
+            return redirect()->back()->with('error', 'File manual belum diupload. Silakan hubungi administrator.');
+        }
+
+        $filePath = FCPATH . 'uploads/fileumum/' . $get->file_path;
+        if (!file_exists($filePath)) {
+            return redirect()->back()->with('error', 'File manual tidak ditemukan di server.');
+        }
+
+        $ext = pathinfo($get->file_path, PATHINFO_EXTENSION);
+        $filename = $get->judul . '.' . $ext;
+
+        return $this->response->download($filePath, null)->setFileName($filename);
+    }
+
     private function aksi($id)
     {
         return '<div id="' . $id . '" class="float-end">
