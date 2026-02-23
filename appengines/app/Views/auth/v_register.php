@@ -75,6 +75,9 @@
         <input name="ktm_image" class="form-control" type="file" id="ktm_image" accept="image/png, image/jpeg, image/jpg">
     </div> -->
 
+  <!-- Captcha Widget -->
+  <?= \App\Libraries\SimpleCaptcha::render('register-form') ?>
+
   <div class="d-grid">
     <button type="submit" class="btn btn-primary rounded-pill mx-auto">DAFTAR</button>
   </div>

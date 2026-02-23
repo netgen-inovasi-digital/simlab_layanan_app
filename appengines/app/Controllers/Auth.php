@@ -7,6 +7,7 @@ use App\Models\MyModel;
 use App\Models\AuthModel;
 use App\Models\AuthModelAdmin;
 use App\Services\EmailServices;
+use App\Libraries\SimpleCaptcha;
 
 class Auth extends Controller
 {
@@ -28,6 +29,16 @@ class Auth extends Controller
     helper('form');
     $session = session();
     $model = new AuthModel();
+
+    // Validasi captcha
+    $captchaToken = $this->request->getPost('captcha_token');
+    $captchaVerified = $this->request->getPost('captcha_verified');
+    if (empty($captchaToken) || $captchaVerified != '1' || !SimpleCaptcha::verify($captchaToken)) {
+      $session->setFlashdata('login_error', '* Silakan centang captcha terlebih dahulu!');
+      SimpleCaptcha::clear();
+      return redirect()->back();
+    }
+    SimpleCaptcha::clear();
 
     $email = $this->request->getPost('email');
     $password = $this->request->getPost('pwd');
@@ -193,6 +204,16 @@ class Auth extends Controller
   {
     $session = session();
     $model = new AuthModel();
+
+    // Validasi captcha
+    $captchaToken = $this->request->getPost('captcha_token');
+    $captchaVerified = $this->request->getPost('captcha_verified');
+    if (empty($captchaToken) || $captchaVerified != '1' || !SimpleCaptcha::verify($captchaToken)) {
+      $session->setFlashdata('error', 'Silakan centang captcha terlebih dahulu!');
+      SimpleCaptcha::clear();
+      return redirect()->back()->withInput();
+    }
+    SimpleCaptcha::clear();
 
     // Ambil data dari form
     $username = $this->request->getPost('nama');

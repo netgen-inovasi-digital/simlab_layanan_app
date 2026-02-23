@@ -28,6 +28,9 @@ $routes->get('logout', 'Auth::logout');
 $routes->get('password', 'Password::index');
 $routes->post('password/submit', 'Password::submit');
 
+// Captcha verification route
+$routes->post('captcha/verify', 'Captcha::verify');
+
 /**
  * --------------------------------------------------------------------
  * HMVC Routing

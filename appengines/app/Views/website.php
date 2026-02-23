@@ -11,6 +11,7 @@
     <!-- CDN Swiper -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.css" />
     <link rel="stylesheet" href="<?= asset_url('assets/css/website.css') ?>">
+    <link rel="stylesheet" href="<?= asset_url('assets/css/captcha.css') ?>">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -280,6 +281,10 @@ echo view($content, [
                                 </button>
                             </div>
                         </div>
+                        <!-- Captcha Widget -->
+                        <?php use App\Libraries\SimpleCaptcha; ?>
+                        <?= SimpleCaptcha::render('modal-login-form') ?>
+
                         <div class="d-grid">
                             <button type="submit" class="btn btn-primary rounded-pill mx-auto">MASUK</button>
                         </div>
