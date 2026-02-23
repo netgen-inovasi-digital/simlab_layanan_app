@@ -32,7 +32,7 @@
           <select id="statusFilter" class="form-select form-select-sm" style="width:180px;">
             <option value="all">Semua Kategori</option>
             <option value="1">In Review Manajer</option>
-            <option value="3">Belum direview</option>
+            <option value="3">Belum diproses</option>
             <option value="4">Dalam pengujian</option>
             <option value="5">LHUS diproses</option>
             <option value="6">LHUS disetujui</option>

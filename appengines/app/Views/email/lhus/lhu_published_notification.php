@@ -84,6 +84,14 @@
   <p style="font-size: 13px; color: #777;">
     Terima kasih telah menggunakan layanan pengujian kami.
   </p>
+
+  <!-- CTA Button -->
+  <div style="text-align: center; margin: 30px 0 20px 0;">
+    <a href="https://simlab.ulm.ac.id/"
+      style="display: inline-block; background-color: #0056b3; color: #ffffff; text-decoration: none; padding: 12px 30px; border-radius: 5px; font-size: 15px; font-weight: bold;">
+      Buka Aplikasi SIMLAB
+    </a>
+  </div>
 </div>
 
 <?= $this->endSection() ?>
