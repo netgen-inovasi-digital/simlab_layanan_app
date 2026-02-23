@@ -8,7 +8,7 @@
         height: auto;
     }
 </style>
-<section class="register-section" style="background-image:url('<?= base_url('assets/img/labterpadu.jpg') ?>');
+<section class="register-section" style="background-image:url('<?= base_url('assets/img/labterpadu.png') ?>');
                 background-size:cover;
                 background-position:center;
                 min-height:100vh;">
