@@ -31,7 +31,8 @@
     <tr>
       <td style="padding: 6px 0; color: #777; font-size: 14px;">Waktu Pemesanan</td>
       <td style="padding: 6px 0; color: #333; font-size: 14px;">
-        <?= esc(date('d F Y, H:i', strtotime($tanggal_checkout))) ?> WITA</td>
+        <?= esc(date('d F Y, H:i', strtotime($tanggal_checkout))) ?> WITA
+      </td>
     </tr>
   </table>
 
@@ -64,13 +65,15 @@
             <td style="padding: 8px 10px; text-align: center; border-bottom: 1px solid #eee;"><?= esc($item['jumlah']) ?>
             </td>
             <td style="padding: 8px 10px; text-align: right; border-bottom: 1px solid #eee;">Rp
-              <?= esc(number_format($item['biaya'], 0, ',', '.')) ?></td>
+              <?= esc(number_format($item['biaya'], 0, ',', '.')) ?>
+            </td>
           </tr>
         <?php endforeach; ?>
         <tr>
           <td colspan="3" style="padding: 10px; text-align: right; font-weight: bold;">Total:</td>
           <td style="padding: 10px; text-align: right; font-weight: bold;">Rp
-            <?= esc(number_format($total_biaya, 0, ',', '.')) ?></td>
+            <?= esc(number_format($total_biaya, 0, ',', '.')) ?>
+          </td>
         </tr>
       </tbody>
     </table>
@@ -83,6 +86,14 @@
   <p style="font-size: 13px; color: #777;">
     Harap segera review dan proses pesanan jika sudah ditinjau oleh Manajer Teknis!.
   </p>
+
+  <!-- CTA Button -->
+  <div style="text-align: center; margin: 30px 0 20px 0;">
+    <a href="https://simlab.ulm.ac.id/login"
+      style="display: inline-block; background-color: #0056b3; color: #ffffff; text-decoration: none; padding: 12px 30px; border-radius: 5px; font-size: 15px; font-weight: bold;">
+      Login ke SIMLAB
+    </a>
+  </div>
 </div>
 
 <?= $this->endSection() ?>

@@ -16,11 +16,11 @@
     border: 1px solid #d3d3d3;
     border-radius: 3px;
     padding: 0;
-    width: 304px;
-    height: 78px;
+    width: 260px;
+    height: 60px;
     box-shadow: 0 0 4px 1px rgba(0, 0, 0, 0.08);
     user-select: none;
-    font-family: 'Roboto', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-family: "Roboto", "Helvetica Neue", Helvetica, Arial, sans-serif;
     box-sizing: border-box;
 }
 
@@ -28,16 +28,16 @@
 .captcha-left {
     display: flex;
     align-items: center;
-    gap: 14px;
-    padding: 0 13px 0 13px;
+    gap: 10px;
+    padding: 0 10px 0 10px;
     flex: 1;
     height: 100%;
 }
 
 .captcha-checkbox {
-    width: 28px;
-    height: 28px;
-    min-width: 28px;
+    width: 22px;
+    height: 22px;
+    min-width: 22px;
     border: 2px solid #c1c1c1;
     border-radius: 2px;
     background: #fff;
@@ -45,7 +45,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
     position: relative;
     flex-shrink: 0;
     box-sizing: border-box;
@@ -79,7 +81,7 @@
 }
 
 .captcha-label {
-    font-size: 14.5px;
+    font-size: 13px;
     color: #000;
     margin: 0;
     cursor: default;
@@ -94,22 +96,22 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 0 12px;
+    padding: 0 9px;
     height: 100%;
     border-left: 1px solid #e0e0e0;
     background: #f9f9f9;
-    min-width: 72px;
+    min-width: 58px;
 }
 
 .captcha-logo {
-    width: 46px;
-    height: 46px;
+    width: 34px;
+    height: 34px;
     object-fit: contain;
     margin-bottom: 1px;
 }
 
 .captcha-brand-text {
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 400;
     color: #555;
     letter-spacing: 0.3px;
@@ -124,17 +126,21 @@
 }
 
 .spinner-anim {
-    width: 22px;
-    height: 22px;
-    border: 3px solid #dbdbdb;
-    border-top: 3px solid #4285f4;
+    width: 16px;
+    height: 16px;
+    border: 2px solid #dbdbdb;
+    border-top: 2px solid #4285f4;
     border-radius: 50%;
     animation: captcha-spin 0.7s linear infinite;
 }
 
 @keyframes captcha-spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
 /* Checkmark */
@@ -146,16 +152,22 @@
 }
 
 @keyframes captcha-pop {
-    0% { transform: scale(0); }
-    50% { transform: scale(1.15); }
-    100% { transform: scale(1); }
+    0% {
+        transform: scale(0);
+    }
+    50% {
+        transform: scale(1.15);
+    }
+    100% {
+        transform: scale(1);
+    }
 }
 
 /* Error message */
 .captcha-error {
     text-align: center;
     font-size: 12px;
-    width: 304px;
+    width: 260px;
 }
 
 /* Responsive */

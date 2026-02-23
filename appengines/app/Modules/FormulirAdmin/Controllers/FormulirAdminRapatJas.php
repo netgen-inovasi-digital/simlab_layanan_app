@@ -463,7 +463,7 @@ class FormulirAdminRapatJas extends BaseController
       case 2:
         return '<span class="badge bg-danger">Ditolak</span>';
       case 3:
-        return '<span class="badge bg-info">Belum direview</span>';
+        return '<span class="badge bg-info">Belum diproses</span>';
       case 4:
         return '<span class="badge bg-primary">Dalam pengujian</span>';
       case 5:
