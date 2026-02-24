@@ -54,7 +54,7 @@
                                     </a>
                                     <p class="text-muted small mt-1">Anda bisa unggah file baru untuk mengganti. </p>
                                 <?php else: ?>
-                                    <span class="text-danger">Silahkan upload KTM atau surat pernyataan ULM</span>
+                                    <span class="text-danger">Silakan upload KTM dan surat pernyataan ULM</span>
                                 <?php endif; ?>
                             </div>
                         </div>
