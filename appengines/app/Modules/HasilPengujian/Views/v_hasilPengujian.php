@@ -584,10 +584,10 @@
           const file = input.files[0];
           const name = file.name || '';
           const ext = name.split('.').pop().toLowerCase();
-          const allowedExt = ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx', 'xls', 'xlsx'];
-          const maxSize = 5 * 1024 * 1024;
+          const allowedExt = ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'zip'];
+          const maxSize = 100 * 1024 * 1024;
           if (!allowedExt.includes(ext)) { alert('Format file tidak diperbolehkan.'); input.value = ''; return; }
-          if (file.size > maxSize) { alert('Ukuran file maksimal 5MB.'); input.value = ''; return; }
+          if (file.size > maxSize) { alert('Ukuran file maksimal 100MB.'); input.value = ''; return; }
 
           const encLn = input.getAttribute('data-ln') || '';
           const detlist = input.getAttribute('data-detlist') || '';

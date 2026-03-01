@@ -624,15 +624,15 @@ class HasilPengujian extends BaseController
    */
   private function doUpload(\CodeIgniter\HTTP\Files\UploadedFile $file): array
   {
-    $allowed = ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx', 'xls', 'xlsx'];
-    $max = 5 * 1024 * 1024;
+    $allowed = ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'zip'];
+    $max = 100 * 1024 * 1024;
 
     if (!$file->isValid() || $file->hasMoved()) {
       return ['status' => false, 'msg' => 'File tidak valid atau sudah dipindah'];
     }
 
     if ($file->getSize() > $max) {
-      return ['status' => false, 'msg' => 'Ukuran file melebihi 5MB'];
+      return ['status' => false, 'msg' => 'Ukuran file melebihi 100MB'];
     }
 
     $ext = strtolower($file->getClientExtension() ?: pathinfo($file->getClientName(), PATHINFO_EXTENSION));

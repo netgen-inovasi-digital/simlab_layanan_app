@@ -485,7 +485,7 @@ class Pelaksanaan extends BaseController
       return ['status' => false, 'msg' => 'File tidak valid atau sudah dipindahkan'];
     }
 
-    $allowedExt = ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx', 'xls', 'xlsx'];
+    $allowedExt = ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'zip'];
     $allowedMime = [
       'image/jpeg',
       'image/png',
@@ -493,7 +493,10 @@ class Pelaksanaan extends BaseController
       'application/msword',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       'application/vnd.ms-excel',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/zip',
+      'application/x-zip-compressed',
+      'application/octet-stream'
     ];
 
     $ext = strtolower($file->getClientExtension());
@@ -517,8 +520,8 @@ class Pelaksanaan extends BaseController
       return ['status' => false, 'msg' => 'File bukan gambar asli'];
     }
 
-    if ($file->getSize() > 5 * 1024 * 1024)
-      return ['status' => false, 'msg' => 'Ukuran file maksimal 5MB'];
+    if ($file->getSize() > 100 * 1024 * 1024)
+      return ['status' => false, 'msg' => 'Ukuran file maksimal 100MB'];
 
     try {
       $rand = bin2hex(random_bytes(8));
