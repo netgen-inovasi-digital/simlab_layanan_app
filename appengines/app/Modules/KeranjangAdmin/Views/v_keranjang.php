@@ -146,6 +146,7 @@
                 <option value="Tidak mudah menguap">Tidak mudah menguap</option>
                 <option value="Padat kering">Padat kering</option>
                 <option value="Cairan kental">Cairan kental</option>
+                <option value="Non-fisik/Dokumen">Non-fisik/Dokumen</option>
               </select>
             </div>
 
