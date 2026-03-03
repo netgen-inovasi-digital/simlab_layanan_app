@@ -150,7 +150,7 @@
 
             <div class="d-flex align-items-center gap-2">
               <input type="file" name="lhu_file" id="lhu_file" class="form-control"
-                accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx" style="max-width:360px" required>
+                accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx,.zip" style="max-width:360px" required>
               <button type="button" id="btnViewExistingLhu" class="btn btn-outline-primary btn-sm" title="Lihat Bukti"
                 disabled>
                 <i class="bi bi-eye"></i> <span class="d-none d-sm-inline">Lihat Bukti</span>

@@ -136,7 +136,7 @@
                   <label for="lhus_file" class="form-label">Pilih File (jpg, png, pdf, docx, xlsx)</label>
                   <div class="d-flex align-items-center gap-2">
                     <input type="file" name="lhus_file" id="lhus_file" class="form-control"
-                      accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx" style="max-width:360px">
+                      accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx,.zip" style="max-width:360px">
                     <button type="button" id="btnViewExistingLhus" class="btn btn-outline-primary btn-sm"
                       title="Lihat Bukti" disabled>
                       <span aria-hidden="true"></span> <span class="d-none d-sm-inline">Lihat Bukti</span>
@@ -434,7 +434,7 @@
               treeview: false,
               numbering: false,
               dataSrc: 'items',
-              sortable:false
+              sortable: false
             });
 
             console.log('trackingDetailTable created with createModal:', trackingDetailTable);
