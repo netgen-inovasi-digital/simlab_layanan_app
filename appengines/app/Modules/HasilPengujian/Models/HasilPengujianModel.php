@@ -433,7 +433,7 @@ class HasilPengujianModel extends Model
     // NULL = belum upload sama sekali
     // 2 = ditolak (perlu upload ulang)
     // 3 = terunggah (siap dikirim) - OK
-    // 0 = sudah terkirim - OK  
+    // 0 = sudah terkirim - OK
     // 1 = sudah diterima - OK
     //
     // Yang dianggap 'missing' hanya NULL dan 2 (ditolak)
@@ -447,6 +447,31 @@ class HasilPengujianModel extends Model
 
     $result = $this->db->query($sql, [$kode_layanan])->getRow();
     return $result ? (int) $result->total_belum_upload : 0;
+  }
+
+  /**
+   * Count layanan_detil items that have NOT been submitted yet (files NULL, 2, or 3).
+   * Used as guard to prevent premature status_layanan=5 update when multiple penyelia
+   * share a single invoice but have uploaded at different times.
+   *
+   * files NULL = belum diupload
+   * files 2    = ditolak, perlu upload ulang
+   * files 3    = sudah diunggah penyelia tapi belum diklik Kirim
+   * files 0    = sudah terkirim ke manajer  ← dianggap submitted
+   * files 1    = sudah diterima manajer    ← dianggap submitted
+   */
+  public function countNotYetSubmittedForLayanan($kode_layanan): int
+  {
+    $sql = "
+            SELECT COUNT(*) as total
+            FROM t_layanan_detil d
+            WHERE d.kode_layanan = ?
+              AND d.status_layanan = 1
+              AND (d.files IS NULL OR d.files = 2 OR d.files = 3)
+        ";
+
+    $result = $this->db->query($sql, [$kode_layanan])->getRow();
+    return $result ? (int) $result->total : 0;
   }
 
   /**
@@ -653,6 +678,31 @@ class HasilPengujianModel extends Model
       ->where('d.status_layanan', 1)
       ->where('rt.user_id', $userId)
       ->where('d.files', 0)
+      ->limit(1)
+      ->countAllResults(false);
+
+    return $count > 0;
+  }
+
+  /**
+   * Check if user has any pending rows (files = NULL = belum upload)
+   * Digunakan untuk mencegah status "Menunggu verifikasi" muncul ketika
+   * user ini masih punya row yang belum diupload, meskipun penyelia lain
+   * sudah submit dan terlihat via shared r_tim.
+   *
+   * @param int|string $kode_layanan Layanan code
+   * @param int $userId User ID
+   * @return bool
+   */
+  public function hasPendingLhus($kode_layanan, int $userId): bool
+  {
+    $count = (int) $this->db->table('t_layanan_detil as d')
+      ->select('1')
+      ->join('r_tim rt', 'rt.uji_kode = d.uji_kode', 'inner')
+      ->where('d.kode_layanan', $kode_layanan)
+      ->where('d.status_layanan', 1)
+      ->where('rt.user_id', $userId)
+      ->where('d.files IS NULL', null, false)
       ->limit(1)
       ->countAllResults(false);
 

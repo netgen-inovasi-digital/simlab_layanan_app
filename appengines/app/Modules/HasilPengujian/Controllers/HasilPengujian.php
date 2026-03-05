@@ -375,12 +375,13 @@ class HasilPengujian extends BaseController
 
     // Cek apakah file sudah siap untuk dikirim
     // Status yang valid untuk tombol kirim:
-    // - Status 1 = sudah diterima (tidak perlu kirim lagi, sudah OK)
-    // - Status 3 = terupload, siap dikirim
+    // - Status 0 = sudah terkirim oleh penyelia lain (sudah selesai, tidak perlu aksi)
+    // - Status 1 = sudah diterima manajer (tidak perlu kirim lagi, sudah OK)
+    // - Status 3 = terupload, siap dikirim oleh user ini
     // Status yang belum siap:
     // - Status 2 = ditolak (perlu unggah ulang)
-    // - Status 0/null = belum ada file
-    $isReadyToSend = ($detFilesMax === 1 || $detFilesMax === 3);
+    // - null = belum ada file sama sekali
+    $isReadyToSend = ($detFilesMax === 0 || $detFilesMax === 1 || $detFilesMax === 3);
     if (!$isReadyToSend) {
       $allUploaded = false;
     }
@@ -441,13 +442,15 @@ class HasilPengujian extends BaseController
       $eyeButton = '<span class="text-secondary btn-action" title="Belum ada file"><i class="bi bi-eye"></i></span>';
     }
 
-    // Upload button (lock jika status file LHUS sudah diterima)
+    // Upload button (lock jika status file LHUS sudah diterima atau sudah terkirim)
     if ($lhusStatus === 1) {
-      $uploadInput = '<span class="text-secondary btn-action" title="LHUS sudah diterima, upload dikunci"><i class="bi bi-upload"></i></span>';
+      $uploadInput = '<span class="text-secondary btn-action" title="LHUS sudah diterima manajer, upload dikunci"><i class="bi bi-upload"></i></span>';
+    } elseif ($lhusStatus === 0) {
+      $uploadInput = '<span class="text-secondary btn-action" title="LHUS sudah terkirim ke manajer, menunggu verifikasi"><i class="bi bi-upload"></i></span>';
     } else {
       $detKodeAttr = htmlspecialchars($detKode ?? '', ENT_QUOTES, 'UTF-8');
       $uploadInput = '<label class="mb-0 position-relative" style="cursor:pointer;">'
-        . '<input type="file" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx" '
+        . '<input type="file" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx,.zip" '
         . 'data-detlist="' . $detKodeAttr . '" data-detkode="' . $detKodeAttr . '" data-ln="' . $encLnId . '" '
         . 'class="d-none lhus-uploader-input" onchange="autoUploadFile(this)" />'
         . '<span class="text-primary btn-action" title="Unggah / Ubah File LHUS"><i class="bi bi-upload"></i></span>'
@@ -468,6 +471,8 @@ class HasilPengujian extends BaseController
       return '<div class="text-center"><span class="badge bg-danger">lhus ditolak</span></div>';
     } elseif ($detStatusLHUS === 3 && $rowHasFile) {
       return '<div class="text-center"><span class="badge bg-info">lhus terunggah</span></div>';
+    } elseif ($detStatusLHUS === 0 && $rowHasFile) {
+      return '<div class="text-center"><span class="badge bg-secondary">lhus terkirim</span></div>';
     } elseif ($detStatusLHUS === 1) {
       return '<div class="text-center"><span class="badge bg-success">lhus diterima</span></div>';
     } elseif ($lnStatusInt === 5) {
@@ -496,13 +501,20 @@ class HasilPengujian extends BaseController
       // Update terima_layanan_by
       $this->hasilPengujianModel->updateTerimaLayananBy($kode_layanan, $user_id, $user_id);
 
-      // Update layanan status ke 5 dan log sampel saat kirim
-      $this->hasilPengujianModel->updateLayananStatus($kode_layanan, 5);
-      $this->hasilPengujianModel->updateLogSampelVerifikasiHasilUji($kode_layanan);
+      // Cek apakah SEMUA penyelia sudah submit (files = 0 atau 1, tidak ada yang NULL/2/3)
+      // files NULL = belum upload, 2 = ditolak, 3 = terunggah tapi belum diklik Kirim
+      $totalBelumSubmit = $this->hasilPengujianModel->countNotYetSubmittedForLayanan($kode_layanan);
+      $parentUpdated = false;
 
-      // Check if all files uploaded
+      if ($totalBelumSubmit === 0) {
+        // Semua penyelia sudah submit → update parent status ke 5
+        $this->hasilPengujianModel->updateLayananStatus($kode_layanan, 5);
+        $this->hasilPengujianModel->updateLogSampelVerifikasiHasilUji($kode_layanan);
+        $parentUpdated = true;
+      }
+
+      // Untuk pesan respons: hitung item yang benar-benar belum diupload (NULL atau ditolak)
       $totalBelumUpload = $this->hasilPengujianModel->countMissingFilesForLayanan($kode_layanan);
-      $parentUpdated = true;
 
       // Commit transaction
       if ($this->hasilPengujianModel->transStatus() === false) {
@@ -517,19 +529,26 @@ class HasilPengujian extends BaseController
         $this->hasilPengujianModel->transCommit();
       }
 
-      // Kirim notifikasi email ke Manajer Teknis bahwa LHUS siap ditinjau
-      try {
-        $lhusNotif = new LhusNotificationController();
-        $lhusNotif->sendLhusReadyForReviewNotification($kode_layanan, $user_id);
-      } catch (\Throwable $e) {
-        log_message('error', 'HasilPengujian::processSubmission - Notifikasi LHUS gagal: ' . $e->getMessage());
+      // Kirim notifikasi email ke Manajer Teknis HANYA jika semua penyelia sudah submit
+      if ($parentUpdated) {
+        try {
+          $lhusNotif = new LhusNotificationController();
+          $lhusNotif->sendLhusReadyForReviewNotification($kode_layanan, $user_id);
+        } catch (\Throwable $e) {
+          log_message('error', 'HasilPengujian::processSubmission - Notifikasi LHUS gagal: ' . $e->getMessage());
+        }
       }
 
       // Prepare response
-      if ($totalBelumUpload > 0) {
+      if (!$parentUpdated) {
+        // Masih ada penyelia lain yang belum upload atau belum klik Kirim
+        $pendingMsg = $totalBelumUpload > 0
+          ? 'Masih ada ' . $totalBelumUpload . ' layanan yang belum diunggah oleh penyelia lain.'
+          : 'LHUS penyelia lain sudah diunggah namun belum dikirim.';
+
         return $this->jsonResponse(
           true,
-          'LHUS Anda berhasil dikirim ke manajer. Masih ada ' . $totalBelumUpload . ' layanan lain yang belum terupload.',
+          'LHUS Anda berhasil dikirim. ' . $pendingMsg,
           [
             'waiting_others' => true,
             'pending_total' => $totalBelumUpload,
@@ -543,7 +562,7 @@ class HasilPengujian extends BaseController
         'Semua LHUS dalam invoice ini sudah lengkap dan terkirim ke manajer teknis!',
         [
           'waiting_others' => false,
-          'parent_updated' => $parentUpdated
+          'parent_updated' => true
         ]
       );
 
@@ -750,7 +769,12 @@ class HasilPengujian extends BaseController
     }
 
     // PRIORITAS 4: Cek apakah sudah terkirim ke manajer (files = 0)
-    if ($this->hasilPengujianModel->hasSentLhus($kode_layanan, $userId)) {
+    // Hanya tampilkan jika user TIDAK punya row yang masih pending (files NULL)
+    // Ini mencegah lintas-kontaminasi ketika penyelia lain sudah submit tapi user ini belum upload
+    if (
+      !$this->hasilPengujianModel->hasPendingLhus($kode_layanan, $userId)
+      && $this->hasilPengujianModel->hasSentLhus($kode_layanan, $userId)
+    ) {
       return '<span class="badge bg-info">Menunggu verifikasi</span>';
     }
 
