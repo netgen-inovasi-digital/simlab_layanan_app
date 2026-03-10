@@ -115,7 +115,7 @@
                     </div>
                 </div>
 
-                <?php echo form_open('pelayanan/submit_kuesioner', ['id' => 'myform', 'novalidate' => '']); ?>
+                <?php echo form_open('pelayanan/submit_kuesioner', ['id' => 'myform', 'novalidate' => '', 'onsubmit' => 'return false;']); ?>
                 <input type="hidden" name="idenc" value="<?= esc($idenc ?? '') ?>">
 
                 <div class="mt-4">
@@ -178,7 +178,7 @@
                     <button type="button" class="btn btn-light" onclick="loadContent('pelayanan')">
                         <i class="bi bi-x-circle"></i> Keluar
                     </button>
-                    <button class="btn btn-primary" id="btnSimpan" type="submit" <?= empty($pertanyaan) ? 'disabled' : '' ?>>
+                    <button class="btn btn-primary" id="btnSimpan" type="button" <?= empty($pertanyaan) ? 'disabled' : '' ?>>
                         <i class="bi bi-check2-circle"></i> Kirim Jawaban
                     </button>
                 </div>
@@ -235,6 +235,11 @@
             }
 
             const formData = new FormData(form);
+            // Refresh CSRF in formData from the form's own hidden input (scoped, not doc-wide)
+            const csrfNameField = form.querySelector('input[type="hidden"][name]');
+            if (csrfNameField) {
+                formData.set(csrfNameField.name, csrfNameField.value);
+            }
             saveData({
                 url: actionUrl,
                 formData: formData,
@@ -258,15 +263,10 @@
         onError
     }) {
         showLoading();
-        const csrfInput = document.querySelector('[name="<?= csrf_token() ?>"]');
-        const csrfToken = csrfInput ? csrfInput.value : '';
 
         fetch(url, {
             method: 'POST',
-            body: formData,
-            headers: {
-                'X-CSRF-TOKEN': csrfToken
-            }
+            body: formData
         })
             .then(response => {
                 if (!response.ok) {
