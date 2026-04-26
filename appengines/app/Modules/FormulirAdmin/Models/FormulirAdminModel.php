@@ -123,6 +123,7 @@ class FormulirAdminModel extends Model
     $builder = $this->db->table('t_layanan_detil as d');
 
     $builder->select("
+          GROUP_CONCAT(d.kode ORDER BY d.kode ASC SEPARATOR ',') AS detailKodeList,
             d.uji_kode,
             d.kode_layanan,
             d.nama_layanan,
@@ -173,5 +174,77 @@ class FormulirAdminModel extends Model
       ->orderBy('kode_bayar', 'DESC')
       ->limit(1)
       ->get()->getRow();
+  }
+
+  /**
+   * Cek apakah invoice sudah dikirim untuk suatu kode_layanan.
+   */
+  public function isInvoiceSent(int $kode_layanan): bool
+  {
+    $lastPayment = $this->db->table('t_pembayaran')
+      ->select('invoice_file, no_invoice')
+      ->where('kode_layanan', $kode_layanan)
+      ->orderBy('kode_bayar', 'DESC')
+      ->limit(1)
+      ->get()
+      ->getRow();
+
+    if (!$lastPayment) {
+      return false;
+    }
+
+    return !empty($lastPayment->invoice_file) || !empty($lastPayment->no_invoice);
+  }
+
+  /**
+   * Ambil detail layanan untuk update jumlah berdasarkan daftar kode detail.
+   */
+  public function getDetailRowsForJumlahUpdate(int $kode_layanan, array $detailKodeList): array
+  {
+    if (empty($detailKodeList)) {
+      return [];
+    }
+
+    return $this->db->table('t_layanan_detil')
+      ->select('kode, jumlah, biaya')
+      ->where('kode_layanan', $kode_layanan)
+      ->whereIn('kode', $detailKodeList)
+      ->get()
+      ->getResult();
+  }
+
+  /**
+   * Update jumlah dan biaya detail layanan dalam satu transaksi.
+   */
+  public function updateDetailJumlahGrouped(int $kode_layanan, array $details, int $jumlahBaru): bool
+  {
+    if ($kode_layanan <= 0 || $jumlahBaru < 1 || empty($details)) {
+      return false;
+    }
+
+    $this->db->transBegin();
+
+    foreach ($details as $det) {
+      $oldJumlah = max(1, (int) ($det->jumlah ?? 1));
+      $oldBiaya = (float) ($det->biaya ?? 0);
+      $biayaPerUnit = $oldBiaya / $oldJumlah;
+      $newBiaya = $biayaPerUnit * $jumlahBaru;
+
+      $this->db->table('t_layanan_detil')
+        ->where('kode', (int) $det->kode)
+        ->where('kode_layanan', $kode_layanan)
+        ->update([
+          'jumlah' => $jumlahBaru,
+          'biaya' => $newBiaya,
+        ]);
+    }
+
+    if ($this->db->transStatus() === false) {
+      $this->db->transRollback();
+      return false;
+    }
+
+    $this->db->transCommit();
+    return true;
   }
 }

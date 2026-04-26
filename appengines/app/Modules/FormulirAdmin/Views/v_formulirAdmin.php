@@ -495,6 +495,7 @@
   // ============================================================
   var detailModalTable = null;
   var cachedSampleData = {}; // Cache untuk identitas sampel
+  var currentDetailId = null;
 
   // Helper: Reset tabel detail sepenuhnya
   function resetDetailTable() {
@@ -518,6 +519,8 @@
   });
 
   function loadDetail(id, kode_layanan) {
+    currentDetailId = id;
+
     // Reset identitas sampel terlebih dahulu
     document.getElementById('sampleJenis').textContent = '-';
     document.getElementById('sampleKemasan').textContent = '-';
@@ -603,6 +606,74 @@
       modal.show();
     }
   }
+
+  document.addEventListener('change', function (e) {
+    const input = e.target;
+    if (!input || !input.classList || !input.classList.contains('fa-jumlah-input')) return;
+
+    const originalVal = input.dataset.originalValue || input.defaultValue || input.value;
+    const newJumlah = parseInt(input.value, 10);
+    const kodeLayanan = parseInt(input.dataset.kodeLayanan || '0', 10);
+    const detailKodeList = (input.dataset.detailKodeList || '').trim();
+
+    if (!Number.isInteger(newJumlah) || newJumlah < 1) {
+      input.value = originalVal;
+      sayAlert('errorModal', 'Gagal', 'Jumlah minimal 1.', 'error');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('kode_layanan', String(kodeLayanan));
+    formData.append('detail_kode_list', detailKodeList);
+    formData.append('jumlah', String(newJumlah));
+
+    const csrf = getCsrfTokenFromPage();
+    if (csrf && csrf.name && csrf.value) {
+      formData.append(csrf.name, csrf.value);
+    }
+
+    input.disabled = true;
+
+    fetch('<?= site_url('formuliradmin/updateJumlahDetail') ?>', {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    })
+      .then(res => res.json())
+      .then(result => {
+        if (result.xname && result.xhash) {
+          document.querySelectorAll('[name="' + result.xname + '"]').forEach(el => {
+            el.value = result.xhash;
+          });
+        }
+
+        if (!result.res) {
+          input.value = originalVal;
+          sayAlert('errorModal', 'Gagal', result.msg || 'Jumlah gagal diperbarui.', 'error');
+          return;
+        }
+
+        input.dataset.originalValue = String(newJumlah);
+
+        if (detailModalTable && currentDetailId) {
+          detailModalTable.refresh({
+            apiUrl: '<?= site_url('formuliradmin/detaillist/') ?>' + currentDetailId,
+            currentPage: 1
+          });
+        }
+
+        sayAlert('successModal', 'Berhasil', result.msg || 'Jumlah berhasil diperbarui.', 'success');
+      })
+      .catch(() => {
+        input.value = originalVal;
+        sayAlert('errorModal', 'Error', 'Terjadi kesalahan koneksi ke server.', 'error');
+      })
+      .finally(() => {
+        input.disabled = false;
+      });
+  });
 
   // Fungsi untuk pembayaran (sama seperti di Pelayanan)
   function lokasiPembayaran(kode_layanan) {

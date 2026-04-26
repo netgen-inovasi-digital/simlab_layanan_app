@@ -307,6 +307,8 @@ class FormulirAdmin extends BaseController
     // Encrypted hex parent (disimpan jika perlu dipakai di tempat lain)
     $encLnId = bin2hex($this->encrypter->encrypt($kode));
 
+    $canEditJumlah = !$this->formulirAdminModel->isInvoiceSent((int) $kode);
+
     // Ambil detail layanan menggunakan model
     $rows = $this->formulirAdminModel->getDetailLayananGrouped((int) $kode);
 
@@ -323,8 +325,18 @@ class FormulirAdmin extends BaseController
       $response[] = isset($row->metode_nama) && !empty($row->metode_nama) ? esc($row->metode_nama) : '-';
       // Biaya
       $response[] = isset($row->detBiaya) ? number_format($row->detBiaya, 0, ',', '.') : '-';
-      // Jumlah
-      $response[] = isset($row->jumlah) ? (int) $row->jumlah : 0;
+      // Jumlah (hanya bisa diubah jika invoice belum dikirim)
+      $jumlahVal = isset($row->jumlah) ? (int) $row->jumlah : 0;
+      if ($canEditJumlah) {
+        $detailKodeList = htmlspecialchars((string) ($row->detailKodeList ?? ''), ENT_QUOTES, 'UTF-8');
+        $response[] = '<input type="number" min="1" class="form-control form-control-sm text-center fa-jumlah-input" '
+          . 'style="max-width:90px; margin:auto;" '
+          . 'value="' . $jumlahVal . '" '
+          . 'data-kode-layanan="' . (int) $kode . '" '
+          . 'data-detail-kode-list="' . $detailKodeList . '">';
+      } else {
+        $response[] = $jumlahVal;
+      }
 
       // Status hasil grouping (1 = diterima, 2 = ditolak, lainnya = pending)
       $statusGroup = isset($row->detStatusGroup) ? (int) $row->detStatusGroup : null;
@@ -378,6 +390,69 @@ class FormulirAdmin extends BaseController
       'items' => $data,
       'sampleData' => $sampleData,
       'kode_layanan' => (int) $kode
+    ]);
+  }
+
+  public function updateJumlahDetail()
+  {
+    $kodeLayanan = (int) ($this->request->getPost('kode_layanan') ?? 0);
+    $jumlahBaru = (int) ($this->request->getPost('jumlah') ?? 0);
+    $detailKodeListRaw = trim((string) ($this->request->getPost('detail_kode_list') ?? ''));
+
+    if ($kodeLayanan <= 0 || $jumlahBaru < 1 || $detailKodeListRaw === '') {
+      return $this->response->setJSON([
+        'res' => false,
+        'msg' => 'Data update jumlah tidak valid.',
+        'xname' => csrf_token(),
+        'xhash' => csrf_hash()
+      ]);
+    }
+
+    if ($this->formulirAdminModel->isInvoiceSent($kodeLayanan)) {
+      return $this->response->setJSON([
+        'res' => false,
+        'msg' => 'Jumlah tidak dapat diubah karena invoice sudah dikirim.',
+        'xname' => csrf_token(),
+        'xhash' => csrf_hash()
+      ]);
+    }
+
+    $detailKodeList = array_values(array_filter(array_map('intval', explode(',', $detailKodeListRaw)), static fn($v) => $v > 0));
+    if (empty($detailKodeList)) {
+      return $this->response->setJSON([
+        'res' => false,
+        'msg' => 'Detail layanan tidak ditemukan.',
+        'xname' => csrf_token(),
+        'xhash' => csrf_hash()
+      ]);
+    }
+
+    $details = $this->formulirAdminModel->getDetailRowsForJumlahUpdate($kodeLayanan, $detailKodeList);
+
+    if (empty($details)) {
+      return $this->response->setJSON([
+        'res' => false,
+        'msg' => 'Data detail layanan tidak valid.',
+        'xname' => csrf_token(),
+        'xhash' => csrf_hash()
+      ]);
+    }
+
+    $updated = $this->formulirAdminModel->updateDetailJumlahGrouped($kodeLayanan, $details, $jumlahBaru);
+    if (!$updated) {
+      return $this->response->setJSON([
+        'res' => false,
+        'msg' => 'Gagal memperbarui jumlah layanan.',
+        'xname' => csrf_token(),
+        'xhash' => csrf_hash()
+      ]);
+    }
+
+    return $this->response->setJSON([
+      'res' => true,
+      'msg' => 'Jumlah berhasil diperbarui.',
+      'xname' => csrf_token(),
+      'xhash' => csrf_hash()
     ]);
   }
 

@@ -8,6 +8,7 @@ $routes->group('formuliradmin', ['namespace' => 'Modules\FormulirAdmin\Controlle
     $subroutes->get('/', 'FormulirAdmin::index', ['as' => 'formuliradmin.index']);
     $subroutes->get('datalist', 'FormulirAdmin::datalist', ['as' => 'formuliradmin.datalist']);
     $subroutes->get('detaillist/(:any)', 'FormulirAdmin::detaillist/$1', ['as' => 'formuliradmin.detaillist']);
+    $subroutes->post('updateJumlahDetail', 'FormulirAdmin::updateJumlahDetail', ['as' => 'formuliradmin.updateJumlahDetail']);
     $subroutes->post('submit', 'FormulirAdmin::submit', ['as' => 'formuliradmin.submit']);
     $subroutes->post('delete/(:any)', 'FormulirAdmin::delete/$1', ['as' => 'formuliradmin.delete']);
     $subroutes->post('upload', 'FormulirAdmin::upload', ['as' => 'formuliradmin.upload']);
