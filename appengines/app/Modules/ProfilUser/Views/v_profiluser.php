@@ -28,9 +28,9 @@
 
                         <!-- Asal Instansi (NON ULM) -->
                         <div class="mb-3" id="instansiField" style="display: <?= $get->showInstansi ? 'block' : 'none' ?>;">
-                            <label class="form-label">Alamat Instansi</label>
+                            <label class="form-label">Asal Instansi</label>
                             <input type="text" class="form-control" name="user_instansi" 
-                                   value="<?= esc($get->user_instansi ?? '') ?>" placeholder="Masukkan Alamat Instansi">
+                                   value="<?= esc($get->user_instansi ?? '') ?>" placeholder="Masukkan Asal Instansi">
                         </div>
 
                         <!-- Download File ULM (Hanya muncul jika pilih ULM) -->
